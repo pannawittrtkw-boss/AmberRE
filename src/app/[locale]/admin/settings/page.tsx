@@ -520,9 +520,9 @@ function ContactInfoSection({
       key: "contactLine",
       icon: MessageCircle,
       iconColor: "text-emerald-600",
-      labelTh: "LINE ID",
-      labelEn: "LINE ID",
-      placeholder: "@cfx5958x",
+      labelTh: "LINE ID หรือ URL",
+      labelEn: "LINE ID or URL",
+      placeholder: "@cfx5958x หรือ https://lin.ee/xxxxx",
     },
     {
       key: "contactLocation",

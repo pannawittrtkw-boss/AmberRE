@@ -32,10 +32,16 @@ export default function AgentContactButtons({
   const [phoneRevealed, setPhoneRevealed] = useState(false);
   const cleanPhone = phone.replace(/[^0-9+]/g, "");
 
-  // LINE Official Account URL needs the leading @ — but reverts to plain id
-  // for personal accounts. Keep whatever the admin saved verbatim.
-  const lineHandle = lineId.startsWith("@") ? lineId : `@${lineId}`;
-  const lineUrl = `https://line.me/R/ti/p/${encodeURIComponent(lineHandle)}`;
+  // Admin can put either:
+  //   - a LINE id like "@cfx5958x" → wrap with the LINE OA URL pattern
+  //   - a short link like "https://lin.ee/hH0DQWy" → use as-is
+  //   - a full line.me URL → use as-is
+  const isUrl = /^https?:\/\//i.test(lineId.trim());
+  const lineUrl = isUrl
+    ? lineId.trim()
+    : `https://line.me/R/ti/p/${encodeURIComponent(
+        lineId.startsWith("@") ? lineId : `@${lineId}`
+      )}`;
 
   const handleCallClick = () => {
     if (!phoneRevealed) {

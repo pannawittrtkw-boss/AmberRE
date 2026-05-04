@@ -274,7 +274,15 @@ export default function ContactPage({
                   icon={<MessageCircle className="w-4 h-4 text-emerald-600" />}
                   label="LINE"
                   value={contactInfo.line}
-                  href={`https://line.me/R/ti/p/${contactInfo.line.replace(/^@/, "")}`}
+                  href={
+                    /^https?:\/\//i.test(contactInfo.line.trim())
+                      ? contactInfo.line.trim()
+                      : `https://line.me/R/ti/p/${encodeURIComponent(
+                          contactInfo.line.startsWith("@")
+                            ? contactInfo.line
+                            : `@${contactInfo.line}`
+                        )}`
+                  }
                 />
                 <ContactRow
                   icon={<MapPin className="w-4 h-4 text-rose-500" />}
