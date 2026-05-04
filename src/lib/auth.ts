@@ -34,11 +34,32 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.role = (user as any).role;
         token.id = user.id;
       }
+
+      // Refresh role + active flag from DB so admin role changes take
+      // effect on the next request without requiring users to re-login.
+      // Fetch on initial sign-in, on session update, and once per minute
+      // (the existing token gets a `lastSync` timestamp).
+      const lastSync = (token as any).lastSync as number | undefined;
+      const now = Date.now();
+      const stale = !lastSync || now - lastSync > 60_000;
+      if (token.id && (user || trigger === "update" || stale)) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: Number(token.id) },
+          select: { role: true, isActive: true },
+        });
+        if (!dbUser || !dbUser.isActive) {
+          // User disabled or removed — drop the session
+          return {} as typeof token;
+        }
+        token.role = dbUser.role;
+        (token as any).lastSync = now;
+      }
+
       return token;
     },
     async session({ session, token }) {
