@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Heart, Camera, MapPin, Train, Bed, Bath, Maximize, Eye, Calendar, Layers } from "lucide-react";
+import { Heart, Camera, MapPin, Train, Bed, Bath, Maximize, Eye, Calendar, Layers, Building } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
 import { getStationThaiName } from "@/lib/stations";
 import { useFavorites } from "@/lib/favorites";
@@ -160,15 +160,19 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
           )}
 
           {/* Specs */}
-          <div className="flex items-center gap-3 text-xs text-gray-500 mt-2">
-            {property.propertyType !== "LAND" && property.bedrooms > 0 && (
+          <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 mt-2">
+            {property.propertyType !== "LAND" && (
               <span className="flex items-center gap-0.5">
-                <Bed className="w-3.5 h-3.5" /> {property.bedrooms} Beds
+                <Bed className="w-3.5 h-3.5" />{" "}
+                {property.bedrooms === 0
+                  ? locale === "th" ? "สตูดิโอ" : "Studio"
+                  : `${property.bedrooms} ${locale === "th" ? "ห้องนอน" : "Beds"}`}
               </span>
             )}
             {property.propertyType !== "LAND" && property.bathrooms > 0 && (
               <span className="flex items-center gap-0.5">
-                <Bath className="w-3.5 h-3.5" /> {property.bathrooms} Baths
+                <Bath className="w-3.5 h-3.5" /> {property.bathrooms}{" "}
+                {locale === "th" ? "ห้องน้ำ" : "Baths"}
               </span>
             )}
             {sizeSqm && (
@@ -176,6 +180,16 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
                 <Maximize className="w-3.5 h-3.5" /> {sizeSqm} m²
               </span>
             )}
+            {property.propertyType !== "LAND" &&
+              property.floor != null &&
+              Number(property.floor) > 0 && (
+                <span className="flex items-center gap-0.5">
+                  <Building className="w-3.5 h-3.5" />{" "}
+                  {locale === "th"
+                    ? `ชั้น ${property.floor}`
+                    : `Floor ${property.floor}`}
+                </span>
+              )}
           </div>
 
           {/* Price */}

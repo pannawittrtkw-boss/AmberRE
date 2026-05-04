@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bed, Bath, Maximize, MapPin, Star, ArrowRight } from "lucide-react";
+import { Bed, Bath, Maximize, MapPin, Star, ArrowRight, Layers } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
 import PropertyImageCarousel from "./PropertyImageCarousel";
 
@@ -16,6 +16,7 @@ interface PropertyCardProps {
     sizeSqm: number | null;
     bedrooms: number;
     bathrooms: number;
+    floor?: number | null;
     address: string | null;
     isFeatured: boolean;
     isSold: boolean;
@@ -126,11 +127,13 @@ export default function PropertyCard({
           )}
 
           {/* Specs */}
-          <div className="flex items-center gap-4 text-xs text-stone-600 mt-3">
-            {property.propertyType !== "LAND" && property.bedrooms > 0 && (
+          <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-xs text-stone-600 mt-3">
+            {property.propertyType !== "LAND" && (
               <span className="flex items-center gap-1">
                 <Bed className="w-3.5 h-3.5 text-[#C8A951]" />
-                {property.bedrooms}
+                {property.bedrooms === 0
+                  ? (locale === "th" ? "สตูดิโอ" : "Studio")
+                  : property.bedrooms}
               </span>
             )}
             {property.propertyType !== "LAND" && property.bathrooms > 0 && (
@@ -145,6 +148,16 @@ export default function PropertyCard({
                 {property.sizeSqm} {t.sqm}
               </span>
             )}
+            {property.propertyType !== "LAND" &&
+              property.floor != null &&
+              property.floor > 0 && (
+                <span className="flex items-center gap-1">
+                  <Layers className="w-3.5 h-3.5 text-[#C8A951]" />
+                  {locale === "th"
+                    ? `ชั้น ${property.floor}`
+                    : `Floor ${property.floor}`}
+                </span>
+              )}
           </div>
 
           {/* Price + arrow */}
