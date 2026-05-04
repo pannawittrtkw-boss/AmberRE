@@ -87,10 +87,10 @@ export async function PUT(
     });
 
     return NextResponse.json({ success: true, data: contract });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Update contract error:", err);
     return NextResponse.json(
-      { success: false, error: "Internal server error" },
+      { success: false, error: err?.message || "Internal server error", code: err?.code },
       { status: 500 }
     );
   }

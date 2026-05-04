@@ -30,6 +30,44 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
+    // Required field validation
+    const required = [
+      "contractDate", "startDate", "endDate",
+      "lessorName", "lesseeName",
+      "projectName", "unitNumber", "propertyAddress",
+      "monthlyRent", "securityDeposit",
+    ];
+    for (const k of required) {
+      const v = body[k];
+      if (v === undefined || v === null || String(v).trim() === "") {
+        return NextResponse.json(
+          { success: false, error: `Missing required field: ${k}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Verify property exists if propertyId is provided
+    let propertyId: number | null = null;
+    if (body.propertyId) {
+      const idNum = Number(body.propertyId);
+      if (!Number.isNaN(idNum)) {
+        const exists = await prisma.property.findUnique({ where: { id: idNum }, select: { id: true } });
+        if (exists) propertyId = idNum;
+      }
+    }
+
+    // Verify creator user exists
+    let createdById: number | null = null;
+    const sessionUserId = (session.user as any).id;
+    if (sessionUserId) {
+      const idNum = Number(sessionUserId);
+      if (!Number.isNaN(idNum)) {
+        const exists = await prisma.user.findUnique({ where: { id: idNum }, select: { id: true } });
+        if (exists) createdById = idNum;
+      }
+    }
+
     // Generate contract number: CON-YYYY-NNN
     const year = new Date().getFullYear();
     const yearStart = new Date(`${year}-01-01`);
@@ -46,12 +84,12 @@ export async function POST(req: NextRequest) {
         endDate: new Date(body.endDate),
         termMonths: Number(body.termMonths) || 12,
 
-        lessorName: body.lessorName,
+        lessorName: String(body.lessorName).trim(),
         lessorIdCard: body.lessorIdCard || null,
         lessorAddress: body.lessorAddress || null,
         lessorPhone: body.lessorPhone || null,
 
-        lesseeName: body.lesseeName,
+        lesseeName: String(body.lesseeName).trim(),
         lesseeNationality: body.lesseeNationality || null,
         lesseeIdCard: body.lesseeIdCard || null,
         lesseeAddress: body.lesseeAddress || null,
@@ -63,12 +101,12 @@ export async function POST(req: NextRequest) {
         jointLesseeAddress: body.jointLesseeAddress || null,
         jointLesseePhone: body.jointLesseePhone || null,
 
-        propertyId: body.propertyId ? Number(body.propertyId) : null,
-        projectName: body.projectName,
-        unitNumber: body.unitNumber,
+        propertyId,
+        projectName: String(body.projectName).trim(),
+        unitNumber: String(body.unitNumber).trim(),
         buildingName: body.buildingName || null,
         floorNumber: body.floorNumber || null,
-        propertyAddress: body.propertyAddress,
+        propertyAddress: String(body.propertyAddress).trim(),
         sizeSqm: body.sizeSqm ? Number(body.sizeSqm) : null,
 
         monthlyRent: Number(body.monthlyRent),
@@ -86,15 +124,19 @@ export async function POST(req: NextRequest) {
         otherItems: body.otherItems || null,
 
         status: body.status || "DRAFT",
-        createdById: Number((session.user as any).id) || null,
+        createdById,
       },
     });
 
     return NextResponse.json({ success: true, data: contract });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Create contract error:", err);
     return NextResponse.json(
-      { success: false, error: "Internal server error" },
+      {
+        success: false,
+        error: err?.message || "Internal server error",
+        code: err?.code,
+      },
       { status: 500 }
     );
   }
