@@ -9,7 +9,6 @@ import {
   MapPin,
   Loader2,
   CheckCircle,
-  Sparkles,
   ArrowRight,
 } from "lucide-react";
 
@@ -22,8 +21,6 @@ export default function ContactPage({
   const [messages, setMessages] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [newsletterEmail, setNewsletterEmail] = useState("");
-  const [newsletterSent, setNewsletterSent] = useState(false);
   const [heroImage, setHeroImage] = useState<string | null>(null);
   const [contactInfo, setContactInfo] = useState({
     email: "info@npb-property.com",
@@ -81,18 +78,6 @@ export default function ContactPage({
     setLoading(false);
   };
 
-  const handleNewsletter = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await fetch("/api/contact/newsletter", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: newsletterEmail }),
-      });
-      setNewsletterSent(true);
-      setNewsletterEmail("");
-    } catch {}
-  };
 
   if (!messages)
     return (
@@ -299,46 +284,6 @@ export default function ContactPage({
               </div>
             </div>
 
-            {/* Newsletter Card (Dark Gradient) */}
-            <div className="bg-gradient-to-br from-stone-900 via-stone-800 to-[#5a4621] text-white rounded-3xl p-7 overflow-hidden relative">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#C8A951]/20 rounded-full blur-3xl -translate-y-12 translate-x-12" />
-              <div className="relative">
-                <Sparkles className="w-6 h-6 text-[#E8C97A] mb-3" />
-                <h3 className="font-bold text-xl mb-1.5">
-                  {t.newsletter}
-                </h3>
-                <p className="text-sm text-white/70 mb-5 leading-relaxed">
-                  {t.newsletterDesc}
-                </p>
-                {newsletterSent ? (
-                  <div className="flex items-center gap-2 text-sm text-[#E8C97A]">
-                    <CheckCircle className="w-4 h-4" />
-                    {locale === "th" ? "สมัครสำเร็จ!" : "Subscribed!"}
-                  </div>
-                ) : (
-                  <form
-                    onSubmit={handleNewsletter}
-                    className="flex flex-col gap-2"
-                  >
-                    <input
-                      type="email"
-                      value={newsletterEmail}
-                      onChange={(e) => setNewsletterEmail(e.target.value)}
-                      required
-                      placeholder={t.email}
-                      className="px-4 py-3 rounded-full text-stone-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8C97A]"
-                    />
-                    <button
-                      type="submit"
-                      className="bg-[#C8A951] hover:bg-[#D4B968] text-stone-900 font-semibold px-5 py-3 rounded-full text-sm transition-colors flex items-center justify-center gap-2"
-                    >
-                      {locale === "th" ? "สมัครรับข่าวสาร" : "Subscribe"}
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </form>
-                )}
-              </div>
-            </div>
           </aside>
         </div>
       </div>
