@@ -185,6 +185,16 @@ export default function AdminSettingsPage({ params }: { params: Promise<{ locale
         <p className="text-gray-500 mt-1">{t.subtitle}</p>
       </div>
 
+      {/* Contact Info (top of page for quick access) */}
+      <div className="bg-white rounded-xl border shadow-sm p-6 mb-6">
+        <ContactInfoSection
+          locale={locale}
+          settings={settings}
+          saveSetting={saveSetting}
+          saved={saved}
+        />
+      </div>
+
       <div className="bg-white rounded-xl border shadow-sm p-6">
         <h2 className="text-xl font-bold mb-1">{t.assets}</h2>
         <p className="text-gray-500 text-sm mb-6">{t.assetsDesc}</p>
@@ -417,14 +427,6 @@ export default function AdminSettingsPage({ params }: { params: Promise<{ locale
           </p>
         </div>
 
-        {/* Contact Info */}
-        <ContactInfoSection
-          locale={locale}
-          settings={settings}
-          saveSetting={saveSetting}
-          saved={saved}
-        />
-
         {/* Other Page Heroes */}
         {heroSections.map((s) => (
           <div key={s.key}>
@@ -533,7 +535,7 @@ function ContactInfoSection({
   ];
 
   return (
-    <div className="border-t pt-6 mt-6">
+    <div>
       <h2 className="text-xl font-bold mb-1">
         {locale === "th" ? "ข้อมูลติดต่อ" : "Contact Info"}
       </h2>
