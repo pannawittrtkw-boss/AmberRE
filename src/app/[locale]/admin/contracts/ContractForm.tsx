@@ -4,6 +4,14 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, ArrowLeft, ChevronDown, ChevronUp, Save } from "lucide-react";
+import ItemSelector from "./ItemSelector";
+import {
+  FURNITURE_OPTIONS,
+  APPLIANCE_OPTIONS,
+  OTHER_ITEM_OPTIONS,
+  parseContractItems,
+  ContractItem,
+} from "@/lib/contract-items";
 
 interface ContractFormProps {
   locale: string;
@@ -68,12 +76,18 @@ export default function ContractForm({
 
     securityDeposit: initialData?.securityDeposit || "",
 
-    furnitureList: initialData?.furnitureList || "",
-    applianceList: initialData?.applianceList || "",
-    otherItems: initialData?.otherItems || "",
-
     status: initialData?.status || "DRAFT",
   });
+
+  const [furniture, setFurniture] = useState<ContractItem[]>(
+    parseContractItems(initialData?.furnitureList)
+  );
+  const [appliances, setAppliances] = useState<ContractItem[]>(
+    parseContractItems(initialData?.applianceList)
+  );
+  const [otherItems, setOtherItems] = useState<ContractItem[]>(
+    parseContractItems(initialData?.otherItems)
+  );
 
   const [showJoint, setShowJoint] = useState(!!initialData?.jointLesseeName);
   const [submitting, setSubmitting] = useState(false);
@@ -104,6 +118,9 @@ export default function ContractForm({
       jointLesseeIdCard: showJoint ? form.jointLesseeIdCard : "",
       jointLesseeAddress: showJoint ? form.jointLesseeAddress : "",
       jointLesseePhone: showJoint ? form.jointLesseePhone : "",
+      furnitureList: furniture.length ? JSON.stringify(furniture) : "",
+      applianceList: appliances.length ? JSON.stringify(appliances) : "",
+      otherItems: otherItems.length ? JSON.stringify(otherItems) : "",
     };
 
     const url = isEdit
@@ -464,53 +481,46 @@ export default function ContractForm({
       </Card>
 
       {/* Section 7: Furniture */}
-      <Card title={locale === "th" ? "เฟอร์นิเจอร์ & เครื่องใช้ไฟฟ้า" : "Furniture & Appliances"}>
-        <p className="text-xs text-gray-500 mb-2">
+      <Card title={locale === "th" ? "เฟอร์นิเจอร์" : "Furniture"}>
+        <p className="text-xs text-gray-500 mb-3">
           {locale === "th"
-            ? "พิมพ์ 1 รายการต่อ 1 บรรทัด เช่น 'เตียงนอนพร้อมฟูก 5 ฟุต'"
-            : "One item per line. E.g. 'Bed and Mattress 5 Feet'"}
+            ? "เลือกเฟอร์นิเจอร์ที่มีในห้องและระบุจำนวน"
+            : "Tick included furniture and enter quantity"}
         </p>
-        <Grid>
-          <Field label={locale === "th" ? "เฟอร์นิเจอร์" : "Furniture"} colSpan={2}>
-            <textarea
-              rows={5}
-              value={form.furnitureList}
-              onChange={(e) => update("furnitureList", e.target.value)}
-              placeholder={
-                locale === "th"
-                  ? "เตียงนอนพร้อมฟูก 5 ฟุต (Bed and Mattress 5 Feet)\nตู้เสื้อผ้า Build in (Big Wardrobe Set)\nผ้าม่าน 2 (2 Curtain)"
-                  : "Bed and Mattress 5 Feet\nBig Wardrobe Set\n2 Curtains"
-              }
-              className={inputCls}
-            />
-          </Field>
-          <Field label={locale === "th" ? "เครื่องใช้ไฟฟ้า" : "Appliances"} colSpan={2}>
-            <textarea
-              rows={5}
-              value={form.applianceList}
-              onChange={(e) => update("applianceList", e.target.value)}
-              placeholder={
-                locale === "th"
-                  ? "แอร์ 1 (1 Air conditioner)\nตู้เย็น 1 (1 Refrigerator)\nไมโครเวฟ 1 (1 Microwave)"
-                  : "1 Air conditioner\n1 Refrigerator\n1 Microwave"
-              }
-              className={inputCls}
-            />
-          </Field>
-          <Field label={locale === "th" ? "อื่นๆ" : "Other items"} colSpan={2}>
-            <textarea
-              rows={3}
-              value={form.otherItems}
-              onChange={(e) => update("otherItems", e.target.value)}
-              placeholder={
-                locale === "th"
-                  ? "คีย์การ์ดเข้าออกอาคาร 1\nกุญแจกล่องจดหมาย 1 ดอก"
-                  : "1 Keycard Building\n1 Mailbox key"
-              }
-              className={inputCls}
-            />
-          </Field>
-        </Grid>
+        <ItemSelector
+          options={FURNITURE_OPTIONS}
+          value={furniture}
+          onChange={setFurniture}
+          locale={locale}
+        />
+      </Card>
+
+      <Card title={locale === "th" ? "เครื่องใช้ไฟฟ้า" : "Electrical Appliances"}>
+        <p className="text-xs text-gray-500 mb-3">
+          {locale === "th"
+            ? "เลือกเครื่องใช้ไฟฟ้าที่มีในห้องและระบุจำนวน"
+            : "Tick included appliances and enter quantity"}
+        </p>
+        <ItemSelector
+          options={APPLIANCE_OPTIONS}
+          value={appliances}
+          onChange={setAppliances}
+          locale={locale}
+        />
+      </Card>
+
+      <Card title={locale === "th" ? "รายการอื่นๆ" : "Other Items"}>
+        <p className="text-xs text-gray-500 mb-3">
+          {locale === "th"
+            ? "เลือกรายการกุญแจ/คีย์การ์ดที่ส่งมอบให้ผู้เช่าและระบุจำนวน"
+            : "Tick keys/keycards handed over to the tenant and enter quantity"}
+        </p>
+        <ItemSelector
+          options={OTHER_ITEM_OPTIONS}
+          value={otherItems}
+          onChange={setOtherItems}
+          locale={locale}
+        />
       </Card>
 
       {/* Status */}

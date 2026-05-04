@@ -3,7 +3,14 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { renderToBuffer } from "@react-pdf/renderer";
-import { ContractPdf, ContractPdfData } from "@/lib/contract-pdf";
+import { ContractPdf, ContractPdfData, PdfListItem } from "@/lib/contract-pdf";
+import {
+  FURNITURE_OPTIONS,
+  APPLIANCE_OPTIONS,
+  OTHER_ITEM_OPTIONS,
+  parseContractItems,
+  Bilingual,
+} from "@/lib/contract-items";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -73,12 +80,17 @@ function fmtEnDate(d: Date): string {
   });
 }
 
-function splitLines(text: string | null | undefined): string[] {
-  if (!text) return [];
-  return text
-    .split(/\r?\n/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+function itemsToPdf(
+  json: string | null | undefined,
+  options: Bilingual[]
+): PdfListItem[] {
+  return parseContractItems(json)
+    .map((it) => {
+      const opt = options.find((o) => o.key === it.key);
+      if (!opt) return null;
+      return { th: opt.th, en: opt.en, qty: it.qty };
+    })
+    .filter((x): x is PdfListItem => x !== null);
 }
 
 export async function GET(
@@ -145,9 +157,9 @@ export async function GET(
     securityDeposit: Number(contract.securityDeposit),
     securityDepositText: bahtText(Number(contract.securityDeposit)),
 
-    furnitureList: splitLines(contract.furnitureList),
-    applianceList: splitLines(contract.applianceList),
-    otherItems: splitLines(contract.otherItems),
+    furnitureList: itemsToPdf(contract.furnitureList, FURNITURE_OPTIONS),
+    applianceList: itemsToPdf(contract.applianceList, APPLIANCE_OPTIONS),
+    otherItems: itemsToPdf(contract.otherItems, OTHER_ITEM_OPTIONS),
   };
 
   try {
