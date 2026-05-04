@@ -41,6 +41,14 @@ export default function ComparePage() {
   const { compareIds, removeFromCompare, clearAll } = useCompare();
   const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     if (compareIds.length === 0) {
@@ -231,7 +239,11 @@ export default function ComparePage() {
 
   // Compute grid template columns based on count
   // Cap each property column to keep cards a reasonable size
-  const gridCols = `180px repeat(${properties.length}, minmax(220px, 280px))`;
+  // Tighter sizes on mobile so 2 cards fit in viewport at once;
+  // CompareRow uses the same template so labels stay aligned with cells.
+  const gridCols = isMobile
+    ? `110px repeat(${properties.length}, minmax(140px, 1fr))`
+    : `180px repeat(${properties.length}, minmax(220px, 280px))`;
 
   return (
     <div className="bg-stone-50 min-h-screen">

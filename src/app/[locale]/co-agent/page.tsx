@@ -233,7 +233,7 @@ export default function CoAgentPage({
         ) : (
           <div className="bg-white rounded-3xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[900px] text-sm">
                 <thead className="bg-stone-50 text-xs text-stone-500 uppercase tracking-wider border-b border-stone-100">
                   <tr>
                     <th className="py-4 px-4 text-left font-medium">

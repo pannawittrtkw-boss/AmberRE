@@ -115,7 +115,7 @@ export default function AdminUsersPage({ params }: { params: Promise<{ locale: s
 
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[800px] text-sm">
             <thead className="bg-gray-50">
               <tr>
                 <th className="text-left py-3 px-4">ID</th>
