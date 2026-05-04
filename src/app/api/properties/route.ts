@@ -42,10 +42,10 @@ export async function GET(req: NextRequest) {
 
     if (keyword) {
       where.OR = [
-        { titleTh: { contains: keyword } },
-        { titleEn: { contains: keyword } },
-        { projectName: { contains: keyword } },
-        { address: { contains: keyword } },
+        { titleTh: { contains: keyword, mode: "insensitive" } },
+        { titleEn: { contains: keyword, mode: "insensitive" } },
+        { projectName: { contains: keyword, mode: "insensitive" } },
+        { address: { contains: keyword, mode: "insensitive" } },
       ];
     }
     if (listingType) where.listingType = listingType;
