@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Bed, Bath, Maximize, MapPin, Star, ArrowRight } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
+import PropertyImageCarousel from "./PropertyImageCarousel";
 
 interface PropertyCardProps {
   property: {
@@ -31,9 +32,6 @@ export default function PropertyCard({
   const t = messages.property;
   const title =
     locale !== "th" && property.titleEn ? property.titleEn : property.titleTh;
-  const primaryImage =
-    property.images.find((img) => img.isPrimary) || property.images[0];
-  const imageUrl = primaryImage?.imageUrl || "/placeholder-property.jpg";
   const formatPrice = (price: number) => formatNumber(price, locale);
 
   const typeLabels: Record<string, string> = {
@@ -54,11 +52,11 @@ export default function PropertyCard({
       <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 h-full flex flex-col">
         {/* Image */}
         <div className="relative aspect-[4/3] overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageUrl}
+          <PropertyImageCarousel
+            images={property.images}
             alt={title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full"
+            imageClassName="group-hover:scale-105"
           />
 
           {/* Listing badges */}

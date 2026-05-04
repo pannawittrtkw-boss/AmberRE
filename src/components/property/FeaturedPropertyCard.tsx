@@ -6,6 +6,7 @@ import { formatNumber } from "@/lib/utils";
 import { getStationThaiName } from "@/lib/stations";
 import { useFavorites } from "@/lib/favorites";
 import { useCompare } from "@/lib/compare";
+import PropertyImageCarousel from "./PropertyImageCarousel";
 
 function parseJson(val: string | null | undefined): string[] {
   if (!val) return [];
@@ -20,8 +21,6 @@ interface FeaturedPropertyCardProps {
 
 export default function FeaturedPropertyCard({ property, locale, messages }: FeaturedPropertyCardProps) {
   const title = property.projectName || (locale !== "th" && property.titleEn ? property.titleEn : property.titleTh);
-  const primaryImage = property.images?.find((img: any) => img.isPrimary) || property.images?.[0];
-  const imageUrl = primaryImage?.imageUrl || "/placeholder-property.jpg";
   const imageCount = property.images?.length || 0;
 
   const listingType = property.listingType || "RENT";
@@ -53,10 +52,11 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full flex flex-col">
         {/* Image */}
         <div className="relative aspect-[4/3] overflow-hidden">
-          <img
-            src={imageUrl}
+          <PropertyImageCarousel
+            images={property.images || []}
             alt={title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full"
+            imageClassName="group-hover:scale-105"
           />
 
           {/* SOLD OUT / RENTED watermark */}
