@@ -1,0 +1,382 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// 1. Authentication & User Management
+// ==========================================
+
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique @db.VarChar(255)
+  passwordHash  String    @db.VarChar(255)
+  firstName     String    @db.VarChar(100)
+  lastName      String    @db.VarChar(100)
+  phone         String?   @db.VarChar(20)
+  role          String    @default("BUYER") @db.VarChar(20)
+  language      String    @default("th") @db.VarChar(5)
+  profileImage  String?   @db.VarChar(500)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  properties         Property[]         @relation("OwnerProperties")
+  agentProperties    Property[]         @relation("AgentProperties")
+  articles           Article[]
+  reviews            Review[]
+  surveys            Survey[]
+  coAgentApplication CoAgentApplication?
+  agentCommissions   CommissionSharing[] @relation("AgentCommissions")
+  coAgentCommissions CommissionSharing[] @relation("CoAgentCommissions")
+  approvedCoAgents   CoAgentApplication[] @relation("ApprovedByUser")
+  activityLogs       ActivityLog[]
+}
+
+// ==========================================
+// 2. Property Listing & Search
+// ==========================================
+
+model Property {
+  id                Int      @id @default(autoincrement())
+  titleTh           String   @db.VarChar(500)
+  titleEn           String?  @db.VarChar(500)
+  descriptionTh     String?  @db.Text
+  descriptionEn     String?  @db.Text
+  propertyType      String   @db.VarChar(20)
+  buildingType      String   @default("NONE") @db.VarChar(20)
+  listingType       String   @db.VarChar(20)
+  condition         String?  @db.VarChar(20) // FIRST_HAND | SECOND_HAND (null for LAND)
+  landSizeRai       Decimal? @db.Decimal(10, 2) // For LAND
+  landSizeNgan      Decimal? @db.Decimal(10, 2) // For LAND
+  landSizeWa        Decimal? @db.Decimal(10, 2) // For LAND
+  price             Decimal  @db.Decimal(18, 2)
+  priceUnit         String   @default("THB") @db.VarChar(10)
+  sizeSqm           Decimal? @db.Decimal(10, 2)
+  bedrooms          Int      @default(0)
+  bathrooms         Int      @default(0)
+  floor             Int?
+  kitchenPartition  Boolean  @default(false)
+  bedroomPartition  Boolean  @default(false)
+  isFeatured        Boolean  @default(false)
+  isPopular         Boolean  @default(false)
+  isSold            Boolean  @default(false)
+  estCode           String?  @db.VarChar(50)
+  availableDate     DateTime?
+  salePrice         Decimal? @db.Decimal(18, 2)
+  projectName       String?  @db.VarChar(300)
+  address           String?  @db.VarChar(500)
+  latitude          Decimal? @db.Decimal(10, 7)
+  longitude         Decimal? @db.Decimal(10, 7)
+  views             Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // New fields for property management form
+  sourceLink          String?  @db.VarChar(500)
+  linkPage            String?  @db.VarChar(500)
+  building            String?  @db.VarChar(50)
+  postFrom            String?  @default("OWNER") @db.VarChar(20)
+  furnitureDetails    String?  @db.Text
+  electricalAppliances String? @db.Text
+  nearbyStations      String?  @db.Text
+  facilities          String?  @db.Text
+  ownerName           String?  @db.VarChar(200)
+  ownerPhone          String?  @db.VarChar(50)
+  ownerLineId         String?  @db.VarChar(100)
+  ownerFacebookUrl    String?  @db.VarChar(500)
+  coAgentName         String?  @db.VarChar(200)
+  coAgentPhone        String?  @db.VarChar(50)
+  coAgentLineId       String?  @db.VarChar(100)
+  coAgentFacebookUrl  String?  @db.VarChar(500)
+  status              String?  @default("PENDING") @db.VarChar(30)
+  category            String?  @default("NORMAL") @db.VarChar(20)
+  priority            String?  @default("NORMAL") @db.VarChar(20)
+  note                String?  @db.Text
+
+  ownerId    Int
+  owner      User   @relation("OwnerProperties", fields: [ownerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  agentId    Int?
+  agent      User?  @relation("AgentProperties", fields: [agentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  projectId  Int?
+  project    Project? @relation(fields: [projectId], references: [id])
+
+  images             PropertyImage[]
+  propertyAmenities  PropertyAmenity[]
+  propertyStations   PropertyStation[]
+  reviews            Review[]
+  commissions        CommissionSharing[]
+}
+
+model PropertyImage {
+  id         Int      @id @default(autoincrement())
+  imageUrl   String   @db.VarChar(500)
+  sortOrder  Int      @default(0)
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model Amenity {
+  id     Int     @id @default(autoincrement())
+  nameTh String  @db.VarChar(100)
+  nameEn String  @db.VarChar(100)
+  icon   String? @db.VarChar(100)
+
+  propertyAmenities PropertyAmenity[]
+}
+
+model PropertyAmenity {
+  propertyId Int
+  amenityId  Int
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  amenity    Amenity  @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@id([propertyId, amenityId])
+}
+
+model BTSMRTStation {
+  id        Int     @id @default(autoincrement())
+  nameTh    String  @db.VarChar(100)
+  nameEn    String  @db.VarChar(100)
+  line      String  @db.VarChar(50)
+  latitude  Decimal @db.Decimal(10, 7)
+  longitude Decimal @db.Decimal(10, 7)
+
+  propertyStations PropertyStation[]
+}
+
+model PropertyStation {
+  propertyId Int
+  stationId  Int
+  distanceKm Decimal @db.Decimal(5, 2)
+
+  property Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  station  BTSMRTStation @relation(fields: [stationId], references: [id], onDelete: Cascade)
+
+  @@id([propertyId, stationId])
+}
+
+model Project {
+  id            Int      @id @default(autoincrement())
+  nameTh        String   @db.VarChar(300)
+  nameEn        String?  @db.VarChar(300)
+  descriptionTh String?  @db.Text
+  descriptionEn String?  @db.Text
+  developer     String?  @db.VarChar(200)
+  imageUrl      String?  @db.VarChar(500)
+  logoUrl       String?  @db.VarChar(500)
+  latitude      Decimal? @db.Decimal(10, 7)
+  longitude     Decimal? @db.Decimal(10, 7)
+  isPopular     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  // Location
+  location      String?  @db.VarChar(300)
+  fullAddress   String?  @db.Text
+  province      String?  @db.VarChar(100)
+  district      String?  @db.VarChar(100)
+  projectArea   String?  @db.VarChar(200)
+  googleMapsUrl String?  @db.VarChar(500)
+
+  // Building details
+  ceilingHeight Decimal? @db.Decimal(5, 2)
+  utilityFee    String?  @db.VarChar(100)
+  buildings     Int?
+  parking       Int?
+  floors        Int?
+  totalUnits    Int?
+  yearCompleted Int?
+
+  // JSON fields
+  facilities    String?  @db.Text // JSON array of facility keys
+  unitTypes     String?  @db.Text // JSON array of {type, size, planImageUrl}
+  photoAlbum    String?  @db.Text // JSON array of image URLs
+  nearbyPlaces  String?  @db.Text // JSON array of {name, distance, type}
+
+  properties Property[]
+}
+
+model Portfolio {
+  id            Int      @id @default(autoincrement())
+  titleTh       String   @db.VarChar(300)
+  titleEn       String?  @db.VarChar(300)
+  descriptionTh String?  @db.Text
+  descriptionEn String?  @db.Text
+  imageUrl      String?  @db.VarChar(500)
+  createdAt     DateTime @default(now())
+}
+
+model SuccessStory {
+  id               Int      @id @default(autoincrement())
+  titleTh          String   @db.VarChar(300)
+  titleEn          String?  @db.VarChar(300)
+  contentTh        String?  @db.Text
+  contentEn        String?  @db.Text
+  imageUrl         String?  @db.VarChar(500)
+  propertyImageUrl String?  @db.VarChar(500)
+  category         String   @default("RENT_CONDO") @db.VarChar(50)
+  createdAt        DateTime @default(now())
+}
+
+model CoAgentApplication {
+  id              Int      @id @default(autoincrement())
+  companyName     String?  @db.VarChar(300)
+  licenseNumber   String?  @db.VarChar(100)
+  experienceYears Int?
+  status          String   @default("PENDING") @db.VarChar(20)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  userId     Int  @unique
+  user       User @relation(fields: [userId], references: [id])
+  approvedBy Int?
+  approver   User? @relation("ApprovedByUser", fields: [approvedBy], references: [id], onUpdate: NoAction, onDelete: NoAction)
+}
+
+model CommissionSharing {
+  id             Int      @id @default(autoincrement())
+  commissionRate Decimal  @db.Decimal(5, 2)
+  agentShare     Decimal  @db.Decimal(5, 2)
+  coAgentShare   Decimal  @db.Decimal(5, 2)
+  status         String   @default("PENDING") @db.VarChar(20)
+  createdAt      DateTime @default(now())
+
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id])
+  agentId    Int
+  agent      User     @relation("AgentCommissions", fields: [agentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  coAgentId  Int
+  coAgent    User     @relation("CoAgentCommissions", fields: [coAgentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model ArticleCategory {
+  id     Int    @id @default(autoincrement())
+  nameTh String @db.VarChar(100)
+  nameEn String @db.VarChar(100)
+  slug   String @unique @db.VarChar(100)
+
+  articles Article[]
+}
+
+model Article {
+  id            Int      @id @default(autoincrement())
+  titleTh       String   @db.VarChar(500)
+  titleEn       String?  @db.VarChar(500)
+  contentTh     String?  @db.Text
+  contentEn     String?  @db.Text
+  slug          String   @unique @db.VarChar(200)
+  featuredImage String?  @db.VarChar(500)
+  isPublished   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  categoryId Int
+  category   ArticleCategory @relation(fields: [categoryId], references: [id])
+  authorId   Int
+  author     User            @relation(fields: [authorId], references: [id])
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  rating     Int      @db.SmallInt
+  comment    String?  @db.Text
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Survey {
+  id        Int      @id @default(autoincrement())
+  rating    Int      @db.SmallInt
+  feedback  String?  @db.Text
+  createdAt DateTime @default(now())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+}
+
+model ContactMessage {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(200)
+  email     String   @db.VarChar(255)
+  phone     String?  @db.VarChar(20)
+  subject   String?  @db.VarChar(300)
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model NewsletterSubscription {
+  id             Int       @id @default(autoincrement())
+  email          String    @unique @db.VarChar(255)
+  isActive       Boolean   @default(true)
+  subscribedAt   DateTime  @default(now())
+  unsubscribedAt DateTime?
+}
+
+model SocialMediaLink {
+  id       Int     @id @default(autoincrement())
+  platform String  @db.VarChar(50)
+  url      String  @db.VarChar(500)
+  isActive Boolean @default(true)
+}
+
+model SiteSetting {
+  id      Int     @id @default(autoincrement())
+  key     String  @unique @db.VarChar(100)
+  valueTh String? @db.Text
+  valueEn String? @db.Text
+}
+
+model ActivityLog {
+  id         Int      @id @default(autoincrement())
+  action     String   @db.VarChar(100)
+  entityType String?  @db.VarChar(50)
+  entityId   Int?
+  details    String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+}
+
+// ==========================================
+// Accounting
+// ==========================================
+
+model Transaction {
+  id          Int      @id @default(autoincrement())
+  date        DateTime
+  amount      Decimal  @db.Decimal(12, 2)
+  type        String   @db.VarChar(20) // INCOME | EXPENSE
+  recordType  String   @default("ACTUAL") @db.VarChar(20) // ACTUAL | FORECAST
+  category    String   @db.VarChar(100)
+  description String   @db.Text
+  payee       String?  @db.VarChar(100) // For transportation/admin: "Namphung", "Yung", etc.
+  slipUrl     String?  @db.VarChar(500)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([date])
+  @@index([type, recordType])
+}
+
+model Shareholder {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(100)
+  share     Decimal  @default(25) @db.Decimal(5, 2) // percentage
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
