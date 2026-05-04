@@ -6,8 +6,6 @@ import {
   Maximize,
   MapPin,
   Layers,
-  Phone,
-  Mail,
   ChevronLeft,
   Train,
   Sofa,
@@ -24,6 +22,7 @@ import { getStationFullName } from "@/lib/stations";
 import ImageGallery from "@/components/property/ImageGallery";
 import FeaturedPropertyCard from "@/components/property/FeaturedPropertyCard";
 import AdminEditButton from "@/components/property/AdminEditButton";
+import AgentContactButtons from "@/components/property/AgentContactButtons";
 import SectionTitle from "@/components/ui/SectionTitle";
 import StatTile from "@/components/ui/StatTile";
 
@@ -141,7 +140,7 @@ export default async function PropertyDetailPage({
   const settingMap = Object.fromEntries(contactSettings.map((s) => [s.key, s.valueTh]));
   const siteSettings = { logo: settingMap.logo || null };
   const contactPhone = settingMap.contactPhone || "0617896000";
-  const contactLine = (settingMap.contactLine || "@cfx5958x").replace(/^@/, "");
+  const contactLine = settingMap.contactLine || "@cfx5958x";
 
   // Fetch similar properties
   const similarRaw = await prisma.property.findMany({
@@ -627,24 +626,11 @@ export default async function PropertyDetailPage({
                 </div>
               </div>
 
-              <div className="space-y-2 mb-5">
-                <a
-                  href={`tel:${contactPhone.replace(/[^0-9+]/g, "")}`}
-                  className="flex items-center justify-center gap-2 w-full py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-full font-medium text-sm transition-colors"
-                >
-                  <Phone className="w-4 h-4" />
-                  {locale === "th" ? "โทรหาเจ้าหน้าที่" : "Call Agent"}
-                </a>
-                <a
-                  href={`https://line.me/R/ti/p/${contactLine}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-3 border border-stone-200 hover:bg-stone-50 text-stone-900 rounded-full font-medium text-sm transition-colors"
-                >
-                  <Mail className="w-4 h-4" />
-                  {locale === "th" ? "แชท LINE" : "Message Agent"}
-                </a>
-              </div>
+              <AgentContactButtons
+                phone={contactPhone}
+                lineId={contactLine}
+                locale={locale}
+              />
 
               <form
                 action={`/api/contact`}
