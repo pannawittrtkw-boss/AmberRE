@@ -1,0 +1,162 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+import { renderToBuffer } from "@react-pdf/renderer";
+import { ContractPdf, ContractPdfData } from "@/lib/contract-pdf";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+const TH_DIGITS_TO_TEXT: Record<number, string> = {
+  0: "ศูนย์", 1: "หนึ่ง", 2: "สอง", 3: "สาม", 4: "สี่",
+  5: "ห้า", 6: "หก", 7: "เจ็ด", 8: "แปด", 9: "เก้า",
+};
+
+// Convert number to Thai text reading (basic implementation up to billions)
+function bahtText(num: number): string {
+  if (num === 0) return "ศูนย์บาทถ้วน";
+
+  const intPart = Math.floor(num);
+  const intStr = String(intPart);
+  const len = intStr.length;
+  const places = ["", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน", "ล้าน"];
+
+  const readChunk = (chunk: string): string => {
+    let result = "";
+    const chunkLen = chunk.length;
+    for (let i = 0; i < chunkLen; i++) {
+      const digit = parseInt(chunk[i], 10);
+      const placeIdx = chunkLen - i - 1;
+      if (digit === 0) continue;
+      // Special cases
+      if (placeIdx === 1 && digit === 1) {
+        result += "สิบ"; // "สิบ" not "หนึ่งสิบ"
+      } else if (placeIdx === 1 && digit === 2) {
+        result += "ยี่สิบ";
+      } else if (placeIdx === 0 && digit === 1 && chunkLen > 1) {
+        result += "เอ็ด"; // "เอ็ด" not "หนึ่ง" at the unit place when there's a higher digit
+      } else {
+        result += TH_DIGITS_TO_TEXT[digit] + (places[placeIdx] || "");
+      }
+    }
+    return result;
+  };
+
+  let result = "";
+  if (len > 6) {
+    const millions = intStr.slice(0, len - 6);
+    const rest = intStr.slice(len - 6);
+    result += readChunk(millions) + "ล้าน";
+    if (rest && parseInt(rest, 10) > 0) result += readChunk(rest);
+  } else {
+    result += readChunk(intStr);
+  }
+
+  return result + "บาทถ้วน";
+}
+
+function fmtThaiDate(d: Date): string {
+  const months = [
+    "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน",
+    "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม",
+    "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
+  ];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`;
+}
+
+function fmtEnDate(d: Date): string {
+  return d.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function splitLines(text: string | null | undefined): string[] {
+  if (!text) return [];
+  return text
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user || (session.user as any).role !== "ADMIN") {
+    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const contract = await prisma.contract.findUnique({
+    where: { id: parseInt(id, 10) },
+  });
+  if (!contract) {
+    return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
+  }
+
+  const data: ContractPdfData = {
+    contractNumber: contract.contractNumber,
+    contractDateTh: fmtThaiDate(contract.contractDate),
+    contractDateEn: fmtEnDate(contract.contractDate),
+    startDateTh: fmtThaiDate(contract.startDate),
+    startDateEn: fmtEnDate(contract.startDate),
+    endDateTh: fmtThaiDate(contract.endDate),
+    endDateEn: fmtEnDate(contract.endDate),
+    termMonths: contract.termMonths,
+
+    lessorName: contract.lessorName,
+    lessorIdCard: contract.lessorIdCard,
+    lessorAddress: contract.lessorAddress,
+    lessorPhone: contract.lessorPhone,
+
+    lesseeName: contract.lesseeName,
+    lesseeNationality: contract.lesseeNationality,
+    lesseeIdCard: contract.lesseeIdCard,
+    lesseeAddress: contract.lesseeAddress,
+    lesseePhone: contract.lesseePhone,
+
+    jointLesseeName: contract.jointLesseeName,
+    jointLesseeNationality: contract.jointLesseeNationality,
+    jointLesseeIdCard: contract.jointLesseeIdCard,
+    jointLesseeAddress: contract.jointLesseeAddress,
+    jointLesseePhone: contract.jointLesseePhone,
+
+    projectName: contract.projectName,
+    unitNumber: contract.unitNumber,
+    buildingName: contract.buildingName,
+    floorNumber: contract.floorNumber,
+    propertyAddress: contract.propertyAddress,
+    sizeSqm: contract.sizeSqm ? Number(contract.sizeSqm) : null,
+
+    monthlyRent: Number(contract.monthlyRent),
+    monthlyRentText: bahtText(Number(contract.monthlyRent)),
+    paymentDay: contract.paymentDay,
+    bankName: contract.bankName,
+    bankBranch: contract.bankBranch,
+    bankAccountName: contract.bankAccountName,
+    bankAccountNumber: contract.bankAccountNumber,
+    latePaymentFee: Number(contract.latePaymentFee),
+    latePaymentFeeText: bahtText(Number(contract.latePaymentFee)),
+
+    securityDeposit: Number(contract.securityDeposit),
+    securityDepositText: bahtText(Number(contract.securityDeposit)),
+
+    furnitureList: splitLines(contract.furnitureList),
+    applianceList: splitLines(contract.applianceList),
+    otherItems: splitLines(contract.otherItems),
+  };
+
+  const buffer = await renderToBuffer(<ContractPdf data={data} />);
+
+  return new NextResponse(new Uint8Array(buffer), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `inline; filename="${contract.contractNumber}.pdf"`,
+    },
+  });
+}

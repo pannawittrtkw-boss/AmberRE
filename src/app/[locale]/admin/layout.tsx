@@ -7,7 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Building2, Users, FileText, UserCheck, Star, Loader2, Settings,
-  Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail,
+  Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature,
 } from "lucide-react";
 
 export default function AdminLayout({
@@ -75,6 +75,7 @@ export default function AdminLayout({
     { href: `/${locale}/admin/portfolio`, icon: Trophy, label: t.portfolioManagement || "Portfolio" },
     { href: `/${locale}/admin/electricity-calculator`, icon: Zap, label: messages.electricityCalculator?.navLabel || "Electricity Calc" },
     { href: `/${locale}/admin/accounting`, icon: Wallet, label: t.accounting || "Accounting" },
+    { href: `/${locale}/admin/contracts`, icon: FileSignature, label: locale === "th" ? "สัญญาเช่า" : "Contracts" },
     { href: `/${locale}/admin/co-agents`, icon: UserCheck, label: t.coAgentApproval },
     { href: `/${locale}/admin/reviews`, icon: Star, label: t.reviewModeration },
     { href: `/${locale}/admin/settings`, icon: Settings, label: t.settings || "Settings" },
