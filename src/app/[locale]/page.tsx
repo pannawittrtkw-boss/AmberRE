@@ -135,17 +135,19 @@ export default async function HomePage({
                   <Link
                     key={type}
                     href={`/${locale}/properties?propertyType=${type}`}
-                    className="group relative px-4 py-5 text-center hover:bg-[#C8A951]/5 transition-colors"
+                    className="group relative px-4 py-6 text-center hover:bg-[#C8A951]/5 transition-colors"
                   >
-                    <Icon className="w-5 h-5 text-[#E8C97A] mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                    <div className="text-base font-bold text-white tracking-tight">
+                    <Icon className="w-6 h-6 text-[#E8C97A] mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                    <div className="text-base font-semibold text-white tracking-tight mb-1">
                       {typeLabels[type]}
                     </div>
-                    <div className="text-[10px] uppercase tracking-widest text-stone-400 mt-1">
-                      <span className="text-[#E8C97A] font-bold">
+                    <div className="flex items-baseline justify-center gap-1.5">
+                      <span className="text-3xl font-bold text-[#E8C97A] leading-none">
                         {count.toLocaleString()}
-                      </span>{" "}
-                      {locale === "th" ? "รายการ" : "Listings"}
+                      </span>
+                      <span className="text-xs text-stone-400">
+                        {locale === "th" ? "รายการ" : count === 1 ? "Listing" : "Listings"}
+                      </span>
                     </div>
                   </Link>
                 );
