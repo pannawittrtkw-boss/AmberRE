@@ -46,6 +46,15 @@ export async function GET(req: NextRequest) {
         { titleEn: { contains: keyword, mode: "insensitive" } },
         { projectName: { contains: keyword, mode: "insensitive" } },
         { address: { contains: keyword, mode: "insensitive" } },
+        // Match against the linked project's location fields so users can
+        // search by province / district / area name, not just by address text
+        { project: { is: { nameTh: { contains: keyword, mode: "insensitive" } } } },
+        { project: { is: { nameEn: { contains: keyword, mode: "insensitive" } } } },
+        { project: { is: { province: { contains: keyword, mode: "insensitive" } } } },
+        { project: { is: { district: { contains: keyword, mode: "insensitive" } } } },
+        { project: { is: { location: { contains: keyword, mode: "insensitive" } } } },
+        { project: { is: { fullAddress: { contains: keyword, mode: "insensitive" } } } },
+        { project: { is: { projectArea: { contains: keyword, mode: "insensitive" } } } },
       ];
     }
     if (listingType) where.listingType = listingType;
