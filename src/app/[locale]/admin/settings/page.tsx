@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Upload, Trash2, Loader2, Image as ImageIcon, Video, Settings } from "lucide-react";
+import { Upload, Trash2, Loader2, Image as ImageIcon, Video, Settings, Mail, Phone, MessageCircle, MapPin, Save } from "lucide-react";
 
 export default function AdminSettingsPage({ params }: { params: Promise<{ locale: string }> }) {
   const [locale, setLocale] = useState("th");
@@ -417,6 +417,14 @@ export default function AdminSettingsPage({ params }: { params: Promise<{ locale
           </p>
         </div>
 
+        {/* Contact Info */}
+        <ContactInfoSection
+          locale={locale}
+          settings={settings}
+          saveSetting={saveSetting}
+          saved={saved}
+        />
+
         {/* Other Page Heroes */}
         {heroSections.map((s) => (
           <div key={s.key}>
@@ -473,6 +481,153 @@ export default function AdminSettingsPage({ params }: { params: Promise<{ locale
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function ContactInfoSection({
+  locale,
+  settings,
+  saveSetting,
+  saved,
+}: {
+  locale: string;
+  settings: Record<string, { valueTh: string | null; valueEn: string | null }>;
+  saveSetting: (key: string, value: string | null) => Promise<void>;
+  saved: string | null;
+}) {
+  const fields: { key: string; icon: any; iconColor: string; labelTh: string; labelEn: string; placeholder: string; type?: string }[] = [
+    {
+      key: "contactEmail",
+      icon: Mail,
+      iconColor: "text-[#C8A951]",
+      labelTh: "อีเมล",
+      labelEn: "Email",
+      placeholder: "info@npb-property.com",
+      type: "email",
+    },
+    {
+      key: "contactPhone",
+      icon: Phone,
+      iconColor: "text-[#C8A951]",
+      labelTh: "เบอร์โทรศัพท์",
+      labelEn: "Phone",
+      placeholder: "02-xxx-xxxx",
+    },
+    {
+      key: "contactLine",
+      icon: MessageCircle,
+      iconColor: "text-emerald-600",
+      labelTh: "LINE ID",
+      labelEn: "LINE ID",
+      placeholder: "@cfx5958x",
+    },
+    {
+      key: "contactLocation",
+      icon: MapPin,
+      iconColor: "text-rose-500",
+      labelTh: "ที่ตั้ง",
+      labelEn: "Location",
+      placeholder: "Bangkok, Thailand",
+    },
+  ];
+
+  return (
+    <div className="border-t pt-6 mt-6">
+      <h2 className="text-xl font-bold mb-1">
+        {locale === "th" ? "ข้อมูลติดต่อ" : "Contact Info"}
+      </h2>
+      <p className="text-gray-500 text-sm mb-5">
+        {locale === "th"
+          ? "ข้อมูลที่จะแสดงในหน้าติดต่อเราและหน้าทรัพย์สิน"
+          : "Information displayed on the contact page and property pages."}
+      </p>
+
+      <div className="space-y-4">
+        {fields.map((f) => (
+          <ContactField
+            key={f.key}
+            settingKey={f.key}
+            icon={f.icon}
+            iconColor={f.iconColor}
+            label={locale === "th" ? f.labelTh : f.labelEn}
+            placeholder={f.placeholder}
+            type={f.type}
+            initialValue={settings[f.key]?.valueTh || ""}
+            onSave={(v) => saveSetting(f.key, v || null)}
+            saved={saved === f.key}
+            savedLabel={locale === "th" ? "บันทึกแล้ว" : "Saved!"}
+            saveLabel={locale === "th" ? "บันทึก" : "Save"}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ContactField({
+  settingKey,
+  icon: Icon,
+  iconColor,
+  label,
+  placeholder,
+  type = "text",
+  initialValue,
+  onSave,
+  saved,
+  savedLabel,
+  saveLabel,
+}: {
+  settingKey: string;
+  icon: any;
+  iconColor: string;
+  label: string;
+  placeholder: string;
+  type?: string;
+  initialValue: string;
+  onSave: (value: string) => Promise<void>;
+  saved: boolean;
+  savedLabel: string;
+  saveLabel: string;
+}) {
+  const [value, setValue] = useState(initialValue);
+  const [saving, setSaving] = useState(false);
+
+  // Keep input in sync if parent settings reload
+  useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue]);
+
+  const dirty = value !== initialValue;
+
+  const handleSave = async () => {
+    setSaving(true);
+    await onSave(value.trim());
+    setSaving(false);
+  };
+
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+      <label className="flex items-center gap-2 text-sm font-medium w-40 shrink-0">
+        <Icon className={`w-4 h-4 ${iconColor}`} />
+        {label}
+      </label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder={placeholder}
+        className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30"
+      />
+      <button
+        onClick={handleSave}
+        disabled={!dirty || saving}
+        className="flex items-center gap-1 px-4 py-2 bg-[#C8A951] hover:bg-[#B8993F] text-white rounded-lg text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+        {saveLabel}
+      </button>
+      {saved && <span className="text-green-600 text-sm">{savedLabel}</span>}
     </div>
   );
 }

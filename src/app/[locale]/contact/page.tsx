@@ -25,12 +25,25 @@ export default function ContactPage({
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterSent, setNewsletterSent] = useState(false);
   const [heroImage, setHeroImage] = useState<string | null>(null);
+  const [contactInfo, setContactInfo] = useState({
+    email: "info@npb-property.com",
+    phone: "02-xxx-xxxx",
+    line: "@cfx5958x",
+    location: "Bangkok, Thailand",
+  });
 
   useEffect(() => {
-    fetch("/api/site-settings?keys=contactHeroImage")
+    fetch("/api/site-settings?keys=contactHeroImage,contactEmail,contactPhone,contactLine,contactLocation")
       .then((r) => r.json())
       .then((d) => {
-        if (d.success) setHeroImage(d.data.contactHeroImage || null);
+        if (!d.success) return;
+        setHeroImage(d.data.contactHeroImage || null);
+        setContactInfo((prev) => ({
+          email: d.data.contactEmail || prev.email,
+          phone: d.data.contactPhone || prev.phone,
+          line: d.data.contactLine || prev.line,
+          location: d.data.contactLocation || prev.location,
+        }));
       })
       .catch(() => {});
   }, []);
@@ -263,25 +276,25 @@ export default function ContactPage({
                 <ContactRow
                   icon={<Mail className="w-4 h-4 text-[#C8A951]" />}
                   label={locale === "th" ? "อีเมล" : "Email"}
-                  value="info@npb-property.com"
-                  href="mailto:info@npb-property.com"
+                  value={contactInfo.email}
+                  href={`mailto:${contactInfo.email}`}
                 />
                 <ContactRow
                   icon={<Phone className="w-4 h-4 text-[#C8A951]" />}
                   label={locale === "th" ? "โทรศัพท์" : "Phone"}
-                  value="02-xxx-xxxx"
-                  href="tel:02-xxx-xxxx"
+                  value={contactInfo.phone}
+                  href={`tel:${contactInfo.phone.replace(/[^0-9+]/g, "")}`}
                 />
                 <ContactRow
                   icon={<MessageCircle className="w-4 h-4 text-emerald-600" />}
                   label="LINE"
-                  value="@cfx5958x"
-                  href="https://line.me/R/ti/p/@cfx5958x"
+                  value={contactInfo.line}
+                  href={`https://line.me/R/ti/p/${contactInfo.line.replace(/^@/, "")}`}
                 />
                 <ContactRow
                   icon={<MapPin className="w-4 h-4 text-rose-500" />}
                   label={locale === "th" ? "ที่ตั้ง" : "Location"}
-                  value="Bangkok, Thailand"
+                  value={contactInfo.location}
                 />
               </div>
             </div>

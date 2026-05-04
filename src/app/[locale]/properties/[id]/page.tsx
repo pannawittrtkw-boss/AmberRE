@@ -133,11 +133,14 @@ export default async function PropertyDetailPage({
   const isSold = property.isSold || property.status === "SOLD";
   const isRented = property.status === "RENTED";
 
-  // Get site settings for logo
-  const logoSetting = await prisma.siteSetting.findUnique({
-    where: { key: "logo" },
+  // Get site settings for logo + contact info
+  const contactSettings = await prisma.siteSetting.findMany({
+    where: { key: { in: ["logo", "contactPhone", "contactLine"] } },
   });
-  const siteSettings = { logo: logoSetting?.valueTh || null };
+  const settingMap = Object.fromEntries(contactSettings.map((s) => [s.key, s.valueTh]));
+  const siteSettings = { logo: settingMap.logo || null };
+  const contactPhone = settingMap.contactPhone || "0617896000";
+  const contactLine = (settingMap.contactLine || "@cfx5958x").replace(/^@/, "");
 
   // Fetch similar properties
   const similarRaw = await prisma.property.findMany({
@@ -580,14 +583,14 @@ export default async function PropertyDetailPage({
 
               <div className="space-y-2 mb-5">
                 <a
-                  href="tel:0617896000"
+                  href={`tel:${contactPhone.replace(/[^0-9+]/g, "")}`}
                   className="flex items-center justify-center gap-2 w-full py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-full font-medium text-sm transition-colors"
                 >
                   <Phone className="w-4 h-4" />
                   {locale === "th" ? "โทรหาเจ้าหน้าที่" : "Call Agent"}
                 </a>
                 <a
-                  href="https://line.me/R/ti/p/@cfx5958x"
+                  href={`https://line.me/R/ti/p/${contactLine}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 w-full py-3 border border-stone-200 hover:bg-stone-50 text-stone-900 rounded-full font-medium text-sm transition-colors"
