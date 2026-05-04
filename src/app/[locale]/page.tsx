@@ -141,11 +141,11 @@ export default async function HomePage({
                     <div className="text-base font-semibold text-white tracking-tight mb-1">
                       {typeLabels[type]}
                     </div>
-                    <div className="flex items-baseline justify-center gap-1.5">
+                    <div className="flex items-baseline justify-center gap-2">
                       <span className="text-3xl font-bold text-[#E8C97A] leading-none">
                         {count.toLocaleString()}
                       </span>
-                      <span className="text-xs text-stone-400">
+                      <span className="text-base font-medium text-stone-300">
                         {locale === "th" ? "รายการ" : count === 1 ? "Listing" : "Listings"}
                       </span>
                     </div>
