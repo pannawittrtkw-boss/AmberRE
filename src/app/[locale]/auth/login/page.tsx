@@ -188,6 +188,15 @@ export default function LoginPage({
                 )}
                 {t.loginTitle}
               </button>
+
+              <div className="text-right">
+                <Link
+                  href={`/${locale}/auth/forgot-password`}
+                  className="text-xs text-stone-500 hover:text-[#C8A951]"
+                >
+                  {locale === "th" ? "ลืมรหัสผ่าน?" : "Forgot password?"}
+                </Link>
+              </div>
             </form>
 
             <p className="text-center mt-8 text-sm text-stone-500">

@@ -35,6 +35,21 @@ model User {
   coAgentCommissions CommissionSharing[] @relation("CoAgentCommissions")
   approvedCoAgents   CoAgentApplication[] @relation("ApprovedByUser")
   activityLogs       ActivityLog[]
+  passwordResets     PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique @db.VarChar(100)
+  userId    Int
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
 }
 
 // ==========================================

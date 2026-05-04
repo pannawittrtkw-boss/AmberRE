@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Menu, X, Globe, User, LogOut, ChevronDown, Heart, Layers } from "lucide-react";
+import { Menu, X, Globe, User, LogOut, ChevronDown, Heart, Layers, KeyRound } from "lucide-react";
 import { useFavorites } from "@/lib/favorites";
 import { useCompare } from "@/lib/compare";
 
@@ -169,6 +169,14 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
                         {t.admin}
                       </Link>
                     )}
+                    <Link
+                      href={`/${locale}/profile/change-password`}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-yellow-50 hover:text-[#C8A951]"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <KeyRound className="w-3.5 h-3.5" />
+                      {locale === "th" ? "เปลี่ยนรหัสผ่าน" : "Change Password"}
+                    </Link>
                     <button
                       onClick={() => signOut()}
                       className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 flex items-center gap-2"
