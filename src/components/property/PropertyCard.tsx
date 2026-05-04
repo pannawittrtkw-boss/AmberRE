@@ -12,6 +12,7 @@ interface PropertyCardProps {
     listingType: string;
     condition?: string | null;
     price: number;
+    salePrice?: number | null;
     sizeSqm: number | null;
     bedrooms: number;
     bathrooms: number;
@@ -147,27 +148,40 @@ export default function PropertyCard({
           </div>
 
           {/* Price + arrow */}
-          <div className="mt-auto pt-4 flex items-end justify-between">
-            <div>
+          <div className="mt-auto pt-4 flex items-end justify-between gap-2">
+            <div className="min-w-0 flex-1">
               <div className="text-[10px] uppercase tracking-widest text-stone-400">
-                {isRent
-                  ? locale === "th"
-                    ? "ค่าเช่า"
-                    : "Price"
-                  : locale === "th"
-                  ? "ราคาขาย"
-                  : "Sale"}
+                {locale === "th" ? "ราคา" : "Price"}
               </div>
-              <div className="text-lg font-bold text-stone-900">
-                ฿{formatPrice(property.price)}
-                {isRent && (
-                  <span className="text-xs font-normal text-stone-500">
-                    {t.perMonth}
-                  </span>
-                )}
-              </div>
+              {isRent && isSale ? (
+                <div className="space-y-0.5">
+                  <div className="text-base sm:text-lg font-bold text-stone-900 leading-tight">
+                    ฿{formatPrice(property.price)}
+                    <span className="text-xs font-normal text-stone-500">
+                      {t.perMonth}
+                    </span>
+                  </div>
+                  {Number(property.salePrice) > 0 && (
+                    <div className="text-xs sm:text-sm text-stone-500">
+                      <span className="text-[10px] uppercase tracking-widest text-stone-400 mr-1">
+                        {locale === "th" ? "ขาย" : "Sale"}
+                      </span>
+                      ฿{formatPrice(Number(property.salePrice))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-lg font-bold text-stone-900">
+                  ฿{formatPrice(property.price)}
+                  {isRent && (
+                    <span className="text-xs font-normal text-stone-500">
+                      {t.perMonth}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
-            <span className="w-9 h-9 rounded-full bg-stone-100 group-hover:bg-[#C8A951] group-hover:text-white transition-colors flex items-center justify-center text-stone-400">
+            <span className="w-9 h-9 rounded-full bg-stone-100 group-hover:bg-[#C8A951] group-hover:text-white transition-colors flex items-center justify-center text-stone-400 shrink-0">
               <ArrowRight className="w-4 h-4" />
             </span>
           </div>

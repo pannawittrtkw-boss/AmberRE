@@ -183,11 +183,19 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
             {price > 0 && (
               <p className="text-lg font-bold text-[#C8A951]">
                 ฿ {formatNumber(price, locale)}
+                {isRent && (
+                  <span className="text-xs font-normal text-gray-500">
+                    {" "}{locale === "th" ? "/เดือน" : "/month"}
+                  </span>
+                )}
               </p>
             )}
             {salePrice > 0 && price > 0 && (
-              <p className="text-xs text-gray-500 font-medium -mt-0.5">
-                Sale: ฿ {formatNumber(salePrice, locale)}
+              <p className="text-sm font-semibold text-stone-700 -mt-0.5">
+                <span className="text-[10px] uppercase tracking-widest text-gray-400 mr-1">
+                  {locale === "th" ? "ขาย" : "Sale"}
+                </span>
+                ฿ {formatNumber(salePrice, locale)}
               </p>
             )}
             {salePrice > 0 && price === 0 && (
