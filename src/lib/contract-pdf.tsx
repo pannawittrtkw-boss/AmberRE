@@ -9,17 +9,17 @@ import {
   Font,
 } from "@react-pdf/renderer";
 
-// Register Sarabun (Thai + Latin) font from Google's GitHub mirror.
-// Bundling locally would be cleaner, but this CDN URL is stable and avoids
-// shipping ~700KB of fonts in the repo.
+// Register Sarabun (Thai + Latin) font from Google's GitHub mirror via
+// jsDelivr. The @main suffix is required — without it the CDN returns 404
+// and PDF generation fails with HTTP 500.
 Font.register({
   family: "Sarabun",
   fonts: [
     {
-      src: "https://cdn.jsdelivr.net/gh/google/fonts/main/ofl/sarabun/Sarabun-Regular.ttf",
+      src: "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/sarabun/Sarabun-Regular.ttf",
     },
     {
-      src: "https://cdn.jsdelivr.net/gh/google/fonts/main/ofl/sarabun/Sarabun-Bold.ttf",
+      src: "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/sarabun/Sarabun-Bold.ttf",
       fontWeight: "bold",
     },
   ],

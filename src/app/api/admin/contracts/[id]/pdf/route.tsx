@@ -150,13 +150,21 @@ export async function GET(
     otherItems: splitLines(contract.otherItems),
   };
 
-  const buffer = await renderToBuffer(<ContractPdf data={data} />);
+  try {
+    const buffer = await renderToBuffer(<ContractPdf data={data} />);
 
-  return new NextResponse(new Uint8Array(buffer), {
-    status: 200,
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${contract.contractNumber}.pdf"`,
-    },
-  });
+    return new NextResponse(new Uint8Array(buffer), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `inline; filename="${contract.contractNumber}.pdf"`,
+      },
+    });
+  } catch (err: any) {
+    console.error("PDF render error:", err);
+    return NextResponse.json(
+      { success: false, error: err?.message || "PDF render failed" },
+      { status: 500 }
+    );
+  }
 }
