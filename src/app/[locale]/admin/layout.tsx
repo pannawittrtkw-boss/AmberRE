@@ -7,7 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Building2, Users, FileText, UserCheck, Star, Loader2, Settings,
-  Menu, X, Trophy, Zap, Globe, Wallet, Layers,
+  Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail,
 } from "lucide-react";
 
 export default function AdminLayout({
@@ -23,6 +23,7 @@ export default function AdminLayout({
   const [locale, setLocale] = useState("th");
   const [messages, setMessages] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   useEffect(() => {
     params.then(({ locale: l }) => {
@@ -30,6 +31,22 @@ export default function AdminLayout({
       import(`@/messages/${l}.json`).then((m) => setMessages(m.default));
     });
   }, [params]);
+
+  // Poll unread message count for the sidebar badge
+  useEffect(() => {
+    if ((session?.user as any)?.role !== "ADMIN") return;
+    const fetchUnread = () => {
+      fetch("/api/admin/messages")
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.success) setUnreadMessages(d.data.unreadCount);
+        })
+        .catch(() => {});
+    };
+    fetchUnread();
+    const id = setInterval(fetchUnread, 60_000);
+    return () => clearInterval(id);
+  }, [session, pathname]);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push(`/${locale}/auth/login`);
@@ -53,6 +70,7 @@ export default function AdminLayout({
     { href: `/${locale}/admin/properties`, icon: Building2, label: t.propertyManagement },
     { href: `/${locale}/admin/projects`, icon: Layers, label: t.projectManagement || "Projects" },
     { href: `/${locale}/admin/users`, icon: Users, label: t.userManagement },
+    { href: `/${locale}/admin/messages`, icon: Mail, label: locale === "th" ? "ข้อความติดต่อ" : "Messages", badge: unreadMessages },
     { href: `/${locale}/admin/articles`, icon: FileText, label: t.articleManagement },
     { href: `/${locale}/admin/portfolio`, icon: Trophy, label: t.portfolioManagement || "Portfolio" },
     { href: `/${locale}/admin/electricity-calculator`, icon: Zap, label: messages.electricityCalculator?.navLabel || "Electricity Calc" },
@@ -69,6 +87,7 @@ export default function AdminLayout({
       <nav className="space-y-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
+          const badge = (item as any).badge as number | undefined;
           return (
             <Link
               key={item.href}
@@ -78,7 +97,12 @@ export default function AdminLayout({
               }`}
             >
               <item.icon className="w-4 h-4" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {badge && badge > 0 ? (
+                <span className="bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {badge > 99 ? "99+" : badge}
+                </span>
+              ) : null}
             </Link>
           );
         })}
