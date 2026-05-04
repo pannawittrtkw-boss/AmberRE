@@ -17,6 +17,7 @@ import {
   XCircle,
   FileText,
   Edit3,
+  FileSignature,
   Trash2,
   ChevronDown,
   Train,
@@ -562,6 +563,9 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                   )}
                 </div>
                 <div className="flex items-center gap-1">
+                  <Link href={`/${locale}/admin/contracts/new?propertyId=${p.id}`} className="p-2 hover:bg-amber-50 rounded-lg text-amber-700 transition-colors" title="Create Contract">
+                    <FileSignature className="w-4 h-4" />
+                  </Link>
                   <Link href={`/${locale}/admin/properties/add?edit=${p.id}`} className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors" title="Edit">
                     <Edit3 className="w-4 h-4" />
                   </Link>
@@ -663,6 +667,9 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                         <FileText className="w-4 h-4" />
                       </button>
                     )}
+                    <Link href={`/${locale}/admin/contracts/new?propertyId=${p.id}`} className="p-2 hover:bg-amber-50 rounded-lg text-amber-700 transition-colors" title="Create Contract">
+                      <FileSignature className="w-4 h-4" />
+                    </Link>
                     <Link href={`/${locale}/admin/properties/add?edit=${p.id}`} className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors" title="Edit">
                       <Edit3 className="w-4 h-4" />
                     </Link>
