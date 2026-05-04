@@ -23,6 +23,7 @@ import ImageGallery from "@/components/property/ImageGallery";
 import FeaturedPropertyCard from "@/components/property/FeaturedPropertyCard";
 import AdminEditButton from "@/components/property/AdminEditButton";
 import AgentContactButtons from "@/components/property/AgentContactButtons";
+import PropertyInquiryForm from "@/components/property/PropertyInquiryForm";
 import SectionTitle from "@/components/ui/SectionTitle";
 import StatTile from "@/components/ui/StatTile";
 
@@ -632,51 +633,11 @@ export default async function PropertyDetailPage({
                 locale={locale}
               />
 
-              <form
-                action={`/api/contact`}
-                method="POST"
-                className="space-y-3 pt-5 border-t border-stone-100"
-              >
-                <input type="hidden" name="propertyId" value={property.id} />
-                <input type="hidden" name="propertyName" value={title} />
-                <p className="text-xs uppercase tracking-widest text-stone-400">
-                  {locale === "th" ? "ส่งข้อมูลติดต่อ" : "Inquiry Form"}
-                </p>
-                <input
-                  type="text"
-                  name="name"
-                  placeholder={locale === "th" ? "ชื่อของคุณ" : "Your Name"}
-                  className="w-full px-4 py-2.5 border border-stone-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#C8A951]/30 focus:border-[#C8A951]"
-                />
-                <input
-                  type="tel"
-                  name="phone"
-                  placeholder={locale === "th" ? "เบอร์โทร" : "Phone"}
-                  className="w-full px-4 py-2.5 border border-stone-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#C8A951]/30 focus:border-[#C8A951]"
-                />
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Email"
-                  className="w-full px-4 py-2.5 border border-stone-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#C8A951]/30 focus:border-[#C8A951]"
-                />
-                <textarea
-                  name="message"
-                  rows={3}
-                  placeholder={
-                    locale === "th"
-                      ? "สนใจห้องนี้..."
-                      : "I'm interested in this property..."
-                  }
-                  className="w-full px-4 py-2.5 border border-stone-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#C8A951]/30 focus:border-[#C8A951] resize-none"
-                />
-                <button
-                  type="submit"
-                  className="w-full py-3 bg-[#C8A951] hover:bg-[#B8993F] text-white rounded-full font-semibold text-sm transition-colors"
-                >
-                  {locale === "th" ? "ส่งข้อความ" : "Send Inquiry"}
-                </button>
-              </form>
+              <PropertyInquiryForm
+                propertyId={property.id}
+                propertyName={title}
+                locale={locale}
+              />
             </div>
 
             {/* Project Link Card */}
