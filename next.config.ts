@@ -5,9 +5,13 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "**" },
     ],
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
   },
-  // Allow leaflet CSS
   transpilePackages: ["react-leaflet"],
+  experimental: {
+    optimizePackageImports: ["lucide-react", "recharts"],
+  },
+  compress: true,
 };
 
 export default nextConfig;
