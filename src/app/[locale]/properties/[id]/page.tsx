@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import prisma from "@/lib/prisma";
 import { getIntlLocale } from "@/lib/utils";
+import { getStationFullName } from "@/lib/stations";
 import ImageGallery from "@/components/property/ImageGallery";
 import FeaturedPropertyCard from "@/components/property/FeaturedPropertyCard";
 import AdminEditButton from "@/components/property/AdminEditButton";
@@ -389,6 +390,51 @@ export default async function PropertyDetailPage({
                 <p className="text-stone-700 leading-relaxed text-base whitespace-pre-line">
                   {description}
                 </p>
+              </section>
+            )}
+
+            {/* Nearby BTS / MRT */}
+            {stations.length > 0 && (
+              <section>
+                <SectionTitle
+                  badge={locale === "th" ? "การเดินทาง" : "Transit"}
+                  title={
+                    locale === "th"
+                      ? "BTS / MRT ใกล้เคียง"
+                      : "Nearby BTS / MRT"
+                  }
+                  className="mb-5"
+                />
+                <div className="flex flex-wrap gap-2">
+                  {stations.map((code: string) => {
+                    const fullName = getStationFullName(code);
+                    const lineColor =
+                      code.startsWith("BL")
+                        ? "bg-blue-50 text-blue-700 border-blue-200"
+                        : code.startsWith("PP")
+                        ? "bg-purple-50 text-purple-700 border-purple-200"
+                        : code.startsWith("YL")
+                        ? "bg-yellow-50 text-yellow-800 border-yellow-300"
+                        : code.startsWith("PK")
+                        ? "bg-pink-50 text-pink-700 border-pink-200"
+                        : code.startsWith("A")
+                        ? "bg-rose-50 text-rose-700 border-rose-200"
+                        : code.startsWith("G")
+                        ? "bg-amber-50 text-amber-800 border-amber-300"
+                        : code.startsWith("S") || code === "W1"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : "bg-emerald-50 text-emerald-700 border-emerald-200"; // BTS Sukhumvit (N/E/CEN)
+                    return (
+                      <div
+                        key={code}
+                        className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm shadow-sm ${lineColor}`}
+                      >
+                        <Train className="w-4 h-4" />
+                        {fullName}
+                      </div>
+                    );
+                  })}
+                </div>
               </section>
             )}
 
