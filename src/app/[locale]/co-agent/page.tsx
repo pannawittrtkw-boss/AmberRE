@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
@@ -15,6 +15,8 @@ import {
   Image as ImageIcon,
   ArrowRight,
   XCircle,
+  Search,
+  SlidersHorizontal,
 } from "lucide-react";
 
 function parseJson(val: string | null | undefined): string[] {
@@ -45,6 +47,15 @@ export default function CoAgentPage({
   const [properties, setProperties] = useState<any[]>([]);
   const [loadingProps, setLoadingProps] = useState(true);
   const [heroImage, setHeroImage] = useState<string | null>(null);
+
+  // Filter state for the listings table
+  const [filterKeyword, setFilterKeyword] = useState("");
+  const [filterListing, setFilterListing] = useState(""); // "" | RENT | SALE
+  const [filterPropertyType, setFilterPropertyType] = useState(""); // "" | CONDO | HOUSE | TOWNHOUSE | LAND
+  const [filterBedrooms, setFilterBedrooms] = useState<string>(""); // "" | 0 | 1 | 2 | 3
+  const [filterPriceMin, setFilterPriceMin] = useState("");
+  const [filterPriceMax, setFilterPriceMax] = useState("");
+  const [filterSort, setFilterSort] = useState("newest"); // newest | price_asc | price_desc | size_desc
 
   useEffect(() => {
     fetch("/api/site-settings?keys=coAgentHeroImage")
@@ -87,6 +98,90 @@ export default function CoAgentPage({
       .catch(() => {})
       .finally(() => setLoadingProps(false));
   }, []);
+
+  const filteredProperties = useMemo(() => {
+    const kw = filterKeyword.trim().toLowerCase();
+    const min = filterPriceMin ? Number(filterPriceMin) : null;
+    const max = filterPriceMax ? Number(filterPriceMax) : null;
+    const beds = filterBedrooms === "" ? null : Number(filterBedrooms);
+
+    let list = properties.filter((p: any) => {
+      if (kw) {
+        const hay = [p.projectName, p.titleTh, p.titleEn, p.address]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(kw)) return false;
+      }
+      if (filterListing) {
+        if (
+          filterListing === "RENT" &&
+          p.listingType !== "RENT" &&
+          p.listingType !== "RENT_AND_SALE"
+        )
+          return false;
+        if (
+          filterListing === "SALE" &&
+          p.listingType !== "SALE" &&
+          p.listingType !== "RENT_AND_SALE"
+        )
+          return false;
+      }
+      if (filterPropertyType && p.propertyType !== filterPropertyType)
+        return false;
+      if (beds != null) {
+        const b = Number(p.bedrooms) || 0;
+        if (beds === 3 ? b < 3 : b !== beds) return false;
+      }
+      const price = Number(p.price) || 0;
+      if (min != null && price < min) return false;
+      if (max != null && price > max) return false;
+      return true;
+    });
+
+    list = [...list].sort((a, b) => {
+      if (filterSort === "price_asc")
+        return (Number(a.price) || 0) - (Number(b.price) || 0);
+      if (filterSort === "price_desc")
+        return (Number(b.price) || 0) - (Number(a.price) || 0);
+      if (filterSort === "size_desc")
+        return (Number(b.sizeSqm) || 0) - (Number(a.sizeSqm) || 0);
+      // newest: createdAt desc
+      return (
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    });
+
+    return list;
+  }, [
+    properties,
+    filterKeyword,
+    filterListing,
+    filterPropertyType,
+    filterBedrooms,
+    filterPriceMin,
+    filterPriceMax,
+    filterSort,
+  ]);
+
+  const resetFilters = () => {
+    setFilterKeyword("");
+    setFilterListing("");
+    setFilterPropertyType("");
+    setFilterBedrooms("");
+    setFilterPriceMin("");
+    setFilterPriceMax("");
+    setFilterSort("newest");
+  };
+
+  const hasActiveFilters =
+    filterKeyword ||
+    filterListing ||
+    filterPropertyType ||
+    filterBedrooms ||
+    filterPriceMin ||
+    filterPriceMax ||
+    filterSort !== "newest";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -217,18 +312,187 @@ export default function CoAgentPage({
             : "Properties available for co-agent collaboration"}
         </p>
 
+        {/* Filter bar */}
+        <div className="bg-white rounded-2xl border border-stone-200 p-4 mb-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <SlidersHorizontal className="w-4 h-4 text-[#C8A951]" />
+            <span className="text-sm font-semibold text-stone-700">
+              {locale === "th" ? "ตัวกรอง" : "Filters"}
+            </span>
+            {hasActiveFilters && (
+              <button
+                onClick={resetFilters}
+                className="ml-auto text-xs text-[#C8A951] hover:underline flex items-center gap-1"
+              >
+                <XCircle className="w-3.5 h-3.5" />
+                {locale === "th" ? "ล้างทั้งหมด" : "Reset"}
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Keyword */}
+            <div className="relative lg:col-span-2">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+              <input
+                type="text"
+                value={filterKeyword}
+                onChange={(e) => setFilterKeyword(e.target.value)}
+                placeholder={
+                  locale === "th"
+                    ? "ค้นหาชื่อโครงการ ทำเล ที่อยู่..."
+                    : "Search by project, address, area..."
+                }
+                className="w-full pl-9 pr-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30 focus:border-[#C8A951]"
+              />
+            </div>
+
+            {/* Listing type */}
+            <div className="grid grid-cols-3 gap-1 p-1 bg-stone-100 rounded-lg">
+              {(
+                [
+                  ["", locale === "th" ? "ทั้งหมด" : "All"],
+                  ["RENT", locale === "th" ? "เช่า" : "Rent"],
+                  ["SALE", locale === "th" ? "ขาย" : "Sale"],
+                ] as [string, string][]
+              ).map(([v, lbl]) => (
+                <button
+                  key={v}
+                  onClick={() => setFilterListing(v)}
+                  className={`py-1.5 rounded text-xs font-medium transition-colors ${
+                    filterListing === v
+                      ? "bg-white text-[#C8A951] shadow-sm"
+                      : "text-stone-600 hover:bg-white/50"
+                  }`}
+                >
+                  {lbl}
+                </button>
+              ))}
+            </div>
+
+            {/* Sort */}
+            <select
+              value={filterSort}
+              onChange={(e) => setFilterSort(e.target.value)}
+              className="border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30"
+            >
+              <option value="newest">
+                {locale === "th" ? "ล่าสุด" : "Newest"}
+              </option>
+              <option value="price_asc">
+                {locale === "th" ? "ราคาต่ำ → สูง" : "Price: Low → High"}
+              </option>
+              <option value="price_desc">
+                {locale === "th" ? "ราคาสูง → ต่ำ" : "Price: High → Low"}
+              </option>
+              <option value="size_desc">
+                {locale === "th" ? "พื้นที่ใหญ่สุด" : "Largest area"}
+              </option>
+            </select>
+
+            {/* Property type */}
+            <select
+              value={filterPropertyType}
+              onChange={(e) => setFilterPropertyType(e.target.value)}
+              className="border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30"
+            >
+              <option value="">
+                {locale === "th" ? "ประเภททรัพย์ — ทั้งหมด" : "Property type — All"}
+              </option>
+              <option value="CONDO">{locale === "th" ? "คอนโด" : "Condo"}</option>
+              <option value="HOUSE">{locale === "th" ? "บ้านเดี่ยว" : "House"}</option>
+              <option value="TOWNHOUSE">
+                {locale === "th" ? "ทาวน์เฮ้าส์" : "Townhouse"}
+              </option>
+              <option value="LAND">{locale === "th" ? "ที่ดิน" : "Land"}</option>
+            </select>
+
+            {/* Bedrooms */}
+            <select
+              value={filterBedrooms}
+              onChange={(e) => setFilterBedrooms(e.target.value)}
+              className="border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30"
+            >
+              <option value="">
+                {locale === "th" ? "ห้องนอน — ทั้งหมด" : "Bedrooms — All"}
+              </option>
+              <option value="0">
+                {locale === "th" ? "สตูดิโอ" : "Studio"}
+              </option>
+              <option value="1">
+                1 {locale === "th" ? "ห้องนอน" : "Bed"}
+              </option>
+              <option value="2">
+                2 {locale === "th" ? "ห้องนอน" : "Beds"}
+              </option>
+              <option value="3">
+                3+ {locale === "th" ? "ห้องนอน" : "Beds"}
+              </option>
+            </select>
+
+            {/* Price range */}
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={filterPriceMin}
+                onChange={(e) => setFilterPriceMin(e.target.value)}
+                placeholder={locale === "th" ? "ราคาต่ำสุด" : "Min price"}
+                className="w-1/2 border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30"
+              />
+              <span className="text-stone-400 text-xs">—</span>
+              <input
+                type="number"
+                value={filterPriceMax}
+                onChange={(e) => setFilterPriceMax(e.target.value)}
+                placeholder={locale === "th" ? "ราคาสูงสุด" : "Max price"}
+                className="w-1/2 border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30"
+              />
+            </div>
+          </div>
+
+          {/* Result count */}
+          <p className="text-xs text-stone-500 mt-3">
+            {locale === "th" ? "พบ" : "Showing"}{" "}
+            <span className="text-[#C8A951] font-semibold">
+              {filteredProperties.length}
+            </span>{" "}
+            {locale === "th" ? "รายการ" : "of"}{" "}
+            {locale !== "th" && (
+              <span className="text-stone-700">{properties.length}</span>
+            )}
+            {locale === "th" && (
+              <>
+                {" "}จาก{" "}
+                <span className="text-stone-700">{properties.length}</span> รายการ
+              </>
+            )}
+          </p>
+        </div>
+
         {loadingProps ? (
           <div className="flex justify-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-[#C8A951]" />
           </div>
-        ) : properties.length === 0 ? (
+        ) : filteredProperties.length === 0 ? (
           <div className="bg-white rounded-3xl py-16 text-center">
             <ImageIcon className="w-12 h-12 mx-auto text-stone-300 mb-2" />
-            <p className="text-stone-500">
-              {locale === "th"
-                ? "ยังไม่มีรายการทรัพย์"
-                : "No properties available"}
+            <p className="text-stone-500 mb-3">
+              {properties.length === 0
+                ? locale === "th"
+                  ? "ยังไม่มีรายการทรัพย์"
+                  : "No properties available"
+                : locale === "th"
+                ? "ไม่พบทรัพย์ที่ตรงกับตัวกรอง"
+                : "No properties match the filters"}
             </p>
+            {hasActiveFilters && properties.length > 0 && (
+              <button
+                onClick={resetFilters}
+                className="text-sm text-[#C8A951] hover:underline"
+              >
+                {locale === "th" ? "ล้างตัวกรอง" : "Reset filters"}
+              </button>
+            )}
           </div>
         ) : (
           <div className="bg-white rounded-3xl overflow-hidden shadow-sm">
@@ -263,7 +527,7 @@ export default function CoAgentPage({
                   </tr>
                 </thead>
                 <tbody>
-                  {properties.map((p: any) => {
+                  {filteredProperties.map((p: any) => {
                     const primaryImage =
                       p.images?.find((img: any) => img.isPrimary) ||
                       p.images?.[0];
