@@ -81,20 +81,17 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   checkBox: {
-    width: 9,
-    height: 9,
-    borderWidth: 0.7,
+    width: 10,
+    height: 10,
+    borderWidth: 0.8,
     borderColor: "#000",
     marginRight: 5,
     marginTop: 2,
-    alignItems: "center",
-    justifyContent: "center",
+    padding: 1.5,
   },
-  checkMark: {
-    fontSize: 9,
-    fontWeight: "bold",
-    lineHeight: 1,
-    marginTop: -1,
+  checkInner: {
+    flex: 1,
+    backgroundColor: "#000",
   },
   checkText: { flex: 1 },
 });
@@ -103,7 +100,7 @@ function ChecklistRow({ item, num }: { item: PdfChecklistItem; num: number }) {
   return (
     <View style={styles.checkRow} wrap={false}>
       <View style={styles.checkBox}>
-        {item.checked && <Text style={styles.checkMark}>✓</Text>}
+        {item.checked && <View style={styles.checkInner} />}
       </View>
       <Text style={styles.checkText}>
         {num}) {item.th} ({item.en})
