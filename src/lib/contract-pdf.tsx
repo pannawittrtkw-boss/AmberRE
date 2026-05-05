@@ -74,12 +74,50 @@ const styles = StyleSheet.create({
     borderLeftWidth: 2,
     borderLeftColor: "#C8A951",
   },
+  checkRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginLeft: 10,
+    marginBottom: 3,
+  },
+  checkBox: {
+    width: 9,
+    height: 9,
+    borderWidth: 0.7,
+    borderColor: "#000",
+    marginRight: 5,
+    marginTop: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkMark: {
+    fontSize: 9,
+    fontWeight: "bold",
+    lineHeight: 1,
+    marginTop: -1,
+  },
+  checkText: { flex: 1 },
 });
 
-export interface PdfListItem {
+function ChecklistRow({ item, num }: { item: PdfChecklistItem; num: number }) {
+  return (
+    <View style={styles.checkRow} wrap={false}>
+      <View style={styles.checkBox}>
+        {item.checked && <Text style={styles.checkMark}>✓</Text>}
+      </View>
+      <Text style={styles.checkText}>
+        {num}) {item.th} ({item.en})
+        {item.checked && item.qty ? ` × ${item.qty}` : ""}
+      </Text>
+    </View>
+  );
+}
+
+export interface PdfChecklistItem {
   th: string;
   en: string;
-  qty: number;
+  checked: boolean;
+  qty?: number;
 }
 
 export interface ContractPdfData {
@@ -129,9 +167,9 @@ export interface ContractPdfData {
   securityDeposit: number;
   securityDepositText: string;
 
-  furnitureList: PdfListItem[];
-  applianceList: PdfListItem[];
-  otherItems: PdfListItem[];
+  furnitureList: PdfChecklistItem[];
+  applianceList: PdfChecklistItem[];
+  otherItems: PdfChecklistItem[];
 }
 
 const formatNum = (n: number) =>
@@ -493,76 +531,65 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           governed by the laws of Thailand.
         </Text>
 
-        {/* Section 10: Furniture / Appliances / Other Items */}
-        {(data.furnitureList.length > 0 ||
-          data.applianceList.length > 0 ||
-          data.otherItems.length > 0) && (
+        {/* Section 10: Furniture / Appliances / Other Items — always shown
+            in full so the printed copy can be ticked or amended by hand. */}
+        <View style={styles.sectionBar}>
+          <Text>
+            10. รายการเฟอร์นิเจอร์และอุปกรณ์ภายในห้องชุด / FURNITURE &amp;
+            EQUIPMENT
+          </Text>
+        </View>
+        <Text style={styles.paragraph}>
+          ผู้ให้เช่าส่งมอบและผู้เช่าได้รับเฟอร์นิเจอร์และอุปกรณ์ดังต่อไปนี้
+          ภายในห้องชุดในสภาพที่พร้อมใช้งาน — รายการที่ติ๊กถูกจะระบุจำนวนต่อท้าย /
+          The Lessor delivers and the Lessee receives the following furniture
+          and equipment. Ticked rows show the agreed quantity.
+        </Text>
+
+        {data.furnitureList.length > 0 && (
           <>
-            <View style={styles.sectionBar}>
-              <Text>
-                10. รายการเฟอร์นิเจอร์และอุปกรณ์ภายในห้องชุด / FURNITURE &amp;
-                EQUIPMENT
-              </Text>
-            </View>
-            <Text style={styles.paragraph}>
-              ผู้ให้เช่าส่งมอบและผู้เช่าได้รับเฟอร์นิเจอร์และอุปกรณ์ดังต่อไปนี้
-              ภายในห้องชุดในสภาพที่พร้อมใช้งาน /
-              The Lessor delivers and the Lessee receives the following
-              furniture and equipment in the unit, in working condition.
+            <Text style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
+              10.1 เฟอร์นิเจอร์ / Furniture
             </Text>
-
-            {data.furnitureList.length > 0 && (
-              <>
-                <Text style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
-                  10.1 เฟอร์นิเจอร์ / Furniture
-                </Text>
-                {data.furnitureList.map((item, i) => (
-                  <Text key={i} style={[styles.paragraph, styles.bullet]}>
-                    {i + 1}) {item.qty} × {item.th} ({item.en})
-                  </Text>
-                ))}
-              </>
-            )}
-
-            {data.applianceList.length > 0 && (
-              <>
-                <Text style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
-                  10.2 เครื่องใช้ไฟฟ้า / Electrical Appliances
-                </Text>
-                {data.applianceList.map((item, i) => (
-                  <Text key={i} style={[styles.paragraph, styles.bullet]}>
-                    {i + 1}) {item.qty} × {item.th} ({item.en})
-                  </Text>
-                ))}
-              </>
-            )}
-
-            {data.otherItems.length > 0 && (
-              <>
-                <Text style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
-                  10.3 รายการอื่นๆ / Other Items
-                </Text>
-                {data.otherItems.map((item, i) => (
-                  <Text key={i} style={[styles.paragraph, styles.bullet]}>
-                    {i + 1}) {item.qty} × {item.th} ({item.en})
-                  </Text>
-                ))}
-              </>
-            )}
-
-            <Text style={[styles.small, { marginTop: 8 }]}>
-              หากผู้เช่าทำคีย์การ์ดเข้าออกอาคาร กุญแจห้องชุด หรือกุญแจกล่องจดหมาย
-              ชำรุดหรือสูญหาย ผู้เช่าต้องรับผิดชอบค่าใช้จ่ายในการออกใหม่ทั้งหมด /
-              If the tenant damages or loses key cards or keys, they shall be
-              responsible for the full replacement cost.
-            </Text>
-            <Text style={[styles.small, { marginTop: 4 }]}>
-              กรณีย้ายออก ผู้ให้เช่าจะหักค่าทำความสะอาดห้อง 1,000 บาท
-              (กรณีสกปรกมาก 1,800 บาท) ค่าล้างแอร์ 1,400 บาท ค่าซักโซฟา 1,500 บาท
-              จากเงินประกัน / Cleaning fees deducted from deposit upon move-out.
-            </Text>
+            {data.furnitureList.map((item, i) => (
+              <ChecklistRow key={`f-${i}`} item={item} num={i + 1} />
+            ))}
           </>
         )}
+
+        {data.applianceList.length > 0 && (
+          <>
+            <Text style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
+              10.2 เครื่องใช้ไฟฟ้า / Electrical Appliances
+            </Text>
+            {data.applianceList.map((item, i) => (
+              <ChecklistRow key={`a-${i}`} item={item} num={i + 1} />
+            ))}
+          </>
+        )}
+
+        {data.otherItems.length > 0 && (
+          <>
+            <Text style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
+              10.3 รายการอื่นๆ / Other Items
+            </Text>
+            {data.otherItems.map((item, i) => (
+              <ChecklistRow key={`o-${i}`} item={item} num={i + 1} />
+            ))}
+          </>
+        )}
+
+        <Text style={[styles.small, { marginTop: 8 }]}>
+          หากผู้เช่าทำคีย์การ์ดเข้าออกอาคาร กุญแจห้องชุด หรือกุญแจกล่องจดหมาย
+          ชำรุดหรือสูญหาย ผู้เช่าต้องรับผิดชอบค่าใช้จ่ายในการออกใหม่ทั้งหมด /
+          If the tenant damages or loses key cards or keys, they shall be
+          responsible for the full replacement cost.
+        </Text>
+        <Text style={[styles.small, { marginTop: 4 }]}>
+          กรณีย้ายออก ผู้ให้เช่าจะหักค่าทำความสะอาดห้อง 1,000 บาท
+          (กรณีสกปรกมาก 1,800 บาท) ค่าล้างแอร์ 1,400 บาท ค่าซักโซฟา 1,500 บาท
+          จากเงินประกัน / Cleaning fees deducted from deposit upon move-out.
+        </Text>
 
         {/* Section 11: Misc (was 10) */}
         <View style={styles.sectionBar}>

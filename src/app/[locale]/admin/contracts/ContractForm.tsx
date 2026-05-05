@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, ArrowLeft, ChevronDown, ChevronUp, Save } from "lucide-react";
@@ -18,6 +18,29 @@ interface ContractFormProps {
   initialData?: any;
   contractId?: number;
 }
+
+const TERM_OPTIONS = [6, 12, 24, 36];
+
+const THAI_BANKS = [
+  "ธนาคารกรุงเทพ (Bangkok Bank — BBL)",
+  "ธนาคารกสิกรไทย (Kasikornbank — KBANK)",
+  "ธนาคารกรุงไทย (Krungthai Bank — KTB)",
+  "ธนาคารไทยพาณิชย์ (Siam Commercial Bank — SCB)",
+  "ธนาคารกรุงศรีอยุธยา (Krungsri — BAY)",
+  "ธนาคารทหารไทยธนชาต (TMBThanachart — TTB)",
+  "ธนาคารยูโอบี (UOB)",
+  "ธนาคารแลนด์ แอนด์ เฮ้าส์ (LH Bank)",
+  "ธนาคารซีไอเอ็มบี ไทย (CIMB Thai)",
+  "ธนาคารเกียรตินาคินภัทร (KKP)",
+  "ธนาคารทิสโก้ (Tisco Bank)",
+  "ธนาคารไอซีบีซี ไทย (ICBC Thai)",
+  "ธนาคารสแตนดาร์ดชาร์เตอร์ด ไทย (Standard Chartered)",
+  "ธนาคารเอชเอสบีซี ไทย (HSBC Thailand)",
+  "ธนาคารออมสิน (Government Savings Bank — GSB)",
+  "ธนาคารอาคารสงเคราะห์ (GHB)",
+  "ธนาคารเพื่อการเกษตรและสหกรณ์การเกษตร (BAAC)",
+  "ธนาคารอิสลามแห่งประเทศไทย (IBank)",
+];
 
 const today = () => new Date().toISOString().slice(0, 10);
 const addMonths = (dateStr: string, months: number): string => {
@@ -93,7 +116,11 @@ export default function ContractForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Auto-calc end date when startDate or termMonths changes
+  // Track whether the user has manually edited the security deposit. If they
+  // have, stop auto-syncing it to monthlyRent × 2.
+  const depositTouchedRef = useRef(!!initialData?.securityDeposit);
+
+  // Auto-calc end date when startDate or termMonths changes (end date is read-only)
   useEffect(() => {
     if (form.startDate && form.termMonths) {
       const end = addMonths(form.startDate, Number(form.termMonths));
@@ -103,6 +130,19 @@ export default function ContractForm({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.startDate, form.termMonths]);
+
+  // Default security deposit to monthlyRent × 2 unless user has overridden it
+  useEffect(() => {
+    if (depositTouchedRef.current) return;
+    const rent = Number(form.monthlyRent);
+    if (rent > 0) {
+      const auto = String(rent * 2);
+      if (auto !== String(form.securityDeposit)) {
+        setForm((prev) => ({ ...prev, securityDeposit: auto }));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.monthlyRent]);
 
   const update = (k: string, v: any) => setForm((prev) => ({ ...prev, [k]: v }));
 
@@ -188,21 +228,26 @@ export default function ContractForm({
             />
           </Field>
           <Field label={locale === "th" ? "ระยะเวลา (เดือน)" : "Term (months)"} required>
-            <input
-              type="number"
+            <select
               required
-              min={1}
               value={form.termMonths}
               onChange={(e) => update("termMonths", Number(e.target.value))}
               className={inputCls}
-            />
+            >
+              {TERM_OPTIONS.map((m) => (
+                <option key={m} value={m}>
+                  {m} {locale === "th" ? "เดือน" : "months"}
+                </option>
+              ))}
+            </select>
           </Field>
-          <Field label={locale === "th" ? "วันสิ้นสุด" : "End Date"}>
+          <Field label={locale === "th" ? "วันสิ้นสุด (คำนวณอัตโนมัติ)" : "End Date (auto)"}>
             <input
               type="date"
               value={form.endDate}
-              onChange={(e) => update("endDate", e.target.value)}
-              className={inputCls}
+              readOnly
+              disabled
+              className={`${inputCls} bg-stone-100 cursor-not-allowed`}
             />
           </Field>
         </Grid>
@@ -429,11 +474,20 @@ export default function ContractForm({
             />
           </Field>
           <Field label={locale === "th" ? "ธนาคาร" : "Bank"}>
-            <input
+            <select
               value={form.bankName}
               onChange={(e) => update("bankName", e.target.value)}
               className={inputCls}
-            />
+            >
+              <option value="">
+                {locale === "th" ? "— เลือกธนาคาร —" : "— Select bank —"}
+              </option>
+              {THAI_BANKS.map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
+            </select>
           </Field>
           <Field label={locale === "th" ? "สาขา" : "Branch"}>
             <input
@@ -472,10 +526,18 @@ export default function ContractForm({
               required
               step="0.01"
               value={form.securityDeposit}
-              onChange={(e) => update("securityDeposit", e.target.value)}
+              onChange={(e) => {
+                depositTouchedRef.current = true;
+                update("securityDeposit", e.target.value);
+              }}
               className={inputCls}
               placeholder={locale === "th" ? "ปกติเท่ากับ 2 เดือนของค่าเช่า" : "Typically 2× monthly rent"}
             />
+            <p className="text-xs text-stone-500 mt-1">
+              {locale === "th"
+                ? "ระบบ default ค่าเป็น 2 เท่าของค่าเช่ารายเดือน — แก้ไขได้"
+                : "Defaults to 2× monthly rent — editable"}
+            </p>
           </Field>
         </Grid>
       </Card>

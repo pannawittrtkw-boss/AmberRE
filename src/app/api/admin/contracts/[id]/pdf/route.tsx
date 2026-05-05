@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { renderToBuffer } from "@react-pdf/renderer";
-import { ContractPdf, ContractPdfData, PdfListItem } from "@/lib/contract-pdf";
+import { ContractPdf, ContractPdfData, PdfChecklistItem } from "@/lib/contract-pdf";
 import {
   FURNITURE_OPTIONS,
   APPLIANCE_OPTIONS,
@@ -80,17 +80,23 @@ function fmtEnDate(d: Date): string {
   });
 }
 
-function itemsToPdf(
+// Build a full checklist of every catalog option, marking which ones the
+// admin selected for this contract. The PDF prints all rows so the printed
+// copy can be hand-amended; ticked rows include the agreed quantity.
+function buildChecklist(
   json: string | null | undefined,
   options: Bilingual[]
-): PdfListItem[] {
-  return parseContractItems(json)
-    .map((it) => {
-      const opt = options.find((o) => o.key === it.key);
-      if (!opt) return null;
-      return { th: opt.th, en: opt.en, qty: it.qty };
-    })
-    .filter((x): x is PdfListItem => x !== null);
+): PdfChecklistItem[] {
+  const selected = parseContractItems(json);
+  return options.map((opt) => {
+    const sel = selected.find((s) => s.key === opt.key);
+    return {
+      th: opt.th,
+      en: opt.en,
+      checked: !!sel,
+      qty: sel?.qty,
+    };
+  });
 }
 
 export async function GET(
@@ -157,9 +163,9 @@ export async function GET(
     securityDeposit: Number(contract.securityDeposit),
     securityDepositText: bahtText(Number(contract.securityDeposit)),
 
-    furnitureList: itemsToPdf(contract.furnitureList, FURNITURE_OPTIONS),
-    applianceList: itemsToPdf(contract.applianceList, APPLIANCE_OPTIONS),
-    otherItems: itemsToPdf(contract.otherItems, OTHER_ITEM_OPTIONS),
+    furnitureList: buildChecklist(contract.furnitureList, FURNITURE_OPTIONS),
+    applianceList: buildChecklist(contract.applianceList, APPLIANCE_OPTIONS),
+    otherItems: buildChecklist(contract.otherItems, OTHER_ITEM_OPTIONS),
   };
 
   try {
