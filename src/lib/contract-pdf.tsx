@@ -493,134 +493,100 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           governed by the laws of Thailand.
         </Text>
 
-        {/* Section 10: Misc */}
+        {/* Section 10: Furniture / Appliances / Other Items */}
+        {(data.furnitureList.length > 0 ||
+          data.applianceList.length > 0 ||
+          data.otherItems.length > 0) && (
+          <>
+            <View style={styles.sectionBar}>
+              <Text>
+                10. รายการเฟอร์นิเจอร์และอุปกรณ์ภายในห้องชุด / FURNITURE &amp;
+                EQUIPMENT
+              </Text>
+            </View>
+            <Text style={styles.paragraph}>
+              ผู้ให้เช่าส่งมอบและผู้เช่าได้รับเฟอร์นิเจอร์และอุปกรณ์ดังต่อไปนี้
+              ภายในห้องชุดในสภาพที่พร้อมใช้งาน /
+              The Lessor delivers and the Lessee receives the following
+              furniture and equipment in the unit, in working condition.
+            </Text>
+
+            {data.furnitureList.length > 0 && (
+              <>
+                <Text style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
+                  10.1 เฟอร์นิเจอร์ / Furniture
+                </Text>
+                {data.furnitureList.map((item, i) => (
+                  <Text key={i} style={[styles.paragraph, styles.bullet]}>
+                    {i + 1}) {item.qty} × {item.th} ({item.en})
+                  </Text>
+                ))}
+              </>
+            )}
+
+            {data.applianceList.length > 0 && (
+              <>
+                <Text style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
+                  10.2 เครื่องใช้ไฟฟ้า / Electrical Appliances
+                </Text>
+                {data.applianceList.map((item, i) => (
+                  <Text key={i} style={[styles.paragraph, styles.bullet]}>
+                    {i + 1}) {item.qty} × {item.th} ({item.en})
+                  </Text>
+                ))}
+              </>
+            )}
+
+            {data.otherItems.length > 0 && (
+              <>
+                <Text style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
+                  10.3 รายการอื่นๆ / Other Items
+                </Text>
+                {data.otherItems.map((item, i) => (
+                  <Text key={i} style={[styles.paragraph, styles.bullet]}>
+                    {i + 1}) {item.qty} × {item.th} ({item.en})
+                  </Text>
+                ))}
+              </>
+            )}
+
+            <Text style={[styles.small, { marginTop: 8 }]}>
+              หากผู้เช่าทำคีย์การ์ดเข้าออกอาคาร กุญแจห้องชุด หรือกุญแจกล่องจดหมาย
+              ชำรุดหรือสูญหาย ผู้เช่าต้องรับผิดชอบค่าใช้จ่ายในการออกใหม่ทั้งหมด /
+              If the tenant damages or loses key cards or keys, they shall be
+              responsible for the full replacement cost.
+            </Text>
+            <Text style={[styles.small, { marginTop: 4 }]}>
+              กรณีย้ายออก ผู้ให้เช่าจะหักค่าทำความสะอาดห้อง 1,000 บาท
+              (กรณีสกปรกมาก 1,800 บาท) ค่าล้างแอร์ 1,400 บาท ค่าซักโซฟา 1,500 บาท
+              จากเงินประกัน / Cleaning fees deducted from deposit upon move-out.
+            </Text>
+          </>
+        )}
+
+        {/* Section 11: Misc (was 10) */}
         <View style={styles.sectionBar}>
-          <Text>10. อื่นๆ / MISCELLANEOUS</Text>
+          <Text>11. อื่นๆ / MISCELLANEOUS</Text>
         </View>
-        <Bullet>10.1 การที่ผู้ให้เช่ารับชำระค่าเช่าจะไม่ถือเป็นข้อยกเว้นไม่ให้ผู้ให้เช่าดำเนินการใดๆ กับผู้เช่า หากมีการละเมิดข้อตกลงข้อหนึ่งข้อใดที่ระบุไว้ในสัญญาฉบับนี้ / Acceptance of rent shall not waive the Lessor's right to act against any breach by the Lessee.</Bullet>
-        <Bullet>10.2 หากข้อหนึ่งข้อใดของสัญญาฉบับนี้ไม่สามารถใช้บังคับได้ทางกฎหมายหรือมีเหตุต้องยกเลิก ให้ถือว่าข้อตกลงที่เหลืออยู่ยังคงมีผลบังคับใช้ต่อไปจนครบอายุสัญญา / If any term becomes void or unenforceable, the remaining terms shall remain in full force.</Bullet>
-        <Bullet>10.3 หากผู้เช่าขาดการติดต่อกับผู้ให้เช่าเกิน 5 วัน หรือไม่ชำระค่าเช่าและล่าช้าเกิน 10 วันโดยไม่แจ้งเหตุ ถือว่าผิดสัญญาอย่างมีนัยสำคัญ ผู้ให้เช่ามีสิทธิ์เข้าตรวจสอบ บอกเลิกสัญญา และยึดเงินประกันได้ทันที / Loss of contact over 5 days or rent delay over 10 days = material breach; Lessor may enter, terminate, and forfeit deposit immediately.</Bullet>
-        <Bullet>10.4 ไม่อนุญาตให้บุคคลอื่นที่ไม่มีรายชื่อในสัญญาเข้าพักอาศัยในห้องโดยเด็ดขาด / No unauthorized occupants are permitted in the Premises.</Bullet>
-        <Bullet>10.5 เมื่อผู้เช่าพักอาศัยครบ 6 เดือน ต้องดำเนินการล้างเครื่องปรับอากาศ 1 เครื่องและรับผิดชอบค่าใช้จ่ายเอง / After 6 months of tenancy, the tenant must clean 1 air conditioner at own expense.</Bullet>
-        <Bullet>10.6 เมื่อพักครบ 6 เดือน ผู้เช่ายินยอมให้เจ้าของหรือเอเจ้นท์เข้าตรวจสอบสภาพห้องโดยแจ้งล่วงหน้า 1-3 วัน หากไม่สะดวกผู้เช่าต้องส่งคลิปวิดีโอและภาพถ่ายระบุวันที่ / After 6 months, allow inspection with 1-3 days notice; if unavailable, provide dated video/photos.</Bullet>
+        <Bullet>11.1 การที่ผู้ให้เช่ารับชำระค่าเช่าจะไม่ถือเป็นข้อยกเว้นไม่ให้ผู้ให้เช่าดำเนินการใดๆ กับผู้เช่า หากมีการละเมิดข้อตกลงข้อหนึ่งข้อใดที่ระบุไว้ในสัญญาฉบับนี้ / Acceptance of rent shall not waive the Lessor's right to act against any breach by the Lessee.</Bullet>
+        <Bullet>11.2 หากข้อหนึ่งข้อใดของสัญญาฉบับนี้ไม่สามารถใช้บังคับได้ทางกฎหมายหรือมีเหตุต้องยกเลิก ให้ถือว่าข้อตกลงที่เหลืออยู่ยังคงมีผลบังคับใช้ต่อไปจนครบอายุสัญญา / If any term becomes void or unenforceable, the remaining terms shall remain in full force.</Bullet>
+        <Bullet>11.3 หากผู้เช่าขาดการติดต่อกับผู้ให้เช่าเกิน 5 วัน หรือไม่ชำระค่าเช่าและล่าช้าเกิน 10 วันโดยไม่แจ้งเหตุ ถือว่าผิดสัญญาอย่างมีนัยสำคัญ ผู้ให้เช่ามีสิทธิ์เข้าตรวจสอบ บอกเลิกสัญญา และยึดเงินประกันได้ทันที / Loss of contact over 5 days or rent delay over 10 days = material breach; Lessor may enter, terminate, and forfeit deposit immediately.</Bullet>
+        <Bullet>11.4 ไม่อนุญาตให้บุคคลอื่นที่ไม่มีรายชื่อในสัญญาเข้าพักอาศัยในห้องโดยเด็ดขาด / No unauthorized occupants are permitted in the Premises.</Bullet>
+        <Bullet>11.5 เมื่อผู้เช่าพักอาศัยครบ 6 เดือน ต้องดำเนินการล้างเครื่องปรับอากาศ 1 เครื่องและรับผิดชอบค่าใช้จ่ายเอง / After 6 months of tenancy, the tenant must clean 1 air conditioner at own expense.</Bullet>
+        <Bullet>11.6 เมื่อพักครบ 6 เดือน ผู้เช่ายินยอมให้เจ้าของหรือเอเจ้นท์เข้าตรวจสอบสภาพห้องโดยแจ้งล่วงหน้า 1-3 วัน หากไม่สะดวกผู้เช่าต้องส่งคลิปวิดีโอและภาพถ่ายระบุวันที่ / After 6 months, allow inspection with 1-3 days notice; if unavailable, provide dated video/photos.</Bullet>
 
-        {/* Closing + Signatures */}
-        <Text style={[styles.paragraph, { marginTop: 12, fontSize: 9 }]}>
-          สัญญาฉบับนี้ทำขึ้น 2 ฉบับ มีข้อความตรงกัน ผู้ให้เช่าและผู้เช่าถือไว้คนละฉบับ
-          ทั้งสองฝ่ายได้อ่านและเห็นว่าถูกต้องตามวัตถุประสงค์ของทั้ง 2 ฝ่าย
-          จึงลงลายมือชื่อไว้ต่อหน้าพยาน /
-          This Agreement is made in duplicates with identical contents, one copy
-          held by each party. Both parties have read and agree, signing in the
-          presence of witnesses.
-        </Text>
-
-        <View style={styles.twoCol} wrap={false}>
-          <View style={styles.signatureBlock}>
-            <View style={styles.signatureLine} />
-            <Text style={styles.small}>ผู้ให้เช่า / Lessor</Text>
-            <Text style={styles.boldHL}>({data.lessorName})</Text>
-          </View>
-          <View style={styles.signatureBlock}>
-            <View style={styles.signatureLine} />
-            <Text style={styles.small}>ผู้เช่า / Lessee</Text>
-            <Text style={styles.boldHL}>({data.lesseeName})</Text>
-          </View>
-        </View>
-
-        <View style={[styles.twoCol, { marginTop: 36 }]} wrap={false}>
-          <View style={styles.signatureBlock}>
-            <View style={styles.signatureLine} />
-            <Text style={styles.small}>พยาน / Witness</Text>
-          </View>
-          <View style={styles.signatureBlock}>
-            <View style={styles.signatureLine} />
-            <Text style={styles.small}>พยาน / Witness</Text>
-          </View>
-        </View>
-      </Page>
-
-      {/* Furniture / Appliance attachment */}
-      {(data.furnitureList.length > 0 ||
-        data.applianceList.length > 0 ||
-        data.otherItems.length > 0) && (
-        <Page size="A4" style={styles.page} wrap>
-          <View style={styles.header}>
-            <Text style={styles.title}>
-              แนบท้ายรายการเฟอร์นิเจอร์และอุปกรณ์อื่นใดภายในห้องชุด
-            </Text>
-            <Text style={styles.subtitle}>
-              Attached: List of furniture and equipment within the suite
-            </Text>
-          </View>
-
-          <Text style={styles.paragraph}>
-            สัญญาฉบับนี้ทำขึ้นวันที่ <D>{data.contractDateTh}</D> /
-            THIS Agreement is made on <D>{data.contractDateEn}</D>
+        {/* Closing + Signatures — wrap together so signatures never split off */}
+        <View wrap={false} style={{ marginTop: 12 }}>
+          <Text style={[styles.paragraph, { fontSize: 9 }]}>
+            สัญญาฉบับนี้ทำขึ้น 2 ฉบับ มีข้อความตรงกัน ผู้ให้เช่าและผู้เช่าถือไว้คนละฉบับ
+            ทั้งสองฝ่ายได้อ่านและเห็นว่าถูกต้องตามวัตถุประสงค์ของทั้ง 2 ฝ่าย
+            จึงลงลายมือชื่อไว้ต่อหน้าพยาน /
+            This Agreement is made in duplicates with identical contents, one
+            copy held by each party. Both parties have read and agree, signing
+            in the presence of witnesses.
           </Text>
 
-          <Text style={styles.paragraph}>
-            ระหว่าง <D>{data.lessorName}</D> ในฐานะ "ผู้ให้เช่า" และ{" "}
-            <D>{data.lesseeName}</D> ในฐานะ "ผู้เช่า"
-          </Text>
-
-          <Text style={styles.paragraph}>
-            โดยรายละเอียดของเฟอร์นิเจอร์และอุปกรณ์อื่นใด ภายในห้องชุด{" "}
-            <D>{data.projectName}</D> ห้องเลขที่ <D>{data.unitNumber}</D>
-          </Text>
-
-          {data.furnitureList.length > 0 && (
-            <>
-              <Text style={[styles.boldHL, { marginTop: 8, marginBottom: 4 }]}>
-                รายละเอียดเฟอร์นิเจอร์ / Detail of furniture:
-              </Text>
-              {data.furnitureList.map((item, i) => (
-                <Text key={i} style={[styles.paragraph, styles.bullet]}>
-                  {i + 1}) {item.qty} × {item.th} ({item.en})
-                </Text>
-              ))}
-            </>
-          )}
-
-          {data.applianceList.length > 0 && (
-            <>
-              <Text style={[styles.boldHL, { marginTop: 8, marginBottom: 4 }]}>
-                รายการเครื่องใช้ไฟฟ้า / Detail of appliances:
-              </Text>
-              {data.applianceList.map((item, i) => (
-                <Text key={i} style={[styles.paragraph, styles.bullet]}>
-                  {i + 1}) {item.qty} × {item.th} ({item.en})
-                </Text>
-              ))}
-            </>
-          )}
-
-          {data.otherItems.length > 0 && (
-            <>
-              <Text style={[styles.boldHL, { marginTop: 8, marginBottom: 4 }]}>
-                รายการอื่นๆ / Other items:
-              </Text>
-              {data.otherItems.map((item, i) => (
-                <Text key={i} style={[styles.paragraph, styles.bullet]}>
-                  {i + 1}) {item.qty} × {item.th} ({item.en})
-                </Text>
-              ))}
-            </>
-          )}
-
-          <Text style={[styles.small, { marginTop: 12 }]}>
-            หากผู้เช่าทำคีย์การ์ดเข้าออกอาคาร กุญแจห้องชุด หรือกุญแจกล่องจดหมายชำรุดหรือสูญหาย
-            ผู้เช่าต้องรับผิดชอบค่าใช้จ่ายในการออกใหม่ทั้งหมด /
-            If the tenant damages or loses key cards or keys, they shall be
-            responsible for the full replacement cost.
-          </Text>
-
-          <Text style={[styles.small, { marginTop: 8 }]}>
-            กรณีย้ายออก ผู้ให้เช่าจะหักค่าทำความสะอาดห้อง 1,000 บาท
-            (กรณีสกปรกมาก 1,800 บาท) ค่าล้างแอร์ 1,400 บาท ค่าซักโซฟา 1,500 บาท
-            จากเงินประกัน / Cleaning fees deducted from deposit upon move-out.
-          </Text>
-
-          <View style={styles.twoCol} wrap={false}>
+          <View style={styles.twoCol}>
             <View style={styles.signatureBlock}>
               <View style={styles.signatureLine} />
               <Text style={styles.small}>ผู้ให้เช่า / Lessor</Text>
@@ -632,8 +598,19 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
               <Text style={styles.boldHL}>({data.lesseeName})</Text>
             </View>
           </View>
-        </Page>
-      )}
+
+          <View style={[styles.twoCol, { marginTop: 36 }]}>
+            <View style={styles.signatureBlock}>
+              <View style={styles.signatureLine} />
+              <Text style={styles.small}>พยาน / Witness</Text>
+            </View>
+            <View style={styles.signatureBlock}>
+              <View style={styles.signatureLine} />
+              <Text style={styles.small}>พยาน / Witness</Text>
+            </View>
+          </View>
+        </View>
+      </Page>
     </Document>
   );
 }
