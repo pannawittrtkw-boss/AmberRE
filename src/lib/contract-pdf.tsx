@@ -46,7 +46,9 @@ const styles = StyleSheet.create({
   paragraph: { marginBottom: 4 },
   small: { fontSize: 9, color: "#444" },
   row: { flexDirection: "row", marginBottom: 3 },
-  label: { width: 120 },
+  // Fixed-width label column needs to fit the longest Thai label
+  // "สัญญาฉบับนี้ทำขึ้นวันที่" (~22 Thai chars) at 10pt without clipping
+  label: { width: 170 },
   value: {
     flex: 1,
     borderBottomWidth: 0.5,
@@ -197,7 +199,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           <Text style={styles.value}><D>{data.contractDateTh}</D></Text>
         </View>
         <View style={styles.row}>
-          <Text style={styles.label}>THIS Agreement is made on</Text>
+          <Text style={styles.label}>Agreement is made on</Text>
           <Text style={styles.value}><D>{data.contractDateEn}</D></Text>
         </View>
 
@@ -291,7 +293,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
         {/* Joint Lessee */}
         {data.jointLesseeName && (
           <>
-            <View style={styles.sectionBar}>
+            <View style={styles.sectionBar} wrap={false}>
               <Text>1. ผู้เช่าร่วม / Joint Lessee</Text>
             </View>
             <View style={styles.row}>
@@ -326,21 +328,26 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
         )}
 
         {/* Section 2: Lease Term */}
-        <View style={styles.sectionBar}>
+        <View style={styles.sectionBar} wrap={false}>
           <Text>2. ระยะเวลาเช่า / LEASE TERM</Text>
         </View>
         <Text style={styles.paragraph}>
           ระยะเวลาเช่ากำหนดไว้เป็นเวลา <D>{data.termMonths}</D> เดือน
-          โดยเริ่มสัญญาวันที่ <D>{data.startDateTh}</D> สิ้นสุดวันที่ <D>{data.endDateTh}</D>
+          โดยเริ่มสัญญาวันที่ <D>{data.startDateTh}</D>
+        </Text>
+        <Text style={styles.paragraph}>
+          สิ้นสุดวันที่ <D>{data.endDateTh}</D>
         </Text>
         <Text style={styles.paragraph}>
           The term of this Agreement shall be for a period of <D>{data.termMonths}</D>{" "}
-          months, commencing from <D>{data.startDateEn}</D> and expiring on{" "}
-          <D>{data.endDateEn}</D>.
+          months, commencing from <D>{data.startDateEn}</D>
+        </Text>
+        <Text style={styles.paragraph}>
+          and expiring on <D>{data.endDateEn}</D>.
         </Text>
 
         {/* Section 3: Rental */}
-        <View style={styles.sectionBar}>
+        <View style={styles.sectionBar} wrap={false}>
           <Text>3. ค่าเช่าและค่าส่วนกลาง / RENTAL AND COMMON PROPERTIES FEES</Text>
         </View>
         <Text style={styles.paragraph}>
@@ -411,17 +418,19 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           After transferring the monthly rent, please notify the lessor.
         </Text>
 
-        {/* Section 4: Security Deposit */}
-        <View style={styles.sectionBar}>
-          <Text>4. เงินประกันสัญญา / SECURITY DEPOSIT</Text>
+        {/* Section 4: Security Deposit — pin header to 4.1 to prevent split */}
+        <View wrap={false}>
+          <View style={styles.sectionBar}>
+            <Text>4. เงินประกันสัญญา / SECURITY DEPOSIT</Text>
+          </View>
+          <Text style={styles.paragraph}>
+            4.1 ในวันที่ลงนามในสัญญาฉบับนี้ ผู้เช่าได้ชำระเงินประกันให้แก่ผู้ให้เช่าเป็นจำนวน{" "}
+            <D>{formatNum(data.securityDeposit)}</D> บาท ({data.securityDepositText})
+            ซึ่งต่อไปนี้เรียกว่า "เงินประกันสัญญา" ซึ่งเงินจำนวนดังกล่าวผู้ให้เช่าจะเก็บไว้ตลอด
+            อายุของสัญญาโดยไม่มีดอกเบี้ยใดๆ
+            เพื่อเป็นประกันความเสียหายที่อาจเกิดขึ้นในกรณีที่ผู้เช่าละเมิดข้อตกลงที่ระบุไว้ในสัญญาฉบับนี้
+          </Text>
         </View>
-        <Text style={styles.paragraph}>
-          4.1 ในวันที่ลงนามในสัญญาฉบับนี้ ผู้เช่าได้ชำระเงินประกันให้แก่ผู้ให้เช่าเป็นจำนวน{" "}
-          <D>{formatNum(data.securityDeposit)}</D> บาท ({data.securityDepositText})
-          ซึ่งต่อไปนี้เรียกว่า "เงินประกันสัญญา" ซึ่งเงินจำนวนดังกล่าวผู้ให้เช่าจะเก็บไว้ตลอด
-          อายุของสัญญาโดยไม่มีดอกเบี้ยใดๆ
-          เพื่อเป็นประกันความเสียหายที่อาจเกิดขึ้นในกรณีที่ผู้เช่าละเมิดข้อตกลงที่ระบุไว้ในสัญญาฉบับนี้
-        </Text>
         <Text style={styles.paragraph}>
           4.1 Upon the execution of this Agreement, the Lessee deposits with
           the Lessor <D>{formatNum(data.securityDeposit)}</D> Baht as Security
@@ -462,7 +471,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
         </Text>
 
         {/* Section 5: Lessee covenants */}
-        <View style={styles.sectionBar}>
+        <View style={styles.sectionBar} wrap={false}>
           <Text>5. ข้อตกลงของผู้เช่า / LESSEE'S COVENANTS</Text>
         </View>
         <Bullet>5.1 ชำระค่าเช่าและเงินอื่นๆ ตามที่ระบุไว้ในสัญญานี้อย่างครบถ้วนตามเวลาที่ระบุไว้ตลอดอายุสัญญา / To punctually pay the rents and other sums during the entire lease term.</Bullet>
@@ -484,7 +493,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
         <Bullet>5.17 ก่อนย้ายออกผู้เช่าต้องทำความสะอาดห้องพักและส่งมอบห้องในสภาพเรียบร้อยตามสภาพปกติให้แก่ผู้ให้เช่า / Before moving out, clean and return the unit in good condition (subject to normal wear and tear).</Bullet>
 
         {/* Section 6: Lessor covenants */}
-        <View style={styles.sectionBar}>
+        <View style={styles.sectionBar} wrap={false}>
           <Text>6. ข้อตกลงของผู้ให้เช่า / LESSOR'S COVENANTS</Text>
         </View>
         <Bullet>6.1 ผู้ให้เช่ารับรองและรับประกันว่าเป็นผู้มีอำนาจปล่อยเช่าทรัพย์สินโดยถูกต้องภายใต้กฎหมายและข้อบังคับทั้งหลาย / The Lessor warrants the absolute right to lease the Premises under applicable laws.</Bullet>
@@ -492,7 +501,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
         <Bullet>6.3 ผู้ให้เช่าต้องบำรุงรักษาทรัพย์สินด้วยค่าใช้จ่ายของผู้ให้เช่าเองให้อยู่ในสภาพพักอาศัยและใช้งานได้ตามปกติ และต้องดูแลซ่อมแซมส่วนที่เสียหายในงานหลัก เช่น โครงสร้าง ระบบไฟฟ้า ประปา สายไฟและเคเบิ้ล สี ระบบน้ำเสีย ท่อน้ำทิ้ง บ่อพักน้ำ ท่อระบายน้ำ และระบบเครื่องปรับอากาศ / The Lessor shall, at own cost, maintain the Premises in habitable and usable condition and promptly make all major repairs (structure, electrical, plumbing, drainage, A/C system).</Bullet>
 
         {/* Section 7: Termination */}
-        <View style={styles.sectionBar}>
+        <View style={styles.sectionBar} wrap={false}>
           <Text>7. การบอกเลิกสัญญา / TERMINATION OF AGREEMENT</Text>
         </View>
         <Bullet>
@@ -513,14 +522,14 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
         <Bullet>7.9 หากสัญญานี้ยกเลิก สัญญาบริการและสัญญาเช่าเฟอร์นิเจอร์ระหว่างคู่สัญญา (ถ้ามี) จะถูกยกเลิกไปด้วยโดยปริยาย / Service and Furniture agreements (if any) terminate together with this Agreement.</Bullet>
 
         {/* Section 8: Vacating */}
-        <View style={styles.sectionBar}>
+        <View style={styles.sectionBar} wrap={false}>
           <Text>8. การย้ายออก / VACATING THE PREMISES</Text>
         </View>
         <Bullet>8.1 ในวันที่ครบกำหนดสัญญา ผู้เช่าต้องย้ายและขนย้ายทรัพย์สินของตนออก และส่งมอบทรัพย์สินคืนในสภาพเดิม สะอาด และสามารถนำออกให้เช่าได้ ยกเว้นความเสื่อมโทรมตามปกติ / On expiry, vacate and deliver the Premises in clean, original, tenantable condition (subject to normal wear and tear).</Bullet>
         <Bullet>8.2 หากผู้เช่าไม่ทำตาม 8.1: (a) ทรัพย์สินที่ค้างอยู่ตกเป็นกรรมสิทธิ์ของผู้ให้เช่า (b) ผู้เช่าต้องชำระค่าเช่าครึ่งเดือนหากค้างไม่เกิน 15 วัน หรือ 1 เดือนหากค้าง 15-30 วัน บวกค่าปรับวันละ 500 บาท นับจากวันสิ้นสุดสัญญา / If 8.1 is not met: (a) leftover property transfers to Lessor; (b) ½ month rent if delayed ≤15 days, full month if 15–30 days, plus 500 THB/day penalty.</Bullet>
 
         {/* Section 9: Applicable Law */}
-        <View style={styles.sectionBar}>
+        <View style={styles.sectionBar} wrap={false}>
           <Text>9. การบังคับใช้ / APPLICABLE LAW</Text>
         </View>
         <Text style={styles.paragraph}>
@@ -530,7 +539,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
 
         {/* Section 10: Furniture / Appliances / Other Items — always shown
             in full so the printed copy can be ticked or amended by hand. */}
-        <View style={styles.sectionBar}>
+        <View style={styles.sectionBar} wrap={false}>
           <Text>
             10. รายการเฟอร์นิเจอร์และอุปกรณ์ภายในห้องชุด / FURNITURE &amp;
             EQUIPMENT
@@ -589,7 +598,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
         </Text>
 
         {/* Section 11: Misc (was 10) */}
-        <View style={styles.sectionBar}>
+        <View style={styles.sectionBar} wrap={false}>
           <Text>11. อื่นๆ / MISCELLANEOUS</Text>
         </View>
         <Bullet>11.1 การที่ผู้ให้เช่ารับชำระค่าเช่าจะไม่ถือเป็นข้อยกเว้นไม่ให้ผู้ให้เช่าดำเนินการใดๆ กับผู้เช่า หากมีการละเมิดข้อตกลงข้อหนึ่งข้อใดที่ระบุไว้ในสัญญาฉบับนี้ / Acceptance of rent shall not waive the Lessor's right to act against any breach by the Lessee.</Bullet>
