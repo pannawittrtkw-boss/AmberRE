@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, Tooltip } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { getIntlLocale } from "@/lib/utils";
+import MapSearchBox from "./MapSearchBox";
 
 interface MapProperty {
   id: number;
@@ -62,6 +63,7 @@ export default function MapView({
   className = "w-full h-[600px]",
 }: MapViewProps) {
   const [mounted, setMounted] = useState(false);
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -83,7 +85,8 @@ export default function MapView({
   const validProperties = properties.filter((p) => p.latitude && p.longitude);
 
   return (
-    <>
+    <div className={`${className} relative`}>
+      <MapSearchBox map={mapInstance} locale={locale} />
       <style jsx global>{`
         .npb-price-marker-wrapper {
           background: transparent !important;
@@ -128,7 +131,10 @@ export default function MapView({
       <MapContainer
         center={center}
         zoom={zoom}
-        className={`${className} rounded-xl z-0`}
+        ref={(m) => {
+          if (m) setMapInstance(m);
+        }}
+        className="w-full h-full rounded-xl z-0"
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -217,6 +223,6 @@ export default function MapView({
           );
         })}
       </MapContainer>
-    </>
+    </div>
   );
 }
