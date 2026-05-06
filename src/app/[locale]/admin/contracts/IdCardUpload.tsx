@@ -9,14 +9,16 @@ import {
   ScanLine,
   Camera,
 } from "lucide-react";
-import { parseIdCardOcr, OcrParsedFields } from "@/lib/idcard-ocr";
-
 interface Props {
   label: string;
   value: string;
   onChange: (url: string) => void;
-  onOcrResult?: (fields: OcrParsedFields) => void;
+  // Receives raw OCR text — caller is responsible for parsing it. Letting
+  // the caller pick the parser keeps this component reusable for ID cards,
+  // bank books, and anything else.
+  onOcrText?: (rawText: string) => void;
   locale: string;
+  ocrHint?: string;
 }
 
 type Stage = "idle" | "uploading" | "ocr" | "done";
@@ -25,15 +27,16 @@ export default function IdCardUpload({
   label,
   value,
   onChange,
-  onOcrResult,
+  onOcrText,
   locale,
+  ocrHint,
 }: Props) {
   const [stage, setStage] = useState<Stage>("idle");
   const [error, setError] = useState("");
   const [ocrProgress, setOcrProgress] = useState(0);
 
   const runOcr = async (file: File) => {
-    if (!onOcrResult) return;
+    if (!onOcrText) return;
     setStage("ocr");
     setOcrProgress(0);
     try {
@@ -45,8 +48,7 @@ export default function IdCardUpload({
           }
         },
       });
-      const parsed = parseIdCardOcr(result.data.text);
-      onOcrResult(parsed);
+      onOcrText(result.data.text);
     } catch (err) {
       console.error("OCR failed:", err);
       // Don't block — image still uploaded fine, just no auto-fill
@@ -76,7 +78,7 @@ export default function IdCardUpload({
       }
       onChange(data.data.url);
       // Now run OCR if a callback is wired up
-      if (onOcrResult) {
+      if (onOcrText) {
         await runOcr(file);
       } else {
         setStage("idle");
@@ -117,8 +119,8 @@ export default function IdCardUpload({
             <div className="inline-flex items-center gap-2 text-xs text-stone-600">
               <ScanLine className="w-3.5 h-3.5 animate-pulse text-[#C8A951]" />
               {locale === "th"
-                ? `กำลังอ่านข้อมูลจากบัตร... ${ocrProgress}%`
-                : `Reading card... ${ocrProgress}%`}
+                ? `กำลังอ่านข้อมูล... ${ocrProgress}%`
+                : `Reading image... ${ocrProgress}%`}
             </div>
           )}
           {stage === "done" && (
@@ -146,11 +148,12 @@ export default function IdCardUpload({
                 ? "อัพโหลดรูปบัตรหรือถ่ายรูปได้เลย"
                 : "Upload an image or take a photo"}
             </span>
-            {onOcrResult && stage !== "uploading" && (
+            {onOcrText && stage !== "uploading" && (
               <span className="text-[11px] text-stone-400 text-center">
-                {locale === "th"
-                  ? "ระบบจะอ่านข้อมูลจากบัตรอัตโนมัติ (โปรดตรวจทาน)"
-                  : "Auto-fill from card (please review)"}
+                {ocrHint ||
+                  (locale === "th"
+                    ? "ระบบจะอ่านข้อมูลจากรูปอัตโนมัติ (โปรดตรวจทาน)"
+                    : "Auto-fill from image (please review)")}
               </span>
             )}
           </div>

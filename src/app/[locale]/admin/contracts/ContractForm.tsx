@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Loader2, ArrowLeft, ChevronDown, ChevronUp, Save } from "lucide-react";
 import ItemSelector from "./ItemSelector";
 import IdCardUpload from "./IdCardUpload";
+import { parseIdCardOcr } from "@/lib/idcard-ocr";
+import { parseBankBookOcr } from "@/lib/bank-ocr";
 import {
   FURNITURE_OPTIONS,
   APPLIANCE_OPTIONS,
@@ -99,6 +101,9 @@ export default function ContractForm({
     bankBranch: initialData?.bankBranch || "",
     bankAccountName: initialData?.bankAccountName || "",
     bankAccountNumber: initialData?.bankAccountNumber || "",
+    // Transient — only used to preview the bank-book image during OCR. Not
+    // persisted to the DB; the API ignores unknown fields.
+    bankBookImage: "",
     latePaymentFee: initialData?.latePaymentFee || 500,
 
     securityDeposit: initialData?.securityDeposit || "",
@@ -299,14 +304,15 @@ export default function ContractForm({
               label=""
               value={form.lessorIdImage}
               onChange={(url) => update("lessorIdImage", url)}
-              onOcrResult={(o) =>
+              onOcrText={(text) => {
+                const o = parseIdCardOcr(text);
                 setForm((prev) => ({
                   ...prev,
                   lessorName: prev.lessorName || o.name || "",
                   lessorIdCard: prev.lessorIdCard || o.idNumber || "",
                   lessorAddress: prev.lessorAddress || o.address || "",
-                }))
-              }
+                }));
+              }}
               locale={locale}
             />
           </Field>
@@ -365,7 +371,8 @@ export default function ContractForm({
               label=""
               value={form.lesseeIdImage}
               onChange={(url) => update("lesseeIdImage", url)}
-              onOcrResult={(o) =>
+              onOcrText={(text) => {
+                const o = parseIdCardOcr(text);
                 setForm((prev) => ({
                   ...prev,
                   lesseeName: prev.lesseeName || o.name || "",
@@ -375,8 +382,8 @@ export default function ContractForm({
                     prev.lesseeNationality && prev.lesseeNationality !== "ไทย"
                       ? prev.lesseeNationality
                       : o.nationality || prev.lesseeNationality || "",
-                }))
-              }
+                }));
+              }}
               locale={locale}
             />
           </Field>
@@ -446,7 +453,8 @@ export default function ContractForm({
                   label=""
                   value={form.jointLesseeIdImage}
                   onChange={(url) => update("jointLesseeIdImage", url)}
-                  onOcrResult={(o) =>
+                  onOcrText={(text) => {
+                    const o = parseIdCardOcr(text);
                     setForm((prev) => ({
                       ...prev,
                       jointLesseeName: prev.jointLesseeName || o.name || "",
@@ -455,11 +463,9 @@ export default function ContractForm({
                       jointLesseeAddress:
                         prev.jointLesseeAddress || o.address || "",
                       jointLesseeNationality:
-                        prev.jointLesseeNationality ||
-                        o.nationality ||
-                        "",
-                    }))
-                  }
+                        prev.jointLesseeNationality || o.nationality || "",
+                    }));
+                  }}
                   locale={locale}
                 />
               </Field>
@@ -551,6 +557,37 @@ export default function ContractForm({
               value={form.latePaymentFee}
               onChange={(e) => update("latePaymentFee", Number(e.target.value))}
               className={inputCls}
+            />
+          </Field>
+          <Field
+            label={
+              locale === "th"
+                ? "อัพโหลดรูปสมุดบัญชี / หน้าจอแอปธนาคาร (ตัวเลือก)"
+                : "Upload bank book or app screenshot (optional)"
+            }
+            colSpan={2}
+          >
+            <IdCardUpload
+              label=""
+              value={form.bankBookImage}
+              onChange={(url) => update("bankBookImage", url)}
+              onOcrText={(text) => {
+                const b = parseBankBookOcr(text);
+                setForm((prev) => ({
+                  ...prev,
+                  bankName: prev.bankName || b.bankName || "",
+                  bankBranch: prev.bankBranch || b.bankBranch || "",
+                  bankAccountName: prev.bankAccountName || b.accountName || "",
+                  bankAccountNumber:
+                    prev.bankAccountNumber || b.accountNumber || "",
+                }));
+              }}
+              ocrHint={
+                locale === "th"
+                  ? "ระบบจะอ่าน ธนาคาร / สาขา / ชื่อบัญชี / เลขบัญชี (โปรดตรวจทาน)"
+                  : "Will auto-fill bank / branch / account name / number (please review)"
+              }
+              locale={locale}
             />
           </Field>
           <Field label={locale === "th" ? "ธนาคาร" : "Bank"}>
