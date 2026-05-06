@@ -46,10 +46,10 @@ export default function ViewContractPage({
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 sm:mb-6">
         <Link
           href={`/${locale}/admin/contracts`}
-          className="flex items-center gap-1 text-sm text-stone-500 hover:text-[#C8A951]"
+          className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-[#C8A951] self-start"
         >
           <ArrowLeft className="w-4 h-4" />
           {locale === "th" ? "กลับ" : "Back"}
@@ -57,7 +57,7 @@ export default function ViewContractPage({
         <div className="flex gap-2">
           <Link
             href={`/${locale}/admin/contracts/${id}/edit`}
-            className="flex items-center gap-2 px-4 py-2 border rounded-lg text-sm hover:bg-gray-50"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 border rounded-lg text-sm hover:bg-gray-50"
           >
             <Pencil className="w-4 h-4" />
             {locale === "th" ? "แก้ไข" : "Edit"}
@@ -66,7 +66,7 @@ export default function ViewContractPage({
             href={`/api/admin/contracts/${id}/pdf`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-2 bg-[#C8A951] hover:bg-[#B8993F] text-white rounded-lg text-sm font-semibold"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#C8A951] hover:bg-[#B8993F] text-white rounded-lg text-sm font-semibold"
           >
             <Download className="w-4 h-4" />
             {locale === "th" ? "ดาวน์โหลด PDF" : "Download PDF"}
@@ -74,11 +74,11 @@ export default function ViewContractPage({
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border p-6 mb-4">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <FileText className="w-6 h-6 text-[#C8A951]" />
+      <div className="bg-white rounded-xl border p-4 sm:p-6 mb-4">
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2 break-all">
+              <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-[#C8A951] shrink-0" />
               {data.contractNumber}
             </h1>
             <p className="text-sm text-gray-500 mt-1">

@@ -65,13 +65,13 @@ export default function AdminContractsPage({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <FileText className="w-6 h-6" />
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
             {locale === "th" ? "สัญญาเช่า" : "Rental Contracts"}
           </h1>
-          <p className="text-gray-500 mt-1 text-sm">
+          <p className="text-gray-500 mt-1 text-xs sm:text-sm">
             {locale === "th"
               ? "สร้างและจัดการสัญญาเช่าในรูปแบบ PDF"
               : "Create and manage rental contracts as PDF"}
@@ -79,7 +79,7 @@ export default function AdminContractsPage({
         </div>
         <Link
           href={`/${locale}/admin/contracts/new`}
-          className="flex items-center gap-2 bg-[#C8A951] text-white px-4 py-2 rounded-lg hover:bg-[#B8993F]"
+          className="inline-flex items-center justify-center gap-2 bg-[#C8A951] text-white px-4 py-2.5 rounded-lg hover:bg-[#B8993F] text-sm font-medium"
         >
           <Plus className="w-4 h-4" />
           {locale === "th" ? "สร้างสัญญาใหม่" : "New Contract"}

@@ -189,16 +189,16 @@ export default function ContractForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="flex items-center justify-between">
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 pb-24 sm:pb-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <Link
           href={`/${locale}/admin/contracts`}
-          className="flex items-center gap-1 text-sm text-stone-500 hover:text-[#C8A951]"
+          className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-[#C8A951] self-start"
         >
           <ArrowLeft className="w-4 h-4" />
           {locale === "th" ? "กลับ" : "Back"}
         </Link>
-        <h1 className="text-2xl font-bold">
+        <h1 className="text-xl sm:text-2xl font-bold">
           {isEdit
             ? locale === "th" ? "แก้ไขสัญญา" : "Edit Contract"
             : locale === "th" ? "สร้างสัญญาใหม่" : "New Contract"}
@@ -681,8 +681,12 @@ export default function ContractForm({
         </Card>
       )}
 
-      {/* Submit */}
-      <div className="flex gap-2 sticky bottom-4">
+      {/* Submit — fixed bar at the bottom of the viewport on mobile so the
+          action is always reachable without scrolling through the long form. */}
+      <div
+        className="fixed sm:static bottom-0 left-0 right-0 z-30 flex gap-2 px-4 py-3 sm:p-0 bg-white sm:bg-transparent border-t sm:border-0"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.75rem)" }}
+      >
         <Link
           href={`/${locale}/admin/contracts`}
           className="flex-1 py-3 bg-white border rounded-lg text-center text-sm hover:bg-gray-50"
@@ -709,15 +713,15 @@ const inputCls =
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white border rounded-xl p-5">
-      <h2 className="font-bold mb-4">{title}</h2>
+    <div className="bg-white border rounded-xl p-4 sm:p-5">
+      <h2 className="font-bold mb-3 sm:mb-4 text-base sm:text-lg">{title}</h2>
       {children}
     </div>
   );
 }
 
 function Grid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{children}</div>;
+  return <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">{children}</div>;
 }
 
 function Field({
