@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, X, Loader2, Image as ImageIcon, ScanLine } from "lucide-react";
+import {
+  Upload,
+  X,
+  Loader2,
+  Image as ImageIcon,
+  ScanLine,
+  Camera,
+} from "lucide-react";
 import { parseIdCardOcr, OcrParsedFields } from "@/lib/idcard-ocr";
 
 interface Props {
@@ -123,41 +130,76 @@ export default function IdCardUpload({
           )}
         </div>
       ) : (
-        <label className="inline-flex flex-col items-center justify-center gap-2 px-6 py-6 border-2 border-dashed border-stone-300 rounded-lg cursor-pointer hover:border-[#C8A951] hover:bg-amber-50/40 transition-colors text-stone-500 text-sm w-full sm:w-72">
-          {stage === "uploading" ? (
-            <Loader2 className="w-6 h-6 animate-spin" />
-          ) : (
-            <ImageIcon className="w-6 h-6 text-stone-400" />
-          )}
-          <span>
-            {stage === "uploading"
-              ? locale === "th"
-                ? "กำลังอัพโหลด..."
-                : "Uploading..."
-              : locale === "th"
-              ? "คลิกเพื่อเลือกรูป (สูงสุด 10MB)"
-              : "Click to upload (max 10MB)"}
-          </span>
-          {onOcrResult && (
-            <span className="text-[11px] text-stone-400 text-center">
-              {locale === "th"
-                ? "ระบบจะอ่านข้อมูลจากบัตรอัตโนมัติ (โปรดตรวจทาน)"
-                : "Auto-fill from card (please review)"}
+        <div className="space-y-2 w-full sm:w-80">
+          <div className="flex flex-col items-center justify-center gap-1 px-6 py-5 border-2 border-dashed border-stone-300 rounded-lg text-stone-500 text-sm">
+            {stage === "uploading" ? (
+              <Loader2 className="w-6 h-6 animate-spin" />
+            ) : (
+              <ImageIcon className="w-6 h-6 text-stone-400" />
+            )}
+            <span className="text-center">
+              {stage === "uploading"
+                ? locale === "th"
+                  ? "กำลังอัพโหลด..."
+                  : "Uploading..."
+                : locale === "th"
+                ? "อัพโหลดรูปบัตรหรือถ่ายรูปได้เลย"
+                : "Upload an image or take a photo"}
             </span>
-          )}
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            disabled={isBusy}
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleFile(f);
-              e.target.value = "";
-            }}
-          />
-          <Upload className="w-3 h-3 mt-1" />
-        </label>
+            {onOcrResult && stage !== "uploading" && (
+              <span className="text-[11px] text-stone-400 text-center">
+                {locale === "th"
+                  ? "ระบบจะอ่านข้อมูลจากบัตรอัตโนมัติ (โปรดตรวจทาน)"
+                  : "Auto-fill from card (please review)"}
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <label
+              className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                isBusy
+                  ? "border-stone-200 bg-stone-100 text-stone-400 cursor-not-allowed"
+                  : "border-stone-300 bg-white hover:border-[#C8A951] hover:bg-amber-50 text-stone-700"
+              }`}
+            >
+              <Upload className="w-3.5 h-3.5" />
+              {locale === "th" ? "เลือกไฟล์" : "Choose file"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={isBusy}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleFile(f);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            <label
+              className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                isBusy
+                  ? "border-stone-200 bg-stone-100 text-stone-400 cursor-not-allowed"
+                  : "border-[#C8A951] bg-amber-50 hover:bg-amber-100 text-amber-900"
+              }`}
+            >
+              <Camera className="w-3.5 h-3.5" />
+              {locale === "th" ? "ถ่ายรูป" : "Take photo"}
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                disabled={isBusy}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleFile(f);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          </div>
+        </div>
       )}
       {error && <p className="text-xs text-rose-600">{error}</p>}
     </div>
