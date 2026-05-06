@@ -45,6 +45,26 @@ export default function IdCardUpload({
   const [ocrRawText, setOcrRawText] = useState("");
   const [showRaw, setShowRaw] = useState(false);
 
+  const applyOcrText = (text: string) => {
+    onOcrText?.(text);
+    setOcrRawText(text);
+    if (buildOcrPreview) {
+      setOcrPreview(buildOcrPreview(text));
+    }
+  };
+
+  const runTesseractFallback = async (file: File) => {
+    const Tesseract = (await import("tesseract.js")).default;
+    const result = await Tesseract.recognize(file, "tha+eng", {
+      logger: (m) => {
+        if (m.status === "recognizing text") {
+          setOcrProgress(Math.round((m.progress || 0) * 100));
+        }
+      },
+    });
+    return result.data.text;
+  };
+
   const runOcr = async (file: File) => {
     if (!onOcrText) return;
     setStage("ocr");
@@ -52,27 +72,42 @@ export default function IdCardUpload({
     setOcrPreview([]);
     setOcrRawText("");
     try {
-      const Tesseract = (await import("tesseract.js")).default;
-      const result = await Tesseract.recognize(file, "tha+eng", {
-        logger: (m) => {
-          if (m.status === "recognizing text") {
-            setOcrProgress(Math.round((m.progress || 0) * 100));
-          }
-        },
+      // Primary path: Google Cloud Vision via /api/admin/ocr. Much higher
+      // quality on Thai documents than the in-browser Tesseract fallback.
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/ocr", {
+        method: "POST",
+        body: fd,
       });
-      const text = result.data.text;
-      onOcrText(text);
-      setOcrRawText(text);
-      if (buildOcrPreview) {
-        setOcrPreview(buildOcrPreview(text));
+      const data = await res.json().catch(() => null);
+
+      if (data?.success && typeof data.data?.text === "string" && data.data.text.trim()) {
+        applyOcrText(data.data.text);
+        return;
       }
+
+      // Fallback path: in-browser Tesseract. Used when GOOGLE_VISION_API_KEY
+      // is not configured (503), the API is down, or it returns an empty
+      // result. Quality is much lower but the form still gets something.
+      console.warn(
+        "Falling back to Tesseract OCR:",
+        data?.error || `HTTP ${res.status}`
+      );
+      const text = await runTesseractFallback(file);
+      applyOcrText(text);
     } catch (err) {
       console.error("OCR failed:", err);
-      // Don't block — image still uploaded fine, just no auto-fill
+      // Try Tesseract one more time on unexpected errors — better than
+      // failing silently.
+      try {
+        const text = await runTesseractFallback(file);
+        applyOcrText(text);
+      } catch (fallbackErr) {
+        console.error("Tesseract fallback also failed:", fallbackErr);
+      }
     } finally {
       setStage("done");
-      // Don't clear preview/raw — let the user inspect after the spinner
-      // disappears. Cleared next time they upload.
       setTimeout(() => setStage("idle"), 1500);
     }
   };
