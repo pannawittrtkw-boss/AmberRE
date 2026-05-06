@@ -96,10 +96,13 @@ export default function MarketingDescription({
         : "✓ Text copied — paste (Cmd/Ctrl + V) into the “Say something about this...” box\n✓ In the dialog tap “Share to > Group” to pick the group\n• The preview image + title come from the page; if missing, Facebook may have cached it — clear via Sharing Debugger",
     desktopHintLine:
       locale === "th"
-        ? "✓ ข้อความถูกคัดลอกแล้ว — เปิดแชท LINE หรือกลุ่มแล้วกดวาง (Cmd/Ctrl + V)\n✓ รูปทั้งหมดถูกดาวน์โหลดแล้ว — ลากจาก Downloads ส่งใน LINE ได้เลย"
-        : "✓ Text copied to clipboard — open a LINE chat or group and paste (Cmd/Ctrl + V)\n✓ All images downloaded — drag from Downloads folder into LINE",
+        ? "✓ ข้อความถูกคัดลอกแล้ว — เปิดแอป LINE บนคอม → เลือกแชท/กลุ่ม → กดวาง (Cmd/Ctrl + V)\n✓ รูปทั้งหมดถูกดาวน์โหลดแล้ว — ลากจากโฟลเดอร์ Downloads ใส่หน้าต่างแชท LINE\n• LINE ไม่มี web share API ที่ส่งเข้ากลุ่มจาก browser ได้ — ต้องใช้แอป LINE Desktop"
+        : "✓ Text copied — open the LINE Desktop app, pick a chat or group, then paste (Cmd/Ctrl + V)\n✓ All images downloaded — drag from your Downloads folder into the LINE chat\n• LINE has no web-share API for sending to groups from the browser — you need the LINE Desktop app",
     openFacebook: locale === "th" ? "เปิด Facebook Share" : "Open Facebook Share",
-    openLine: locale === "th" ? "เปิด LINE" : "Open LINE",
+    openLine:
+      locale === "th"
+        ? "เปิดดาวน์โหลด LINE Desktop"
+        : "Get LINE Desktop",
     close: locale === "th" ? "ปิด" : "Close",
   };
 
@@ -201,8 +204,10 @@ export default function MarketingDescription({
           "noopener,noreferrer,width=720,height=720"
         );
       } else {
-        // LINE share URL: text only, no image upload via URL — download images
-        // so user can attach them manually in the chat after picking it.
+        // LINE on desktop: line.me/R/share is a mobile deep link and just lands
+        // on line.me's home page in a desktop browser. There is no reliable
+        // web share endpoint that targets a chat/group, so we just stage the
+        // text + images for the user to drop into LINE Desktop manually.
         setShareStatus("downloading");
         setShareProgress({ done: 0, total: imageUrls.length });
         for (let i = 0; i < imageUrls.length; i++) {
@@ -214,12 +219,6 @@ export default function MarketingDescription({
           setShareProgress({ done: i + 1, total: imageUrls.length });
           if (i < imageUrls.length - 1) await sleep(250);
         }
-
-        window.open(
-          `${LINE_SHARE_URL}${encodeURIComponent(`${text}\n\n${propertyUrl}`)}`,
-          "_blank",
-          "noopener,noreferrer"
-        );
       }
 
       setShareStatus("done");
@@ -317,7 +316,7 @@ export default function MarketingDescription({
               <a
                 href={
                   desktopHint === "line"
-                    ? `${LINE_SHARE_URL}${encodeURIComponent(`${text}\n\n${propertyUrl}`)}`
+                    ? "https://line.me/en/download"
                     : `${FB_SHARER_URL}${encodeURIComponent(propertyUrl)}`
                 }
                 target="_blank"
