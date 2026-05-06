@@ -299,6 +299,14 @@ export default function ContractForm({
               label=""
               value={form.lessorIdImage}
               onChange={(url) => update("lessorIdImage", url)}
+              onOcrResult={(o) =>
+                setForm((prev) => ({
+                  ...prev,
+                  lessorName: prev.lessorName || o.name || "",
+                  lessorIdCard: prev.lessorIdCard || o.idNumber || "",
+                  lessorAddress: prev.lessorAddress || o.address || "",
+                }))
+              }
               locale={locale}
             />
           </Field>
@@ -357,6 +365,18 @@ export default function ContractForm({
               label=""
               value={form.lesseeIdImage}
               onChange={(url) => update("lesseeIdImage", url)}
+              onOcrResult={(o) =>
+                setForm((prev) => ({
+                  ...prev,
+                  lesseeName: prev.lesseeName || o.name || "",
+                  lesseeIdCard: prev.lesseeIdCard || o.idNumber || "",
+                  lesseeAddress: prev.lesseeAddress || o.address || "",
+                  lesseeNationality:
+                    prev.lesseeNationality && prev.lesseeNationality !== "ไทย"
+                      ? prev.lesseeNationality
+                      : o.nationality || prev.lesseeNationality || "",
+                }))
+              }
               locale={locale}
             />
           </Field>
@@ -426,6 +446,20 @@ export default function ContractForm({
                   label=""
                   value={form.jointLesseeIdImage}
                   onChange={(url) => update("jointLesseeIdImage", url)}
+                  onOcrResult={(o) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      jointLesseeName: prev.jointLesseeName || o.name || "",
+                      jointLesseeIdCard:
+                        prev.jointLesseeIdCard || o.idNumber || "",
+                      jointLesseeAddress:
+                        prev.jointLesseeAddress || o.address || "",
+                      jointLesseeNationality:
+                        prev.jointLesseeNationality ||
+                        o.nationality ||
+                        "",
+                    }))
+                  }
                   locale={locale}
                 />
               </Field>
