@@ -5,6 +5,7 @@ import {
   Page,
   Text,
   View,
+  Image,
   StyleSheet,
   Font,
 } from "@react-pdf/renderer";
@@ -96,7 +97,63 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
   },
   checkText: { flex: 1 },
+  appendixWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 30,
+  },
+  appendixImage: {
+    maxWidth: "85%",
+    maxHeight: 380,
+    objectFit: "contain",
+    marginBottom: 24,
+  },
+  appendixCaption: {
+    textAlign: "center",
+    fontWeight: "bold",
+    marginBottom: 6,
+  },
+  appendixSubCaption: {
+    textAlign: "center",
+  },
 });
+
+interface IdAppendixProps {
+  imageUrl: string;
+  roleTh: string;
+  roleEn: string;
+  name: string;
+  projectName: string;
+  unitNumber: string;
+  isLessor: boolean;
+}
+
+function IdAppendix({
+  imageUrl,
+  roleTh,
+  roleEn,
+  name,
+  projectName,
+  unitNumber,
+  isLessor,
+}: IdAppendixProps) {
+  return (
+    <Page size="A4" style={styles.page}>
+      <View style={styles.appendixWrap}>
+        {/* eslint-disable-next-line jsx-a11y/alt-text */}
+        <Image src={imageUrl} style={styles.appendixImage} />
+        <Text style={styles.appendixCaption}>
+          {roleTh} / {roleEn}    {name}
+        </Text>
+        <Text style={styles.appendixSubCaption}>
+          {isLessor ? "ใช้สำหรับปล่อยเช่าคอนโด" : "ใช้สำหรับเช่าคอนโด"}{" "}
+          {projectName} ห้อง {unitNumber} เท่านั้น
+        </Text>
+      </View>
+    </Page>
+  );
+}
 
 function ChecklistRow({ item, num }: { item: PdfChecklistItem; num: number }) {
   return (
@@ -169,6 +226,10 @@ export interface ContractPdfData {
   furnitureList: PdfChecklistItem[];
   applianceList: PdfChecklistItem[];
   otherItems: PdfChecklistItem[];
+
+  lessorIdImage?: string | null;
+  lesseeIdImage?: string | null;
+  jointLesseeIdImage?: string | null;
 }
 
 const formatNum = (n: number) =>
@@ -644,6 +705,43 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           </View>
         </View>
       </Page>
+
+      {/* Appendix: ID card / passport images, one page per party. Rendered
+          only if an image was uploaded — otherwise the contract ends at the
+          signature page. */}
+      {data.lessorIdImage && (
+        <IdAppendix
+          imageUrl={data.lessorIdImage}
+          roleTh="ผู้ให้เช่า"
+          roleEn="Lessor"
+          name={data.lessorName}
+          projectName={data.projectName}
+          unitNumber={data.unitNumber}
+          isLessor
+        />
+      )}
+      {data.lesseeIdImage && (
+        <IdAppendix
+          imageUrl={data.lesseeIdImage}
+          roleTh="ผู้เช่า"
+          roleEn="Lessee"
+          name={data.lesseeName}
+          projectName={data.projectName}
+          unitNumber={data.unitNumber}
+          isLessor={false}
+        />
+      )}
+      {data.jointLesseeName && data.jointLesseeIdImage && (
+        <IdAppendix
+          imageUrl={data.jointLesseeIdImage}
+          roleTh="ผู้เช่าร่วม"
+          roleEn="Joint Lessee"
+          name={data.jointLesseeName}
+          projectName={data.projectName}
+          unitNumber={data.unitNumber}
+          isLessor={false}
+        />
+      )}
     </Document>
   );
 }

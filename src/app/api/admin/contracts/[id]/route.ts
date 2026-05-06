@@ -47,18 +47,21 @@ export async function PUT(
         lessorIdCard: body.lessorIdCard || null,
         lessorAddress: body.lessorAddress || null,
         lessorPhone: body.lessorPhone || null,
+        lessorIdImage: body.lessorIdImage || null,
 
         lesseeName: body.lesseeName,
         lesseeNationality: body.lesseeNationality || null,
         lesseeIdCard: body.lesseeIdCard || null,
         lesseeAddress: body.lesseeAddress || null,
         lesseePhone: body.lesseePhone || null,
+        lesseeIdImage: body.lesseeIdImage || null,
 
         jointLesseeName: body.jointLesseeName || null,
         jointLesseeNationality: body.jointLesseeNationality || null,
         jointLesseeIdCard: body.jointLesseeIdCard || null,
         jointLesseeAddress: body.jointLesseeAddress || null,
         jointLesseePhone: body.jointLesseePhone || null,
+        jointLesseeIdImage: body.jointLesseeIdImage || null,
 
         propertyId: body.propertyId ? Number(body.propertyId) : null,
         projectName: body.projectName,

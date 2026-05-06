@@ -97,8 +97,9 @@ model Contract {
   otherItems    String? @db.Text
 
   // ID card images
-  lessorIdImage String? @db.VarChar(500)
-  lesseeIdImage String? @db.VarChar(500)
+  lessorIdImage      String? @db.VarChar(500)
+  lesseeIdImage      String? @db.VarChar(500)
+  jointLesseeIdImage String? @db.VarChar(500)
 
   // Status
   status String @default("DRAFT") @db.VarChar(20) // DRAFT | ACTIVE | EXPIRED | TERMINATED

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
@@ -116,6 +117,21 @@ export async function GET(
     return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
   }
 
+  // react-pdf renders server-side and needs absolute URLs to fetch the ID
+  // images. Vercel Blob already returns full https:// URLs, but local /uploads
+  // paths must be prefixed with the request origin.
+  const hdrs = await headers();
+  const host = hdrs.get("host") || "";
+  const proto =
+    hdrs.get("x-forwarded-proto") ||
+    (host.startsWith("localhost") ? "http" : "https");
+  const toAbs = (u: string | null | undefined): string | null => {
+    if (!u) return null;
+    if (/^https?:\/\//i.test(u)) return u;
+    if (!host) return null;
+    return `${proto}://${host}${u.startsWith("/") ? "" : "/"}${u}`;
+  };
+
   const data: ContractPdfData = {
     contractNumber: contract.contractNumber,
     contractDateTh: fmtThaiDate(contract.contractDate),
@@ -166,6 +182,10 @@ export async function GET(
     furnitureList: buildChecklist(contract.furnitureList, FURNITURE_OPTIONS),
     applianceList: buildChecklist(contract.applianceList, APPLIANCE_OPTIONS),
     otherItems: buildChecklist(contract.otherItems, OTHER_ITEM_OPTIONS),
+
+    lessorIdImage: toAbs(contract.lessorIdImage),
+    lesseeIdImage: toAbs(contract.lesseeIdImage),
+    jointLesseeIdImage: toAbs(contract.jointLesseeIdImage),
   };
 
   try {

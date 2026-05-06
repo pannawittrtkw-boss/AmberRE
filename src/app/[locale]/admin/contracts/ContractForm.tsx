@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, ArrowLeft, ChevronDown, ChevronUp, Save } from "lucide-react";
 import ItemSelector from "./ItemSelector";
+import IdCardUpload from "./IdCardUpload";
 import {
   FURNITURE_OPTIONS,
   APPLIANCE_OPTIONS,
@@ -68,18 +69,21 @@ export default function ContractForm({
     lessorIdCard: initialData?.lessorIdCard || "",
     lessorAddress: initialData?.lessorAddress || "",
     lessorPhone: initialData?.lessorPhone || "",
+    lessorIdImage: initialData?.lessorIdImage || "",
 
     lesseeName: initialData?.lesseeName || "",
     lesseeNationality: initialData?.lesseeNationality || "ไทย",
     lesseeIdCard: initialData?.lesseeIdCard || "",
     lesseeAddress: initialData?.lesseeAddress || "",
     lesseePhone: initialData?.lesseePhone || "",
+    lesseeIdImage: initialData?.lesseeIdImage || "",
 
     jointLesseeName: initialData?.jointLesseeName || "",
     jointLesseeNationality: initialData?.jointLesseeNationality || "",
     jointLesseeIdCard: initialData?.jointLesseeIdCard || "",
     jointLesseeAddress: initialData?.jointLesseeAddress || "",
     jointLesseePhone: initialData?.jointLesseePhone || "",
+    jointLesseeIdImage: initialData?.jointLesseeIdImage || "",
 
     propertyId: initialData?.propertyId || null,
     projectName: initialData?.projectName || "",
@@ -158,6 +162,7 @@ export default function ContractForm({
       jointLesseeIdCard: showJoint ? form.jointLesseeIdCard : "",
       jointLesseeAddress: showJoint ? form.jointLesseeAddress : "",
       jointLesseePhone: showJoint ? form.jointLesseePhone : "",
+      jointLesseeIdImage: showJoint ? form.jointLesseeIdImage : "",
       furnitureList: furniture.length ? JSON.stringify(furniture) : "",
       applianceList: appliances.length ? JSON.stringify(appliances) : "",
       otherItems: otherItems.length ? JSON.stringify(otherItems) : "",
@@ -286,6 +291,17 @@ export default function ContractForm({
               className={inputCls}
             />
           </Field>
+          <Field
+            label={locale === "th" ? "รูปบัตรประชาชน" : "ID Card Image"}
+            colSpan={2}
+          >
+            <IdCardUpload
+              label=""
+              value={form.lessorIdImage}
+              onChange={(url) => update("lessorIdImage", url)}
+              locale={locale}
+            />
+          </Field>
         </Grid>
       </Card>
 
@@ -327,6 +343,21 @@ export default function ContractForm({
               value={form.lesseeAddress}
               onChange={(e) => update("lesseeAddress", e.target.value)}
               className={inputCls}
+            />
+          </Field>
+          <Field
+            label={
+              locale === "th"
+                ? "รูปบัตรประชาชน / พาสปอร์ต"
+                : "ID Card / Passport Image"
+            }
+            colSpan={2}
+          >
+            <IdCardUpload
+              label=""
+              value={form.lesseeIdImage}
+              onChange={(url) => update("lesseeIdImage", url)}
+              locale={locale}
             />
           </Field>
         </Grid>
@@ -381,6 +412,21 @@ export default function ContractForm({
                   value={form.jointLesseeAddress}
                   onChange={(e) => update("jointLesseeAddress", e.target.value)}
                   className={inputCls}
+                />
+              </Field>
+              <Field
+                label={
+                  locale === "th"
+                    ? "รูปบัตรประชาชน / พาสปอร์ต"
+                    : "ID Card / Passport Image"
+                }
+                colSpan={2}
+              >
+                <IdCardUpload
+                  label=""
+                  value={form.jointLesseeIdImage}
+                  onChange={(url) => update("jointLesseeIdImage", url)}
+                  locale={locale}
                 />
               </Field>
             </Grid>

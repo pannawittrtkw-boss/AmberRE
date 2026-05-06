@@ -88,18 +88,21 @@ export async function POST(req: NextRequest) {
         lessorIdCard: body.lessorIdCard || null,
         lessorAddress: body.lessorAddress || null,
         lessorPhone: body.lessorPhone || null,
+        lessorIdImage: body.lessorIdImage || null,
 
         lesseeName: String(body.lesseeName).trim(),
         lesseeNationality: body.lesseeNationality || null,
         lesseeIdCard: body.lesseeIdCard || null,
         lesseeAddress: body.lesseeAddress || null,
         lesseePhone: body.lesseePhone || null,
+        lesseeIdImage: body.lesseeIdImage || null,
 
         jointLesseeName: body.jointLesseeName || null,
         jointLesseeNationality: body.jointLesseeNationality || null,
         jointLesseeIdCard: body.jointLesseeIdCard || null,
         jointLesseeAddress: body.jointLesseeAddress || null,
         jointLesseePhone: body.jointLesseePhone || null,
+        jointLesseeIdImage: body.jointLesseeIdImage || null,
 
         propertyId,
         projectName: String(body.projectName).trim(),
