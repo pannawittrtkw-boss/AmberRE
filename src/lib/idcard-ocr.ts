@@ -141,11 +141,14 @@ const isPassportLabel = (line: string): boolean => {
   return PASSPORT_LABEL_PATTERNS.some((re) => re.test(trimmed));
 };
 
-// Heuristic: passport name lines are mostly uppercase Latin letters,
-// possibly with spaces, and at least one space (multi-word name).
+// Heuristic: a passport name line is uppercase Latin letters with at
+// least one space (i.e. multi-word). Single-token uppercase strings like
+// "MMR" or "PJ" are nearly always country codes, sex codes, or passport
+// types — never names — so we reject them.
 const looksLikePassportName = (line: string): boolean => {
   const trimmed = line.trim();
-  if (trimmed.length < 3) return false;
+  if (trimmed.length < 5) return false;
+  if (!/\s/.test(trimmed)) return false; // require multi-word
   if (!/[A-Z]/.test(trimmed)) return false;
   // Reject anything with digits (likely passport number, date) or `<` (MRZ)
   if (/[0-9<>]/.test(trimmed)) return false;
@@ -169,20 +172,22 @@ function findEnglishName(lines: string[]): string | undefined {
     if (/^Name\s*[:\-]?/i.test(ln)) {
       // Same-line value first
       const v = ln.replace(/^Name\s*[:\-]?\s*/i, "").trim();
-      if (v && !isPassportLabel(v)) return v;
-      // Otherwise scan forward skipping any passport label lines —
-      // Vision often returns labels in a block before the values.
-      for (let j = i + 1; j < Math.min(lines.length, i + 8); j++) {
+      if (v && !isPassportLabel(v) && looksLikePassportName(v)) return v;
+      // Otherwise scan forward — Vision often returns labels in a block
+      // before the values, so we keep skipping past:
+      //   * other passport labels (Country code, Passport No, ...),
+      //   * short uppercase tokens that are country/type/sex codes (1-4 chars),
+      //   * digit-only / MRZ-only lines,
+      // until we find a multi-word uppercase name.
+      for (let j = i + 1; j < Math.min(lines.length, i + 12); j++) {
         const candidate = lines[j].trim();
         if (!candidate) continue;
         if (isPassportLabel(candidate)) continue;
         if (/^[—\-_]+$/.test(candidate)) continue;
+        if (/^\d+$/.test(candidate)) continue;
+        if (/^[A-Z]{2,4}$/.test(candidate)) continue; // country / type code
+        if (/^[A-Z0-9<]+$/.test(candidate)) continue; // MRZ row
         if (looksLikePassportName(candidate)) return candidate;
-        // If we hit a digit-only line (likely a passport number / date) or
-        // very short fragment, keep going
-        if (/^\d+$/.test(candidate) || candidate.length < 3) continue;
-        // Otherwise accept this candidate as-is
-        return candidate;
       }
     }
   }
