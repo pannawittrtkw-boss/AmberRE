@@ -9,6 +9,7 @@ import {
   Loader2,
   ExternalLink,
   MessageCircle,
+  Download,
 } from "lucide-react";
 
 interface Props {
@@ -18,7 +19,7 @@ interface Props {
   imageUrls: string[];
 }
 
-type ShareTarget = "facebook" | "line";
+type ShareTarget = "facebook" | "line" | "download";
 type ShareStatus = "idle" | "preparing" | "sharing" | "downloading" | "done";
 
 const FB_SHARER_URL = "https://www.facebook.com/sharer/sharer.php?u=";
@@ -81,6 +82,7 @@ export default function MarketingDescription({
         : "Ready to post on Facebook / LINE",
     copy: locale === "th" ? "คัดลอกข้อความ" : "Copy text",
     copied: locale === "th" ? "คัดลอกแล้ว" : "Copied",
+    download: locale === "th" ? "โหลดรูปทั้งหมด" : "Download all images",
     shareFb: locale === "th" ? "แชร์ Facebook" : "Share to Facebook",
     shareLine: locale === "th" ? "แชร์ LINE" : "Share to LINE",
     preparing: locale === "th" ? "กำลังเตรียม..." : "Preparing...",
@@ -121,6 +123,36 @@ export default function MarketingDescription({
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       }
+    }
+  };
+
+  const downloadAllImages = async () => {
+    setShareStatus("downloading");
+    setShareProgress({ done: 0, total: imageUrls.length });
+    for (let i = 0; i < imageUrls.length; i++) {
+      const ext =
+        imageUrls[i].split(".").pop()?.split("?")[0]?.toLowerCase() || "jpg";
+      const safeExt = /^(jpg|jpeg|png|webp|gif)$/.test(ext) ? ext : "jpg";
+      const filename = `property-image-${String(i + 1).padStart(2, "0")}.${safeExt}`;
+      await triggerDownload(imageUrls[i], filename);
+      setShareProgress({ done: i + 1, total: imageUrls.length });
+      if (i < imageUrls.length - 1) await sleep(250);
+    }
+  };
+
+  const handleDownloadOnly = async () => {
+    if (shareStatus !== "idle") return;
+    setActiveTarget("download");
+    try {
+      await downloadAllImages();
+      setShareStatus("done");
+      setTimeout(() => {
+        setShareStatus("idle");
+        setActiveTarget(null);
+      }, 2000);
+    } catch {
+      setShareStatus("idle");
+      setActiveTarget(null);
     }
   };
 
@@ -208,17 +240,7 @@ export default function MarketingDescription({
         // on line.me's home page in a desktop browser. There is no reliable
         // web share endpoint that targets a chat/group, so we just stage the
         // text + images for the user to drop into LINE Desktop manually.
-        setShareStatus("downloading");
-        setShareProgress({ done: 0, total: imageUrls.length });
-        for (let i = 0; i < imageUrls.length; i++) {
-          const ext =
-            imageUrls[i].split(".").pop()?.split("?")[0]?.toLowerCase() || "jpg";
-          const safeExt = /^(jpg|jpeg|png|webp|gif)$/.test(ext) ? ext : "jpg";
-          const filename = `property-image-${String(i + 1).padStart(2, "0")}.${safeExt}`;
-          await triggerDownload(imageUrls[i], filename);
-          setShareProgress({ done: i + 1, total: imageUrls.length });
-          if (i < imageUrls.length - 1) await sleep(250);
-        }
+        await downloadAllImages();
       }
 
       setShareStatus("done");
@@ -270,6 +292,20 @@ export default function MarketingDescription({
               </>
             )}
           </button>
+          {imageUrls.length > 0 && (
+            <button
+              onClick={handleDownloadOnly}
+              disabled={isBusy}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-stone-700 hover:bg-stone-800 text-white transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {activeTarget === "download" && isBusy ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5" />
+              )}
+              {labelFor("download", T.download)}
+            </button>
+          )}
           {imageUrls.length > 0 && (
             <button
               onClick={() => handleShare("facebook")}
