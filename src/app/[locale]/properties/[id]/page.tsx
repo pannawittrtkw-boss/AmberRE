@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import Link from "next/link";
 import {
   Bed,
@@ -24,8 +25,10 @@ import FeaturedPropertyCard from "@/components/property/FeaturedPropertyCard";
 import AdminEditButton from "@/components/property/AdminEditButton";
 import AgentContactButtons from "@/components/property/AgentContactButtons";
 import PropertyInquiryForm from "@/components/property/PropertyInquiryForm";
+import MarketingDescription from "@/components/property/MarketingDescription";
 import SectionTitle from "@/components/ui/SectionTitle";
 import StatTile from "@/components/ui/StatTile";
+import { buildMarketingDescription } from "@/lib/marketing-description";
 
 const FURNITURE_MAP: Record<string, { en: string; th: string }> = {
   bed: { en: "Bed", th: "เตียง" }, mattress: { en: "Mattress", th: "ฟูก/ที่นอน" },
@@ -126,6 +129,32 @@ export default async function PropertyDetailPage({
     property.images.find((i) => i.isPrimary)?.imageUrl ||
     property.images[0]?.imageUrl ||
     null;
+
+  const hdrs = await headers();
+  const host = hdrs.get("host") || "npb-property.com";
+  const proto = hdrs.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
+  const propertyUrl = `${proto}://${host}/${locale}/properties/${id}`;
+  const imageUrls = property.images.map((img) => img.imageUrl);
+
+  const marketingText = buildMarketingDescription({
+    projectName: property.projectName,
+    titleTh: property.titleTh,
+    titleEn: property.titleEn,
+    listingType: property.listingType,
+    price,
+    salePrice: salePrice > 0 ? salePrice : null,
+    bedrooms: property.bedrooms,
+    bathrooms: property.bathrooms,
+    sizeSqm: property.sizeSqm ? Number(property.sizeSqm) : null,
+    floor: property.floor,
+    building: property.building,
+    condition: property.condition,
+    postFrom: property.postFrom,
+    furniture,
+    appliances,
+    facilities,
+    stations,
+  });
 
   const isRent =
     property.listingType === "RENT" || property.listingType === "RENT_AND_SALE";
@@ -392,6 +421,25 @@ export default async function PropertyDetailPage({
                 </p>
               </section>
             )}
+
+            {/* Marketing Listing Copy */}
+            <section>
+              <SectionTitle
+                badge={locale === "th" ? "ข้อความประกาศ" : "Listing Copy"}
+                title={
+                  locale === "th"
+                    ? "ข้อความสำหรับโพสต์"
+                    : "Ready-to-Post Listing"
+                }
+                className="mb-5"
+              />
+              <MarketingDescription
+                text={marketingText}
+                locale={locale}
+                propertyUrl={propertyUrl}
+                imageUrls={imageUrls}
+              />
+            </section>
 
             {/* Nearby BTS / MRT */}
             {stations.length > 0 && (
