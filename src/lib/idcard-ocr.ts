@@ -113,6 +113,46 @@ function findThaiName(lines: string[]): string | undefined {
   return undefined;
 }
 
+// Passport / ID-card labels that may appear stacked together in the OCR
+// text before any actual value. We must skip past these when searching
+// for the holder's name (or any other field) so we don't treat a label
+// as the value.
+const PASSPORT_LABEL_PATTERNS = [
+  /^Type$/i,
+  /^Country\s*code$/i,
+  /^Passport\s*No\.?$/i,
+  /^Passport\s*Number$/i,
+  /^Nationality$/i,
+  /^Date\s*of\s*birth$/i,
+  /^Sex$/i,
+  /^Place\s*of\s*birth$/i,
+  /^Date\s*of\s*issue$/i,
+  /^Authority$/i,
+  /^Date\s*of\s*expiry$/i,
+  /^Holder.?s\s*signature$/i,
+  /^Surname$/i,
+  /^Last\s*name$/i,
+  /^Given\s*names?$/i,
+  /^Name$/i,
+];
+
+const isPassportLabel = (line: string): boolean => {
+  const trimmed = line.trim();
+  return PASSPORT_LABEL_PATTERNS.some((re) => re.test(trimmed));
+};
+
+// Heuristic: passport name lines are mostly uppercase Latin letters,
+// possibly with spaces, and at least one space (multi-word name).
+const looksLikePassportName = (line: string): boolean => {
+  const trimmed = line.trim();
+  if (trimmed.length < 3) return false;
+  if (!/[A-Z]/.test(trimmed)) return false;
+  // Reject anything with digits (likely passport number, date) or `<` (MRZ)
+  if (/[0-9<>]/.test(trimmed)) return false;
+  // Allow A-Z, spaces, hyphens, apostrophes
+  return /^[A-Z][A-Z\s'\-.]+[A-Z]$/i.test(trimmed);
+};
+
 function findEnglishName(lines: string[]): string | undefined {
   for (let i = 0; i < lines.length; i++) {
     const ln = lines[i];
@@ -124,15 +164,38 @@ function findEnglishName(lines: string[]): string | undefined {
         const given = next.replace(/^(?:Given\s*names?|Name)\s*[:\-]?\s*/i, "").trim();
         if (given && surname) return `${given} ${surname}`;
       }
-      if (surname) return surname;
+      if (surname && !isPassportLabel(surname)) return surname;
     }
     if (/^Name\s*[:\-]?/i.test(ln)) {
+      // Same-line value first
       const v = ln.replace(/^Name\s*[:\-]?\s*/i, "").trim();
-      if (v) return v;
-      // value on next line
-      if (lines[i + 1]) return lines[i + 1].trim();
+      if (v && !isPassportLabel(v)) return v;
+      // Otherwise scan forward skipping any passport label lines —
+      // Vision often returns labels in a block before the values.
+      for (let j = i + 1; j < Math.min(lines.length, i + 8); j++) {
+        const candidate = lines[j].trim();
+        if (!candidate) continue;
+        if (isPassportLabel(candidate)) continue;
+        if (/^[—\-_]+$/.test(candidate)) continue;
+        if (looksLikePassportName(candidate)) return candidate;
+        // If we hit a digit-only line (likely a passport number / date) or
+        // very short fragment, keep going
+        if (/^\d+$/.test(candidate) || candidate.length < 3) continue;
+        // Otherwise accept this candidate as-is
+        return candidate;
+      }
     }
   }
+
+  // Fallback: scan for an obvious uppercase passport-style name with at
+  // least 2 words. Helps when OCR doesn't surface the "Name" label at all.
+  for (const ln of lines) {
+    const trimmed = ln.trim();
+    if (looksLikePassportName(trimmed) && /\s/.test(trimmed)) {
+      return trimmed;
+    }
+  }
+
   return undefined;
 }
 
