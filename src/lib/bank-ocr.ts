@@ -99,21 +99,32 @@ function findBankName(text: string): string | undefined {
 }
 
 function findBranch(text: string, lines: string[]): string | undefined {
-  // Pattern 1: "สาขา X" inline
+  // Pattern 1: "สาขา X" inline (but skip if X is itself a label like "Branch")
   const inline = text.match(/สาขา\s*[:\-]?\s*([^\n,]{1,40})/);
   if (inline) {
     const v = inline[1].trim();
-    if (v && !/^[—\-]+$/.test(v)) return v;
+    if (v && !/^[—\-]+$/.test(v) && !/^Branch$/i.test(v)) return v;
   }
   // Pattern 2: "Branch: X"
   const en = text.match(/Branch\s*[:\-]?\s*([^\n]{1,40})/i);
   if (en) {
     const v = en[1].trim();
-    if (v) return v;
+    if (v && !/^สาขา$/i.test(v)) return v;
   }
-  // Pattern 3: line right after a line that is just "สาขา"
-  const idx = lines.findIndex((l) => /^สาขา$/i.test(l.trim()));
-  if (idx !== -1 && lines[idx + 1]) return lines[idx + 1].trim();
+  // Pattern 3: scan after a "สาขา" / "Branch" label line, skipping further
+  // label lines (bilingual stacked layout).
+  for (let i = 0; i < lines.length; i++) {
+    const ln = lines[i].trim();
+    if (/^(?:สาขา|Branch)$/i.test(ln)) {
+      for (let j = i + 1; j < Math.min(lines.length, i + 4); j++) {
+        const candidate = lines[j].trim();
+        if (!candidate) continue;
+        if (isLabelLine(candidate)) continue;
+        if (/^[—\-_]+$/.test(candidate)) continue;
+        if (candidate.length > 1) return candidate;
+      }
+    }
+  }
   return undefined;
 }
 
@@ -140,19 +151,60 @@ function findAccountNumber(text: string): string | undefined {
   return undefined;
 }
 
+// Lines that are themselves known labels on Thai/English bank books — we
+// must skip past them when hunting for the actual value.
+const LABEL_PATTERNS = [
+  /^ชื่อบัญชี/i,
+  /^Account\s*Name/i,
+  /^เลขที่บัญชี/i,
+  /^Account\s*No\.?/i,
+  /^Account\s*Number/i,
+  /^สาขา/i,
+  /^Branch/i,
+  /^ประเภทบัญชี/i,
+  /^Account\s*Type/i,
+  /^วันที่/i,
+  /^Date/i,
+];
+
+const isLabelLine = (line: string): boolean => {
+  const trimmed = line.trim();
+  return LABEL_PATTERNS.some((re) => re.test(trimmed));
+};
+
 function findAccountName(lines: string[]): string | undefined {
-  // Pattern 1: line right after a label like "ชื่อบัญชี" or "Account Name"
+  // Pattern 1: line right after a label like "ชื่อบัญชี" or "Account Name".
+  // Bank books typically use bilingual labels stacked together:
+  //
+  //   ชื่อบัญชี
+  //   Account Name
+  //   น.ส. เกษศิรินทร์ จงสุขสันติกูล   ← actual value
+  //
+  // so when we land on a label line we must keep skipping additional label
+  // lines until we hit something that looks like real content.
   for (let i = 0; i < lines.length; i++) {
     const ln = lines[i];
     if (/ชื่อบัญชี/i.test(ln) || /Account\s*Name/i.test(ln)) {
+      // Try same-line value first (e.g. "ชื่อบัญชี: นายสมชาย")
       const sameLine = ln
         .replace(/^.*?(?:ชื่อบัญชี|Account\s*Name)\s*[:\-]?\s*/i, "")
         .trim();
-      if (sameLine && sameLine.length > 2 && !/^[—\-_]+$/.test(sameLine)) {
+      if (
+        sameLine &&
+        sameLine.length > 2 &&
+        !/^[—\-_]+$/.test(sameLine) &&
+        !isLabelLine(sameLine)
+      ) {
         return sameLine;
       }
-      const next = lines[i + 1];
-      if (next && next.trim().length > 2) return next.trim();
+      // Otherwise scan forward, skipping any subsequent label lines
+      for (let j = i + 1; j < Math.min(lines.length, i + 5); j++) {
+        const candidate = lines[j].trim();
+        if (!candidate) continue;
+        if (isLabelLine(candidate)) continue;
+        if (/^[—\-_]+$/.test(candidate)) continue;
+        if (candidate.length > 2) return candidate;
+      }
     }
   }
   // Pattern 2: any line starting with นาย / นาง / น.ส. / MR / MISS
