@@ -19,6 +19,10 @@ interface Props {
   onOcrText?: (rawText: string) => void;
   locale: string;
   ocrHint?: string;
+  // Optional: build a list of detected key/value pairs to preview to the
+  // user (so they can see what OCR pulled out). Returning [] signals
+  // nothing was detected.
+  buildOcrPreview?: (rawText: string) => Array<{ label: string; value: string }>;
 }
 
 type Stage = "idle" | "uploading" | "ocr" | "done";
@@ -30,15 +34,23 @@ export default function IdCardUpload({
   onOcrText,
   locale,
   ocrHint,
+  buildOcrPreview,
 }: Props) {
   const [stage, setStage] = useState<Stage>("idle");
   const [error, setError] = useState("");
   const [ocrProgress, setOcrProgress] = useState(0);
+  const [ocrPreview, setOcrPreview] = useState<
+    Array<{ label: string; value: string }>
+  >([]);
+  const [ocrRawText, setOcrRawText] = useState("");
+  const [showRaw, setShowRaw] = useState(false);
 
   const runOcr = async (file: File) => {
     if (!onOcrText) return;
     setStage("ocr");
     setOcrProgress(0);
+    setOcrPreview([]);
+    setOcrRawText("");
     try {
       const Tesseract = (await import("tesseract.js")).default;
       const result = await Tesseract.recognize(file, "tha+eng", {
@@ -48,14 +60,28 @@ export default function IdCardUpload({
           }
         },
       });
-      onOcrText(result.data.text);
+      const text = result.data.text;
+      onOcrText(text);
+      setOcrRawText(text);
+      if (buildOcrPreview) {
+        setOcrPreview(buildOcrPreview(text));
+      }
     } catch (err) {
       console.error("OCR failed:", err);
       // Don't block — image still uploaded fine, just no auto-fill
     } finally {
       setStage("done");
+      // Don't clear preview/raw — let the user inspect after the spinner
+      // disappears. Cleared next time they upload.
       setTimeout(() => setStage("idle"), 1500);
     }
+  };
+
+  const clearAll = () => {
+    onChange("");
+    setOcrPreview([]);
+    setOcrRawText("");
+    setShowRaw(false);
   };
 
   const handleFile = async (file: File) => {
@@ -107,7 +133,7 @@ export default function IdCardUpload({
             />
             <button
               type="button"
-              onClick={() => onChange("")}
+              onClick={clearAll}
               disabled={isBusy}
               className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-rose-500 text-white shadow flex items-center justify-center hover:bg-rose-600 disabled:opacity-50"
               aria-label="Remove image"
@@ -123,12 +149,54 @@ export default function IdCardUpload({
                 : `Reading image... ${ocrProgress}%`}
             </div>
           )}
-          {stage === "done" && (
-            <div className="inline-flex items-center gap-2 text-xs text-emerald-700">
-              {locale === "th"
-                ? "อ่านข้อมูลเสร็จ — ตรวจสอบในช่องด้านบน"
-                : "Done — please review the auto-filled fields above"}
+          {stage !== "ocr" && ocrPreview.length > 0 && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs space-y-1.5 max-w-md">
+              <div className="font-semibold text-emerald-800">
+                {locale === "th"
+                  ? "ระบบอ่านได้:"
+                  : "Detected from image:"}
+              </div>
+              {ocrPreview.map((p, i) => (
+                <div key={i} className="flex gap-2">
+                  <span className="text-stone-500 shrink-0 w-20">
+                    {p.label}:
+                  </span>
+                  <span className="font-medium text-stone-800 break-all">
+                    {p.value}
+                  </span>
+                </div>
+              ))}
             </div>
+          )}
+          {stage !== "ocr" &&
+            onOcrText &&
+            ocrPreview.length === 0 &&
+            ocrRawText && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 max-w-md">
+                {locale === "th"
+                  ? "ไม่พบข้อมูลที่ตรงกับฟอร์มอัตโนมัติ — ลองดูข้อความที่อ่านได้ด้านล่าง แล้วกรอกในช่องเอง"
+                  : "Couldn't auto-extract fields — see raw text below and fill the form manually."}
+              </div>
+            )}
+          {ocrRawText && (
+            <button
+              type="button"
+              onClick={() => setShowRaw(!showRaw)}
+              className="text-xs text-stone-500 hover:text-[#C8A951] underline"
+            >
+              {showRaw
+                ? locale === "th"
+                  ? "ซ่อนข้อความที่ OCR อ่านได้"
+                  : "Hide raw OCR text"
+                : locale === "th"
+                ? "ดูข้อความที่ OCR อ่านได้"
+                : "Show raw OCR text"}
+            </button>
+          )}
+          {showRaw && ocrRawText && (
+            <pre className="rounded-lg border bg-stone-50 p-3 text-[11px] text-stone-700 whitespace-pre-wrap break-words max-h-48 overflow-y-auto max-w-md">
+              {ocrRawText}
+            </pre>
           )}
         </div>
       ) : (

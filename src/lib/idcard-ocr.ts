@@ -15,32 +15,75 @@ const stripDiacriticsAndSpaces = (s: string) =>
   s.replace(/[\s​]/g, "").toLowerCase();
 
 function findThaiIdNumber(text: string): string | undefined {
-  // Thai national ID is 13 digits, often printed as "X XXXX XXXXX XX X"
-  // Tesseract sometimes inserts spaces or O/0 confusion
-  const cleaned = text.replace(/[ \-]/g, "");
-  const match = cleaned.match(/(?:^|[^\d])(\d{13})(?:[^\d]|$)/);
-  if (match) return match[1];
-  // Try the spaced format on the raw text
-  const spaced = text.match(/\b(\d)\s*(\d{4})\s*(\d{5})\s*(\d{2})\s*(\d)\b/);
+  // Thai national ID is 13 digits, often printed as "X XXXX XXXXX XX X".
+  // Tesseract may read O/Q/D as 0, l/I as 1, S as 5 — normalise digits-only
+  // pockets before matching.
+  const normalised = text
+    .replace(/[OQD]/g, "0")
+    .replace(/[Il]/g, "1")
+    .replace(/[S]/g, "5");
+
+  const cleaned = normalised.replace(/[ \-]/g, "");
+  const exact = cleaned.match(/(?:^|[^\d])(\d{13})(?:[^\d]|$)/);
+  if (exact) return exact[1];
+
+  // Try the spaced format on the normalised text (both standard and Thai
+  // 13-digit groupings).
+  const spaced = normalised.match(/\b(\d)\s*(\d{4})\s*(\d{5})\s*(\d{2})\s*(\d)\b/);
   if (spaced) return spaced.slice(1).join("");
+
   return undefined;
 }
 
 function findPassportNumber(text: string): string | undefined {
   // Passport numbers are typically 1-2 letters + 6-8 digits, usually after
-  // "Passport No" or in the MRZ at the bottom of the document.
-  const labelMatch = text.match(/Passport\s*No\.?\s*[:\-]?\s*([A-Z]{1,2}\d{6,9})/i);
-  if (labelMatch) return labelMatch[1].toUpperCase();
-  // MRZ: line 2 starts with passport number followed by < pad
-  const mrz = text.match(/^([A-Z0-9<]{9})/m);
-  if (mrz) {
-    const cleaned = mrz[1].replace(/</g, "");
-    if (/^[A-Z]{1,2}\d{6,9}$/.test(cleaned)) return cleaned;
+  // "Passport No" or in the MRZ at the bottom of the document. Tesseract
+  // often confuses I↔1 and O↔0 in passport-number text, so we try multiple
+  // matching strategies and pick the first that looks plausible.
+  //
+  // Strategy 1: explicit "Passport No[. :] XX9999999" label
+  const labelPatterns = [
+    /Passport\s*No\.?\s*[:\-]?\s*([A-Z][A-Z0-9]{6,9})/i,
+    /Passport\s*Number\s*[:\-]?\s*([A-Z][A-Z0-9]{6,9})/i,
+    /Passport\s*[:\-]\s*([A-Z][A-Z0-9]{6,9})/i,
+  ];
+  for (const pat of labelPatterns) {
+    const m = text.match(pat);
+    if (m) return cleanPassport(m[1]);
   }
-  // Fallback: any standalone uppercase letters + digits sequence
+
+  // Strategy 2: scan the MRZ at the bottom — line that starts with the
+  // passport number followed by `<` padding. Length 9 is the canonical MRZ
+  // first chunk but Tesseract sometimes drops the trailing check digit.
+  const mrzLines = text.split("\n").filter((l) => /[A-Z0-9<]{8,}/.test(l));
+  for (const ln of mrzLines) {
+    const m = ln.match(/([A-Z][A-Z0-9]{5,9})</);
+    if (m) {
+      const cleaned = cleanPassport(m[1]);
+      if (cleaned) return cleaned;
+    }
+  }
+
+  // Strategy 3: any standalone uppercase letters + digits sequence
   const generic = text.match(/\b([A-Z]{1,2}\d{6,9})\b/);
   if (generic) return generic[1];
+
   return undefined;
+}
+
+function cleanPassport(raw: string): string {
+  // Tesseract often reads "I" instead of "1" in the digit portion. Keep the
+  // first letter(s) untouched, but normalise the trailing characters: I→1,
+  // O→0, S→5 within what should be digits.
+  if (!raw) return raw;
+  const m = raw.match(/^([A-Z]{1,2})(.+)$/);
+  if (!m) return raw;
+  const letters = m[1];
+  const tail = m[2]
+    .replace(/[Il]/g, "1")
+    .replace(/O/g, "0")
+    .replace(/S/g, "5");
+  return letters + tail;
 }
 
 function findThaiName(lines: string[]): string | undefined {
@@ -96,12 +139,37 @@ function findEnglishName(lines: string[]): string | undefined {
 function findThaiAddress(lines: string[]): string | undefined {
   // "ที่อยู่" label can be alone on a line; the address spans 1-3 lines
   // until something like "วันออกบัตร" / "Date of Issue" / "วันที่ออกบัตร".
-  const startIdx = lines.findIndex((ln) => /ที่อยู่/.test(ln));
-  if (startIdx === -1) return undefined;
+  // Tesseract may garble "ที่อยู่" into "ทอย", "ที่ยู่", or split it across
+  // lines. Try a few looser anchors before giving up.
+  const anchors = [/ที่อยู่/, /ที่อยู/, /ทอยู/, /ทีอยู/];
+  let startIdx = -1;
+  for (const re of anchors) {
+    startIdx = lines.findIndex((ln) => re.test(ln));
+    if (startIdx !== -1) break;
+  }
+
+  // Strategy 2: if no label match, use heuristic — look for a line that
+  // contains a Thai administrative keyword (ตำบล, ต., อำเภอ, อ., จังหวัด, จ.).
+  if (startIdx === -1) {
+    startIdx = lines.findIndex((ln) =>
+      /(?:ตำบล|ต\.|อำเภอ|อ\.|จังหวัด|จ\.|แขวง|เขต|หมู่ที่|ม\.\s*\d)/.test(ln)
+    );
+    if (startIdx === -1) return undefined;
+    // For heuristic match, include the matched line too
+    const collected: string[] = [lines[startIdx].trim()];
+    for (let i = startIdx + 1; i < Math.min(lines.length, startIdx + 3); i++) {
+      const ln = lines[i].trim();
+      if (!ln) continue;
+      if (/(?:วันออก|Date of Issue|วันบัตรหมดอายุ|Date of Expiry|เจ้าพนักงาน)/i.test(ln)) break;
+      if (/[฀-๿]/.test(ln)) collected.push(ln);
+      else break;
+    }
+    return collected.join(" ").trim() || undefined;
+  }
+
   const collected: string[] = [];
-  // Capture text after the label on the same line
   const sameLine = lines[startIdx]
-    .replace(/^.*?ที่อยู่\s*[:\-]?\s*/, "")
+    .replace(/^.*?(?:ที่อยู่|ที่อยู|ทอยู|ทีอยู)\s*[:\-]?\s*/, "")
     .trim();
   if (sameLine) collected.push(sameLine);
   for (let i = startIdx + 1; i < Math.min(lines.length, startIdx + 4); i++) {

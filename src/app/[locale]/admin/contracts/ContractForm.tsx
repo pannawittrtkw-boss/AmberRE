@@ -308,10 +308,21 @@ export default function ContractForm({
                 const o = parseIdCardOcr(text);
                 setForm((prev) => ({
                   ...prev,
-                  lessorName: prev.lessorName || o.name || "",
-                  lessorIdCard: prev.lessorIdCard || o.idNumber || "",
-                  lessorAddress: prev.lessorAddress || o.address || "",
+                  lessorName: o.name || prev.lessorName || "",
+                  lessorIdCard: o.idNumber || prev.lessorIdCard || "",
+                  lessorAddress: o.address || prev.lessorAddress || "",
                 }));
+              }}
+              buildOcrPreview={(text) => {
+                const o = parseIdCardOcr(text);
+                const out: Array<{ label: string; value: string }> = [];
+                if (o.name)
+                  out.push({ label: locale === "th" ? "ชื่อ" : "Name", value: o.name });
+                if (o.idNumber)
+                  out.push({ label: locale === "th" ? "เลข ID" : "ID No.", value: o.idNumber });
+                if (o.address)
+                  out.push({ label: locale === "th" ? "ที่อยู่" : "Address", value: o.address });
+                return out;
               }}
               locale={locale}
             />
@@ -375,14 +386,25 @@ export default function ContractForm({
                 const o = parseIdCardOcr(text);
                 setForm((prev) => ({
                   ...prev,
-                  lesseeName: prev.lesseeName || o.name || "",
-                  lesseeIdCard: prev.lesseeIdCard || o.idNumber || "",
-                  lesseeAddress: prev.lesseeAddress || o.address || "",
+                  lesseeName: o.name || prev.lesseeName || "",
+                  lesseeIdCard: o.idNumber || prev.lesseeIdCard || "",
+                  lesseeAddress: o.address || prev.lesseeAddress || "",
                   lesseeNationality:
-                    prev.lesseeNationality && prev.lesseeNationality !== "ไทย"
-                      ? prev.lesseeNationality
-                      : o.nationality || prev.lesseeNationality || "",
+                    o.nationality || prev.lesseeNationality || "",
                 }));
+              }}
+              buildOcrPreview={(text) => {
+                const o = parseIdCardOcr(text);
+                const out: Array<{ label: string; value: string }> = [];
+                if (o.name)
+                  out.push({ label: locale === "th" ? "ชื่อ" : "Name", value: o.name });
+                if (o.idNumber)
+                  out.push({ label: locale === "th" ? "เลข ID" : "ID No.", value: o.idNumber });
+                if (o.address)
+                  out.push({ label: locale === "th" ? "ที่อยู่" : "Address", value: o.address });
+                if (o.nationality)
+                  out.push({ label: locale === "th" ? "สัญชาติ" : "Nationality", value: o.nationality });
+                return out;
               }}
               locale={locale}
             />
@@ -457,14 +479,27 @@ export default function ContractForm({
                     const o = parseIdCardOcr(text);
                     setForm((prev) => ({
                       ...prev,
-                      jointLesseeName: prev.jointLesseeName || o.name || "",
+                      jointLesseeName: o.name || prev.jointLesseeName || "",
                       jointLesseeIdCard:
-                        prev.jointLesseeIdCard || o.idNumber || "",
+                        o.idNumber || prev.jointLesseeIdCard || "",
                       jointLesseeAddress:
-                        prev.jointLesseeAddress || o.address || "",
+                        o.address || prev.jointLesseeAddress || "",
                       jointLesseeNationality:
-                        prev.jointLesseeNationality || o.nationality || "",
+                        o.nationality || prev.jointLesseeNationality || "",
                     }));
+                  }}
+                  buildOcrPreview={(text) => {
+                    const o = parseIdCardOcr(text);
+                    const out: Array<{ label: string; value: string }> = [];
+                    if (o.name)
+                      out.push({ label: locale === "th" ? "ชื่อ" : "Name", value: o.name });
+                    if (o.idNumber)
+                      out.push({ label: locale === "th" ? "เลข ID" : "ID No.", value: o.idNumber });
+                    if (o.address)
+                      out.push({ label: locale === "th" ? "ที่อยู่" : "Address", value: o.address });
+                    if (o.nationality)
+                      out.push({ label: locale === "th" ? "สัญชาติ" : "Nationality", value: o.nationality });
+                    return out;
                   }}
                   locale={locale}
                 />
@@ -575,12 +610,25 @@ export default function ContractForm({
                 const b = parseBankBookOcr(text);
                 setForm((prev) => ({
                   ...prev,
-                  bankName: prev.bankName || b.bankName || "",
-                  bankBranch: prev.bankBranch || b.bankBranch || "",
-                  bankAccountName: prev.bankAccountName || b.accountName || "",
+                  bankName: b.bankName || prev.bankName || "",
+                  bankBranch: b.bankBranch || prev.bankBranch || "",
+                  bankAccountName: b.accountName || prev.bankAccountName || "",
                   bankAccountNumber:
-                    prev.bankAccountNumber || b.accountNumber || "",
+                    b.accountNumber || prev.bankAccountNumber || "",
                 }));
+              }}
+              buildOcrPreview={(text) => {
+                const b = parseBankBookOcr(text);
+                const out: Array<{ label: string; value: string }> = [];
+                if (b.bankName)
+                  out.push({ label: locale === "th" ? "ธนาคาร" : "Bank", value: b.bankName });
+                if (b.bankBranch)
+                  out.push({ label: locale === "th" ? "สาขา" : "Branch", value: b.bankBranch });
+                if (b.accountName)
+                  out.push({ label: locale === "th" ? "ชื่อบัญชี" : "Account Name", value: b.accountName });
+                if (b.accountNumber)
+                  out.push({ label: locale === "th" ? "เลขบัญชี" : "Account No.", value: b.accountNumber });
+                return out;
               }}
               ocrHint={
                 locale === "th"
