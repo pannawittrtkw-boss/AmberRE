@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import Link from "next/link";
@@ -71,6 +72,107 @@ import { getStationThaiName } from "@/lib/stations";
 
 async function getMessages(locale: string) {
   return (await import(`@/messages/${locale}.json`)).default;
+}
+
+function absoluteUrl(path: string, host: string, proto: string): string {
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${proto}://${host}${path.startsWith("/") ? "" : "/"}${path}`;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; id: string }>;
+}): Promise<Metadata> {
+  const { locale, id } = await params;
+  const numId = Number.parseInt(id, 10);
+  if (Number.isNaN(numId)) return {};
+
+  const property = await prisma.property.findUnique({
+    where: { id: numId },
+    select: {
+      titleTh: true,
+      titleEn: true,
+      projectName: true,
+      descriptionTh: true,
+      descriptionEn: true,
+      price: true,
+      salePrice: true,
+      listingType: true,
+      bedrooms: true,
+      bathrooms: true,
+      sizeSqm: true,
+      images: {
+        take: 1,
+        orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
+        select: { imageUrl: true },
+      },
+    },
+  });
+  if (!property) return {};
+
+  const hdrs = await headers();
+  const host = hdrs.get("host") || "npb-property.com";
+  const proto =
+    hdrs.get("x-forwarded-proto") ||
+    (host.startsWith("localhost") ? "http" : "https");
+
+  const isEn = locale !== "th";
+  const title =
+    property.projectName ||
+    (isEn && property.titleEn ? property.titleEn : property.titleTh);
+
+  const isRent =
+    property.listingType === "RENT" || property.listingType === "RENT_AND_SALE";
+  const fmt = (n: number) => new Intl.NumberFormat("en-US").format(n);
+  const priceStr = isRent
+    ? `${fmt(Number(property.price))} ${isEn ? "THB/mo" : "บาท/เดือน"}`
+    : property.salePrice
+    ? `${fmt(Number(property.salePrice))} ${isEn ? "THB" : "บาท"}`
+    : `${fmt(Number(property.price))} ${isEn ? "THB" : "บาท"}`;
+
+  const sizeStr = property.sizeSqm
+    ? `${Number(property.sizeSqm)} ${isEn ? "sq.m." : "ตร.ม."}`
+    : "";
+  const bedStr =
+    property.bedrooms === 0
+      ? isEn
+        ? "Studio"
+        : "สตูดิโอ"
+      : `${property.bedrooms} ${isEn ? "BR" : "ห้องนอน"}`;
+
+  const stockDescription =
+    isEn && property.descriptionEn
+      ? property.descriptionEn
+      : property.descriptionTh || "";
+  const description = stockDescription
+    ? stockDescription.replace(/\s+/g, " ").slice(0, 200)
+    : `${bedStr} • ${sizeStr} • ${priceStr} — NPB Property`;
+
+  const heroImage = property.images[0]?.imageUrl
+    ? absoluteUrl(property.images[0].imageUrl, host, proto)
+    : undefined;
+
+  const fullTitle = `${title} • ${priceStr}`;
+
+  return {
+    title: fullTitle,
+    description,
+    openGraph: {
+      title: fullTitle,
+      description,
+      type: "article",
+      url: `${proto}://${host}/${locale}/properties/${id}`,
+      images: heroImage ? [{ url: heroImage }] : undefined,
+      siteName: "NPB Property",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: fullTitle,
+      description,
+      images: heroImage ? [heroImage] : undefined,
+    },
+  };
 }
 
 export default async function PropertyDetailPage({

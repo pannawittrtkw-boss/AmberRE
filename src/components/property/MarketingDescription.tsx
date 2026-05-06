@@ -21,6 +21,7 @@ interface Props {
 type ShareTarget = "facebook" | "line";
 type ShareStatus = "idle" | "preparing" | "sharing" | "downloading" | "done";
 
+const FB_SHARER_URL = "https://www.facebook.com/sharer/sharer.php?u=";
 const FB_GROUPS_URL = "https://www.facebook.com/groups/feed/";
 const LINE_SHARE_URL = "https://line.me/R/share?text=";
 
@@ -91,13 +92,13 @@ export default function MarketingDescription({
         : "Text and images are ready",
     desktopHintFb:
       locale === "th"
-        ? "✓ ข้อความถูกคัดลอกแล้ว — กดวาง (Cmd/Ctrl + V) ในช่องโพสต์ของกลุ่ม\n✓ รูปทั้งหมดถูกดาวน์โหลดแล้ว — ลากจาก Downloads วางใน Facebook ได้เลย"
-        : "✓ Text copied to clipboard — paste (Cmd/Ctrl + V) in the group's post box\n✓ All images downloaded — drag from Downloads folder into Facebook",
+        ? "✓ ข้อความถูกคัดลอกแล้ว — กดวาง (Cmd/Ctrl + V) ในกล่อง “บอกอะไรสักหน่อยเกี่ยวกับสิ่งนี้...”\n✓ ในกล่อง dialog เลือก “แชร์ไปยัง > กลุ่ม” แล้วเลือกกลุ่มที่จะโพสต์\n• Preview รูป + ชื่อโครงการมาจากหน้าเว็บ ถ้าไม่ขึ้น Facebook อาจแคชไว้ ใช้เครื่องมือ Sharing Debugger รีเฟรชได้"
+        : "✓ Text copied — paste (Cmd/Ctrl + V) into the “Say something about this...” box\n✓ In the dialog tap “Share to > Group” to pick the group\n• The preview image + title come from the page; if missing, Facebook may have cached it — clear via Sharing Debugger",
     desktopHintLine:
       locale === "th"
         ? "✓ ข้อความถูกคัดลอกแล้ว — เปิดแชท LINE หรือกลุ่มแล้วกดวาง (Cmd/Ctrl + V)\n✓ รูปทั้งหมดถูกดาวน์โหลดแล้ว — ลากจาก Downloads ส่งใน LINE ได้เลย"
         : "✓ Text copied to clipboard — open a LINE chat or group and paste (Cmd/Ctrl + V)\n✓ All images downloaded — drag from Downloads folder into LINE",
-    openFacebook: locale === "th" ? "เปิด Facebook Groups" : "Open Facebook Groups",
+    openFacebook: locale === "th" ? "เปิด Facebook Share" : "Open Facebook Share",
     openLine: locale === "th" ? "เปิด LINE" : "Open LINE",
     close: locale === "th" ? "ปิด" : "Close",
   };
@@ -176,8 +177,9 @@ export default function MarketingDescription({
       }
     }
 
-    // Desktop fallback: copy text + download images + open target app
+    // Desktop fallback: copy text + open target share dialog
     try {
+      // 1. Copy text to clipboard so user can paste into the share dialog
       try {
         await navigator.clipboard.writeText(text);
       } catch {
@@ -188,23 +190,37 @@ export default function MarketingDescription({
         document.execCommand("copy");
       }
 
-      setShareStatus("downloading");
-      setShareProgress({ done: 0, total: imageUrls.length });
-      for (let i = 0; i < imageUrls.length; i++) {
-        const ext =
-          imageUrls[i].split(".").pop()?.split("?")[0]?.toLowerCase() || "jpg";
-        const safeExt = /^(jpg|jpeg|png|webp|gif)$/.test(ext) ? ext : "jpg";
-        const filename = `property-image-${String(i + 1).padStart(2, "0")}.${safeExt}`;
-        await triggerDownload(imageUrls[i], filename);
-        setShareProgress({ done: i + 1, total: imageUrls.length });
-        if (i < imageUrls.length - 1) await sleep(250);
-      }
+      // 2. Facebook → open sharer.php (uses Open Graph tags from property page)
+      //    LINE → open line.me/R/share with text + URL prefilled, plus
+      //    download images so user can drag them in if needed.
+      if (target === "facebook") {
+        // Preview image + title come from OG tags on the property page itself
+        window.open(
+          `${FB_SHARER_URL}${encodeURIComponent(propertyUrl)}`,
+          "_blank",
+          "noopener,noreferrer,width=720,height=720"
+        );
+      } else {
+        // LINE share URL: text only, no image upload via URL — download images
+        // so user can attach them manually in the chat after picking it.
+        setShareStatus("downloading");
+        setShareProgress({ done: 0, total: imageUrls.length });
+        for (let i = 0; i < imageUrls.length; i++) {
+          const ext =
+            imageUrls[i].split(".").pop()?.split("?")[0]?.toLowerCase() || "jpg";
+          const safeExt = /^(jpg|jpeg|png|webp|gif)$/.test(ext) ? ext : "jpg";
+          const filename = `property-image-${String(i + 1).padStart(2, "0")}.${safeExt}`;
+          await triggerDownload(imageUrls[i], filename);
+          setShareProgress({ done: i + 1, total: imageUrls.length });
+          if (i < imageUrls.length - 1) await sleep(250);
+        }
 
-      const targetUrl =
-        target === "line"
-          ? `${LINE_SHARE_URL}${encodeURIComponent(`${text}\n\n${propertyUrl}`)}`
-          : FB_GROUPS_URL;
-      window.open(targetUrl, "_blank", "noopener,noreferrer");
+        window.open(
+          `${LINE_SHARE_URL}${encodeURIComponent(`${text}\n\n${propertyUrl}`)}`,
+          "_blank",
+          "noopener,noreferrer"
+        );
+      }
 
       setShareStatus("done");
       setDesktopHint(target);
@@ -302,7 +318,7 @@ export default function MarketingDescription({
                 href={
                   desktopHint === "line"
                     ? `${LINE_SHARE_URL}${encodeURIComponent(`${text}\n\n${propertyUrl}`)}`
-                    : FB_GROUPS_URL
+                    : `${FB_SHARER_URL}${encodeURIComponent(propertyUrl)}`
                 }
                 target="_blank"
                 rel="noopener noreferrer"
