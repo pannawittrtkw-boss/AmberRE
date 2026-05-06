@@ -45,3 +45,7 @@ next-env.d.ts
 # Claude Code local settings (contain local secrets)
 .claude/
 
+# Local-dev uploads (Vercel Blob is used in production). These often
+# contain user-supplied images such as ID cards — keep them out of git.
+/public/uploads/
+
