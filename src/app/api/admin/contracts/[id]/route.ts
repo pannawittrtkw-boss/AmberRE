@@ -44,6 +44,7 @@ export async function PUT(
         termMonths: body.termMonths != null ? Number(body.termMonths) : undefined,
 
         lessorName: body.lessorName,
+        lessorNationality: body.lessorNationality || null,
         lessorIdCard: body.lessorIdCard || null,
         lessorAddress: body.lessorAddress || null,
         lessorPhone: body.lessorPhone || null,

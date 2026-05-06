@@ -187,6 +187,7 @@ export interface ContractPdfData {
   termMonths: number;
 
   lessorName: string;
+  lessorNationality?: string | null;
   lessorIdCard?: string | null;
   lessorAddress?: string | null;
   lessorPhone?: string | null;
@@ -269,6 +270,12 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           <Text style={styles.label}>ผู้ให้เช่า / Lessor</Text>
           <Text style={styles.value}><D>{data.lessorName}</D></Text>
         </View>
+        {data.lessorNationality && (
+          <View style={styles.row}>
+            <Text style={styles.label}>สัญชาติ / Nationality</Text>
+            <Text style={styles.value}>{data.lessorNationality}</Text>
+          </View>
+        )}
         {data.lessorIdCard && (
           <View style={styles.row}>
             <Text style={styles.label}>หมายเลข ID</Text>

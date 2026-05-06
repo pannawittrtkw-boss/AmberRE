@@ -143,6 +143,7 @@ export async function GET(
     termMonths: contract.termMonths,
 
     lessorName: contract.lessorName,
+    lessorNationality: contract.lessorNationality,
     lessorIdCard: contract.lessorIdCard,
     lessorAddress: contract.lessorAddress,
     lessorPhone: contract.lessorPhone,

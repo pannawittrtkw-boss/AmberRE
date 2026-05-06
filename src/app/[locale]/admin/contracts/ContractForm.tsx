@@ -68,6 +68,7 @@ export default function ContractForm({
     termMonths: initialData?.termMonths || 12,
 
     lessorName: initialData?.lessorName || "",
+    lessorNationality: initialData?.lessorNationality || "ไทย",
     lessorIdCard: initialData?.lessorIdCard || "",
     lessorAddress: initialData?.lessorAddress || "",
     lessorPhone: initialData?.lessorPhone || "",
@@ -274,6 +275,13 @@ export default function ContractForm({
               className={inputCls}
             />
           </Field>
+          <Field label={locale === "th" ? "สัญชาติ" : "Nationality"}>
+            <input
+              value={form.lessorNationality}
+              onChange={(e) => update("lessorNationality", e.target.value)}
+              className={inputCls}
+            />
+          </Field>
           <Field label={locale === "th" ? "เลขบัตรประชาชน/ID" : "ID No."}>
             <input
               value={form.lessorIdCard}
@@ -306,11 +314,21 @@ export default function ContractForm({
               onChange={(url) => update("lessorIdImage", url)}
               onOcrText={(text) => {
                 const o = parseIdCardOcr(text);
+                // Passport documents have no street address — fall back to
+                // the country / nationality so the address field isn't left
+                // blank for foreign lessors.
+                const addressFallback =
+                  o.address ||
+                  (o.documentType === "passport" && o.nationality
+                    ? o.nationality
+                    : "");
                 setForm((prev) => ({
                   ...prev,
                   lessorName: o.name || prev.lessorName || "",
+                  lessorNationality:
+                    o.nationality || prev.lessorNationality || "",
                   lessorIdCard: o.idNumber || prev.lessorIdCard || "",
-                  lessorAddress: o.address || prev.lessorAddress || "",
+                  lessorAddress: addressFallback || prev.lessorAddress || "",
                 }));
               }}
               buildOcrPreview={(text) => {
@@ -320,6 +338,8 @@ export default function ContractForm({
                   out.push({ label: locale === "th" ? "ชื่อ" : "Name", value: o.name });
                 if (o.idNumber)
                   out.push({ label: locale === "th" ? "เลข ID" : "ID No.", value: o.idNumber });
+                if (o.nationality)
+                  out.push({ label: locale === "th" ? "สัญชาติ" : "Nationality", value: o.nationality });
                 if (o.address)
                   out.push({ label: locale === "th" ? "ที่อยู่" : "Address", value: o.address });
                 return out;
@@ -384,11 +404,16 @@ export default function ContractForm({
               onChange={(url) => update("lesseeIdImage", url)}
               onOcrText={(text) => {
                 const o = parseIdCardOcr(text);
+                const addressFallback =
+                  o.address ||
+                  (o.documentType === "passport" && o.nationality
+                    ? o.nationality
+                    : "");
                 setForm((prev) => ({
                   ...prev,
                   lesseeName: o.name || prev.lesseeName || "",
                   lesseeIdCard: o.idNumber || prev.lesseeIdCard || "",
-                  lesseeAddress: o.address || prev.lesseeAddress || "",
+                  lesseeAddress: addressFallback || prev.lesseeAddress || "",
                   lesseeNationality:
                     o.nationality || prev.lesseeNationality || "",
                 }));
@@ -477,13 +502,18 @@ export default function ContractForm({
                   onChange={(url) => update("jointLesseeIdImage", url)}
                   onOcrText={(text) => {
                     const o = parseIdCardOcr(text);
+                    const addressFallback =
+                      o.address ||
+                      (o.documentType === "passport" && o.nationality
+                        ? o.nationality
+                        : "");
                     setForm((prev) => ({
                       ...prev,
                       jointLesseeName: o.name || prev.jointLesseeName || "",
                       jointLesseeIdCard:
                         o.idNumber || prev.jointLesseeIdCard || "",
                       jointLesseeAddress:
-                        o.address || prev.jointLesseeAddress || "",
+                        addressFallback || prev.jointLesseeAddress || "",
                       jointLesseeNationality:
                         o.nationality || prev.jointLesseeNationality || "",
                     }));

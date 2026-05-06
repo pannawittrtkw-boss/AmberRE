@@ -50,10 +50,11 @@ model Contract {
   termMonths      Int      @default(12)
 
   // Lessor (ผู้ให้เช่า)
-  lessorName      String   @db.VarChar(200)
-  lessorIdCard    String?  @db.VarChar(50)
-  lessorAddress   String?  @db.Text
-  lessorPhone     String?  @db.VarChar(50)
+  lessorName        String   @db.VarChar(200)
+  lessorNationality String?  @db.VarChar(50)
+  lessorIdCard      String?  @db.VarChar(50)
+  lessorAddress     String?  @db.Text
+  lessorPhone       String?  @db.VarChar(50)
 
   // Lessee (ผู้เช่า)
   lesseeName        String   @db.VarChar(200)

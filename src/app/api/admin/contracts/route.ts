@@ -85,6 +85,7 @@ export async function POST(req: NextRequest) {
         termMonths: Number(body.termMonths) || 12,
 
         lessorName: String(body.lessorName).trim(),
+        lessorNationality: body.lessorNationality || null,
         lessorIdCard: body.lessorIdCard || null,
         lessorAddress: body.lessorAddress || null,
         lessorPhone: body.lessorPhone || null,
