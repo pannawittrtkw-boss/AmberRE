@@ -86,6 +86,8 @@ export async function PUT(
         applianceList: body.applianceList || null,
         otherItems: body.otherItems || null,
 
+        customClauses: body.customClauses || null,
+
         status: body.status || undefined,
       },
     });

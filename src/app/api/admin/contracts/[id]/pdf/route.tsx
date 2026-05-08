@@ -12,6 +12,7 @@ import {
   parseContractItems,
   Bilingual,
 } from "@/lib/contract-items";
+import { parseCustomClauses } from "@/lib/contract-clauses";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -183,6 +184,8 @@ export async function GET(
     furnitureList: buildChecklist(contract.furnitureList, FURNITURE_OPTIONS),
     applianceList: buildChecklist(contract.applianceList, APPLIANCE_OPTIONS),
     otherItems: buildChecklist(contract.otherItems, OTHER_ITEM_OPTIONS),
+
+    customClauses: parseCustomClauses(contract.customClauses),
 
     lessorIdImage: toAbs(contract.lessorIdImage),
     lesseeIdImage: toAbs(contract.lesseeIdImage),

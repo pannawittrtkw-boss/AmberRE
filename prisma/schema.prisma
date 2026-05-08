@@ -97,6 +97,12 @@ model Contract {
   applianceList String? @db.Text
   otherItems    String? @db.Text
 
+  // Custom clauses appended to section 11 of the contract. JSON array of
+  // { th, en } pairs. Initialised on creation from the global default
+  // template (SiteSetting "contract_default_clauses") but freely editable
+  // per contract afterwards — edits do not flow back to the template.
+  customClauses String? @db.Text
+
   // ID card images
   lessorIdImage      String? @db.VarChar(500)
   lesseeIdImage      String? @db.VarChar(500)

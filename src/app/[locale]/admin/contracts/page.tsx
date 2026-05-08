@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Loader2, FileText, Plus, Eye, Pencil, Trash2, Download } from "lucide-react";
+import { Loader2, FileText, Plus, Eye, Pencil, Trash2, Download, Settings } from "lucide-react";
 import { getIntlLocale } from "@/lib/utils";
 
 type Contract = {
@@ -77,13 +77,22 @@ export default function AdminContractsPage({
               : "Create and manage rental contracts as PDF"}
           </p>
         </div>
-        <Link
-          href={`/${locale}/admin/contracts/new`}
-          className="inline-flex items-center justify-center gap-2 bg-[#C8A951] text-white px-4 py-2.5 rounded-lg hover:bg-[#B8993F] text-sm font-medium"
-        >
-          <Plus className="w-4 h-4" />
-          {locale === "th" ? "สร้างสัญญาใหม่" : "New Contract"}
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/${locale}/admin/contracts/template`}
+            className="inline-flex items-center justify-center gap-2 bg-white border border-stone-300 hover:bg-stone-50 px-4 py-2.5 rounded-lg text-sm font-medium text-stone-700"
+          >
+            <Settings className="w-4 h-4" />
+            {locale === "th" ? "Template มาตรฐาน" : "Standard Template"}
+          </Link>
+          <Link
+            href={`/${locale}/admin/contracts/new`}
+            className="inline-flex items-center justify-center gap-2 bg-[#C8A951] text-white px-4 py-2.5 rounded-lg hover:bg-[#B8993F] text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            {locale === "th" ? "สร้างสัญญาใหม่" : "New Contract"}
+          </Link>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">

@@ -127,6 +127,8 @@ export async function POST(req: NextRequest) {
         applianceList: body.applianceList || null,
         otherItems: body.otherItems || null,
 
+        customClauses: body.customClauses || null,
+
         status: body.status || "DRAFT",
         createdById,
       },

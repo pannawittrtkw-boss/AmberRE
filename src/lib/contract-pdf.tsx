@@ -286,6 +286,10 @@ export interface ContractPdfData {
   applianceList: PdfChecklistItem[];
   otherItems: PdfChecklistItem[];
 
+  // Optional per-contract custom clauses appended after section 11.6.
+  // Each clause is rendered as a numbered bullet (11.7, 11.8, ...).
+  customClauses?: Array<{ th: string; en: string }>;
+
   lessorIdImage?: string | null;
   lesseeIdImage?: string | null;
   jointLesseeIdImage?: string | null;
@@ -733,6 +737,16 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
         <Bullet>11.4 ไม่อนุญาตให้บุคคลอื่นที่ไม่มีรายชื่อในสัญญาเข้าพักอาศัยในห้องโดยเด็ดขาด / No unauthorized occupants are permitted in the Premises.</Bullet>
         <Bullet>11.5 เมื่อผู้เช่าพักอาศัยครบ 6 เดือน ต้องดำเนินการล้างเครื่องปรับอากาศ 1 เครื่องและรับผิดชอบค่าใช้จ่ายเอง / After 6 months of tenancy, the tenant must clean 1 air conditioner at own expense.</Bullet>
         <Bullet>11.6 เมื่อพักครบ 6 เดือน ผู้เช่ายินยอมให้เจ้าของหรือเอเจ้นท์เข้าตรวจสอบสภาพห้องโดยแจ้งล่วงหน้า 1-3 วัน หากไม่สะดวกผู้เช่าต้องส่งคลิปวิดีโอและภาพถ่ายระบุวันที่ / After 6 months, allow inspection with 1-3 days notice; if unavailable, provide dated video/photos.</Bullet>
+
+        {/* Per-contract custom clauses, numbered 11.7, 11.8, ... */}
+        {data.customClauses?.map((c, i) => {
+          const num = `11.${i + 7}`;
+          const th = c.th?.trim();
+          const en = c.en?.trim();
+          if (!th && !en) return null;
+          const body = th && en ? `${th} / ${en}` : th || en;
+          return <Bullet key={`cc-${i}`}>{`${num} ${body}`}</Bullet>;
+        })}
 
         {/* Closing + Signatures — wrap together so signatures never split off */}
         <View wrap={false} style={{ marginTop: 12 }}>

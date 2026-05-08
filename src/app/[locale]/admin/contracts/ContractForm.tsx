@@ -6,8 +6,14 @@ import Link from "next/link";
 import { Loader2, ArrowLeft, ChevronDown, ChevronUp, Save } from "lucide-react";
 import ItemSelector from "./ItemSelector";
 import IdCardUpload from "./IdCardUpload";
+import CustomClausesEditor from "./CustomClausesEditor";
 import { parseIdCardOcr } from "@/lib/idcard-ocr";
 import { parseBankBookOcr } from "@/lib/bank-ocr";
+import {
+  CustomClause,
+  parseCustomClauses,
+  serializeCustomClauses,
+} from "@/lib/contract-clauses";
 import {
   FURNITURE_OPTIONS,
   APPLIANCE_OPTIONS,
@@ -121,10 +127,45 @@ export default function ContractForm({
   const [otherItems, setOtherItems] = useState<ContractItem[]>(
     parseContractItems(initialData?.otherItems)
   );
+  const [customClauses, setCustomClauses] = useState<CustomClause[]>(
+    parseCustomClauses(initialData?.customClauses)
+  );
 
   const [showJoint, setShowJoint] = useState(!!initialData?.jointLesseeName);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // On NEW contracts: pre-fill custom clauses from the global default
+  // template. Skipped when editing an existing contract — that contract
+  // already holds its own copy of clauses (which may diverge from the
+  // current template, by design).
+  useEffect(() => {
+    if (isEdit) return;
+    if (initialData?.customClauses) return;
+    let cancelled = false;
+    fetch("/api/admin/contract-defaults")
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled || !data?.success) return;
+        const clauses = data.data?.clauses as CustomClause[] | undefined;
+        if (clauses && clauses.length > 0) setCustomClauses(clauses);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleResetCustomClausesFromTemplate = async () => {
+    try {
+      const res = await fetch("/api/admin/contract-defaults");
+      const data = await res.json();
+      if (data?.success) {
+        setCustomClauses((data.data?.clauses as CustomClause[]) || []);
+      }
+    } catch {}
+  };
 
   // Track whether the user has manually edited the security deposit. If they
   // have, stop auto-syncing it to monthlyRent × 2.
@@ -172,6 +213,7 @@ export default function ContractForm({
       furnitureList: furniture.length ? JSON.stringify(furniture) : "",
       applianceList: appliances.length ? JSON.stringify(appliances) : "",
       otherItems: otherItems.length ? JSON.stringify(otherItems) : "",
+      customClauses: serializeCustomClauses(customClauses),
     };
 
     const url = isEdit
@@ -772,6 +814,22 @@ export default function ContractForm({
           options={OTHER_ITEM_OPTIONS}
           value={otherItems}
           onChange={setOtherItems}
+          locale={locale}
+        />
+      </Card>
+
+      {/* Custom Clauses — appended after section 11 of the standard contract */}
+      <Card
+        title={
+          locale === "th"
+            ? "ข้อสัญญาเพิ่มเติม (ต่อท้ายข้อ 11)"
+            : "Additional Clauses (after section 11)"
+        }
+      >
+        <CustomClausesEditor
+          value={customClauses}
+          onChange={setCustomClauses}
+          onResetFromTemplate={handleResetCustomClausesFromTemplate}
           locale={locale}
         />
       </Card>
