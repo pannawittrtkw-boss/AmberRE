@@ -1,17 +1,18 @@
 // Thai word segmentation for @react-pdf/renderer line wrapping.
 //
-// react-pdf uses a Knuth-Plass linebreak algorithm that breaks at
-// whitespace. Thai script has no inter-word spaces, so the engine ends
-// up cutting at arbitrary character boundaries — producing things like
-// "สูญหา / ย" (the final character orphaned on the next line).
+// react-pdf's linebreak algorithm only knows to break at whitespace.
+// Thai script has no inter-word spaces, so the engine cuts mid-character
+// — producing things like "สูญหา / ย" (final character orphaned on the
+// next line).
 //
-// Modern Node.js / browsers ship Intl.Segmenter with proper Thai word
-// boundary detection (CLDR data). We use it via
-// Font.registerHyphenationCallback, which lets us hand react-pdf an array
-// of word fragments. The engine treats each fragment as a separate word,
-// so it now wraps at Thai word boundaries instead of mid-character.
+// Solution: insert U+200B (Zero-Width Space) at every CLDR-detected Thai
+// word boundary. The ZWSP is invisible but is treated as a soft break
+// opportunity by the linebreak algorithm, so wrapping happens between
+// words. Unlike Font.registerHyphenationCallback, this approach does
+// NOT inject a visible "-" at break points.
 
 const THAI_RANGE = /[฀-๿]/;
+const ZWSP = "​";
 
 type SegmenterCtor = new (
   locale: string,
@@ -31,20 +32,21 @@ const thaiSegmenter = SegmenterImpl
   : null;
 
 /**
- * Returns an array of word-fragment strings suitable for
- * Font.registerHyphenationCallback. Non-Thai input is returned as-is so
- * English / numeric words keep their natural hyphenation behaviour.
+ * Inserts a U+200B (Zero-Width Space) at every CLDR Thai word boundary.
+ * The ZWSP is invisible but tells the line-break algorithm that this is
+ * a valid place to wrap. Non-Thai input is returned unchanged.
  */
-export function segmentForHyphenation(word: string): string[] {
-  if (!word || !thaiSegmenter) return [word];
-  if (!THAI_RANGE.test(word)) return [word];
+export function insertThaiBreaks(text: string): string {
+  if (!text || !thaiSegmenter) return text;
+  if (!THAI_RANGE.test(text)) return text;
   try {
     const fragments: string[] = [];
-    for (const seg of thaiSegmenter.segment(word)) {
+    for (const seg of thaiSegmenter.segment(text)) {
       if (seg.segment) fragments.push(seg.segment);
     }
-    return fragments.length > 0 ? fragments : [word];
+    if (fragments.length <= 1) return text;
+    return fragments.join(ZWSP);
   } catch {
-    return [word];
+    return text;
   }
 }

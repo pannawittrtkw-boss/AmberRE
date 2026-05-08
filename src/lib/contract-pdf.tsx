@@ -9,7 +9,8 @@ import {
   StyleSheet,
   Font,
 } from "@react-pdf/renderer";
-import { segmentForHyphenation } from "./thai-segment";
+import type { Style } from "@react-pdf/stylesheet";
+import { insertThaiBreaks } from "./thai-segment";
 
 // Register Sarabun (Thai + Latin) font from Google's GitHub mirror via
 // jsDelivr. The @main suffix is required — without it the CDN returns 404.
@@ -24,12 +25,51 @@ Font.register({
   ],
 });
 
-// Tell @react-pdf/renderer how to break Thai "words" into wrappable
-// fragments. Without this, Thai paragraphs (which have no inter-word
-// spaces) get cut at arbitrary character boundaries — orphaning the
-// last character on a new line. With Intl.Segmenter we hand the engine
-// real Thai word boundaries from CLDR data.
-Font.registerHyphenationCallback(segmentForHyphenation);
+// Disable hyphenation entirely — the default English-style behaviour
+// inserts visible "-" characters at break points, which we don't want
+// for Thai text. Wrapping happens at the U+200B markers we insert via
+// insertThaiBreaks instead.
+Font.registerHyphenationCallback((word) => [word]);
+
+// Recursively walk a ReactNode tree and replace Thai-string leaves with
+// the same string segmented at CLDR word boundaries (ZWSP separators).
+// react-pdf treats ZWSP as a soft break, so Thai paragraphs now wrap
+// between words instead of mid-character.
+function thaify(node: React.ReactNode): React.ReactNode {
+  if (typeof node === "string") return insertThaiBreaks(node);
+  if (typeof node === "number" || node == null || typeof node === "boolean")
+    return node;
+  if (Array.isArray(node)) return node.map(thaify);
+  if (React.isValidElement(node)) {
+    const props = node.props as { children?: React.ReactNode };
+    if (props.children !== undefined) {
+      return React.cloneElement(
+        node,
+        {} as Record<string, never>,
+        thaify(props.children)
+      );
+    }
+    return node;
+  }
+  return node;
+}
+
+// Drop-in <TText> replacement that runs its children through thaify().
+// Use TText anywhere a Thai or mixed Thai/English string lives in the
+// PDF. Pure-English <TText> can stay as <TText> but TText is also safe
+// for those (it short-circuits when no Thai chars are present).
+type TTextProps = {
+  children?: React.ReactNode;
+  style?: Style | Style[];
+  wrap?: boolean;
+};
+function TText({ children, style, wrap }: TTextProps) {
+  return (
+    <Text style={style} wrap={wrap}>
+      {thaify(children)}
+    </Text>
+  );
+}
 
 const styles = StyleSheet.create({
   page: {
@@ -151,13 +191,13 @@ function IdAppendix({
       <View style={styles.appendixWrap}>
         {/* eslint-disable-next-line jsx-a11y/alt-text */}
         <Image src={imageUrl} style={styles.appendixImage} />
-        <Text style={styles.appendixCaption}>
+        <TText style={styles.appendixCaption}>
           {roleTh} / {roleEn}    {name}
-        </Text>
-        <Text style={styles.appendixSubCaption}>
+        </TText>
+        <TText style={styles.appendixSubCaption}>
           {isLessor ? "ใช้สำหรับปล่อยเช่าคอนโด" : "ใช้สำหรับเช่าคอนโด"}{" "}
           {projectName} ห้อง {unitNumber} เท่านั้น
-        </Text>
+        </TText>
       </View>
     </Page>
   );
@@ -169,10 +209,10 @@ function ChecklistRow({ item, num }: { item: PdfChecklistItem; num: number }) {
       <View style={styles.checkBox}>
         {item.checked && <View style={styles.checkInner} />}
       </View>
-      <Text style={styles.checkText}>
+      <TText style={styles.checkText}>
         {num}) {item.th} ({item.en})
         {item.checked && item.qty ? ` × ${item.qty}` : ""}
-      </Text>
+      </TText>
     </View>
   );
 }
@@ -245,13 +285,13 @@ const formatNum = (n: number) =>
   new Intl.NumberFormat("en-US", { minimumFractionDigits: 2 }).format(n);
 
 const D = ({ children }: { children: React.ReactNode }) => (
-  <Text style={styles.boldHL}>{children}</Text>
+  <TText style={styles.boldHL}>{children}</TText>
 );
 
 const Bullet = ({ children, sub }: { children: React.ReactNode; sub?: boolean }) => (
-  <Text style={[styles.paragraph, sub ? styles.subBullet : styles.bullet]}>
+  <TText style={[styles.paragraph, sub ? styles.subBullet : styles.bullet]}>
     {children}
-  </Text>
+  </TText>
 );
 
 export function ContractPdf({ data }: { data: ContractPdfData }) {
@@ -260,81 +300,81 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
       {/* Main agreement — single Page; react-pdf wraps content automatically */}
       <Page size="A4" style={styles.page} wrap>
         <View style={styles.header}>
-          <Text style={styles.title}>สัญญาเช่า / Agreement</Text>
-          <Text style={styles.subtitle}>{data.projectName}</Text>
+          <TText style={styles.title}>สัญญาเช่า / Agreement</TText>
+          <TText style={styles.subtitle}>{data.projectName}</TText>
         </View>
 
         <View style={styles.row}>
-          <Text style={styles.label}>สัญญาฉบับนี้ทำขึ้นวันที่</Text>
-          <Text style={styles.value}><D>{data.contractDateTh}</D></Text>
+          <TText style={styles.label}>สัญญาฉบับนี้ทำขึ้นวันที่</TText>
+          <TText style={styles.value}><D>{data.contractDateTh}</D></TText>
         </View>
         <View style={styles.row}>
-          <Text style={styles.label}>Agreement is made on</Text>
-          <Text style={styles.value}><D>{data.contractDateEn}</D></Text>
+          <TText style={styles.label}>Agreement is made on</TText>
+          <TText style={styles.value}><D>{data.contractDateEn}</D></TText>
         </View>
 
         {/* Lessor */}
         <View style={[styles.row, { marginTop: 8 }]}>
-          <Text style={styles.label}>ผู้ให้เช่า / Lessor</Text>
-          <Text style={styles.value}><D>{data.lessorName}</D></Text>
+          <TText style={styles.label}>ผู้ให้เช่า / Lessor</TText>
+          <TText style={styles.value}><D>{data.lessorName}</D></TText>
         </View>
         {data.lessorNationality && (
           <View style={styles.row}>
-            <Text style={styles.label}>สัญชาติ / Nationality</Text>
-            <Text style={styles.value}>{data.lessorNationality}</Text>
+            <TText style={styles.label}>สัญชาติ / Nationality</TText>
+            <TText style={styles.value}>{data.lessorNationality}</TText>
           </View>
         )}
         {data.lessorIdCard && (
           <View style={styles.row}>
-            <Text style={styles.label}>หมายเลข ID</Text>
-            <Text style={styles.value}><D>{data.lessorIdCard}</D></Text>
+            <TText style={styles.label}>หมายเลข ID</TText>
+            <TText style={styles.value}><D>{data.lessorIdCard}</D></TText>
           </View>
         )}
         {data.lessorAddress && (
           <View style={styles.row}>
-            <Text style={styles.label}>ที่อยู่ / Address</Text>
-            <Text style={styles.value}>{data.lessorAddress}</Text>
+            <TText style={styles.label}>ที่อยู่ / Address</TText>
+            <TText style={styles.value}>{data.lessorAddress}</TText>
           </View>
         )}
         {data.lessorPhone && (
           <View style={styles.row}>
-            <Text style={styles.label}>โทรศัพท์ / Tel</Text>
-            <Text style={styles.value}>{data.lessorPhone}</Text>
+            <TText style={styles.label}>โทรศัพท์ / Tel</TText>
+            <TText style={styles.value}>{data.lessorPhone}</TText>
           </View>
         )}
 
         {/* Lessee */}
         <View style={[styles.row, { marginTop: 8 }]}>
-          <Text style={styles.label}>ผู้เช่า / Lessee</Text>
-          <Text style={styles.value}><D>{data.lesseeName}</D></Text>
+          <TText style={styles.label}>ผู้เช่า / Lessee</TText>
+          <TText style={styles.value}><D>{data.lesseeName}</D></TText>
         </View>
         {data.lesseeNationality && (
           <View style={styles.row}>
-            <Text style={styles.label}>สัญชาติ / Nationality</Text>
-            <Text style={styles.value}>{data.lesseeNationality}</Text>
+            <TText style={styles.label}>สัญชาติ / Nationality</TText>
+            <TText style={styles.value}>{data.lesseeNationality}</TText>
           </View>
         )}
         {data.lesseeIdCard && (
           <View style={styles.row}>
-            <Text style={styles.label}>ID/Passport No.</Text>
-            <Text style={styles.value}><D>{data.lesseeIdCard}</D></Text>
+            <TText style={styles.label}>ID/Passport No.</TText>
+            <TText style={styles.value}><D>{data.lesseeIdCard}</D></TText>
           </View>
         )}
         {data.lesseeAddress && (
           <View style={styles.row}>
-            <Text style={styles.label}>ที่อยู่ / Address</Text>
-            <Text style={styles.value}>{data.lesseeAddress}</Text>
+            <TText style={styles.label}>ที่อยู่ / Address</TText>
+            <TText style={styles.value}>{data.lesseeAddress}</TText>
           </View>
         )}
         {data.lesseePhone && (
           <View style={styles.row}>
-            <Text style={styles.label}>โทรศัพท์ / Tel</Text>
-            <Text style={styles.value}>{data.lesseePhone}</Text>
+            <TText style={styles.label}>โทรศัพท์ / Tel</TText>
+            <TText style={styles.value}>{data.lesseePhone}</TText>
           </View>
         )}
 
         {/* Property description */}
-        <Text style={[styles.paragraph, { marginTop: 10 }]}>
+        <TText style={[styles.paragraph, { marginTop: 10 }]}>
           โดยผู้ให้เช่าเป็นเจ้าของ <D>{data.projectName}</D> ห้องชุดเลขที่{" "}
           <D>{data.unitNumber}</D>
           {data.buildingName ? <>{" "}อาคาร <D>{data.buildingName}</D></> : null}
@@ -342,9 +382,9 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           {" "}ที่ตั้ง <D>{data.propertyAddress}</D>
           {data.sizeSqm != null ? <>{" "}ขนาดห้อง <D>{data.sizeSqm}</D> ตารางเมตร</> : null}
           {" "}ซึ่งรวมถึงอุปกรณ์ตกแต่งและเฟอร์นิเจอร์ ซึ่งต่อไปนี้เรียกว่า "ทรัพย์สิน"
-        </Text>
+        </TText>
 
-        <Text style={styles.paragraph}>
+        <TText style={styles.paragraph}>
           Whereas, Lessor is the owner of <D>{data.projectName}</D>, Unit number{" "}
           <D>{data.unitNumber}</D>
           {data.buildingName ? <>, Building <D>{data.buildingName}</D></> : null}
@@ -353,51 +393,51 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           {data.sizeSqm != null ? <>, approximate area <D>{data.sizeSqm}</D> sqm.</> : null}{" "}
           and all premises including all fixtures and fittings hereinafter
           referred to as the "Premises".
-        </Text>
+        </TText>
 
         {/* Lessor desires + Lessee agrees */}
-        <Text style={styles.paragraph}>
+        <TText style={styles.paragraph}>
           ซึ่งผู้ให้เช่าต้องการให้เช่าและผู้เช่าตกลงจะเช่าทรัพย์สิน
           โดยทั้ง 2 ฝ่ายตกลงกันตามเงื่อนไขที่ระบุในสัญญานี้ดังต่อไปนี้
-        </Text>
-        <Text style={styles.paragraph}>
+        </TText>
+        <TText style={styles.paragraph}>
           Whereas the Lessor desires to let and the Lessee desires to rent the
           Premises under the terms and conditions set forth in this Agreement as
           follows:
-        </Text>
+        </TText>
 
         {/* Joint Lessee */}
         {data.jointLesseeName && (
           <>
             <View style={styles.sectionBar} wrap={false}>
-              <Text>1. ผู้เช่าร่วม / Joint Lessee</Text>
+              <TText>1. ผู้เช่าร่วม / Joint Lessee</TText>
             </View>
             <View style={styles.row}>
-              <Text style={styles.label}>ชื่อ / Name</Text>
-              <Text style={styles.value}><D>{data.jointLesseeName}</D></Text>
+              <TText style={styles.label}>ชื่อ / Name</TText>
+              <TText style={styles.value}><D>{data.jointLesseeName}</D></TText>
             </View>
             {data.jointLesseeNationality && (
               <View style={styles.row}>
-                <Text style={styles.label}>สัญชาติ / Nationality</Text>
-                <Text style={styles.value}>{data.jointLesseeNationality}</Text>
+                <TText style={styles.label}>สัญชาติ / Nationality</TText>
+                <TText style={styles.value}>{data.jointLesseeNationality}</TText>
               </View>
             )}
             {data.jointLesseeIdCard && (
               <View style={styles.row}>
-                <Text style={styles.label}>ID/Passport No.</Text>
-                <Text style={styles.value}>{data.jointLesseeIdCard}</Text>
+                <TText style={styles.label}>ID/Passport No.</TText>
+                <TText style={styles.value}>{data.jointLesseeIdCard}</TText>
               </View>
             )}
             {data.jointLesseeAddress && (
               <View style={styles.row}>
-                <Text style={styles.label}>ที่อยู่ / Address</Text>
-                <Text style={styles.value}>{data.jointLesseeAddress}</Text>
+                <TText style={styles.label}>ที่อยู่ / Address</TText>
+                <TText style={styles.value}>{data.jointLesseeAddress}</TText>
               </View>
             )}
             {data.jointLesseePhone && (
               <View style={styles.row}>
-                <Text style={styles.label}>โทรศัพท์ / Tel</Text>
-                <Text style={styles.value}>{data.jointLesseePhone}</Text>
+                <TText style={styles.label}>โทรศัพท์ / Tel</TText>
+                <TText style={styles.value}>{data.jointLesseePhone}</TText>
               </View>
             )}
           </>
@@ -405,39 +445,39 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
 
         {/* Section 2: Lease Term */}
         <View style={styles.sectionBar} wrap={false}>
-          <Text>2. ระยะเวลาเช่า / LEASE TERM</Text>
+          <TText>2. ระยะเวลาเช่า / LEASE TERM</TText>
         </View>
-        <Text style={styles.paragraph}>
+        <TText style={styles.paragraph}>
           ระยะเวลาเช่ากำหนดไว้เป็นเวลา <D>{data.termMonths}</D> เดือน
           โดยเริ่มสัญญาวันที่ <D>{data.startDateTh}</D>
-        </Text>
-        <Text style={styles.paragraph}>
+        </TText>
+        <TText style={styles.paragraph}>
           สิ้นสุดวันที่ <D>{data.endDateTh}</D>
-        </Text>
-        <Text style={styles.paragraph}>
+        </TText>
+        <TText style={styles.paragraph}>
           The term of this Agreement shall be for a period of <D>{data.termMonths}</D>{" "}
           months, commencing from <D>{data.startDateEn}</D>
-        </Text>
-        <Text style={styles.paragraph}>
+        </TText>
+        <TText style={styles.paragraph}>
           and expiring on <D>{data.endDateEn}</D>.
-        </Text>
+        </TText>
 
         {/* Section 3: Rental */}
         <View style={styles.sectionBar} wrap={false}>
-          <Text>3. ค่าเช่าและค่าส่วนกลาง / RENTAL AND COMMON PROPERTIES FEES</Text>
+          <TText>3. ค่าเช่าและค่าส่วนกลาง / RENTAL AND COMMON PROPERTIES FEES</TText>
         </View>
-        <Text style={styles.paragraph}>
+        <TText style={styles.paragraph}>
           3.1 ค่าเช่าคิดเป็นจำนวนเงินเดือนละ <D>{formatNum(data.monthlyRent)}</D> บาท{" "}
           <D>({data.monthlyRentText})</D> และชำระล่วงหน้าหรือไม่เกินวันที่{" "}
           <D>{data.paymentDay}</D> ของทุกเดือน ชำระโดยโอนเงินเข้าบัญชีธนาคารผู้ให้เช่า
           ตามรายละเอียดดังนี้:
-        </Text>
-        <Text style={styles.paragraph}>
+        </TText>
+        <TText style={styles.paragraph}>
           3.1 The rent shall be <D>{formatNum(data.monthlyRent)}</D> Baht per
           month and shall be paid in advance or within day{" "}
           <D>{data.paymentDay}</D> of each calendar month by wiring such money
           to the lessor's bank account as follows:
-        </Text>
+        </TText>
 
         {(data.bankName ||
           data.bankBranch ||
@@ -446,109 +486,109 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           <View style={styles.bankBox}>
             {data.bankName && (
               <View style={styles.row}>
-                <Text style={styles.label}>ธนาคาร / Bank</Text>
-                <Text style={styles.value}>{data.bankName}</Text>
+                <TText style={styles.label}>ธนาคาร / Bank</TText>
+                <TText style={styles.value}>{data.bankName}</TText>
               </View>
             )}
             {data.bankBranch && (
               <View style={styles.row}>
-                <Text style={styles.label}>สาขา / Branch</Text>
-                <Text style={styles.value}>{data.bankBranch}</Text>
+                <TText style={styles.label}>สาขา / Branch</TText>
+                <TText style={styles.value}>{data.bankBranch}</TText>
               </View>
             )}
             {data.bankAccountName && (
               <View style={styles.row}>
-                <Text style={styles.label}>ชื่อบัญชี / Account Name</Text>
-                <Text style={styles.value}>{data.bankAccountName}</Text>
+                <TText style={styles.label}>ชื่อบัญชี / Account Name</TText>
+                <TText style={styles.value}>{data.bankAccountName}</TText>
               </View>
             )}
             {data.bankAccountNumber && (
               <View style={styles.row}>
-                <Text style={styles.label}>เลขที่บัญชี / Acc. No.</Text>
-                <Text style={styles.value}><D>{data.bankAccountNumber}</D></Text>
+                <TText style={styles.label}>เลขที่บัญชี / Acc. No.</TText>
+                <TText style={styles.value}><D>{data.bankAccountNumber}</D></TText>
               </View>
             )}
           </View>
         )}
 
-        <Text style={styles.paragraph}>
+        <TText style={styles.paragraph}>
           3.2 ผู้เช่าได้ชำระค่าเช่าสำหรับเดือนแรกของสัญญาเรียบร้อยแล้วในวันทำสัญญาฉบับนี้ /
           The first payment of the rent is paid on the execution of this
           Agreement.
-        </Text>
-        <Text style={styles.paragraph}>
+        </TText>
+        <TText style={styles.paragraph}>
           3.3 ผู้ให้เช่าเป็นผู้ชำระค่าส่วนกลางที่เรียกเก็บโดยนิติบุคคลของโครงการคอนโด /
           The lessor pays the common fees collected by the project's juristic
           person.
-        </Text>
-        <Text style={styles.paragraph}>
+        </TText>
+        <TText style={styles.paragraph}>
           3.4 กรณีผู้เช่าชำระค่าเช่าเกินกำหนด ผู้ให้เช่ามีสิทธิ์เรียกค่าเบี้ยปรับเป็นเงินวันละ{" "}
           <D>{formatNum(data.latePaymentFee)}</D> บาท ({data.latePaymentFeeText})
           โดยผู้เช่าต้องชำระพร้อมค่าเช่าที่ติดค้างให้แก่ผู้ให้เช่า /
           If Lessee delays the rental payment, Lessee will be charged at{" "}
           <D>{formatNum(data.latePaymentFee)}</D> Baht per day overdue, payable
           together with the outstanding rent.
-        </Text>
-        <Text style={styles.paragraph}>
+        </TText>
+        <TText style={styles.paragraph}>
           3.5 หลังจากโอนเงินค่าเช่ารายเดือนแล้ว กรุณาส่งข้อความให้ผู้ให้เช่ารับทราบด้วย /
           After transferring the monthly rent, please notify the lessor.
-        </Text>
+        </TText>
 
         {/* Section 4: Security Deposit — pin header to 4.1 to prevent split */}
         <View wrap={false}>
           <View style={styles.sectionBar}>
-            <Text>4. เงินประกันสัญญา / SECURITY DEPOSIT</Text>
+            <TText>4. เงินประกันสัญญา / SECURITY DEPOSIT</TText>
           </View>
-          <Text style={styles.paragraph}>
+          <TText style={styles.paragraph}>
             4.1 ในวันที่ลงนามในสัญญาฉบับนี้ ผู้เช่าได้ชำระเงินประกันให้แก่ผู้ให้เช่าเป็นจำนวน{" "}
             <D>{formatNum(data.securityDeposit)}</D> บาท ({data.securityDepositText})
             ซึ่งต่อไปนี้เรียกว่า "เงินประกันสัญญา" ซึ่งเงินจำนวนดังกล่าวผู้ให้เช่าจะเก็บไว้ตลอด
             อายุของสัญญาโดยไม่มีดอกเบี้ยใดๆ
             เพื่อเป็นประกันความเสียหายที่อาจเกิดขึ้นในกรณีที่ผู้เช่าละเมิดข้อตกลงที่ระบุไว้ในสัญญาฉบับนี้
-          </Text>
+          </TText>
         </View>
-        <Text style={styles.paragraph}>
+        <TText style={styles.paragraph}>
           4.1 Upon the execution of this Agreement, the Lessee deposits with
           the Lessor <D>{formatNum(data.securityDeposit)}</D> Baht as Security
           Deposit, held by the Lessor without interest as security for breaches
           and damages that may occur if the Lessee breaches this Agreement.
-        </Text>
-        <Text style={styles.paragraph}>
+        </TText>
+        <TText style={styles.paragraph}>
           4.2 ผู้ให้เช่าจะชำระคืนเงินประกันสัญญาให้แก่ผู้เช่าโดยไม่มีดอกเบี้ย ภายใน 30 วัน
           นับจากวันสิ้นสุดสัญญา หลังจากได้หักหนี้ค่าเช่าค้างชำระ ค่าเสียหาย
           หรือค่าความสูญเสียใดๆ ที่เกิดแก่ผู้ให้เช่าอันเนื่องมาจากผู้เช่าผิดสัญญา /
           The Security Deposit shall be returned to the Lessee without interest
           within 30 days upon termination after deduction of any outstanding
           rent, damages, or losses caused by the Lessee's breach.
-        </Text>
-        <Text style={styles.paragraph}>
+        </TText>
+        <TText style={styles.paragraph}>
           4.3 ผู้ให้เช่าได้รับเงินประกันสัญญาจากผู้เช่าไว้แล้วในที่นี้ /
           The Lessor hereby acknowledges receipt of the Security Deposit.
-        </Text>
-        <Text style={styles.paragraph}>
+        </TText>
+        <TText style={styles.paragraph}>
           4.4 เงินประกันสัญญาไม่สามารถนำมาชำระแทนค่าเช่า
           หรือถือว่าเป็นค่าเช่าล่วงหน้า
           และผู้เช่าไม่สามารถนำมาเป็นข้ออ้างในการไม่ชำระค่าเช่าตามสัญญานี้ได้ /
           The Security Deposit shall not be considered as rent or prepayment
           of any rent, nor used as an excuse to withhold rent.
-        </Text>
-        <Text style={styles.paragraph}>
+        </TText>
+        <TText style={styles.paragraph}>
           4.5 สัญญาฉบับนี้จะสมบูรณ์ต่อเมื่อผู้ให้เช่าได้รับเงินค่าเช่าเดือนแรกตามข้อ 3.2
           และเงินประกันสัญญาตามข้อ 4.1 จากผู้เช่าอย่างครบถ้วนเรียบร้อยแล้ว /
           This Agreement shall be legally valid only when the Lessor has
           received the first month's rent (Clause 3.2) and the Security Deposit
           (Clause 4.1) in full.
-        </Text>
-        <Text style={styles.paragraph}>
+        </TText>
+        <TText style={styles.paragraph}>
           4.6 กรณีผู้เช่าอยู่ไม่ครบอายุสัญญาเช่าตามกำหนด ทางผู้ให้เช่าขอสงวนสิทธิ์ในการคืนเงินประกัน
           สัญญาให้แก่ผู้เช่า /
           If the Lessee does not complete the lease term, the Lessor reserves
           the right to forfeit the Security Deposit.
-        </Text>
+        </TText>
 
         {/* Section 5: Lessee covenants */}
         <View style={styles.sectionBar} wrap={false}>
-          <Text>5. ข้อตกลงของผู้เช่า / LESSEE'S COVENANTS</Text>
+          <TText>5. ข้อตกลงของผู้เช่า / LESSEE'S COVENANTS</TText>
         </View>
         <Bullet>5.1 ชำระค่าเช่าและเงินอื่นๆ ตามที่ระบุไว้ในสัญญานี้อย่างครบถ้วนตามเวลาที่ระบุไว้ตลอดอายุสัญญา / To punctually pay the rents and other sums during the entire lease term.</Bullet>
         <Bullet>5.2 ปฏิบัติตามข้อตกลงในสัญญาฉบับนี้และข้อกำหนดของนิติบุคคลของโครงการอย่างเคร่งครัด / Strictly comply with this Agreement and the Juristic Person's rules.</Bullet>
@@ -570,7 +610,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
 
         {/* Section 6: Lessor covenants */}
         <View style={styles.sectionBar} wrap={false}>
-          <Text>6. ข้อตกลงของผู้ให้เช่า / LESSOR'S COVENANTS</Text>
+          <TText>6. ข้อตกลงของผู้ให้เช่า / LESSOR'S COVENANTS</TText>
         </View>
         <Bullet>6.1 ผู้ให้เช่ารับรองและรับประกันว่าเป็นผู้มีอำนาจปล่อยเช่าทรัพย์สินโดยถูกต้องภายใต้กฎหมายและข้อบังคับทั้งหลาย / The Lessor warrants the absolute right to lease the Premises under applicable laws.</Bullet>
         <Bullet>6.2 หากผู้เช่าชำระค่าเช่าและปฏิบัติตามข้อตกลงครบถ้วน ผู้เช่าจะสามารถครอบครองและใช้ทรัพย์สินได้อย่างสงบสุขโดยไม่มีการรบกวนจากผู้ให้เช่าหรือตัวแทนตลอดอายุสัญญาและเวลาที่ขยายออกไป / The Lessee, paying rent and observing covenants, shall peacefully hold and enjoy the Premises during the term and any extension.</Bullet>
@@ -578,7 +618,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
 
         {/* Section 7: Termination */}
         <View style={styles.sectionBar} wrap={false}>
-          <Text>7. การบอกเลิกสัญญา / TERMINATION OF AGREEMENT</Text>
+          <TText>7. การบอกเลิกสัญญา / TERMINATION OF AGREEMENT</TText>
         </View>
         <Bullet>
           7.1 ผู้ให้เช่าสามารถบอกเลิกสัญญาฉบับนี้ได้เมื่อผู้เช่าผิดสัญญาในกรณีดังต่อไปนี้ /
@@ -599,40 +639,40 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
 
         {/* Section 8: Vacating */}
         <View style={styles.sectionBar} wrap={false}>
-          <Text>8. การย้ายออก / VACATING THE PREMISES</Text>
+          <TText>8. การย้ายออก / VACATING THE PREMISES</TText>
         </View>
         <Bullet>8.1 ในวันที่ครบกำหนดสัญญา ผู้เช่าต้องย้ายและขนย้ายทรัพย์สินของตนออก และส่งมอบทรัพย์สินคืนในสภาพเดิม สะอาด และสามารถนำออกให้เช่าได้ ยกเว้นความเสื่อมโทรมตามปกติ / On expiry, vacate and deliver the Premises in clean, original, tenantable condition (subject to normal wear and tear).</Bullet>
         <Bullet>8.2 หากผู้เช่าไม่ทำตาม 8.1: (a) ทรัพย์สินที่ค้างอยู่ตกเป็นกรรมสิทธิ์ของผู้ให้เช่า (b) ผู้เช่าต้องชำระค่าเช่าครึ่งเดือนหากค้างไม่เกิน 15 วัน หรือ 1 เดือนหากค้าง 15-30 วัน บวกค่าปรับวันละ 500 บาท นับจากวันสิ้นสุดสัญญา / If 8.1 is not met: (a) leftover property transfers to Lessor; (b) ½ month rent if delayed ≤15 days, full month if 15–30 days, plus 500 THB/day penalty.</Bullet>
 
         {/* Section 9: Applicable Law */}
         <View style={styles.sectionBar} wrap={false}>
-          <Text>9. การบังคับใช้ / APPLICABLE LAW</Text>
+          <TText>9. การบังคับใช้ / APPLICABLE LAW</TText>
         </View>
-        <Text style={styles.paragraph}>
+        <TText style={styles.paragraph}>
           สัญญาฉบับนี้อยู่ภายใต้กฎหมายของรัฐบาลไทย / This Agreement shall be
           governed by the laws of Thailand.
-        </Text>
+        </TText>
 
         {/* Section 10: Furniture / Appliances / Other Items — always shown
             in full so the printed copy can be ticked or amended by hand. */}
         <View style={styles.sectionBar} wrap={false}>
-          <Text>
+          <TText>
             10. รายการเฟอร์นิเจอร์และอุปกรณ์ภายในห้องชุด / FURNITURE &amp;
             EQUIPMENT
-          </Text>
+          </TText>
         </View>
-        <Text style={styles.paragraph}>
+        <TText style={styles.paragraph}>
           ผู้ให้เช่าส่งมอบและผู้เช่าได้รับเฟอร์นิเจอร์และอุปกรณ์ดังต่อไปนี้
           ภายในห้องชุดในสภาพที่พร้อมใช้งาน — รายการที่ติ๊กถูกจะระบุจำนวนต่อท้าย /
           The Lessor delivers and the Lessee receives the following furniture
           and equipment. Ticked rows show the agreed quantity.
-        </Text>
+        </TText>
 
         {data.furnitureList.length > 0 && (
           <>
-            <Text style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
+            <TText style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
               10.1 เฟอร์นิเจอร์ / Furniture
-            </Text>
+            </TText>
             {data.furnitureList.map((item, i) => (
               <ChecklistRow key={`f-${i}`} item={item} num={i + 1} />
             ))}
@@ -641,9 +681,9 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
 
         {data.applianceList.length > 0 && (
           <>
-            <Text style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
+            <TText style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
               10.2 เครื่องใช้ไฟฟ้า / Electrical Appliances
-            </Text>
+            </TText>
             {data.applianceList.map((item, i) => (
               <ChecklistRow key={`a-${i}`} item={item} num={i + 1} />
             ))}
@@ -652,30 +692,30 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
 
         {data.otherItems.length > 0 && (
           <>
-            <Text style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
+            <TText style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
               10.3 รายการอื่นๆ / Other Items
-            </Text>
+            </TText>
             {data.otherItems.map((item, i) => (
               <ChecklistRow key={`o-${i}`} item={item} num={i + 1} />
             ))}
           </>
         )}
 
-        <Text style={[styles.small, { marginTop: 8 }]}>
+        <TText style={[styles.small, { marginTop: 8 }]}>
           หากผู้เช่าทำคีย์การ์ดเข้าออกอาคาร กุญแจห้องชุด หรือกุญแจกล่องจดหมาย
           ชำรุดหรือสูญหาย ผู้เช่าต้องรับผิดชอบค่าใช้จ่ายในการออกใหม่ทั้งหมด /
           If the tenant damages or loses key cards or keys, they shall be
           responsible for the full replacement cost.
-        </Text>
-        <Text style={[styles.small, { marginTop: 4 }]}>
+        </TText>
+        <TText style={[styles.small, { marginTop: 4 }]}>
           กรณีย้ายออก ผู้ให้เช่าจะหักค่าทำความสะอาดห้อง 1,000 บาท
           (กรณีสกปรกมาก 1,800 บาท) ค่าล้างแอร์ 1,400 บาท ค่าซักโซฟา 1,500 บาท
           จากเงินประกัน / Cleaning fees deducted from deposit upon move-out.
-        </Text>
+        </TText>
 
         {/* Section 11: Misc (was 10) */}
         <View style={styles.sectionBar} wrap={false}>
-          <Text>11. อื่นๆ / MISCELLANEOUS</Text>
+          <TText>11. อื่นๆ / MISCELLANEOUS</TText>
         </View>
         <Bullet>11.1 การที่ผู้ให้เช่ารับชำระค่าเช่าจะไม่ถือเป็นข้อยกเว้นไม่ให้ผู้ให้เช่าดำเนินการใดๆ กับผู้เช่า หากมีการละเมิดข้อตกลงข้อหนึ่งข้อใดที่ระบุไว้ในสัญญาฉบับนี้ / Acceptance of rent shall not waive the Lessor's right to act against any breach by the Lessee.</Bullet>
         <Bullet>11.2 หากข้อหนึ่งข้อใดของสัญญาฉบับนี้ไม่สามารถใช้บังคับได้ทางกฎหมายหรือมีเหตุต้องยกเลิก ให้ถือว่าข้อตกลงที่เหลืออยู่ยังคงมีผลบังคับใช้ต่อไปจนครบอายุสัญญา / If any term becomes void or unenforceable, the remaining terms shall remain in full force.</Bullet>
@@ -686,36 +726,36 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
 
         {/* Closing + Signatures — wrap together so signatures never split off */}
         <View wrap={false} style={{ marginTop: 12 }}>
-          <Text style={[styles.paragraph, { fontSize: 9 }]}>
+          <TText style={[styles.paragraph, { fontSize: 9 }]}>
             สัญญาฉบับนี้ทำขึ้น 2 ฉบับ มีข้อความตรงกัน ผู้ให้เช่าและผู้เช่าถือไว้คนละฉบับ
             ทั้งสองฝ่ายได้อ่านและเห็นว่าถูกต้องตามวัตถุประสงค์ของทั้ง 2 ฝ่าย
             จึงลงลายมือชื่อไว้ต่อหน้าพยาน /
             This Agreement is made in duplicates with identical contents, one
             copy held by each party. Both parties have read and agree, signing
             in the presence of witnesses.
-          </Text>
+          </TText>
 
           <View style={styles.twoCol}>
             <View style={styles.signatureBlock}>
               <View style={styles.signatureLine} />
-              <Text style={styles.small}>ผู้ให้เช่า / Lessor</Text>
-              <Text style={styles.boldHL}>({data.lessorName})</Text>
+              <TText style={styles.small}>ผู้ให้เช่า / Lessor</TText>
+              <TText style={styles.boldHL}>({data.lessorName})</TText>
             </View>
             <View style={styles.signatureBlock}>
               <View style={styles.signatureLine} />
-              <Text style={styles.small}>ผู้เช่า / Lessee</Text>
-              <Text style={styles.boldHL}>({data.lesseeName})</Text>
+              <TText style={styles.small}>ผู้เช่า / Lessee</TText>
+              <TText style={styles.boldHL}>({data.lesseeName})</TText>
             </View>
           </View>
 
           <View style={[styles.twoCol, { marginTop: 36 }]}>
             <View style={styles.signatureBlock}>
               <View style={styles.signatureLine} />
-              <Text style={styles.small}>พยาน / Witness</Text>
+              <TText style={styles.small}>พยาน / Witness</TText>
             </View>
             <View style={styles.signatureBlock}>
               <View style={styles.signatureLine} />
-              <Text style={styles.small}>พยาน / Witness</Text>
+              <TText style={styles.small}>พยาน / Witness</TText>
             </View>
           </View>
         </View>
