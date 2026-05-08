@@ -11,6 +11,11 @@ import {
 } from "@react-pdf/renderer";
 import type { Style } from "@react-pdf/stylesheet";
 import { splitThai } from "./thai-segment";
+import {
+  ContractClause,
+  applyPlaceholders,
+  parseInlineFormatting,
+} from "./contract-clauses";
 
 // Register Sarabun (Thai + Latin) font from Google's GitHub mirror via
 // jsDelivr. The @main suffix is required — without it the CDN returns 404.
@@ -213,6 +218,70 @@ function IdAppendix({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Clause renderer — turns a ContractClause + dynamic data dictionary into
+// the corresponding PDF React tree based on the clause's type.
+// ---------------------------------------------------------------------------
+
+type ClauseDataMap = Record<string, string | number | null | undefined>;
+
+function inlineRuns(text: string, data: ClauseDataMap): React.ReactNode {
+  const substituted = applyPlaceholders(text, data);
+  const runs = parseInlineFormatting(substituted);
+  if (runs.length === 0) return null;
+  if (runs.length === 1 && !runs[0].bold) return runs[0].text;
+  return runs.map((run, i) =>
+    run.bold ? <D key={i}>{run.text}</D> : <React.Fragment key={i}>{run.text}</React.Fragment>
+  );
+}
+
+function renderClause(
+  clause: ContractClause,
+  data: ClauseDataMap,
+  key: string | number
+): React.ReactNode {
+  const th = inlineRuns(clause.th, data);
+  const en = inlineRuns(clause.en, data);
+
+  switch (clause.type) {
+    case "section_bar":
+      return (
+        <View key={key} style={styles.sectionBar} wrap={false}>
+          <TText>
+            {th} / {en}
+          </TText>
+        </View>
+      );
+    case "paragraph":
+      return (
+        <React.Fragment key={key}>
+          <TText style={styles.paragraph}>{th}</TText>
+          <TText style={styles.paragraph}>{en}</TText>
+        </React.Fragment>
+      );
+    case "bullet":
+      return (
+        <Bullet key={key}>
+          {th} / {en}
+        </Bullet>
+      );
+    case "sub_bullet":
+      return (
+        <Bullet key={key} sub>
+          {th} / {en}
+        </Bullet>
+      );
+    case "small":
+      return (
+        <TText key={key} style={[styles.small, { marginTop: 4 }]}>
+          {th} / {en}
+        </TText>
+      );
+    default:
+      return null;
+  }
+}
+
 function ChecklistRow({ item, num }: { item: PdfChecklistItem; num: number }) {
   return (
     <View style={styles.checkRow} wrap={false}>
@@ -289,6 +358,12 @@ export interface ContractPdfData {
   // Optional per-contract custom clauses appended after section 11.6.
   // Each clause is rendered as a numbered bullet (11.7, 11.8, ...).
   customClauses?: Array<{ th: string; en: string }>;
+
+  // Effective clause list to render in the body of the agreement
+  // (sections 2-11 text). The PDF route is responsible for merging the
+  // standard clauses + global template overrides + per-contract overrides
+  // and passing the resolved list here.
+  clauses?: ContractClause[];
 
   lessorIdImage?: string | null;
   lesseeIdImage?: string | null;
@@ -457,286 +532,119 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           </>
         )}
 
-        {/* Section 2: Lease Term */}
-        <View style={styles.sectionBar} wrap={false}>
-          <TText>2. ระยะเวลาเช่า / LEASE TERM</TText>
-        </View>
-        <TText style={styles.paragraph}>
-          ระยะเวลาเช่ากำหนดไว้เป็นเวลา <D>{data.termMonths}</D> เดือน
-          โดยเริ่มสัญญาวันที่ <D>{data.startDateTh}</D>
-        </TText>
-        <TText style={styles.paragraph}>
-          สิ้นสุดวันที่ <D>{data.endDateTh}</D>
-        </TText>
-        <TText style={styles.paragraph}>
-          The term of this Agreement shall be for a period of <D>{data.termMonths}</D>{" "}
-          months, commencing from <D>{data.startDateEn}</D>
-        </TText>
-        <TText style={styles.paragraph}>
-          and expiring on <D>{data.endDateEn}</D>.
-        </TText>
+        {/* Sections 2-11 — body text rendered from clause list (overrideable
+            both globally via SiteSetting and per-contract via clauseOverrides).
+            Inline structural blocks (bank account box, furniture/appliance/
+            other-item checklists) are inserted after their anchor clauses. */}
+        {(() => {
+          const clauseDataMap: ClauseDataMap = {
+            termMonths: data.termMonths,
+            startDateTh: data.startDateTh,
+            startDateEn: data.startDateEn,
+            endDateTh: data.endDateTh,
+            endDateEn: data.endDateEn,
+            monthlyRent: formatNum(data.monthlyRent),
+            monthlyRentText: data.monthlyRentText,
+            paymentDay: data.paymentDay,
+            latePaymentFee: formatNum(data.latePaymentFee),
+            latePaymentFeeText: data.latePaymentFeeText,
+            securityDeposit: formatNum(data.securityDeposit),
+            securityDepositText: data.securityDepositText,
+          };
 
-        {/* Section 3: Rental */}
-        <View style={styles.sectionBar} wrap={false}>
-          <TText>3. ค่าเช่าและค่าส่วนกลาง / RENTAL AND COMMON PROPERTIES FEES</TText>
-        </View>
-        <TText style={styles.paragraph}>
-          3.1 ค่าเช่าคิดเป็นจำนวนเงินเดือนละ <D>{formatNum(data.monthlyRent)}</D> บาท{" "}
-          <D>({data.monthlyRentText})</D> และชำระล่วงหน้าหรือไม่เกินวันที่{" "}
-          <D>{data.paymentDay}</D> ของทุกเดือน ชำระโดยโอนเงินเข้าบัญชีธนาคารผู้ให้เช่า
-          ตามรายละเอียดดังนี้:
-        </TText>
-        <TText style={styles.paragraph}>
-          3.1 The rent shall be <D>{formatNum(data.monthlyRent)}</D> Baht per
-          month and shall be paid in advance or within day{" "}
-          <D>{data.paymentDay}</D> of each calendar month by wiring such money
-          to the lessor's bank account as follows:
-        </TText>
+          const hasBank =
+            !!(
+              data.bankName ||
+              data.bankBranch ||
+              data.bankAccountName ||
+              data.bankAccountNumber
+            );
 
-        {(data.bankName ||
-          data.bankBranch ||
-          data.bankAccountName ||
-          data.bankAccountNumber) && (
-          <View style={styles.bankBox}>
-            {data.bankName && (
-              <View style={styles.row}>
-                <TText style={styles.label}>ธนาคาร / Bank</TText>
-                <TText style={styles.value}>{data.bankName}</TText>
-              </View>
-            )}
-            {data.bankBranch && (
-              <View style={styles.row}>
-                <TText style={styles.label}>สาขา / Branch</TText>
-                <TText style={styles.value}>{data.bankBranch}</TText>
-              </View>
-            )}
-            {data.bankAccountName && (
-              <View style={styles.row}>
-                <TText style={styles.label}>ชื่อบัญชี / Account Name</TText>
-                <TText style={styles.value}>{data.bankAccountName}</TText>
-              </View>
-            )}
-            {data.bankAccountNumber && (
-              <View style={styles.row}>
-                <TText style={styles.label}>เลขที่บัญชี / Acc. No.</TText>
-                <TText style={styles.value}><D>{data.bankAccountNumber}</D></TText>
-              </View>
-            )}
-          </View>
-        )}
+          const bankBox = hasBank ? (
+            <View style={styles.bankBox}>
+              {data.bankName && (
+                <View style={styles.row}>
+                  <TText style={styles.label}>ธนาคาร / Bank</TText>
+                  <TText style={styles.value}>{data.bankName}</TText>
+                </View>
+              )}
+              {data.bankBranch && (
+                <View style={styles.row}>
+                  <TText style={styles.label}>สาขา / Branch</TText>
+                  <TText style={styles.value}>{data.bankBranch}</TText>
+                </View>
+              )}
+              {data.bankAccountName && (
+                <View style={styles.row}>
+                  <TText style={styles.label}>ชื่อบัญชี / Account Name</TText>
+                  <TText style={styles.value}>{data.bankAccountName}</TText>
+                </View>
+              )}
+              {data.bankAccountNumber && (
+                <View style={styles.row}>
+                  <TText style={styles.label}>เลขที่บัญชี / Acc. No.</TText>
+                  <TText style={styles.value}><D>{data.bankAccountNumber}</D></TText>
+                </View>
+              )}
+            </View>
+          ) : null;
 
-        <TText style={styles.paragraph}>
-          3.2 ผู้เช่าได้ชำระค่าเช่าสำหรับเดือนแรกของสัญญาเรียบร้อยแล้วในวันทำสัญญาฉบับนี้ /
-          The first payment of the rent is paid on the execution of this
-          Agreement.
-        </TText>
-        <TText style={styles.paragraph}>
-          3.3 ผู้ให้เช่าเป็นผู้ชำระค่าส่วนกลางที่เรียกเก็บโดยนิติบุคคลของโครงการคอนโด /
-          The lessor pays the common fees collected by the project's juristic
-          person.
-        </TText>
-        <TText style={styles.paragraph}>
-          3.4 กรณีผู้เช่าชำระค่าเช่าเกินกำหนด ผู้ให้เช่ามีสิทธิ์เรียกค่าเบี้ยปรับเป็นเงินวันละ{" "}
-          <D>{formatNum(data.latePaymentFee)}</D> บาท ({data.latePaymentFeeText})
-          โดยผู้เช่าต้องชำระพร้อมค่าเช่าที่ติดค้างให้แก่ผู้ให้เช่า /
-          If Lessee delays the rental payment, Lessee will be charged at{" "}
-          <D>{formatNum(data.latePaymentFee)}</D> Baht per day overdue, payable
-          together with the outstanding rent.
-        </TText>
-        <TText style={styles.paragraph}>
-          3.5 หลังจากโอนเงินค่าเช่ารายเดือนแล้ว กรุณาส่งข้อความให้ผู้ให้เช่ารับทราบด้วย /
-          After transferring the monthly rent, please notify the lessor.
-        </TText>
+          const checklists = (
+            <>
+              {data.furnitureList.length > 0 && (
+                <>
+                  <TText style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
+                    10.1 เฟอร์นิเจอร์ / Furniture
+                  </TText>
+                  {data.furnitureList.map((item, i) => (
+                    <ChecklistRow key={`f-${i}`} item={item} num={i + 1} />
+                  ))}
+                </>
+              )}
+              {data.applianceList.length > 0 && (
+                <>
+                  <TText style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
+                    10.2 เครื่องใช้ไฟฟ้า / Electrical Appliances
+                  </TText>
+                  {data.applianceList.map((item, i) => (
+                    <ChecklistRow key={`a-${i}`} item={item} num={i + 1} />
+                  ))}
+                </>
+              )}
+              {data.otherItems.length > 0 && (
+                <>
+                  <TText style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
+                    10.3 รายการอื่นๆ / Other Items
+                  </TText>
+                  {data.otherItems.map((item, i) => (
+                    <ChecklistRow key={`o-${i}`} item={item} num={i + 1} />
+                  ))}
+                </>
+              )}
+            </>
+          );
 
-        {/* Section 4: Security Deposit — pin header to 4.1 to prevent split */}
-        <View wrap={false}>
-          <View style={styles.sectionBar}>
-            <TText>4. เงินประกันสัญญา / SECURITY DEPOSIT</TText>
-          </View>
-          <TText style={styles.paragraph}>
-            4.1 ในวันที่ลงนามในสัญญาฉบับนี้ ผู้เช่าได้ชำระเงินประกันให้แก่ผู้ให้เช่าเป็นจำนวน{" "}
-            <D>{formatNum(data.securityDeposit)}</D> บาท ({data.securityDepositText})
-            ซึ่งต่อไปนี้เรียกว่า "เงินประกันสัญญา" ซึ่งเงินจำนวนดังกล่าวผู้ให้เช่าจะเก็บไว้ตลอด
-            อายุของสัญญาโดยไม่มีดอกเบี้ยใดๆ
-            เพื่อเป็นประกันความเสียหายที่อาจเกิดขึ้นในกรณีที่ผู้เช่าละเมิดข้อตกลงที่ระบุไว้ในสัญญาฉบับนี้
-          </TText>
-        </View>
-        <TText style={styles.paragraph}>
-          4.1 Upon the execution of this Agreement, the Lessee deposits with
-          the Lessor <D>{formatNum(data.securityDeposit)}</D> Baht as Security
-          Deposit, held by the Lessor without interest as security for breaches
-          and damages that may occur if the Lessee breaches this Agreement.
-        </TText>
-        <TText style={styles.paragraph}>
-          4.2 ผู้ให้เช่าจะชำระคืนเงินประกันสัญญาให้แก่ผู้เช่าโดยไม่มีดอกเบี้ย ภายใน 30 วัน
-          นับจากวันสิ้นสุดสัญญา หลังจากได้หักหนี้ค่าเช่าค้างชำระ ค่าเสียหาย
-          หรือค่าความสูญเสียใดๆ ที่เกิดแก่ผู้ให้เช่าอันเนื่องมาจากผู้เช่าผิดสัญญา /
-          The Security Deposit shall be returned to the Lessee without interest
-          within 30 days upon termination after deduction of any outstanding
-          rent, damages, or losses caused by the Lessee's breach.
-        </TText>
-        <TText style={styles.paragraph}>
-          4.3 ผู้ให้เช่าได้รับเงินประกันสัญญาจากผู้เช่าไว้แล้วในที่นี้ /
-          The Lessor hereby acknowledges receipt of the Security Deposit.
-        </TText>
-        <TText style={styles.paragraph}>
-          4.4 เงินประกันสัญญาไม่สามารถนำมาชำระแทนค่าเช่า
-          หรือถือว่าเป็นค่าเช่าล่วงหน้า
-          และผู้เช่าไม่สามารถนำมาเป็นข้ออ้างในการไม่ชำระค่าเช่าตามสัญญานี้ได้ /
-          The Security Deposit shall not be considered as rent or prepayment
-          of any rent, nor used as an excuse to withhold rent.
-        </TText>
-        <TText style={styles.paragraph}>
-          4.5 สัญญาฉบับนี้จะสมบูรณ์ต่อเมื่อผู้ให้เช่าได้รับเงินค่าเช่าเดือนแรกตามข้อ 3.2
-          และเงินประกันสัญญาตามข้อ 4.1 จากผู้เช่าอย่างครบถ้วนเรียบร้อยแล้ว /
-          This Agreement shall be legally valid only when the Lessor has
-          received the first month's rent (Clause 3.2) and the Security Deposit
-          (Clause 4.1) in full.
-        </TText>
-        <TText style={styles.paragraph}>
-          4.6 กรณีผู้เช่าอยู่ไม่ครบอายุสัญญาเช่าตามกำหนด ทางผู้ให้เช่าขอสงวนสิทธิ์ในการคืนเงินประกัน
-          สัญญาให้แก่ผู้เช่า /
-          If the Lessee does not complete the lease term, the Lessor reserves
-          the right to forfeit the Security Deposit.
-        </TText>
-
-        {/* Section 5: Lessee covenants */}
-        <View style={styles.sectionBar} wrap={false}>
-          <TText>5. ข้อตกลงของผู้เช่า / LESSEE'S COVENANTS</TText>
-        </View>
-        <Bullet>5.1 ชำระค่าเช่าและเงินอื่นๆ ตามที่ระบุไว้ในสัญญานี้อย่างครบถ้วนตามเวลาที่ระบุไว้ตลอดอายุสัญญา / To punctually pay the rents and other sums during the entire lease term.</Bullet>
-        <Bullet>5.2 ปฏิบัติตามข้อตกลงในสัญญาฉบับนี้และข้อกำหนดของนิติบุคคลของโครงการอย่างเคร่งครัด / Strictly comply with this Agreement and the Juristic Person's rules.</Bullet>
-        <Bullet>5.3 ใช้ทรัพย์สินเพื่อการอยู่อาศัยเท่านั้น ห้ามเจาะ ตอก ติด ตรึง สิ่งของใดกับผนังห้อง หากละเมิดปรับจุดละ 1,000 บาท / Residential use only. No drilling, nailing, or attaching items to walls. Fine: 1,000 THB per violation.</Bullet>
-        <Bullet>5.4 ดูแลและบำรุงรักษาเครื่องใช้ไฟฟ้าและทรัพย์สินทุกชนิดด้วยค่าใช้จ่ายของผู้เช่าเอง โดยรับผิดชอบงานเล็กน้อย (ค่าใช้จ่ายไม่เกิน 600 บาท/เดือน) เช่น เปลี่ยนหลอดไฟ ทำความสะอาดทั่วไป / Tenant is responsible for minor repairs not exceeding 600 THB/month (e.g., light bulbs, general cleaning).</Bullet>
-        <Bullet>5.5 ชำระค่าสาธารณูปโภค ไฟฟ้า น้ำประปา โทรศัพท์ อินเตอร์เน็ต และค่าสาธารณูปโภคอื่นๆ ตลอดอายุสัญญา หากละเลยถือเป็นการผิดสัญญา / Pay all utilities (electricity, water, telephone, internet) on time. Failure to do so is a breach.</Bullet>
-        <Bullet>5.6 ไม่ต่อเติม ดัดแปลง หรือเปลี่ยนแปลงทรัพย์สินโดยไม่ได้รับอนุญาตเป็นลายลักษณ์อักษร และต้องคืนสภาพเดิมหากผู้ให้เช่าเรียกร้อง / No modifications without prior written consent; restore on Lessor's request.</Bullet>
-        <Bullet>5.7 สิ่งที่ต่อเติมยึดติดกับทรัพย์สินถือเป็นกรรมสิทธิ์ของผู้ให้เช่าเมื่อสัญญาสิ้นสุด / Fixtures become Lessor's property upon expiration.</Bullet>
-        <Bullet>5.8 ไม่ใช้ทรัพย์สินเพื่อวัตถุประสงค์ที่ผิดศีลธรรมหรือผิดกฎหมาย / No illegal or immoral activities.</Bullet>
-        <Bullet>5.9 ไม่ปล่อยเช่าช่วงทรัพย์สินหรือถ่ายโอนสิทธิตามสัญญานี้ให้ผู้อื่นโดยไม่ได้รับอนุญาตเป็นลายลักษณ์อักษร / No subletting or assignment without prior written consent.</Bullet>
-        <Bullet>5.10 ไม่กระทำการอันใดที่ก่อให้เกิดความรำคาญหรือล่วงละเมิดผู้เช่าอื่นในอาคารและผู้พักอาศัยใกล้เคียง / No nuisance or interference with neighbors.</Bullet>
-        <Bullet>5.11 แจ้งความเสียหายหรือความบกพร่องที่เกิดกับทรัพย์สินภายใน 7 วันนับจากวันที่พบ / Notify Lessor of damages within 7 days of occurrence.</Bullet>
-        <Bullet>5.12 รับผิดชอบความเสียหายที่เกิดจากผู้เช่าหรือบริวาร ลูกจ้าง ผู้รับเหมา ครอบครัวของผู้เช่า ด้วยค่าใช้จ่ายของผู้เช่าทั้งสิ้น / Responsible for damages caused by self, family, servants, or contractors at own cost.</Bullet>
-        <Bullet>5.13 ไม่ติด แขวน แสดง หรือปิดป้ายหรือสิ่งใดทั้งภายในและภายนอกทรัพย์สินหรืออาคารหรือผ่านทางหน้าต่าง / No signs/posters anywhere on or through the windows of the Premises.</Bullet>
-        <Bullet>5.14 ไม่นำวัสดุไวไฟ แก๊สหุงต้ม ระเบิด กรด อัลคาไลน์ วัตถุอันตราย สิ่งผิดกฎหมาย หรือวัสดุที่มีน้ำหนักเกิน 200 กก./ตร.ม. เข้ามาเก็บในทรัพย์สิน / No flammables, gas, explosives, hazardous chemicals, illegal goods, or items over 200 kg/sqm load.</Bullet>
-        <Bullet>5.15 ส่งมอบกุญแจทั้งหมดที่เกี่ยวข้องกับทรัพย์สินให้แก่ผู้ให้เช่าในวันที่สัญญาเช่าสิ้นสุด / Return all keys to the Lessor on the expiry/termination date.</Bullet>
-        <Bullet>5.16 ไม่นำสัตว์เลี้ยงไว้ในทรัพย์สิน และไม่สูบบุหรี่ในห้องหรือบนระเบียง / No pets in the Premises; no smoking inside the room or on the balcony.</Bullet>
-        <Bullet>5.17 ก่อนย้ายออกผู้เช่าต้องทำความสะอาดห้องพักและส่งมอบห้องในสภาพเรียบร้อยตามสภาพปกติให้แก่ผู้ให้เช่า / Before moving out, clean and return the unit in good condition (subject to normal wear and tear).</Bullet>
-
-        {/* Section 6: Lessor covenants */}
-        <View style={styles.sectionBar} wrap={false}>
-          <TText>6. ข้อตกลงของผู้ให้เช่า / LESSOR'S COVENANTS</TText>
-        </View>
-        <Bullet>6.1 ผู้ให้เช่ารับรองและรับประกันว่าเป็นผู้มีอำนาจปล่อยเช่าทรัพย์สินโดยถูกต้องภายใต้กฎหมายและข้อบังคับทั้งหลาย / The Lessor warrants the absolute right to lease the Premises under applicable laws.</Bullet>
-        <Bullet>6.2 หากผู้เช่าชำระค่าเช่าและปฏิบัติตามข้อตกลงครบถ้วน ผู้เช่าจะสามารถครอบครองและใช้ทรัพย์สินได้อย่างสงบสุขโดยไม่มีการรบกวนจากผู้ให้เช่าหรือตัวแทนตลอดอายุสัญญาและเวลาที่ขยายออกไป / The Lessee, paying rent and observing covenants, shall peacefully hold and enjoy the Premises during the term and any extension.</Bullet>
-        <Bullet>6.3 ผู้ให้เช่าต้องบำรุงรักษาทรัพย์สินด้วยค่าใช้จ่ายของผู้ให้เช่าเองให้อยู่ในสภาพพักอาศัยและใช้งานได้ตามปกติ และต้องดูแลซ่อมแซมส่วนที่เสียหายในงานหลัก เช่น โครงสร้าง ระบบไฟฟ้า ประปา สายไฟและเคเบิ้ล สี ระบบน้ำเสีย ท่อน้ำทิ้ง บ่อพักน้ำ ท่อระบายน้ำ และระบบเครื่องปรับอากาศ / The Lessor shall, at own cost, maintain the Premises in habitable and usable condition and promptly make all major repairs (structure, electrical, plumbing, drainage, A/C system).</Bullet>
-
-        {/* Section 7: Termination */}
-        <View style={styles.sectionBar} wrap={false}>
-          <TText>7. การบอกเลิกสัญญา / TERMINATION OF AGREEMENT</TText>
-        </View>
-        <Bullet>
-          7.1 ผู้ให้เช่าสามารถบอกเลิกสัญญาฉบับนี้ได้เมื่อผู้เช่าผิดสัญญาในกรณีดังต่อไปนี้ /
-          The Lessor may terminate this Agreement upon any of the following events:
-        </Bullet>
-        <Bullet sub>I. ผู้เช่าไม่ชำระค่าเช่าหรือค่าใช้จ่ายอื่นๆ ให้ครบตรงตามเวลาที่ระบุไว้ในสัญญานี้ / The Lessee defaults in any payments required hereunder.</Bullet>
-        <Bullet sub>II. ผู้เช่าฝ่าฝืนหรือไม่ปฏิบัติตามข้อตกลงข้อหนึ่งข้อใดที่ระบุไว้ในสัญญานี้ / The Lessee violates any term or condition of this Agreement.</Bullet>
-        <Bullet sub>III. ผู้เช่าเป็นบุคคลล้มละลายตามกฎหมาย / The Lessee is adjudicated bankrupt.</Bullet>
-        <Bullet sub>IV. หากส่วนหนึ่งส่วนใดของทรัพย์สินไม่สามารถใช้พักอาศัยได้ อันเนื่องมาจากอัคคีภัย ข้อห้ามตามกฎหมาย ข้อกำหนดผังเมือง การเวนคืน หรือคำสั่งของหน่วยงานรัฐ / All or part of the Premises is condemned, damaged by fire, or subject to legal restriction or expropriation.</Bullet>
-        <Bullet>7.2 ผู้ให้เช่าสามารถบอกเลิกสัญญาโดยแจ้งเป็นลายลักษณ์อักษรล่วงหน้าไม่น้อยกว่า 15 วัน / 15-day written notice required.</Bullet>
-        <Bullet>7.3 หากการบอกเลิกเกิดจาก 7.1 (I), (II) หรือ (III) ผู้ให้เช่ามีสิทธิ์ริบเงินประกันสัญญาและเรียกร้องค่าเสียหายเพิ่มเติม / Termination under 7.1(I)–(III) — Lessor may forfeit deposit and claim damages.</Bullet>
-        <Bullet>7.4 หากการบอกเลิกเกิดจาก 7.1 (IV) ทั้งสองฝ่ายไม่มีสิทธิ์เรียกร้องค่าเสียหาย และผู้ให้เช่าต้องคืนเงินประกันภายใน 30 วัน / Termination under 7.1(IV) — neither party may claim damages; deposit returned within 30 days.</Bullet>
-        <Bullet>7.5 หากผู้เช่าต้องการต่อสัญญา ต้องแจ้งเป็นลายลักษณ์อักษรล่วงหน้าไม่น้อยกว่า 30 วัน ก่อนวันสิ้นสุดสัญญา / Lessee must notify 30 days in advance to renew.</Bullet>
-        <Bullet>7.6 ผู้เช่ายินยอมให้ผู้ให้เช่านำผู้จะเช่าหรือผู้จะซื้อเข้าชมทรัพย์สินได้ในช่วง 30 วันก่อนสัญญาสิ้นสุด โดยแจ้งล่วงหน้าและต้องเป็นวันที่ผู้เช่าเห็นควร / Lessee allows showings within 30 days before expiry, with prior notice.</Bullet>
-        <Bullet>7.7 หากผู้เช่าบอกเลิกสัญญาก่อนครบกำหนด ต้องแจ้งล่วงหน้าไม่น้อยกว่า 60 วัน และผู้ให้เช่ามีสิทธิ์ริบเงินประกัน / Early termination by Lessee — 60 days notice; deposit forfeited.</Bullet>
-        <Bullet>7.8 เมื่อสัญญาสิ้นสุด ผู้เช่ายินยอมให้ผู้ให้เช่าเข้าครอบครองทรัพย์สิน เคลื่อนย้ายหรือทำให้กลับสู่สภาพเดิมได้ ด้วยค่าใช้จ่ายของผู้เช่า / Upon expiry, Lessor may re-enter and restore the Premises at Lessee's cost.</Bullet>
-        <Bullet>7.9 หากสัญญานี้ยกเลิก สัญญาบริการและสัญญาเช่าเฟอร์นิเจอร์ระหว่างคู่สัญญา (ถ้ามี) จะถูกยกเลิกไปด้วยโดยปริยาย / Service and Furniture agreements (if any) terminate together with this Agreement.</Bullet>
-
-        {/* Section 8: Vacating */}
-        <View style={styles.sectionBar} wrap={false}>
-          <TText>8. การย้ายออก / VACATING THE PREMISES</TText>
-        </View>
-        <Bullet>8.1 ในวันที่ครบกำหนดสัญญา ผู้เช่าต้องย้ายและขนย้ายทรัพย์สินของตนออก และส่งมอบทรัพย์สินคืนในสภาพเดิม สะอาด และสามารถนำออกให้เช่าได้ ยกเว้นความเสื่อมโทรมตามปกติ / On expiry, vacate and deliver the Premises in clean, original, tenantable condition (subject to normal wear and tear).</Bullet>
-        <Bullet>8.2 หากผู้เช่าไม่ทำตาม 8.1: (a) ทรัพย์สินที่ค้างอยู่ตกเป็นกรรมสิทธิ์ของผู้ให้เช่า (b) ผู้เช่าต้องชำระค่าเช่าครึ่งเดือนหากค้างไม่เกิน 15 วัน หรือ 1 เดือนหากค้าง 15-30 วัน บวกค่าปรับวันละ 500 บาท นับจากวันสิ้นสุดสัญญา / If 8.1 is not met: (a) leftover property transfers to Lessor; (b) ½ month rent if delayed ≤15 days, full month if 15–30 days, plus 500 THB/day penalty.</Bullet>
-
-        {/* Section 9: Applicable Law */}
-        <View style={styles.sectionBar} wrap={false}>
-          <TText>9. การบังคับใช้ / APPLICABLE LAW</TText>
-        </View>
-        <TText style={styles.paragraph}>
-          สัญญาฉบับนี้อยู่ภายใต้กฎหมายของรัฐบาลไทย / This Agreement shall be
-          governed by the laws of Thailand.
-        </TText>
-
-        {/* Section 10: Furniture / Appliances / Other Items — always shown
-            in full so the printed copy can be ticked or amended by hand. */}
-        <View style={styles.sectionBar} wrap={false}>
-          <TText>
-            10. รายการเฟอร์นิเจอร์และอุปกรณ์ภายในห้องชุด / FURNITURE &amp;
-            EQUIPMENT
-          </TText>
-        </View>
-        <TText style={styles.paragraph}>
-          ผู้ให้เช่าส่งมอบและผู้เช่าได้รับเฟอร์นิเจอร์และอุปกรณ์ดังต่อไปนี้
-          ภายในห้องชุดในสภาพที่พร้อมใช้งาน — รายการที่ติ๊กถูกจะระบุจำนวนต่อท้าย /
-          The Lessor delivers and the Lessee receives the following furniture
-          and equipment. Ticked rows show the agreed quantity.
-        </TText>
-
-        {data.furnitureList.length > 0 && (
-          <>
-            <TText style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
-              10.1 เฟอร์นิเจอร์ / Furniture
-            </TText>
-            {data.furnitureList.map((item, i) => (
-              <ChecklistRow key={`f-${i}`} item={item} num={i + 1} />
-            ))}
-          </>
-        )}
-
-        {data.applianceList.length > 0 && (
-          <>
-            <TText style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
-              10.2 เครื่องใช้ไฟฟ้า / Electrical Appliances
-            </TText>
-            {data.applianceList.map((item, i) => (
-              <ChecklistRow key={`a-${i}`} item={item} num={i + 1} />
-            ))}
-          </>
-        )}
-
-        {data.otherItems.length > 0 && (
-          <>
-            <TText style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
-              10.3 รายการอื่นๆ / Other Items
-            </TText>
-            {data.otherItems.map((item, i) => (
-              <ChecklistRow key={`o-${i}`} item={item} num={i + 1} />
-            ))}
-          </>
-        )}
-
-        <TText style={[styles.small, { marginTop: 8 }]}>
-          หากผู้เช่าทำคีย์การ์ดเข้าออกอาคาร กุญแจห้องชุด หรือกุญแจกล่องจดหมาย
-          ชำรุดหรือสูญหาย ผู้เช่าต้องรับผิดชอบค่าใช้จ่ายในการออกใหม่ทั้งหมด /
-          If the tenant damages or loses key cards or keys, they shall be
-          responsible for the full replacement cost.
-        </TText>
-        <TText style={[styles.small, { marginTop: 4 }]}>
-          กรณีย้ายออก ผู้ให้เช่าจะหักค่าทำความสะอาดห้อง 1,000 บาท
-          (กรณีสกปรกมาก 1,800 บาท) ค่าล้างแอร์ 1,400 บาท ค่าซักโซฟา 1,500 บาท
-          จากเงินประกัน / Cleaning fees deducted from deposit upon move-out.
-        </TText>
-
-        {/* Section 11: Misc (was 10) */}
-        <View style={styles.sectionBar} wrap={false}>
-          <TText>11. อื่นๆ / MISCELLANEOUS</TText>
-        </View>
-        <Bullet>11.1 การที่ผู้ให้เช่ารับชำระค่าเช่าจะไม่ถือเป็นข้อยกเว้นไม่ให้ผู้ให้เช่าดำเนินการใดๆ กับผู้เช่า หากมีการละเมิดข้อตกลงข้อหนึ่งข้อใดที่ระบุไว้ในสัญญาฉบับนี้ / Acceptance of rent shall not waive the Lessor's right to act against any breach by the Lessee.</Bullet>
-        <Bullet>11.2 หากข้อหนึ่งข้อใดของสัญญาฉบับนี้ไม่สามารถใช้บังคับได้ทางกฎหมายหรือมีเหตุต้องยกเลิก ให้ถือว่าข้อตกลงที่เหลืออยู่ยังคงมีผลบังคับใช้ต่อไปจนครบอายุสัญญา / If any term becomes void or unenforceable, the remaining terms shall remain in full force.</Bullet>
-        <Bullet>11.3 หากผู้เช่าขาดการติดต่อกับผู้ให้เช่าเกิน 5 วัน หรือไม่ชำระค่าเช่าและล่าช้าเกิน 10 วันโดยไม่แจ้งเหตุ ถือว่าผิดสัญญาอย่างมีนัยสำคัญ ผู้ให้เช่ามีสิทธิ์เข้าตรวจสอบ บอกเลิกสัญญา และยึดเงินประกันได้ทันที / Loss of contact over 5 days or rent delay over 10 days = material breach; Lessor may enter, terminate, and forfeit deposit immediately.</Bullet>
-        <Bullet>11.4 ไม่อนุญาตให้บุคคลอื่นที่ไม่มีรายชื่อในสัญญาเข้าพักอาศัยในห้องโดยเด็ดขาด / No unauthorized occupants are permitted in the Premises.</Bullet>
-        <Bullet>11.5 เมื่อผู้เช่าพักอาศัยครบ 6 เดือน ต้องดำเนินการล้างเครื่องปรับอากาศ 1 เครื่องและรับผิดชอบค่าใช้จ่ายเอง / After 6 months of tenancy, the tenant must clean 1 air conditioner at own expense.</Bullet>
-        <Bullet>11.6 เมื่อพักครบ 6 เดือน ผู้เช่ายินยอมให้เจ้าของหรือเอเจ้นท์เข้าตรวจสอบสภาพห้องโดยแจ้งล่วงหน้า 1-3 วัน หากไม่สะดวกผู้เช่าต้องส่งคลิปวิดีโอและภาพถ่ายระบุวันที่ / After 6 months, allow inspection with 1-3 days notice; if unavailable, provide dated video/photos.</Bullet>
+          return (data.clauses || []).map((clause) => {
+            const node = renderClause(clause, clauseDataMap, clause.key);
+            if (clause.key === "3.1" && bankBox) {
+              return (
+                <React.Fragment key={clause.key}>
+                  {node}
+                  {bankBox}
+                </React.Fragment>
+              );
+            }
+            if (clause.key === "10.intro") {
+              return (
+                <React.Fragment key={clause.key}>
+                  {node}
+                  {checklists}
+                </React.Fragment>
+              );
+            }
+            return <React.Fragment key={clause.key}>{node}</React.Fragment>;
+          });
+        })()}
 
         {/* Per-contract custom clauses, numbered 11.7, 11.8, ... */}
         {data.customClauses?.map((c, i) => {

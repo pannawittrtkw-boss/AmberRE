@@ -103,6 +103,11 @@ model Contract {
   // per contract afterwards — edits do not flow back to the template.
   customClauses String? @db.Text
 
+  // Per-clause overrides for the standard agreement. JSON map keyed by
+  // clause key (e.g. "5.1") with { th?, en? } values. Snapshots from the
+  // global standard template at creation; edits are local to this contract.
+  clauseOverrides String? @db.Text
+
   // ID card images
   lessorIdImage      String? @db.VarChar(500)
   lesseeIdImage      String? @db.VarChar(500)

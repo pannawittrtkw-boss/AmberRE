@@ -87,6 +87,7 @@ export async function PUT(
         otherItems: body.otherItems || null,
 
         customClauses: body.customClauses || null,
+        clauseOverrides: body.clauseOverrides || null,
 
         status: body.status || undefined,
       },

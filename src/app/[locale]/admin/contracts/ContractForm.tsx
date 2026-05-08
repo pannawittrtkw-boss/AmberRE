@@ -7,12 +7,16 @@ import { Loader2, ArrowLeft, ChevronDown, ChevronUp, Save } from "lucide-react";
 import ItemSelector from "./ItemSelector";
 import IdCardUpload from "./IdCardUpload";
 import CustomClausesEditor from "./CustomClausesEditor";
+import StandardClausesEditor from "./StandardClausesEditor";
 import { parseIdCardOcr } from "@/lib/idcard-ocr";
 import { parseBankBookOcr } from "@/lib/bank-ocr";
 import {
   CustomClause,
+  ClauseOverrideMap,
   parseCustomClauses,
   serializeCustomClauses,
+  parseClauseOverrides,
+  serializeClauseOverrides,
 } from "@/lib/contract-clauses";
 import {
   FURNITURE_OPTIONS,
@@ -130,25 +134,33 @@ export default function ContractForm({
   const [customClauses, setCustomClauses] = useState<CustomClause[]>(
     parseCustomClauses(initialData?.customClauses)
   );
+  const [clauseOverrides, setClauseOverrides] = useState<ClauseOverrideMap>(
+    parseClauseOverrides(initialData?.clauseOverrides)
+  );
 
   const [showJoint, setShowJoint] = useState(!!initialData?.jointLesseeName);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // On NEW contracts: pre-fill custom clauses from the global default
-  // template. Skipped when editing an existing contract — that contract
-  // already holds its own copy of clauses (which may diverge from the
-  // current template, by design).
+  // On NEW contracts: snapshot from the global default template
+  // (both appended clauses 11.7+ AND clause overrides for sections 2-11).
+  // Skipped when editing an existing contract — that contract already
+  // holds its own copy, which may diverge from the current template.
   useEffect(() => {
     if (isEdit) return;
-    if (initialData?.customClauses) return;
+    if (initialData?.customClauses || initialData?.clauseOverrides) return;
     let cancelled = false;
     fetch("/api/admin/contract-defaults")
       .then((r) => r.json())
       .then((data) => {
         if (cancelled || !data?.success) return;
         const clauses = data.data?.clauses as CustomClause[] | undefined;
+        const overrides = data.data?.clauseOverrides as
+          | ClauseOverrideMap
+          | undefined;
         if (clauses && clauses.length > 0) setCustomClauses(clauses);
+        if (overrides && Object.keys(overrides).length > 0)
+          setClauseOverrides(overrides);
       })
       .catch(() => {});
     return () => {
@@ -163,6 +175,18 @@ export default function ContractForm({
       const data = await res.json();
       if (data?.success) {
         setCustomClauses((data.data?.clauses as CustomClause[]) || []);
+      }
+    } catch {}
+  };
+
+  const handleResetOverridesFromTemplate = async () => {
+    try {
+      const res = await fetch("/api/admin/contract-defaults");
+      const data = await res.json();
+      if (data?.success) {
+        setClauseOverrides(
+          (data.data?.clauseOverrides as ClauseOverrideMap) || {}
+        );
       }
     } catch {}
   };
@@ -214,6 +238,7 @@ export default function ContractForm({
       applianceList: appliances.length ? JSON.stringify(appliances) : "",
       otherItems: otherItems.length ? JSON.stringify(otherItems) : "",
       customClauses: serializeCustomClauses(customClauses),
+      clauseOverrides: serializeClauseOverrides(clauseOverrides),
     };
 
     const url = isEdit
@@ -814,6 +839,37 @@ export default function ContractForm({
           options={OTHER_ITEM_OPTIONS}
           value={otherItems}
           onChange={setOtherItems}
+          locale={locale}
+        />
+      </Card>
+
+      {/* Per-clause overrides for the standard contract body (sections 2-11) */}
+      <Card
+        title={
+          locale === "th"
+            ? "ปรับแต่งข้อสัญญามาตรฐาน (2-11)"
+            : "Override Standard Clauses (2-11)"
+        }
+      >
+        <p className="text-xs text-stone-500 mb-3">
+          {locale === "th"
+            ? "ปกติไม่ต้องแก้ — สัญญาฉบับนี้จะใช้ข้อความมาตรฐาน ปรับเฉพาะข้อที่ต้องการ. แก้ที่นี่ใช้กับสัญญานี้เท่านั้น ไม่กระทบสัญญาอื่นและไม่กระทบ template"
+            : "Usually no edit needed — this contract uses the standard text. Edit only the clauses you need to change for this contract; changes here are scoped to this contract only."}
+        </p>
+        <div className="flex flex-wrap gap-2 mb-3">
+          <button
+            type="button"
+            onClick={handleResetOverridesFromTemplate}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-stone-300 hover:bg-stone-50 text-stone-700 text-xs"
+          >
+            {locale === "th"
+              ? "โหลดจาก template มาตรฐาน"
+              : "Load from standard template"}
+          </button>
+        </div>
+        <StandardClausesEditor
+          value={clauseOverrides}
+          onChange={setClauseOverrides}
           locale={locale}
         />
       </Card>

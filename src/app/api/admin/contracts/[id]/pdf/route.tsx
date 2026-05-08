@@ -12,7 +12,12 @@ import {
   parseContractItems,
   Bilingual,
 } from "@/lib/contract-items";
-import { parseCustomClauses } from "@/lib/contract-clauses";
+import {
+  parseCustomClauses,
+  parseClauseOverrides,
+  applyOverrides,
+  STANDARD_CLAUSES,
+} from "@/lib/contract-clauses";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -186,6 +191,14 @@ export async function GET(
     otherItems: buildChecklist(contract.otherItems, OTHER_ITEM_OPTIONS),
 
     customClauses: parseCustomClauses(contract.customClauses),
+    // Per-contract clause snapshot: STANDARD_CLAUSES from code + the
+    // contract's own clauseOverrides (which were seeded from the global
+    // template at creation, then potentially edited per-contract).
+    // Editing the global template later does NOT affect existing contracts.
+    clauses: applyOverrides(
+      STANDARD_CLAUSES,
+      parseClauseOverrides(contract.clauseOverrides)
+    ),
 
     lessorIdImage: toAbs(contract.lessorIdImage),
     lesseeIdImage: toAbs(contract.lesseeIdImage),

@@ -4,18 +4,26 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import {
   DEFAULT_CLAUSES_SETTING_KEY,
+  CLAUSE_OVERRIDES_SETTING_KEY,
   parseCustomClauses,
   serializeCustomClauses,
+  parseClauseOverrides,
+  serializeClauseOverrides,
   type CustomClause,
+  type ClauseOverrideMap,
 } from "@/lib/contract-clauses";
 
 export const runtime = "nodejs";
 
 /**
  * GET /api/admin/contract-defaults
- * Returns the global default custom-clauses template used to seed new
- * contracts. Stored in SiteSetting under "contract_default_clauses" with
- * the JSON payload in valueTh.
+ *
+ * Returns the global default contract template, used to seed new contracts:
+ *   - clauses          → array of {th, en} appended after section 11.6
+ *   - clauseOverrides  → map of {key: {th?, en?}} that overrides the
+ *                        standard clauses (sections 2-11) at creation
+ *
+ * Both are stored as JSON in SiteSetting.valueTh under separate keys.
  */
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -26,19 +34,32 @@ export async function GET() {
     );
   }
 
-  const setting = await prisma.siteSetting.findUnique({
-    where: { key: DEFAULT_CLAUSES_SETTING_KEY },
+  const [appendedSetting, overridesSetting] = await Promise.all([
+    prisma.siteSetting.findUnique({
+      where: { key: DEFAULT_CLAUSES_SETTING_KEY },
+    }),
+    prisma.siteSetting.findUnique({
+      where: { key: CLAUSE_OVERRIDES_SETTING_KEY },
+    }),
+  ]);
+
+  return NextResponse.json({
+    success: true,
+    data: {
+      clauses: parseCustomClauses(appendedSetting?.valueTh),
+      clauseOverrides: parseClauseOverrides(overridesSetting?.valueTh),
+    },
   });
-  const clauses: CustomClause[] = parseCustomClauses(setting?.valueTh);
-  return NextResponse.json({ success: true, data: { clauses } });
 }
 
 /**
  * PUT /api/admin/contract-defaults
- * Body: { clauses: CustomClause[] }
- * Replaces the global default template. Existing contracts are not
- * affected — only new contracts created after this point will pre-fill
- * from the new template.
+ *
+ * Body: { clauses?: CustomClause[]; clauseOverrides?: ClauseOverrideMap }
+ *
+ * Replaces the global template. Either field can be omitted to leave its
+ * setting untouched. Existing contracts are unaffected — only new
+ * contracts created after this point pre-fill from the new template.
  */
 export async function PUT(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -49,7 +70,7 @@ export async function PUT(req: NextRequest) {
     );
   }
 
-  let body: { clauses?: CustomClause[] };
+  let body: { clauses?: CustomClause[]; clauseOverrides?: ClauseOverrideMap };
   try {
     body = await req.json();
   } catch {
@@ -59,20 +80,45 @@ export async function PUT(req: NextRequest) {
     );
   }
 
-  const incoming = Array.isArray(body.clauses) ? body.clauses : [];
-  const serialised = serializeCustomClauses(incoming);
+  if (Array.isArray(body.clauses)) {
+    const serialised = serializeCustomClauses(body.clauses);
+    await prisma.siteSetting.upsert({
+      where: { key: DEFAULT_CLAUSES_SETTING_KEY },
+      update: { valueTh: serialised || null },
+      create: {
+        key: DEFAULT_CLAUSES_SETTING_KEY,
+        valueTh: serialised || null,
+      },
+    });
+  }
 
-  await prisma.siteSetting.upsert({
-    where: { key: DEFAULT_CLAUSES_SETTING_KEY },
-    update: { valueTh: serialised || null },
-    create: {
-      key: DEFAULT_CLAUSES_SETTING_KEY,
-      valueTh: serialised || null,
-    },
-  });
+  if (body.clauseOverrides && typeof body.clauseOverrides === "object") {
+    const serialised = serializeClauseOverrides(body.clauseOverrides);
+    await prisma.siteSetting.upsert({
+      where: { key: CLAUSE_OVERRIDES_SETTING_KEY },
+      update: { valueTh: serialised || null },
+      create: {
+        key: CLAUSE_OVERRIDES_SETTING_KEY,
+        valueTh: serialised || null,
+      },
+    });
+  }
+
+  // Re-read to return the canonical state
+  const [appendedSetting, overridesSetting] = await Promise.all([
+    prisma.siteSetting.findUnique({
+      where: { key: DEFAULT_CLAUSES_SETTING_KEY },
+    }),
+    prisma.siteSetting.findUnique({
+      where: { key: CLAUSE_OVERRIDES_SETTING_KEY },
+    }),
+  ]);
 
   return NextResponse.json({
     success: true,
-    data: { clauses: parseCustomClauses(serialised) },
+    data: {
+      clauses: parseCustomClauses(appendedSetting?.valueTh),
+      clauseOverrides: parseClauseOverrides(overridesSetting?.valueTh),
+    },
   });
 }

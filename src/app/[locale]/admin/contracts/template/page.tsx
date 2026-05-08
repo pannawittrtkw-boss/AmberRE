@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Save, Check } from "lucide-react";
 import CustomClausesEditor from "../CustomClausesEditor";
-import type { CustomClause } from "@/lib/contract-clauses";
+import StandardClausesEditor from "../StandardClausesEditor";
+import type { CustomClause, ClauseOverrideMap } from "@/lib/contract-clauses";
 
 export default function ContractTemplatePage({
   params,
@@ -12,11 +13,13 @@ export default function ContractTemplatePage({
   params: Promise<{ locale: string }>;
 }) {
   const [locale, setLocale] = useState("th");
-  const [clauses, setClauses] = useState<CustomClause[]>([]);
+  const [appendedClauses, setAppendedClauses] = useState<CustomClause[]>([]);
+  const [overrides, setOverrides] = useState<ClauseOverrideMap>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [tab, setTab] = useState<"override" | "appended">("override");
 
   useEffect(() => {
     params.then(({ locale: l }) => setLocale(l));
@@ -26,7 +29,10 @@ export default function ContractTemplatePage({
     fetch("/api/admin/contract-defaults")
       .then((r) => r.json())
       .then((data) => {
-        if (data.success) setClauses(data.data?.clauses || []);
+        if (data.success) {
+          setAppendedClauses(data.data?.clauses || []);
+          setOverrides(data.data?.clauseOverrides || {});
+        }
       })
       .finally(() => setLoading(false));
   }, []);
@@ -38,14 +44,18 @@ export default function ContractTemplatePage({
       const res = await fetch("/api/admin/contract-defaults", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clauses }),
+        body: JSON.stringify({
+          clauses: appendedClauses,
+          clauseOverrides: overrides,
+        }),
       });
       const data = await res.json();
       if (!data.success) {
         setError(data.error || (locale === "th" ? "บันทึกไม่สำเร็จ" : "Save failed"));
         return;
       }
-      setClauses(data.data?.clauses || []);
+      setAppendedClauses(data.data?.clauses || []);
+      setOverrides(data.data?.clauseOverrides || {});
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch {
@@ -64,7 +74,7 @@ export default function ContractTemplatePage({
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-5xl mx-auto pb-24">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 sm:mb-6">
         <Link
           href={`/${locale}/admin/contracts`}
@@ -75,19 +85,19 @@ export default function ContractTemplatePage({
         </Link>
         <h1 className="text-xl sm:text-2xl font-bold">
           {locale === "th"
-            ? "Template ข้อสัญญาเพิ่มเติม (Standard)"
-            : "Custom Clauses Template (Standard)"}
+            ? "Template สัญญา (Standard)"
+            : "Contract Template (Standard)"}
         </h1>
       </div>
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900 mb-5">
         <p className="font-semibold mb-1">
-          {locale === "th" ? "เกี่ยวกับ template นี้" : "About this template"}
+          {locale === "th" ? "เกี่ยวกับ template" : "About this template"}
         </p>
         <p className="text-xs leading-relaxed">
           {locale === "th"
-            ? "ข้อสัญญาที่ตั้งไว้ที่นี่จะถูกใช้เป็นค่าเริ่มต้น (default) สำหรับสัญญาที่สร้างใหม่ — แก้ template ที่นี่จะไม่กระทบสัญญาเก่าที่มีอยู่แล้ว เนื่องจากแต่ละสัญญาเก็บสำเนาของตัวเอง"
-            : "Clauses set here are used as the default for new contracts. Changes here do NOT affect existing contracts — each contract holds its own snapshot."}
+            ? "การแก้ template ที่นี่จะใช้กับสัญญาที่สร้างใหม่หลังจากนี้เท่านั้น สัญญาเก่าที่มีอยู่แล้วจะคงค่าเดิม (แต่ละสัญญาเก็บสำเนาของตัวเอง) ดังนั้นแก้ template นี้ปลอดภัยไม่กระทบสัญญาเก่า"
+            : "Edits here apply to NEW contracts only. Existing contracts retain their own snapshot — editing the template will not retroactively change them."}
         </p>
       </div>
 
@@ -97,15 +107,58 @@ export default function ContractTemplatePage({
         </div>
       )}
 
-      <div className="bg-white border rounded-xl p-4 sm:p-5">
-        <CustomClausesEditor
-          value={clauses}
-          onChange={setClauses}
-          locale={locale}
-        />
+      {/* Tabs */}
+      <div className="flex border-b border-stone-200 mb-4">
+        <button
+          type="button"
+          onClick={() => setTab("override")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
+            tab === "override"
+              ? "border-[#C8A951] text-[#C8A951]"
+              : "border-transparent text-stone-500 hover:text-stone-700"
+          }`}
+        >
+          {locale === "th" ? "แก้ข้อมาตรฐาน (2-11)" : "Override Standard (2-11)"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("appended")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
+            tab === "appended"
+              ? "border-[#C8A951] text-[#C8A951]"
+              : "border-transparent text-stone-500 hover:text-stone-700"
+          }`}
+        >
+          {locale === "th"
+            ? "ข้อสัญญาเพิ่มเติม (11.7+)"
+            : "Additional clauses (11.7+)"}
+        </button>
       </div>
 
-      <div className="flex justify-end mt-5">
+      {tab === "override" && (
+        <div className="bg-white border rounded-xl p-4 sm:p-5">
+          <StandardClausesEditor
+            value={overrides}
+            onChange={setOverrides}
+            locale={locale}
+          />
+        </div>
+      )}
+
+      {tab === "appended" && (
+        <div className="bg-white border rounded-xl p-4 sm:p-5">
+          <CustomClausesEditor
+            value={appendedClauses}
+            onChange={setAppendedClauses}
+            locale={locale}
+          />
+        </div>
+      )}
+
+      <div
+        className="fixed sm:static bottom-0 left-0 right-0 z-30 flex justify-end gap-2 px-4 py-3 sm:p-0 sm:mt-5 bg-white sm:bg-transparent border-t sm:border-0"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.75rem)" }}
+      >
         <button
           type="button"
           onClick={handleSave}
