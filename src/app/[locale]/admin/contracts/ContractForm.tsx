@@ -322,13 +322,14 @@ export default function ContractForm({
                   (o.documentType === "passport" && o.nationality
                     ? o.nationality
                     : "");
+                // Replace, don't merge — uploading a new card always wipes
+                // the previous values on the related fields.
                 setForm((prev) => ({
                   ...prev,
-                  lessorName: o.name || prev.lessorName || "",
-                  lessorNationality:
-                    o.nationality || prev.lessorNationality || "",
-                  lessorIdCard: o.idNumber || prev.lessorIdCard || "",
-                  lessorAddress: addressFallback || prev.lessorAddress || "",
+                  lessorName: o.name || "",
+                  lessorNationality: o.nationality || "",
+                  lessorIdCard: o.idNumber || "",
+                  lessorAddress: addressFallback,
                 }));
               }}
               buildOcrPreview={(text) => {
@@ -411,11 +412,10 @@ export default function ContractForm({
                     : "");
                 setForm((prev) => ({
                   ...prev,
-                  lesseeName: o.name || prev.lesseeName || "",
-                  lesseeIdCard: o.idNumber || prev.lesseeIdCard || "",
-                  lesseeAddress: addressFallback || prev.lesseeAddress || "",
-                  lesseeNationality:
-                    o.nationality || prev.lesseeNationality || "",
+                  lesseeName: o.name || "",
+                  lesseeIdCard: o.idNumber || "",
+                  lesseeAddress: addressFallback,
+                  lesseeNationality: o.nationality || "",
                 }));
               }}
               buildOcrPreview={(text) => {
@@ -509,13 +509,10 @@ export default function ContractForm({
                         : "");
                     setForm((prev) => ({
                       ...prev,
-                      jointLesseeName: o.name || prev.jointLesseeName || "",
-                      jointLesseeIdCard:
-                        o.idNumber || prev.jointLesseeIdCard || "",
-                      jointLesseeAddress:
-                        addressFallback || prev.jointLesseeAddress || "",
-                      jointLesseeNationality:
-                        o.nationality || prev.jointLesseeNationality || "",
+                      jointLesseeName: o.name || "",
+                      jointLesseeIdCard: o.idNumber || "",
+                      jointLesseeAddress: addressFallback,
+                      jointLesseeNationality: o.nationality || "",
                     }));
                   }}
                   buildOcrPreview={(text) => {
@@ -640,11 +637,10 @@ export default function ContractForm({
                 const b = parseBankBookOcr(text);
                 setForm((prev) => ({
                   ...prev,
-                  bankName: b.bankName || prev.bankName || "",
-                  bankBranch: b.bankBranch || prev.bankBranch || "",
-                  bankAccountName: b.accountName || prev.bankAccountName || "",
-                  bankAccountNumber:
-                    b.accountNumber || prev.bankAccountNumber || "",
+                  bankName: b.bankName || "",
+                  bankBranch: b.bankBranch || "",
+                  bankAccountName: b.accountName || "",
+                  bankAccountNumber: b.accountNumber || "",
                 }));
               }}
               buildOcrPreview={(text) => {
