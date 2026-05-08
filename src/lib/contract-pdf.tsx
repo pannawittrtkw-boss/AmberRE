@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Font,
 } from "@react-pdf/renderer";
+import { segmentForHyphenation } from "./thai-segment";
 
 // Register Sarabun (Thai + Latin) font from Google's GitHub mirror via
 // jsDelivr. The @main suffix is required — without it the CDN returns 404.
@@ -22,6 +23,13 @@ Font.register({
     },
   ],
 });
+
+// Tell @react-pdf/renderer how to break Thai "words" into wrappable
+// fragments. Without this, Thai paragraphs (which have no inter-word
+// spaces) get cut at arbitrary character boundaries — orphaning the
+// last character on a new line. With Intl.Segmenter we hand the engine
+// real Thai word boundaries from CLDR data.
+Font.registerHyphenationCallback(segmentForHyphenation);
 
 const styles = StyleSheet.create({
   page: {
