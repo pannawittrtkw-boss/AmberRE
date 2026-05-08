@@ -36,12 +36,9 @@ function findThaiIdNumber(text: string): string | undefined {
 }
 
 function findPassportNumber(text: string): string | undefined {
-  // Passport numbers are typically 1-2 letters + 6-8 digits, usually after
-  // "Passport No" or in the MRZ at the bottom of the document. Tesseract
-  // often confuses I↔1 and O↔0 in passport-number text, so we try multiple
-  // matching strategies and pick the first that looks plausible.
+  // Passport numbers are typically 1-2 letters + 6-8 digits.
   //
-  // Strategy 1: explicit "Passport No[. :] XX9999999" label
+  // Strategy 1: explicit "Passport No" label followed by the value.
   const labelPatterns = [
     /Passport\s*No\.?\s*[:\-]?\s*([A-Z][A-Z0-9]{6,9})/i,
     /Passport\s*Number\s*[:\-]?\s*([A-Z][A-Z0-9]{6,9})/i,
@@ -52,15 +49,21 @@ function findPassportNumber(text: string): string | undefined {
     if (m) return cleanPassport(m[1]);
   }
 
-  // Strategy 2: scan the MRZ at the bottom — line that starts with the
-  // passport number followed by `<` padding. Length 9 is the canonical MRZ
-  // first chunk but Tesseract sometimes drops the trailing check digit.
-  const mrzLines = text.split("\n").filter((l) => /[A-Z0-9<]{8,}/.test(l));
-  for (const ln of mrzLines) {
-    const m = ln.match(/([A-Z][A-Z0-9]{5,9})</);
-    if (m) {
-      const cleaned = cleanPassport(m[1]);
-      if (cleaned) return cleaned;
+  // Strategy 2: MRZ line 2 specifically. The passport number lives in the
+  // first 9 chars of the line that starts with 1-2 uppercase letters
+  // followed by digits or `<` padding (e.g. "A061511442ZAF..." or
+  // "MK141129<8MMR..."). MRZ line 1 starts with the document type + the
+  // holder's surname (more letters), so requiring digits early in the
+  // run prevents picking up the wrong line.
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  for (const ln of lines) {
+    if (ln.length < 10) continue;
+    const m = ln.match(/^([A-Z]{1,2})([\d<][A-Z0-9<]{6,})/);
+    if (!m) continue;
+    const first9 = (m[1] + m[2]).slice(0, 9);
+    const passportNum = first9.replace(/</g, "");
+    if (/^[A-Z]{1,2}\d{5,}$/.test(passportNum)) {
+      return passportNum;
     }
   }
 
@@ -141,64 +144,114 @@ const isPassportLabel = (line: string): boolean => {
   return PASSPORT_LABEL_PATTERNS.some((re) => re.test(trimmed));
 };
 
-// Heuristic: a passport name line is uppercase Latin letters with at
-// least one space (i.e. multi-word). Single-token uppercase strings like
-// "MMR" or "PJ" are nearly always country codes, sex codes, or passport
-// types — never names — so we reject them.
+// Heuristic: a multi-word passport name line is uppercase Latin letters
+// with at least one space. Used as a generic fallback when we have no
+// label context (e.g. Myanmar passport with "Name SU LEI NANDAR").
+//
+// IMPORTANT: case sensitive — accepting mixed case lets noise like
+// "Passport No No" pass through.
 const looksLikePassportName = (line: string): boolean => {
   const trimmed = line.trim();
   if (trimmed.length < 5) return false;
   if (!/\s/.test(trimmed)) return false; // require multi-word
-  if (!/[A-Z]/.test(trimmed)) return false;
-  // Reject anything with digits (likely passport number, date) or `<` (MRZ)
   if (/[0-9<>]/.test(trimmed)) return false;
-  // Allow A-Z, spaces, hyphens, apostrophes
-  return /^[A-Z][A-Z\s'\-.]+[A-Z]$/i.test(trimmed);
+  return /^[A-Z][A-Z\s'\-.]+[A-Z]$/.test(trimmed);
 };
 
+// Looser variant for single-token names (e.g. "PIENAAR" surname only).
+// Still requires UPPERCASE so we don't accept random text fragments.
+const looksLikeUppercaseToken = (line: string): boolean => {
+  const trimmed = line.trim();
+  if (trimmed.length < 2) return false;
+  if (/[0-9<>]/.test(trimmed)) return false;
+  return /^[A-Z][A-Z\s'\-.]*[A-Z]$/.test(trimmed);
+};
+
+// Skip-list when scanning for a name value: passport labels in English
+// or French (SA passports are bilingual EN/FR), country/sex codes,
+// MRZ rows, and 3-letter country codes.
+const isPassportNameSkippable = (line: string): boolean => {
+  const trimmed = line.trim();
+  if (!trimmed) return true;
+  if (isPassportLabel(trimmed)) return true;
+  // French equivalents and dual labels like "Surname / Nom"
+  if (/^(?:Nom|Prénoms?|Pr[ée]noms?|Nationalit[ée]|Date\s*de)/i.test(trimmed))
+    return true;
+  if (/^(?:Surname|Last\s*name|Given\s*names?|Name)\s*[\/\\]/i.test(trimmed))
+    return true;
+  if (/^[A-Z]{2,4}$/.test(trimmed)) return true; // country / type / sex
+  if (/^[A-Z0-9<]+$/.test(trimmed) && trimmed.includes("<")) return true; // MRZ
+  if (/^[—\-_]+$/.test(trimmed)) return true;
+  if (/^\d+$/.test(trimmed)) return true;
+  return false;
+};
+
+function findValueAfterLabel(
+  lines: string[],
+  startIdx: number,
+  maxAhead: number = 6
+): string | undefined {
+  for (let j = startIdx + 1; j < Math.min(lines.length, startIdx + maxAhead); j++) {
+    const candidate = lines[j].trim();
+    if (isPassportNameSkippable(candidate)) continue;
+    if (looksLikeUppercaseToken(candidate)) return candidate;
+  }
+  return undefined;
+}
+
 function findEnglishName(lines: string[]): string | undefined {
+  let surname: string | undefined;
+  let givenNames: string | undefined;
+
   for (let i = 0; i < lines.length; i++) {
-    const ln = lines[i];
-    // Surname/Last Name then Name on subsequent lines (passport format)
-    if (/^(?:Surname|Last\s*name)/i.test(ln)) {
-      const surname = ln.replace(/^(?:Surname|Last\s*name)\s*[:\-]?\s*/i, "").trim();
-      const next = lines[i + 1] || "";
-      if (/^(?:Given\s*names?|Name)/i.test(next)) {
-        const given = next.replace(/^(?:Given\s*names?|Name)\s*[:\-]?\s*/i, "").trim();
-        if (given && surname) return `${given} ${surname}`;
+    const ln = lines[i].trim();
+
+    // Surname / Last name / Nom (French)
+    if (
+      !surname &&
+      /^(?:Surname|Last\s*name|Nom)\b/i.test(ln) &&
+      !/Given|Pr[ée]noms?/i.test(ln)
+    ) {
+      // Try same-line value first (e.g. "Surname: PIENAAR")
+      const sameLine = ln
+        .replace(/^(?:Surname|Last\s*name|Nom)\s*[\/\\]?\s*\w*\s*[:\-]?\s*/i, "")
+        .trim();
+      if (sameLine && looksLikeUppercaseToken(sameLine)) {
+        surname = sameLine;
+      } else {
+        const v = findValueAfterLabel(lines, i);
+        if (v) surname = v;
       }
-      if (surname && !isPassportLabel(surname)) return surname;
     }
-    if (/^Name\s*[:\-]?/i.test(ln)) {
-      // Same-line value first
-      const v = ln.replace(/^Name\s*[:\-]?\s*/i, "").trim();
-      if (v && !isPassportLabel(v) && looksLikePassportName(v)) return v;
-      // Otherwise scan forward — Vision often returns labels in a block
-      // before the values, so we keep skipping past:
-      //   * other passport labels (Country code, Passport No, ...),
-      //   * short uppercase tokens that are country/type/sex codes (1-4 chars),
-      //   * digit-only / MRZ-only lines,
-      // until we find a multi-word uppercase name.
-      for (let j = i + 1; j < Math.min(lines.length, i + 12); j++) {
-        const candidate = lines[j].trim();
-        if (!candidate) continue;
-        if (isPassportLabel(candidate)) continue;
-        if (/^[—\-_]+$/.test(candidate)) continue;
-        if (/^\d+$/.test(candidate)) continue;
-        if (/^[A-Z]{2,4}$/.test(candidate)) continue; // country / type code
-        if (/^[A-Z0-9<]+$/.test(candidate)) continue; // MRZ row
-        if (looksLikePassportName(candidate)) return candidate;
+
+    // Given names / Prénoms (French) / Name
+    if (
+      !givenNames &&
+      /^(?:Given\s*names?|Pr[ée]noms?|Name)\b/i.test(ln) &&
+      !/^(?:Surname|Last\s*name|Nom)\b/i.test(ln)
+    ) {
+      const sameLine = ln
+        .replace(/^(?:Given\s*names?|Pr[ée]noms?|Name)\s*[\/\\]?\s*\w*\s*[:\-]?\s*/i, "")
+        .trim();
+      if (sameLine && looksLikeUppercaseToken(sameLine)) {
+        givenNames = sameLine;
+      } else {
+        const v = findValueAfterLabel(lines, i);
+        if (v) givenNames = v;
       }
     }
   }
 
-  // Fallback: scan for an obvious uppercase passport-style name with at
-  // least 2 words. Helps when OCR doesn't surface the "Name" label at all.
+  if (givenNames && surname) return `${givenNames} ${surname}`;
+  if (surname) return surname;
+  if (givenNames) return givenNames;
+
+  // Last-resort fallback: a multi-word uppercase line anywhere in the OCR
+  // output. Helps Myanmar-style passports where Vision drops "Name" and
+  // its value into separate text blocks.
   for (const ln of lines) {
     const trimmed = ln.trim();
-    if (looksLikePassportName(trimmed) && /\s/.test(trimmed)) {
-      return trimmed;
-    }
+    if (looksLikePassportName(trimmed)) return trimmed;
   }
 
   return undefined;
