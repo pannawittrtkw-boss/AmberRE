@@ -85,11 +85,14 @@ const styles = StyleSheet.create({
     paddingTop: 36,
     paddingBottom: 36,
     paddingHorizontal: 50,
-    lineHeight: 1.45,
+    // Thai script stacks tone marks and vowels above and below the
+    // baseline; cramped line-height makes adjacent lines collide. 1.6
+    // gives the marks enough breathing room without wasting the page.
+    lineHeight: 1.6,
   },
   header: { textAlign: "center", marginBottom: 14 },
-  title: { fontSize: 14, fontWeight: "bold", marginBottom: 2 },
-  subtitle: { fontSize: 13, fontWeight: "bold" },
+  title: { fontSize: 14, fontWeight: "bold", marginBottom: 4, lineHeight: 1.5 },
+  subtitle: { fontSize: 13, fontWeight: "bold", lineHeight: 1.5 },
   sectionBar: {
     backgroundColor: "#000",
     color: "#fff",
