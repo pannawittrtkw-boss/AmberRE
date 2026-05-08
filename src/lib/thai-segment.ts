@@ -50,3 +50,23 @@ export function insertThaiBreaks(text: string): string {
     return text;
   }
 }
+
+/**
+ * Splits a string at CLDR Thai word boundaries and returns the fragments.
+ * Used to render each Thai word as its own <Text> run so @react-pdf/renderer
+ * can break between runs without inserting any character (hyphen or
+ * otherwise).
+ */
+export function splitThai(text: string): string[] {
+  if (!text || !thaiSegmenter) return [text];
+  if (!THAI_RANGE.test(text)) return [text];
+  try {
+    const fragments: string[] = [];
+    for (const seg of thaiSegmenter.segment(text)) {
+      if (seg.segment) fragments.push(seg.segment);
+    }
+    return fragments.length > 0 ? fragments : [text];
+  } catch {
+    return [text];
+  }
+}

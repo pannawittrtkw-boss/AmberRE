@@ -10,7 +10,7 @@ import {
   Font,
 } from "@react-pdf/renderer";
 import type { Style } from "@react-pdf/stylesheet";
-import { insertThaiBreaks } from "./thai-segment";
+import { splitThai } from "./thai-segment";
 
 // Register Sarabun (Thai + Latin) font from Google's GitHub mirror via
 // jsDelivr. The @main suffix is required — without it the CDN returns 404.
@@ -31,12 +31,19 @@ Font.register({
 // insertThaiBreaks instead.
 Font.registerHyphenationCallback((word) => [word]);
 
-// Recursively walk a ReactNode tree and replace Thai-string leaves with
-// the same string segmented at CLDR word boundaries (ZWSP separators).
-// react-pdf treats ZWSP as a soft break, so Thai paragraphs now wrap
-// between words instead of mid-character.
+// Recursively walk a ReactNode tree and split Thai-string leaves into
+// per-word <Text> runs at CLDR word boundaries. Each Thai fragment ends
+// up as its own inline <Text>, so @react-pdf/renderer's line-breaker
+// can wrap between runs without inserting any character — no orphan
+// characters mid-word and no "-" hyphen marker at line ends.
 function thaify(node: React.ReactNode): React.ReactNode {
-  if (typeof node === "string") return insertThaiBreaks(node);
+  if (typeof node === "string") {
+    const fragments = splitThai(node);
+    if (fragments.length <= 1) return node;
+    return fragments.map((frag, i) => (
+      <Text key={`thai-${i}`}>{frag}</Text>
+    ));
+  }
   if (typeof node === "number" || node == null || typeof node === "boolean")
     return node;
   if (Array.isArray(node)) return node.map(thaify);
