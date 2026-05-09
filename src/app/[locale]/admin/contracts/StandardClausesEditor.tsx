@@ -17,6 +17,19 @@ interface Props {
   value: ClauseOverrideMap;
   onChange: (overrides: ClauseOverrideMap) => void;
   locale: string;
+  /**
+   * Optional whitelist of section identifiers (e.g. ["5", "6", "7"]). When
+   * set, the editor only renders clauses belonging to those sections.
+   * Lets us split the standard editor across multiple tabs / cards
+   * (e.g. "sections 2-10" vs "section 11 only").
+   */
+  sectionsFilter?: string[];
+  /**
+   * Hide the global summary header ("X of Y clauses overridden" + reset
+   * all + the info banner). Useful when this editor is embedded as a
+   * sub-section of a larger editor that already shows its own summary.
+   */
+  hideHeader?: boolean;
 }
 
 const inputCls =
@@ -50,8 +63,26 @@ function groupClauses(clauses: ContractClause[]): {
   }));
 }
 
-export default function StandardClausesEditor({ value, onChange, locale }: Props) {
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+export default function StandardClausesEditor({
+  value,
+  onChange,
+  locale,
+  sectionsFilter,
+  hideHeader,
+}: Props) {
+  // When the editor is filtered to just one or two sections, expand them
+  // by default — there's no point making the user click. Otherwise start
+  // collapsed so the page is scannable.
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(
+    () => {
+      if (sectionsFilter && sectionsFilter.length <= 2) {
+        const out: Record<string, boolean> = {};
+        for (const s of sectionsFilter) out[`Section ${s}`] = true;
+        return out;
+      }
+      return {};
+    }
+  );
 
   const toggle = (title: string) =>
     setOpenSections((s) => ({ ...s, [title]: !s[title] }));
@@ -84,43 +115,64 @@ export default function StandardClausesEditor({ value, onChange, locale }: Props
     onChange(next);
   };
 
-  const groups = groupClauses(STANDARD_CLAUSES);
-  const overrideCount = Object.keys(value).length;
+  const visibleClauses = sectionsFilter
+    ? STANDARD_CLAUSES.filter((c) => {
+        const section = c.key.startsWith("section.")
+          ? c.key.slice("section.".length)
+          : c.key.split(".")[0];
+        return sectionsFilter.includes(section);
+      })
+    : STANDARD_CLAUSES;
+  const groups = groupClauses(visibleClauses);
+  const visibleKeys = new Set(visibleClauses.map((c) => c.key));
+  const overrideCount = Object.keys(value).filter((k) =>
+    visibleKeys.has(k)
+  ).length;
+
+  const resetVisible = () => {
+    const next = { ...value };
+    for (const k of visibleKeys) delete next[k];
+    onChange(next);
+  };
 
   return (
     <div className="space-y-3">
-      <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-blue-50 border border-blue-100 text-xs text-blue-900">
-        <Info className="w-4 h-4 shrink-0 mt-0.5" />
-        <div className="space-y-1">
-          <p>
-            {locale === "th"
-              ? "ระบบเติมข้อความมาตรฐานให้แล้ว — แก้เฉพาะส่วนที่ต้องการได้เลย ถ้าข้อความตรงกับมาตรฐานจะไม่บันทึกเป็น override (ใช้ข้อความมาตรฐานเดิม)"
-              : "Each clause is pre-filled with the standard text — edit just the parts you want to change. Untouched clauses are not saved as overrides."}
-          </p>
-          <p className="text-[11px] text-blue-700">
-            {locale === "th"
-              ? "ตัวแปร {{ค่าเช่า}}, {{เงินประกัน}}, ... จะถูกเติมข้อมูลของสัญญาแต่ละฉบับอัตโนมัติเวลาสร้าง PDF — อย่าลบออก แต่จัดวาง/แก้ข้อความรอบๆ ได้"
-              : "Tokens like {{monthlyRent}}, {{securityDeposit}}, ... are filled per contract at PDF render time. Keep them intact; you can rearrange the text around them."}
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center justify-between text-xs text-stone-500">
-        <span>
-          {locale === "th"
-            ? `แก้ไขเฉพาะข้อที่ต้องการ — ${overrideCount} ข้อ จาก ${STANDARD_CLAUSES.length} ข้อ ถูกแก้`
-            : `Edit only the clauses you need — ${overrideCount} of ${STANDARD_CLAUSES.length} clauses overridden`}
-        </span>
-        {overrideCount > 0 && (
-          <button
-            type="button"
-            onClick={() => onChange({})}
-            className="inline-flex items-center gap-1 text-rose-600 hover:text-rose-700"
-          >
-            <RotateCcw className="w-3 h-3" />
-            {locale === "th" ? "รีเซ็ตทั้งหมด" : "Reset all"}
-          </button>
-        )}
-      </div>
+      {!hideHeader && (
+        <>
+          <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-blue-50 border border-blue-100 text-xs text-blue-900">
+            <Info className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p>
+                {locale === "th"
+                  ? "ระบบเติมข้อความมาตรฐานให้แล้ว — แก้เฉพาะส่วนที่ต้องการได้เลย ถ้าข้อความตรงกับมาตรฐานจะไม่บันทึกเป็น override (ใช้ข้อความมาตรฐานเดิม)"
+                  : "Each clause is pre-filled with the standard text — edit just the parts you want to change. Untouched clauses are not saved as overrides."}
+              </p>
+              <p className="text-[11px] text-blue-700">
+                {locale === "th"
+                  ? "ตัวแปร {{ค่าเช่า}}, {{เงินประกัน}}, ... จะถูกเติมข้อมูลของสัญญาแต่ละฉบับอัตโนมัติเวลาสร้าง PDF — อย่าลบออก แต่จัดวาง/แก้ข้อความรอบๆ ได้"
+                  : "Tokens like {{monthlyRent}}, {{securityDeposit}}, ... are filled per contract at PDF render time. Keep them intact; you can rearrange the text around them."}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between text-xs text-stone-500">
+            <span>
+              {locale === "th"
+                ? `แก้ไขเฉพาะข้อที่ต้องการ — ${overrideCount} ข้อ จาก ${visibleClauses.length} ข้อ ถูกแก้`
+                : `Edit only the clauses you need — ${overrideCount} of ${visibleClauses.length} clauses overridden`}
+            </span>
+            {overrideCount > 0 && (
+              <button
+                type="button"
+                onClick={resetVisible}
+                className="inline-flex items-center gap-1 text-rose-600 hover:text-rose-700"
+              >
+                <RotateCcw className="w-3 h-3" />
+                {locale === "th" ? "รีเซ็ตทั้งหมด" : "Reset all"}
+              </button>
+            )}
+          </div>
+        </>
+      )}
 
       {groups.map((group) => {
         const open = !!openSections[group.title];

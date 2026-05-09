@@ -843,12 +843,12 @@ export default function ContractForm({
         />
       </Card>
 
-      {/* Per-clause overrides for the standard contract body (sections 2-11) */}
+      {/* Per-clause overrides for sections 2-10 of the standard contract */}
       <Card
         title={
           locale === "th"
-            ? "ปรับแต่งข้อสัญญามาตรฐาน (2-11)"
-            : "Override Standard Clauses (2-11)"
+            ? "ปรับแต่งข้อสัญญามาตรฐาน (2-10)"
+            : "Override Standard Clauses (2-10)"
         }
       >
         <p className="text-xs text-stone-500 mb-3">
@@ -871,23 +871,47 @@ export default function ContractForm({
           value={clauseOverrides}
           onChange={setClauseOverrides}
           locale={locale}
+          sectionsFilter={["2", "3", "4", "5", "6", "7", "8", "9", "10"]}
         />
       </Card>
 
-      {/* Custom Clauses — appended after section 11 of the standard contract */}
+      {/* Section 11 — standard 11.1-11.6 + custom appended 11.7+ together */}
       <Card
         title={
           locale === "th"
-            ? "ข้อสัญญาเพิ่มเติม (ต่อท้ายข้อ 11)"
-            : "Additional Clauses (after section 11)"
+            ? "ข้อ 11 — อื่นๆ + ข้อพิเศษ"
+            : "Section 11 — Misc + Additional"
         }
       >
-        <CustomClausesEditor
-          value={customClauses}
-          onChange={setCustomClauses}
-          onResetFromTemplate={handleResetCustomClausesFromTemplate}
-          locale={locale}
-        />
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold mb-2 text-stone-700">
+              {locale === "th"
+                ? "ข้อมาตรฐาน 11.1-11.6"
+                : "Standard clauses 11.1-11.6"}
+            </h3>
+            <StandardClausesEditor
+              value={clauseOverrides}
+              onChange={setClauseOverrides}
+              locale={locale}
+              sectionsFilter={["11"]}
+              hideHeader
+            />
+          </div>
+          <div className="border-t border-stone-200 pt-4">
+            <h3 className="text-sm font-semibold mb-2 text-stone-700">
+              {locale === "th"
+                ? "ข้อสัญญาเพิ่มเติม (11.7+)"
+                : "Additional clauses (11.7+)"}
+            </h3>
+            <CustomClausesEditor
+              value={customClauses}
+              onChange={setCustomClauses}
+              onResetFromTemplate={handleResetCustomClausesFromTemplate}
+              locale={locale}
+            />
+          </div>
+        </div>
       </Card>
 
       {/* Status */}

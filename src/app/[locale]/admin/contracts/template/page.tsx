@@ -118,7 +118,7 @@ export default function ContractTemplatePage({
               : "border-transparent text-stone-500 hover:text-stone-700"
           }`}
         >
-          {locale === "th" ? "แก้ข้อมาตรฐาน (2-11)" : "Override Standard (2-11)"}
+          {locale === "th" ? "แก้ข้อมาตรฐาน (2-10)" : "Override Standard (2-10)"}
         </button>
         <button
           type="button"
@@ -129,9 +129,7 @@ export default function ContractTemplatePage({
               : "border-transparent text-stone-500 hover:text-stone-700"
           }`}
         >
-          {locale === "th"
-            ? "ข้อสัญญาเพิ่มเติม (11.7+)"
-            : "Additional clauses (11.7+)"}
+          {locale === "th" ? "ข้อ 11 — อื่นๆ" : "Section 11 — Misc"}
         </button>
       </div>
 
@@ -141,17 +139,41 @@ export default function ContractTemplatePage({
             value={overrides}
             onChange={setOverrides}
             locale={locale}
+            sectionsFilter={["2", "3", "4", "5", "6", "7", "8", "9", "10"]}
           />
         </div>
       )}
 
       {tab === "appended" && (
-        <div className="bg-white border rounded-xl p-4 sm:p-5">
-          <CustomClausesEditor
-            value={appendedClauses}
-            onChange={setAppendedClauses}
-            locale={locale}
-          />
+        <div className="space-y-4">
+          {/* Standard 11.1-11.6 — editable like other sections */}
+          <div className="bg-white border rounded-xl p-4 sm:p-5">
+            <h3 className="text-sm font-semibold mb-3">
+              {locale === "th"
+                ? "ข้อมาตรฐาน 11.1-11.6"
+                : "Standard clauses 11.1-11.6"}
+            </h3>
+            <StandardClausesEditor
+              value={overrides}
+              onChange={setOverrides}
+              locale={locale}
+              sectionsFilter={["11"]}
+              hideHeader
+            />
+          </div>
+          {/* Custom appended clauses 11.7+ */}
+          <div className="bg-white border rounded-xl p-4 sm:p-5">
+            <h3 className="text-sm font-semibold mb-3">
+              {locale === "th"
+                ? "ข้อสัญญาเพิ่มเติม (11.7+)"
+                : "Additional clauses (11.7+)"}
+            </h3>
+            <CustomClausesEditor
+              value={appendedClauses}
+              onChange={setAppendedClauses}
+              locale={locale}
+            />
+          </div>
         </div>
       )}
 
