@@ -1,13 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import {
-  ChevronDown,
-  ChevronRight,
-  RotateCcw,
-  Info,
-  Loader2,
-} from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, ChevronRight, RotateCcw, Info } from "lucide-react";
 import {
   STANDARD_CLAUSES,
   ClauseOverrideMap,
@@ -62,27 +56,13 @@ export default function StandardClausesEditor({ value, onChange, locale }: Props
   const toggle = (title: string) =>
     setOpenSections((s) => ({ ...s, [title]: !s[title] }));
 
-  // Hold latest override map in a ref so debounced async work always
-  // sees current state without stale-closure bugs.
-  const valueRef = useRef(value);
-  useEffect(() => {
-    valueRef.current = value;
-  }, [value]);
-
-  const [translating, setTranslating] = useState<Record<string, boolean>>({});
-
-  const setOverrideMap = (next: ClauseOverrideMap) => {
-    valueRef.current = next;
-    onChange(next);
-  };
-
   const setOverride = (
     clause: ContractClause,
     lang: "th" | "en",
     text: string
   ) => {
-    const current = valueRef.current[clause.key] || {};
-    const next: ClauseOverrideMap = { ...valueRef.current };
+    const current = value[clause.key] || {};
+    const next: ClauseOverrideMap = { ...value };
     const standardText = clause[lang];
     // Treat "matches the standard exactly" as no-override so the clause
     // falls back automatically. Lets the textarea start out pre-filled
@@ -95,67 +75,7 @@ export default function StandardClausesEditor({ value, onChange, locale }: Props
     } else {
       next[clause.key] = { ...current, [lang]: text };
     }
-    setOverrideMap(next);
-  };
-
-  // Debounced auto-translate: when Thai changes and differs from the
-  // standard, hit /api/admin/translate after 800ms idle and store the
-  // translated English as an override on the same clause.
-  const translateTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-
-  const scheduleTranslate = (clause: ContractClause, thaiText: string) => {
-    const key = clause.key;
-    const existing = translateTimers.current[key];
-    if (existing) clearTimeout(existing);
-
-    if (thaiText.trim() === "" || thaiText === clause.th) {
-      // Thai is back to standard / empty — clear any English override too
-      const current = valueRef.current[key];
-      if (current?.en !== undefined) {
-        const next = { ...valueRef.current };
-        const cleared = { ...current };
-        delete cleared.en;
-        if (Object.keys(cleared).length === 0) delete next[key];
-        else next[key] = cleared;
-        setOverrideMap(next);
-      }
-      return;
-    }
-
-    translateTimers.current[key] = setTimeout(async () => {
-      setTranslating((s) => ({ ...s, [key]: true }));
-      try {
-        const res = await fetch("/api/admin/translate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: thaiText, source: "th", target: "en" }),
-        });
-        const data = await res.json();
-        if (data?.success && typeof data.data?.text === "string") {
-          const translated = data.data.text;
-          const next = { ...valueRef.current };
-          const cur = next[key] || {};
-          // Only set EN override if the translation differs from standard
-          if (translated && translated !== clause.en) {
-            next[key] = { ...cur, en: translated };
-          } else {
-            const cleared = { ...cur };
-            delete cleared.en;
-            if (Object.keys(cleared).length === 0) delete next[key];
-            else next[key] = cleared;
-          }
-          setOverrideMap(next);
-        }
-      } catch {
-        // Translation failed — leave EN as standard (no override)
-      } finally {
-        setTranslating((s) => {
-          const copy = { ...s };
-          delete copy[key];
-          return copy;
-        });
-      }
-    }, 800);
+    onChange(next);
   };
 
   const resetClause = (key: string) => {
@@ -274,36 +194,33 @@ export default function StandardClausesEditor({ value, onChange, locale }: Props
                         )}
                       </div>
 
-                      <div>
-                        <label className="block text-[11px] text-stone-500 mb-1">
-                          {locale === "th" ? "ภาษาไทย" : "Thai"}
-                        </label>
-                        <textarea
-                          rows={Math.max(3, Math.ceil(clause.th.length / 60))}
-                          value={override.th ?? clause.th}
-                          onChange={(e) => {
-                            const newTh = e.target.value;
-                            setOverride(clause, "th", newTh);
-                            scheduleTranslate(clause, newTh);
-                          }}
-                          className={inputCls}
-                        />
-                        <div className="flex items-center justify-between mt-1.5">
-                          <p className="text-[11px] text-stone-500">
-                            {locale === "th"
-                              ? "ภาษาอังกฤษ (แปลอัตโนมัติ)"
-                              : "English (auto-translated)"}
-                          </p>
-                          {translating[clause.key] && (
-                            <span className="inline-flex items-center gap-1 text-[11px] text-stone-400">
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                              {locale === "th" ? "กำลังแปล..." : "Translating..."}
-                            </span>
-                          )}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[11px] text-stone-500 mb-1">
+                            {locale === "th" ? "ภาษาไทย" : "Thai"}
+                          </label>
+                          <textarea
+                            rows={Math.max(3, Math.ceil(clause.th.length / 60))}
+                            value={override.th ?? clause.th}
+                            onChange={(e) =>
+                              setOverride(clause, "th", e.target.value)
+                            }
+                            className={inputCls}
+                          />
                         </div>
-                        <p className="text-[11px] text-stone-600 italic px-3 py-2 rounded-lg bg-stone-50 border border-stone-200">
-                          {override.en ?? clause.en}
-                        </p>
+                        <div>
+                          <label className="block text-[11px] text-stone-500 mb-1">
+                            English
+                          </label>
+                          <textarea
+                            rows={Math.max(3, Math.ceil(clause.en.length / 60))}
+                            value={override.en ?? clause.en}
+                            onChange={(e) =>
+                              setOverride(clause, "en", e.target.value)
+                            }
+                            className={inputCls}
+                          />
+                        </div>
                       </div>
                     </div>
                   );
