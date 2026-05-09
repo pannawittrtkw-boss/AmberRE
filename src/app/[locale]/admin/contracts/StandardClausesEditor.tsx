@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, RotateCcw } from "lucide-react";
+import { ChevronDown, ChevronRight, RotateCcw, Info } from "lucide-react";
 import {
   STANDARD_CLAUSES,
   ClauseOverrideMap,
@@ -56,17 +56,24 @@ export default function StandardClausesEditor({ value, onChange, locale }: Props
   const toggle = (title: string) =>
     setOpenSections((s) => ({ ...s, [title]: !s[title] }));
 
-  const setOverride = (key: string, lang: "th" | "en", text: string) => {
-    const current = value[key] || {};
+  const setOverride = (
+    clause: ContractClause,
+    lang: "th" | "en",
+    text: string
+  ) => {
+    const current = value[clause.key] || {};
     const next: ClauseOverrideMap = { ...value };
-    if (text.trim() === "") {
-      // Clear the override on this language so it falls back to standard
+    const standardText = clause[lang];
+    // Treat "matches the standard exactly" as no-override so the clause
+    // falls back automatically. Lets the textarea start out pre-filled
+    // with the standard copy without dirtying every clause.
+    if (text === standardText || text.trim() === "") {
       const cleared = { ...current };
       delete cleared[lang];
-      if (Object.keys(cleared).length === 0) delete next[key];
-      else next[key] = cleared;
+      if (Object.keys(cleared).length === 0) delete next[clause.key];
+      else next[clause.key] = cleared;
     } else {
-      next[key] = { ...current, [lang]: text };
+      next[clause.key] = { ...current, [lang]: text };
     }
     onChange(next);
   };
@@ -82,6 +89,21 @@ export default function StandardClausesEditor({ value, onChange, locale }: Props
 
   return (
     <div className="space-y-3">
+      <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-blue-50 border border-blue-100 text-xs text-blue-900">
+        <Info className="w-4 h-4 shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <p>
+            {locale === "th"
+              ? "ระบบเติมข้อความมาตรฐานให้แล้ว — แก้เฉพาะส่วนที่ต้องการได้เลย ถ้าข้อความตรงกับมาตรฐานจะไม่บันทึกเป็น override (ใช้ข้อความมาตรฐานเดิม)"
+              : "Each clause is pre-filled with the standard text — edit just the parts you want to change. Untouched clauses are not saved as overrides."}
+          </p>
+          <p className="text-[11px] text-blue-700">
+            {locale === "th"
+              ? "ตัวแปร {{ค่าเช่า}}, {{เงินประกัน}}, ... จะถูกเติมข้อมูลของสัญญาแต่ละฉบับอัตโนมัติเวลาสร้าง PDF — อย่าลบออก แต่จัดวาง/แก้ข้อความรอบๆ ได้"
+              : "Tokens like {{monthlyRent}}, {{securityDeposit}}, ... are filled per contract at PDF render time. Keep them intact; you can rearrange the text around them."}
+          </p>
+        </div>
+      </div>
       <div className="flex items-center justify-between text-xs text-stone-500">
         <span>
           {locale === "th"
@@ -175,41 +197,27 @@ export default function StandardClausesEditor({ value, onChange, locale }: Props
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                         <div>
                           <label className="block text-[11px] text-stone-500 mb-1">
-                            {locale === "th" ? "ภาษาไทย (มาตรฐาน)" : "Thai (standard)"}
+                            {locale === "th" ? "ภาษาไทย" : "Thai"}
                           </label>
-                          <p className="text-[11px] text-stone-400 mb-1 line-clamp-2 italic">
-                            {clause.th}
-                          </p>
                           <textarea
-                            rows={3}
-                            value={override.th ?? ""}
+                            rows={Math.max(3, Math.ceil(clause.th.length / 60))}
+                            value={override.th ?? clause.th}
                             onChange={(e) =>
-                              setOverride(clause.key, "th", e.target.value)
-                            }
-                            placeholder={
-                              locale === "th"
-                                ? "(ปล่อยว่างเพื่อใช้ข้อความมาตรฐาน)"
-                                : "(leave empty to use standard text)"
+                              setOverride(clause, "th", e.target.value)
                             }
                             className={inputCls}
                           />
                         </div>
                         <div>
                           <label className="block text-[11px] text-stone-500 mb-1">
-                            {locale === "th"
-                              ? "ภาษาอังกฤษ (มาตรฐาน)"
-                              : "English (standard)"}
+                            English
                           </label>
-                          <p className="text-[11px] text-stone-400 mb-1 line-clamp-2 italic">
-                            {clause.en}
-                          </p>
                           <textarea
-                            rows={3}
-                            value={override.en ?? ""}
+                            rows={Math.max(3, Math.ceil(clause.en.length / 60))}
+                            value={override.en ?? clause.en}
                             onChange={(e) =>
-                              setOverride(clause.key, "en", e.target.value)
+                              setOverride(clause, "en", e.target.value)
                             }
-                            placeholder="(leave empty to use standard)"
                             className={inputCls}
                           />
                         </div>
