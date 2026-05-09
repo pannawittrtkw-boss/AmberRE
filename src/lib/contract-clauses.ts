@@ -193,6 +193,7 @@ export const STANDARD_CLAUSES: ContractClause[] = [
   { key: "6.1", type: "bullet", th: "6.1 ผู้ให้เช่ารับรองและรับประกันว่าเป็นผู้มีอำนาจปล่อยเช่าทรัพย์สินโดยถูกต้องภายใต้กฎหมายและข้อบังคับทั้งหลาย", en: "The Lessor warrants the absolute right to lease the Premises under applicable laws." },
   { key: "6.2", type: "bullet", th: "6.2 หากผู้เช่าชำระค่าเช่าและปฏิบัติตามข้อตกลงครบถ้วน ผู้เช่าจะสามารถครอบครองและใช้ทรัพย์สินได้อย่างสงบสุขโดยไม่มีการรบกวนจากผู้ให้เช่าหรือตัวแทนตลอดอายุสัญญาและเวลาที่ขยายออกไป", en: "The Lessee, paying rent and observing covenants, shall peacefully hold and enjoy the Premises during the term and any extension." },
   { key: "6.3", type: "bullet", th: "6.3 ผู้ให้เช่าต้องบำรุงรักษาทรัพย์สินด้วยค่าใช้จ่ายของผู้ให้เช่าเองให้อยู่ในสภาพพักอาศัยและใช้งานได้ตามปกติ และต้องดูแลซ่อมแซมส่วนที่เสียหายในงานหลัก เช่น โครงสร้าง ระบบไฟฟ้า ประปา สายไฟและเคเบิ้ล สี ระบบน้ำเสีย ท่อน้ำทิ้ง บ่อพักน้ำ ท่อระบายน้ำ และระบบเครื่องปรับอากาศ", en: "The Lessor shall, at own cost, maintain the Premises in habitable and usable condition and promptly make all major repairs (structure, electrical, plumbing, drainage, A/C system)." },
+  { key: "6.4", type: "bullet", th: "6.4 ผู้ให้เช่าจะรับผิดชอบค่าภาษีที่ผู้ให้เช่ามีหน้าที่ต้องชำระตามกฎหมาย อันเนื่องมาจากรายได้จากการให้เช่าตามสัญญานี้ หรือที่เกี่ยวข้องกับทรัพย์สิน และผู้เช่ามีหน้าที่หักภาษี ณ ที่จ่าย จากค่าเช่าตามสัญญานี้ตามที่กฎหมายกำหนด", en: "The Lessor shall pay all taxes required by law to be paid by the Lessor arising from payment under or income in respect of this Agreement or in connection with the Premises. The Lessee shall withhold taxes from payments made by the Lessee in accordance with this Agreement as required by laws." },
 
   // Section 7 — Termination
   {
@@ -224,6 +225,7 @@ export const STANDARD_CLAUSES: ContractClause[] = [
   },
   { key: "8.1", type: "bullet", th: "8.1 ในวันที่ครบกำหนดสัญญา ผู้เช่าต้องย้ายและขนย้ายทรัพย์สินของตนออก และส่งมอบทรัพย์สินคืนในสภาพเดิม สะอาด และสามารถนำออกให้เช่าได้ ยกเว้นความเสื่อมโทรมตามปกติ", en: "On expiry, vacate and deliver the Premises in clean, original, tenantable condition (subject to normal wear and tear)." },
   { key: "8.2", type: "bullet", th: "8.2 หากผู้เช่าไม่ทำตาม 8.1: (a) ทรัพย์สินที่ค้างอยู่ตกเป็นกรรมสิทธิ์ของผู้ให้เช่า (b) ผู้เช่าต้องชำระค่าเช่าครึ่งเดือนหากค้างไม่เกิน 15 วัน หรือ 1 เดือนหากค้าง 15-30 วัน บวกค่าปรับวันละ 500 บาท นับจากวันสิ้นสุดสัญญา", en: "If 8.1 is not met: (a) leftover property transfers to Lessor; (b) ½ month rent if delayed ≤15 days, full month if 15–30 days, plus 500 THB/day penalty." },
+  { key: "8.3", type: "bullet", th: "8.3 กรณีเมื่อผู้เช่าย้ายออก ผู้ให้เช่าจะหักค่าทำความสะอาดห้อง 1,000 บาท (กรณีสกปรกมาก คิดค่าทำความสะอาด 1,800 บาท) ค่าล้างแอร์ 1,400 บาท และค่าซักโซฟา 1,500 บาท (กรณีสกปรกมาก) จากเงินประกัน", en: "When the tenant moves out, the lessor will deduct a room cleaning fee of 1,000 baht (1,800 baht if very dirty), an air-conditioner cleaning fee of 1,400 baht, and a sofa cleaning fee of 1,500 baht (in case of heavy stains) from the security deposit." },
 
   // Section 9 — Applicable Law
   {
