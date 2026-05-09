@@ -33,7 +33,7 @@ export default async function HomePage({
   const [propertyCounts, heroSettings] = await Promise.all([
     prisma.property.groupBy({
       by: ["propertyType"],
-      _count: true,
+      _count: { _all: true },
       where: { isSold: false },
     }),
     prisma.siteSetting.findMany({
@@ -129,8 +129,8 @@ export default async function HomePage({
               {["CONDO", "HOUSE", "TOWNHOUSE", "LAND"].map((type) => {
                 const Icon = typeIcons[type];
                 const count =
-                  propertyCounts.find((c) => c.propertyType === type)?._count ||
-                  0;
+                  propertyCounts.find((c) => c.propertyType === type)?._count
+                    ?._all || 0;
                 return (
                   <Link
                     key={type}

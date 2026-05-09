@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
             status: { notIn: ["NOT_ACCEPT", "NOT_AVAILABLE", "PENDING", "SOLD", "RENTED"] },
             isSold: false,
           },
-          _count: true,
+          _count: { _all: true },
         })
       : [];
 
@@ -61,12 +61,13 @@ export async function GET(req: NextRequest) {
     const countsByProject = new Map<number, { sales: number; rents: number }>();
     for (const c of counts) {
       if (c.projectId == null) continue;
+      const n = c._count?._all ?? 0;
       const cur = countsByProject.get(c.projectId) || { sales: 0, rents: 0 };
-      if (c.listingType === "RENT") cur.rents += c._count;
-      else if (c.listingType === "SALE") cur.sales += c._count;
+      if (c.listingType === "RENT") cur.rents += n;
+      else if (c.listingType === "SALE") cur.sales += n;
       else if (c.listingType === "RENT_AND_SALE") {
-        cur.rents += c._count;
-        cur.sales += c._count;
+        cur.rents += n;
+        cur.sales += n;
       }
       countsByProject.set(c.projectId, cur);
     }
