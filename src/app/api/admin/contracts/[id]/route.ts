@@ -64,7 +64,9 @@ export async function PUT(
         jointLesseePhone: body.jointLesseePhone || null,
         jointLesseeIdImage: body.jointLesseeIdImage || null,
 
-        propertyId: body.propertyId ? Number(body.propertyId) : null,
+        property: body.propertyId
+          ? { connect: { id: Number(body.propertyId) } }
+          : { disconnect: true },
         projectName: body.projectName,
         unitNumber: body.unitNumber,
         buildingName: body.buildingName || null,
