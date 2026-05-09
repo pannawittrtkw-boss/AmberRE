@@ -560,31 +560,63 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
               data.bankAccountNumber
             );
 
+          // Stacked bilingual rows — Thai label/value on top, English
+          // label/value below. Matches the customer's reference layout
+          // even when the form only stores a single value per field
+          // (the value is shown in both rows).
           const bankBox = hasBank ? (
-            <View style={styles.bankBox}>
+            <View style={styles.bankBox} wrap={false}>
               {data.bankName && (
-                <View style={styles.row}>
-                  <TText style={styles.label}>ธนาคาร / Bank</TText>
-                  <TText style={styles.value}>{data.bankName}</TText>
-                </View>
+                <>
+                  <View style={styles.row}>
+                    <TText style={styles.label}>ธนาคาร</TText>
+                    <TText style={styles.value}>{data.bankName}</TText>
+                  </View>
+                  <View style={styles.row}>
+                    <TText style={styles.label}>Bank</TText>
+                    <TText style={styles.value}>{data.bankName}</TText>
+                  </View>
+                </>
               )}
               {data.bankBranch && (
-                <View style={styles.row}>
-                  <TText style={styles.label}>สาขา / Branch</TText>
-                  <TText style={styles.value}>{data.bankBranch}</TText>
-                </View>
+                <>
+                  <View style={styles.row}>
+                    <TText style={styles.label}>สาขา</TText>
+                    <TText style={styles.value}>{data.bankBranch}</TText>
+                  </View>
+                  <View style={styles.row}>
+                    <TText style={styles.label}>Branch</TText>
+                    <TText style={styles.value}>{data.bankBranch}</TText>
+                  </View>
+                </>
               )}
               {data.bankAccountName && (
-                <View style={styles.row}>
-                  <TText style={styles.label}>ชื่อบัญชี / Account Name</TText>
-                  <TText style={styles.value}>{data.bankAccountName}</TText>
-                </View>
+                <>
+                  <View style={styles.row}>
+                    <TText style={styles.label}>ชื่อบัญชี</TText>
+                    <TText style={styles.value}>{data.bankAccountName}</TText>
+                  </View>
+                  <View style={styles.row}>
+                    <TText style={styles.label}>Account Name</TText>
+                    <TText style={styles.value}>{data.bankAccountName}</TText>
+                  </View>
+                </>
               )}
               {data.bankAccountNumber && (
-                <View style={styles.row}>
-                  <TText style={styles.label}>เลขที่บัญชี / Acc. No.</TText>
-                  <TText style={styles.value}><D>{data.bankAccountNumber}</D></TText>
-                </View>
+                <>
+                  <View style={styles.row}>
+                    <TText style={styles.label}>เลขที่บัญชี</TText>
+                    <TText style={styles.value}>
+                      <D>{data.bankAccountNumber}</D>
+                    </TText>
+                  </View>
+                  <View style={styles.row}>
+                    <TText style={styles.label}>Account Number</TText>
+                    <TText style={styles.value}>
+                      <D>{data.bankAccountNumber}</D>
+                    </TText>
+                  </View>
+                </>
               )}
             </View>
           ) : null;

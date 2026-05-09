@@ -172,6 +172,30 @@ const isLabelLine = (line: string): boolean => {
   return LABEL_PATTERNS.some((re) => re.test(trimmed));
 };
 
+// True if the line plausibly looks like a Thai or English account-holder
+// name. Rejects lowercase fragments, numbers, label words, and very
+// short / single-token strings that come from watermarks or footer
+// notes (e.g. "be the |" from the TTB watermark).
+function looksLikeAccountName(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.length < 3) return false;
+  if (/^[—\-_]+$/.test(trimmed)) return false;
+  if (isLabelLine(trimmed)) return false;
+  // Title prefix is the strongest signal
+  if (/^(?:นาย|นาง|น\.?ส\.?|เด็กชาย|เด็กหญิง|MR\.?|MRS\.?|MISS|MS\.?|DR\.?)\s+/iu.test(trimmed)) {
+    return true;
+  }
+  // Multi-word Thai content (≥ 2 word groups, contains Thai chars)
+  if (/[฀-๿]/.test(trimmed) && trimmed.replace(/[฀-๿]/g, "").trim().length < trimmed.length) {
+    // At least one Thai char and reasonable length
+    if (trimmed.length >= 6) return true;
+  }
+  // English personal-name pattern: capitalised first word + at least one
+  // more capitalised token. Rejects "be the |" because "be" is lowercase.
+  if (/^[A-Z][a-z]+(?:\s+[A-Z][a-zA-Z'\-]+)+/.test(trimmed)) return true;
+  return false;
+}
+
 function findAccountName(lines: string[]): string | undefined {
   // Pattern 1: line right after a label like "ชื่อบัญชี" or "Account Name".
   // Bank books typically use bilingual labels stacked together:
@@ -180,8 +204,9 @@ function findAccountName(lines: string[]): string | undefined {
   //   Account Name
   //   น.ส. เกษศิรินทร์ จงสุขสันติกูล   ← actual value
   //
-  // so when we land on a label line we must keep skipping additional label
-  // lines until we hit something that looks like real content.
+  // So when we land on a label line we keep advancing past further label
+  // lines AND past obvious garbage (watermark artefacts, lowercase
+  // fragments) until we find something name-shaped.
   for (let i = 0; i < lines.length; i++) {
     const ln = lines[i];
     if (/ชื่อบัญชี/i.test(ln) || /Account\s*Name/i.test(ln)) {
@@ -189,28 +214,23 @@ function findAccountName(lines: string[]): string | undefined {
       const sameLine = ln
         .replace(/^.*?(?:ชื่อบัญชี|Account\s*Name)\s*[:\-]?\s*/i, "")
         .trim();
-      if (
-        sameLine &&
-        sameLine.length > 2 &&
-        !/^[—\-_]+$/.test(sameLine) &&
-        !isLabelLine(sameLine)
-      ) {
+      if (looksLikeAccountName(sameLine)) {
         return sameLine;
       }
       // Otherwise scan forward, skipping any subsequent label lines
-      for (let j = i + 1; j < Math.min(lines.length, i + 5); j++) {
+      for (let j = i + 1; j < Math.min(lines.length, i + 8); j++) {
         const candidate = lines[j].trim();
         if (!candidate) continue;
         if (isLabelLine(candidate)) continue;
-        if (/^[—\-_]+$/.test(candidate)) continue;
-        if (candidate.length > 2) return candidate;
+        if (looksLikeAccountName(candidate)) return candidate;
       }
     }
   }
-  // Pattern 2: any line starting with นาย / นาง / น.ส. / MR / MISS
+  // Pattern 2: any line starting with a Thai/English title prefix anywhere
   for (const ln of lines) {
-    if (/^(?:นาย|นาง|น\.?ส\.?|MR\.?|MRS\.?|MISS|MS\.?)\s+/iu.test(ln)) {
-      return ln.trim();
+    const trimmed = ln.trim();
+    if (/^(?:นาย|นาง|น\.?ส\.?|เด็กชาย|เด็กหญิง|MR\.?|MRS\.?|MISS|MS\.?|DR\.?)\s+/iu.test(trimmed)) {
+      return trimmed;
     }
   }
   return undefined;
