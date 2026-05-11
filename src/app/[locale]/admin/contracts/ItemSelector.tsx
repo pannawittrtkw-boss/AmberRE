@@ -1,6 +1,12 @@
 "use client";
 
-import { Bilingual, ContractItem } from "@/lib/contract-items";
+import { Plus, X } from "lucide-react";
+import {
+  Bilingual,
+  ContractItem,
+  isCustomItem,
+  makeCustomKey,
+} from "@/lib/contract-items";
 
 interface ItemSelectorProps {
   options: Bilingual[];
@@ -36,12 +42,43 @@ export default function ItemSelector({
 
   const toggleAll = () => {
     if (allChecked) {
-      onChange([]);
+      // Keep custom rows when "Deselect all" is clicked — those are user
+      // input that shouldn't be wiped along with the catalog selections.
+      onChange(value.filter((v) => isCustomItem(v)));
     } else {
-      onChange(
-        options.map((o) => find(o.key) || { key: o.key, qty: 1 })
-      );
+      const customs = value.filter((v) => isCustomItem(v));
+      onChange([
+        ...options.map((o) => find(o.key) || { key: o.key, qty: 1 }),
+        ...customs,
+      ]);
     }
+  };
+
+  const customs = value.filter((v) => isCustomItem(v));
+
+  const addCustom = () => {
+    onChange([...value, { key: makeCustomKey(), qty: 1, th: "", en: "" }]);
+  };
+
+  const updateCustom = (
+    key: string,
+    patch: Partial<Pick<ContractItem, "th" | "en" | "qty">>
+  ) => {
+    onChange(
+      value.map((v) =>
+        v.key === key
+          ? {
+              ...v,
+              ...patch,
+              ...(patch.qty != null ? { qty: Math.max(1, patch.qty) } : {}),
+            }
+          : v
+      )
+    );
+  };
+
+  const removeCustom = (key: string) => {
+    onChange(value.filter((v) => v.key !== key));
   };
 
   return (
@@ -93,6 +130,62 @@ export default function ItemSelector({
           );
         })}
       </div>
+
+      {/* Custom items — visible only on this contract */}
+      {customs.length > 0 && (
+        <div className="space-y-2 pt-2 border-t border-stone-200">
+          <p className="text-xs text-stone-500">
+            {locale === "th" ? "รายการที่เพิ่มเอง" : "Custom items"}
+          </p>
+          {customs.map((c) => (
+            <div
+              key={c.key}
+              className="flex flex-col sm:flex-row gap-2 px-3 py-2 border border-amber-200 bg-amber-50/40 rounded-lg"
+            >
+              <input
+                type="text"
+                value={c.th ?? ""}
+                onChange={(e) => updateCustom(c.key, { th: e.target.value })}
+                placeholder={locale === "th" ? "ชื่อ (ไทย)" : "Name (TH)"}
+                className="flex-1 px-2 py-1 text-sm border rounded-md"
+              />
+              <input
+                type="text"
+                value={c.en ?? ""}
+                onChange={(e) => updateCustom(c.key, { en: e.target.value })}
+                placeholder={locale === "th" ? "ชื่อ (EN)" : "Name (EN)"}
+                className="flex-1 px-2 py-1 text-sm border rounded-md"
+              />
+              <input
+                type="number"
+                min={1}
+                value={c.qty}
+                onChange={(e) =>
+                  updateCustom(c.key, { qty: Number(e.target.value) })
+                }
+                className="w-16 text-center border rounded-md px-1 py-1 text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => removeCustom(c.key)}
+                className="inline-flex items-center justify-center w-8 h-8 text-stone-500 hover:text-rose-600 self-center"
+                title={locale === "th" ? "ลบรายการ" : "Remove"}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={addCustom}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-stone-700 border border-stone-300 hover:bg-stone-50 rounded-lg"
+      >
+        <Plus className="w-3.5 h-3.5" />
+        {locale === "th" ? "เพิ่มรายการเอง" : "Add custom item"}
+      </button>
     </div>
   );
 }

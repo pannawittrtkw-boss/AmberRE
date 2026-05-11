@@ -90,12 +90,15 @@ function fmtEnDate(d: Date): string {
 // Build a full checklist of every catalog option, marking which ones the
 // admin selected for this contract. The PDF prints all rows so the printed
 // copy can be hand-amended; ticked rows include the agreed quantity.
+// Custom items (entered by the admin for this specific contract) are
+// appended after the catalog rows — they always render as checked because
+// the admin explicitly added them.
 function buildChecklist(
   json: string | null | undefined,
   options: Bilingual[]
 ): PdfChecklistItem[] {
   const selected = parseContractItems(json);
-  return options.map((opt) => {
+  const catalogRows = options.map((opt) => {
     const sel = selected.find((s) => s.key === opt.key);
     return {
       th: opt.th,
@@ -104,6 +107,17 @@ function buildChecklist(
       qty: sel?.qty,
     };
   });
+  const catalogKeys = new Set(options.map((o) => o.key));
+  const customRows: PdfChecklistItem[] = selected
+    .filter((s) => !catalogKeys.has(s.key))
+    .filter((s) => (s.th && s.th.trim() !== "") || (s.en && s.en.trim() !== ""))
+    .map((s) => ({
+      th: (s.th || s.en || "").trim(),
+      en: (s.en || s.th || "").trim(),
+      checked: true,
+      qty: s.qty,
+    }));
+  return [...catalogRows, ...customRows];
 }
 
 export async function GET(
@@ -149,21 +163,27 @@ export async function GET(
     termMonths: contract.termMonths,
 
     lessorName: contract.lessorName,
+    lessorNameEn: contract.lessorNameEn,
     lessorNationality: contract.lessorNationality,
     lessorIdCard: contract.lessorIdCard,
     lessorAddress: contract.lessorAddress,
+    lessorAddressEn: contract.lessorAddressEn,
     lessorPhone: contract.lessorPhone,
 
     lesseeName: contract.lesseeName,
+    lesseeNameEn: contract.lesseeNameEn,
     lesseeNationality: contract.lesseeNationality,
     lesseeIdCard: contract.lesseeIdCard,
     lesseeAddress: contract.lesseeAddress,
+    lesseeAddressEn: contract.lesseeAddressEn,
     lesseePhone: contract.lesseePhone,
 
     jointLesseeName: contract.jointLesseeName,
+    jointLesseeNameEn: contract.jointLesseeNameEn,
     jointLesseeNationality: contract.jointLesseeNationality,
     jointLesseeIdCard: contract.jointLesseeIdCard,
     jointLesseeAddress: contract.jointLesseeAddress,
+    jointLesseeAddressEn: contract.jointLesseeAddressEn,
     jointLesseePhone: contract.jointLesseePhone,
 
     projectName: contract.projectName,
@@ -171,6 +191,7 @@ export async function GET(
     buildingName: contract.buildingName,
     floorNumber: contract.floorNumber,
     propertyAddress: contract.propertyAddress,
+    propertyAddressEn: contract.propertyAddressEn,
     sizeSqm: contract.sizeSqm ? Number(contract.sizeSqm) : null,
 
     monthlyRent: Number(contract.monthlyRent),
@@ -178,7 +199,9 @@ export async function GET(
     paymentDay: contract.paymentDay,
     bankName: contract.bankName,
     bankBranch: contract.bankBranch,
+    bankBranchEn: contract.bankBranchEn,
     bankAccountName: contract.bankAccountName,
+    bankAccountNameEn: contract.bankAccountNameEn,
     bankAccountNumber: contract.bankAccountNumber,
     latePaymentFee: Number(contract.latePaymentFee),
     latePaymentFeeText: bahtText(Number(contract.latePaymentFee)),

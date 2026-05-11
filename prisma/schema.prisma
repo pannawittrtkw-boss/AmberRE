@@ -51,23 +51,29 @@ model Contract {
 
   // Lessor (ผู้ให้เช่า)
   lessorName        String   @db.VarChar(200)
+  lessorNameEn      String?  @db.VarChar(200)
   lessorNationality String?  @db.VarChar(50)
   lessorIdCard      String?  @db.VarChar(50)
   lessorAddress     String?  @db.Text
+  lessorAddressEn   String?  @db.Text
   lessorPhone       String?  @db.VarChar(50)
 
   // Lessee (ผู้เช่า)
   lesseeName        String   @db.VarChar(200)
+  lesseeNameEn      String?  @db.VarChar(200)
   lesseeNationality String?  @db.VarChar(50)
   lesseeIdCard      String?  @db.VarChar(50) // ID card or passport
   lesseeAddress     String?  @db.Text
+  lesseeAddressEn   String?  @db.Text
   lesseePhone       String?  @db.VarChar(50)
 
   // Joint Lessee (optional)
   jointLesseeName        String?  @db.VarChar(200)
+  jointLesseeNameEn      String?  @db.VarChar(200)
   jointLesseeNationality String?  @db.VarChar(50)
   jointLesseeIdCard      String?  @db.VarChar(50)
   jointLesseeAddress     String?  @db.Text
+  jointLesseeAddressEn   String?  @db.Text
   jointLesseePhone       String?  @db.VarChar(50)
 
   // Property
@@ -77,15 +83,18 @@ model Contract {
   unitNumber      String   @db.VarChar(50)
   buildingName    String?  @db.VarChar(50)
   floorNumber     String?  @db.VarChar(20)
-  propertyAddress String   @db.Text
-  sizeSqm         Decimal? @db.Decimal(10, 2)
+  propertyAddress   String   @db.Text
+  propertyAddressEn String?  @db.Text
+  sizeSqm           Decimal? @db.Decimal(10, 2)
 
   // Rent
   monthlyRent       Decimal @db.Decimal(18, 2)
   paymentDay        Int     @default(1) // pay by day X each month
   bankName          String? @db.VarChar(100)
   bankBranch        String? @db.VarChar(100)
+  bankBranchEn      String? @db.VarChar(100)
   bankAccountName   String? @db.VarChar(200)
+  bankAccountNameEn String? @db.VarChar(200)
   bankAccountNumber String? @db.VarChar(50)
   latePaymentFee    Decimal @default(500) @db.Decimal(10, 2)
 

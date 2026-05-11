@@ -89,6 +89,9 @@ export default function ProjectForm({ locale, projectId, initialData }: ProjectF
   const [imageUrl, setImageUrl] = useState<string>("");
   const [logoUrl, setLogoUrl] = useState<string>("");
   const [photoAlbum, setPhotoAlbum] = useState<string[]>([]);
+  // Index of the currently-dragged album thumbnail. Drives the
+  // semi-transparent "ghost" state and the drop-target reorder logic.
+  const [albumDragIndex, setAlbumDragIndex] = useState<number | null>(null);
   const [facilities, setFacilities] = useState<string[]>([]);
   const [unitTypes, setUnitTypes] = useState<UnitType[]>([]);
 
@@ -189,6 +192,18 @@ export default function ProjectForm({ locale, projectId, initialData }: ProjectF
     setPhotoAlbum((prev) => [...prev, ...urls]);
     setUploading(null);
     e.target.value = "";
+  };
+
+  // Move a photo from `from` index to `to` index. Used by the
+  // drag-and-drop handler on each album thumbnail.
+  const reorderAlbum = (from: number, to: number) => {
+    if (from === to) return;
+    setPhotoAlbum((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
   };
 
   const handleUnitPlanUpload = async (
@@ -800,11 +815,39 @@ export default function ProjectForm({ locale, projectId, initialData }: ProjectF
             className="hidden"
             onChange={handleAlbumUpload}
           />
+          <p className="text-xs text-gray-400 mb-2">
+            ลากเพื่อจัดเรียงลำดับรูป / Drag to reorder
+          </p>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
             {photoAlbum.map((url, i) => (
-              <div key={i} className="relative group aspect-square rounded-lg overflow-hidden border">
+              <div
+                key={url}
+                draggable
+                onDragStart={(e) => {
+                  setAlbumDragIndex(i);
+                  e.dataTransfer.effectAllowed = "move";
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (albumDragIndex !== null) reorderAlbum(albumDragIndex, i);
+                  setAlbumDragIndex(null);
+                }}
+                onDragEnd={() => setAlbumDragIndex(null)}
+                className={`relative group aspect-square rounded-lg overflow-hidden border cursor-move ${
+                  albumDragIndex === i ? "opacity-40" : ""
+                }`}
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt="" className="w-full h-full object-cover" />
+                <img
+                  src={url}
+                  alt=""
+                  draggable={false}
+                  className="w-full h-full object-cover pointer-events-none select-none"
+                />
                 <button
                   type="button"
                   onClick={() =>

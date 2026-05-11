@@ -44,7 +44,7 @@ export default function AdminLayout({
         .catch(() => {});
     };
     fetchUnread();
-    const id = setInterval(fetchUnread, 60_000);
+    const id = setInterval(fetchUnread, 30 * 60_000);
     return () => clearInterval(id);
   }, [session, pathname]);
 

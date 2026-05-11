@@ -88,7 +88,10 @@ const styles = StyleSheet.create({
     fontFamily: "Sarabun",
     fontSize: 10,
     paddingTop: 36,
-    paddingBottom: 36,
+    // Bottom padding leaves room for the per-page signature footer (see
+    // styles.pageFooter) which is positioned absolutely at the bottom of
+    // every page so both parties can initial each page individually.
+    paddingBottom: 80,
     paddingHorizontal: 50,
     // Thai script stacks tone marks and vowels above and below the
     // baseline; cramped line-height makes adjacent lines collide. 1.6
@@ -180,6 +183,79 @@ const styles = StyleSheet.create({
   appendixSubCaption: {
     textAlign: "center",
   },
+  // Per-page initial-signature footer. Rendered with `fixed` so it
+  // appears on every page of the parent <Page>. Positioned absolutely
+  // inside the page's bottom padding (paddingBottom: 80) so document
+  // content doesn't overlap.
+  pageFooter: {
+    position: "absolute",
+    bottom: 24,
+    left: 50,
+    right: 50,
+    flexDirection: "row",
+    gap: 30,
+  },
+  pageFooterBlock: { flex: 1, alignItems: "center" },
+  pageFooterLine: {
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#000",
+    width: "85%",
+    height: 18,
+    marginBottom: 2,
+  },
+  pageFooterLabel: { fontSize: 8, color: "#555" },
+  pageFooterName: { fontSize: 8, color: "#222", fontWeight: "bold" },
+  // Single centered signature block at the bottom of an ID-card appendix
+  // page. Width keeps the line short enough to look intentional; the top
+  // margin gives physical room to actually sign.
+  appendixSignature: {
+    marginTop: 60,
+    alignItems: "center",
+    width: 260,
+  },
+  // Items table (sections 10.1 / 10.2 / 10.3) — Listing | Qty.
+  itemTable: {
+    marginTop: 4,
+    marginBottom: 8,
+    borderWidth: 0.5,
+    borderColor: "#666",
+  },
+  itemTableHeader: {
+    flexDirection: "row",
+    backgroundColor: "#f2f2f2",
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#666",
+  },
+  itemTableRow: {
+    flexDirection: "row",
+    borderBottomWidth: 0.3,
+    borderBottomColor: "#ccc",
+  },
+  itemTableCellNo: {
+    width: 36,
+    paddingVertical: 3,
+    paddingHorizontal: 4,
+    textAlign: "center",
+    borderRightWidth: 0.3,
+    borderRightColor: "#ccc",
+  },
+  itemTableCellListing: {
+    flex: 4,
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    borderRightWidth: 0.3,
+    borderRightColor: "#ccc",
+  },
+  itemTableCellQty: {
+    width: 60,
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    textAlign: "center",
+  },
+  itemTableHeaderText: {
+    fontWeight: "bold",
+    fontSize: 9,
+  },
 });
 
 interface IdAppendixProps {
@@ -213,8 +289,88 @@ function IdAppendix({
           {isLessor ? "ใช้สำหรับปล่อยเช่าคอนโด" : "ใช้สำหรับเช่าคอนโด"}{" "}
           {projectName} ห้อง {unitNumber} เท่านั้น
         </TText>
+
+        {/* Signature for THIS party only — centered below the caption with
+            breathing room above the line so it can actually be signed. */}
+        <View style={styles.appendixSignature}>
+          <View style={styles.signatureLine} />
+          <TText style={styles.small}>
+            {roleTh} / {roleEn}
+          </TText>
+          <TText style={styles.boldHL}>({name})</TText>
+        </View>
       </View>
     </Page>
+  );
+}
+
+// Per-page initial-signature footer. Pure static — repeats on every page
+// via `fixed` and pins to the bottom via `position: absolute` (driven by
+// `styles.pageFooter`). DO NOT add a `render` prop to this View or to its
+// children: combining `fixed` + `position: absolute` + `render` in
+// react-pdf v4 causes the footer to drop into flow on body pages and
+// land at the TOP of the NEXT page instead of the current page's bottom.
+// The "hide on formal-signature page" requirement is achieved instead by
+// the FooterCover below, which paints a white block over the footer on
+// the very last sub-page.
+function PageFooter({
+  lessorName,
+  lesseeName,
+}: {
+  lessorName: string;
+  lesseeName: string;
+}) {
+  return (
+    <View style={styles.pageFooter} fixed>
+      <View style={styles.pageFooterBlock}>
+        <View style={styles.pageFooterLine} />
+        <TText style={styles.pageFooterLabel}>ผู้ให้เช่า / Lessor</TText>
+        <TText style={styles.pageFooterName}>({lessorName})</TText>
+      </View>
+      <View style={styles.pageFooterBlock}>
+        <View style={styles.pageFooterLine} />
+        <TText style={styles.pageFooterLabel}>ผู้เช่า / Lessee</TText>
+        <TText style={styles.pageFooterName}>({lesseeName})</TText>
+      </View>
+    </View>
+  );
+}
+
+// Whitewashes the footer area on the LAST sub-page of the main agreement
+// (the page that carries the formal Lessor/Lessee/Witness block). The
+// cover always renders; its inner `View` becomes opaque white only on
+// the final sub-page, hiding the static PageFooter underneath. Returning
+// JSX (never `null`) from `render` keeps react-pdf's pagination stable
+// — the same fragility that prevents us from hiding PageFooter directly.
+function FooterCover() {
+  const finalSubPage = (p: unknown): boolean => {
+    const r = p as { subPageNumber?: number; subPageTotalPages?: number };
+    return (
+      typeof r.subPageNumber === "number" &&
+      typeof r.subPageTotalPages === "number" &&
+      r.subPageNumber === r.subPageTotalPages
+    );
+  };
+  return (
+    <View
+      fixed
+      style={{
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 80,
+      }}
+      render={(p) => (
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "white",
+            opacity: finalSubPage(p) ? 1 : 0,
+          }}
+        />
+      )}
+    />
   );
 }
 
@@ -261,37 +417,90 @@ function renderClause(
       );
     case "bullet":
       return (
-        <Bullet key={key}>
-          {th} / {en}
-        </Bullet>
+        <View key={key} style={{ marginBottom: 3 }} wrap={false}>
+          <TText style={[styles.paragraph, styles.bullet, { marginBottom: 0 }]}>
+            {th}
+          </TText>
+          <TText style={[styles.paragraph, styles.bullet, { marginBottom: 0 }]}>
+            {en}
+          </TText>
+        </View>
       );
     case "sub_bullet":
       return (
-        <Bullet key={key} sub>
-          {th} / {en}
-        </Bullet>
+        <View key={key} style={{ marginBottom: 3 }} wrap={false}>
+          <TText style={[styles.paragraph, styles.subBullet, { marginBottom: 0 }]}>
+            {th}
+          </TText>
+          <TText style={[styles.paragraph, styles.subBullet, { marginBottom: 0 }]}>
+            {en}
+          </TText>
+        </View>
       );
     case "small":
       return (
-        <TText key={key} style={[styles.small, { marginTop: 4 }]}>
-          {th} / {en}
-        </TText>
+        <View key={key} style={{ marginTop: 4 }} wrap={false}>
+          <TText style={[styles.small, { marginBottom: 0 }]}>{th}</TText>
+          <TText style={styles.small}>{en}</TText>
+        </View>
       );
     default:
       return null;
   }
 }
 
-function ChecklistRow({ item, num }: { item: PdfChecklistItem; num: number }) {
+// Tabular renderer for sections 10.1 / 10.2 / 10.3. Every catalog row is
+// kept so the table doubles as a checklist of what's NOT included; the
+// Qty column shows the agreed count for ticked items and "-" for the
+// rest. Header row is bilingual (TH / EN); rows are numbered
+// sequentially in the leading "No." column.
+//
+// Pagination: the outer table wraps freely so as much of the list as
+// possible stays on the same page as its section heading. Individual
+// rows are `wrap={false}` so a single row never splits across pages.
+// react-pdf v4 has no native "repeat header on continuation" feature —
+// the header is printed once at the top; on a page break the rows just
+// continue without a repeated header. We tried chunked render-with-
+// own-header (each chunk wrap={false}) but it pushed the whole first
+// chunk to the next page when the section heading sat near the bottom
+// of the previous page, leaving the heading orphaned with empty space
+// underneath — which the user explicitly rejected.
+function ItemTable({ items }: { items: PdfChecklistItem[] }) {
+  if (items.length === 0) return null;
   return (
-    <View style={styles.checkRow} wrap={false}>
-      <View style={styles.checkBox}>
-        {item.checked && <View style={styles.checkInner} />}
+    <View style={styles.itemTable}>
+      <View style={styles.itemTableHeader} wrap={false}>
+        <View style={styles.itemTableCellNo}>
+          <TText style={[styles.itemTableHeaderText, { textAlign: "center" }]}>
+            No.
+          </TText>
+        </View>
+        <View style={styles.itemTableCellListing}>
+          <TText style={styles.itemTableHeaderText}>รายการ / Listing</TText>
+        </View>
+        <View style={styles.itemTableCellQty}>
+          <TText style={[styles.itemTableHeaderText, { textAlign: "center" }]}>
+            จำนวน / Qty
+          </TText>
+        </View>
       </View>
-      <TText style={styles.checkText}>
-        {num}) {item.th} ({item.en})
-        {item.checked && item.qty ? ` × ${item.qty}` : ""}
-      </TText>
+      {items.map((item, i) => (
+        <View key={i} style={styles.itemTableRow} wrap={false}>
+          <View style={styles.itemTableCellNo}>
+            <TText style={{ textAlign: "center" }}>{i + 1}</TText>
+          </View>
+          <View style={styles.itemTableCellListing}>
+            <TText>
+              {item.th} / {item.en}
+            </TText>
+          </View>
+          <View style={styles.itemTableCellQty}>
+            <TText style={{ textAlign: "center" }}>
+              {item.checked && item.qty ? item.qty : "-"}
+            </TText>
+          </View>
+        </View>
+      ))}
     </View>
   );
 }
@@ -314,21 +523,27 @@ export interface ContractPdfData {
   termMonths: number;
 
   lessorName: string;
+  lessorNameEn?: string | null;
   lessorNationality?: string | null;
   lessorIdCard?: string | null;
   lessorAddress?: string | null;
+  lessorAddressEn?: string | null;
   lessorPhone?: string | null;
 
   lesseeName: string;
+  lesseeNameEn?: string | null;
   lesseeNationality?: string | null;
   lesseeIdCard?: string | null;
   lesseeAddress?: string | null;
+  lesseeAddressEn?: string | null;
   lesseePhone?: string | null;
 
   jointLesseeName?: string | null;
+  jointLesseeNameEn?: string | null;
   jointLesseeNationality?: string | null;
   jointLesseeIdCard?: string | null;
   jointLesseeAddress?: string | null;
+  jointLesseeAddressEn?: string | null;
   jointLesseePhone?: string | null;
 
   projectName: string;
@@ -336,6 +551,7 @@ export interface ContractPdfData {
   buildingName?: string | null;
   floorNumber?: string | null;
   propertyAddress: string;
+  propertyAddressEn?: string | null;
   sizeSqm?: number | null;
 
   monthlyRent: number;
@@ -343,7 +559,9 @@ export interface ContractPdfData {
   paymentDay: number;
   bankName?: string | null;
   bankBranch?: string | null;
+  bankBranchEn?: string | null;
   bankAccountName?: string | null;
+  bankAccountNameEn?: string | null;
   bankAccountNumber?: string | null;
   latePaymentFee: number;
   latePaymentFeeText: string;
@@ -377,12 +595,6 @@ const D = ({ children }: { children: React.ReactNode }) => (
   <TText style={styles.boldHL}>{children}</TText>
 );
 
-const Bullet = ({ children, sub }: { children: React.ReactNode; sub?: boolean }) => (
-  <TText style={[styles.paragraph, sub ? styles.subBullet : styles.bullet]}>
-    {children}
-  </TText>
-);
-
 export function ContractPdf({ data }: { data: ContractPdfData }) {
   return (
     <Document>
@@ -402,10 +614,17 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           <TText style={styles.value}><D>{data.contractDateEn}</D></TText>
         </View>
 
-        {/* Lessor */}
+        {/* Lessor — TH and EN stacked. EN value falls back to TH when no
+            English version was entered, so the contract still renders. */}
         <View style={[styles.row, { marginTop: 8 }]}>
-          <TText style={styles.label}>ผู้ให้เช่า / Lessor</TText>
+          <TText style={styles.label}>ผู้ให้เช่า</TText>
           <TText style={styles.value}><D>{data.lessorName}</D></TText>
+        </View>
+        <View style={styles.row}>
+          <TText style={styles.label}>Lessor</TText>
+          <TText style={styles.value}>
+            <D>{data.lessorNameEn || data.lessorName}</D>
+          </TText>
         </View>
         {data.lessorNationality && (
           <View style={styles.row}>
@@ -421,8 +640,16 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
         )}
         {data.lessorAddress && (
           <View style={styles.row}>
-            <TText style={styles.label}>ที่อยู่ / Address</TText>
+            <TText style={styles.label}>ที่อยู่</TText>
             <TText style={styles.value}>{data.lessorAddress}</TText>
+          </View>
+        )}
+        {(data.lessorAddressEn || data.lessorAddress) && (
+          <View style={styles.row}>
+            <TText style={styles.label}>Address</TText>
+            <TText style={styles.value}>
+              {data.lessorAddressEn || data.lessorAddress}
+            </TText>
           </View>
         )}
         {data.lessorPhone && (
@@ -434,8 +661,14 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
 
         {/* Lessee */}
         <View style={[styles.row, { marginTop: 8 }]}>
-          <TText style={styles.label}>ผู้เช่า / Lessee</TText>
+          <TText style={styles.label}>ผู้เช่า</TText>
           <TText style={styles.value}><D>{data.lesseeName}</D></TText>
+        </View>
+        <View style={styles.row}>
+          <TText style={styles.label}>Lessee</TText>
+          <TText style={styles.value}>
+            <D>{data.lesseeNameEn || data.lesseeName}</D>
+          </TText>
         </View>
         {data.lesseeNationality && (
           <View style={styles.row}>
@@ -451,8 +684,16 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
         )}
         {data.lesseeAddress && (
           <View style={styles.row}>
-            <TText style={styles.label}>ที่อยู่ / Address</TText>
+            <TText style={styles.label}>ที่อยู่</TText>
             <TText style={styles.value}>{data.lesseeAddress}</TText>
+          </View>
+        )}
+        {(data.lesseeAddressEn || data.lesseeAddress) && (
+          <View style={styles.row}>
+            <TText style={styles.label}>Address</TText>
+            <TText style={styles.value}>
+              {data.lesseeAddressEn || data.lesseeAddress}
+            </TText>
           </View>
         )}
         {data.lesseePhone && (
@@ -478,7 +719,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           <D>{data.unitNumber}</D>
           {data.buildingName ? <>, Building <D>{data.buildingName}</D></> : null}
           {data.floorNumber ? <>, Floor <D>{data.floorNumber}</D></> : null},
-          located at <D>{data.propertyAddress}</D>
+          located at <D>{data.propertyAddressEn || data.propertyAddress}</D>
           {data.sizeSqm != null ? <>, approximate area <D>{data.sizeSqm}</D> sqm.</> : null}{" "}
           and all premises including all fixtures and fittings hereinafter
           referred to as the "Premises".
@@ -502,8 +743,14 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
               <TText>1. ผู้เช่าร่วม / Joint Lessee</TText>
             </View>
             <View style={styles.row}>
-              <TText style={styles.label}>ชื่อ / Name</TText>
+              <TText style={styles.label}>ชื่อ</TText>
               <TText style={styles.value}><D>{data.jointLesseeName}</D></TText>
+            </View>
+            <View style={styles.row}>
+              <TText style={styles.label}>Name</TText>
+              <TText style={styles.value}>
+                <D>{data.jointLesseeNameEn || data.jointLesseeName}</D>
+              </TText>
             </View>
             {data.jointLesseeNationality && (
               <View style={styles.row}>
@@ -519,8 +766,16 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
             )}
             {data.jointLesseeAddress && (
               <View style={styles.row}>
-                <TText style={styles.label}>ที่อยู่ / Address</TText>
+                <TText style={styles.label}>ที่อยู่</TText>
                 <TText style={styles.value}>{data.jointLesseeAddress}</TText>
+              </View>
+            )}
+            {(data.jointLesseeAddressEn || data.jointLesseeAddress) && (
+              <View style={styles.row}>
+                <TText style={styles.label}>Address</TText>
+                <TText style={styles.value}>
+                  {data.jointLesseeAddressEn || data.jointLesseeAddress}
+                </TText>
               </View>
             )}
             {data.jointLesseePhone && (
@@ -586,7 +841,9 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
                   </View>
                   <View style={styles.row}>
                     <TText style={styles.label}>Branch</TText>
-                    <TText style={styles.value}>{data.bankBranch}</TText>
+                    <TText style={styles.value}>
+                      {data.bankBranchEn || data.bankBranch}
+                    </TText>
                   </View>
                 </>
               )}
@@ -598,7 +855,9 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
                   </View>
                   <View style={styles.row}>
                     <TText style={styles.label}>Account Name</TText>
-                    <TText style={styles.value}>{data.bankAccountName}</TText>
+                    <TText style={styles.value}>
+                      {data.bankAccountNameEn || data.bankAccountName}
+                    </TText>
                   </View>
                 </>
               )}
@@ -628,9 +887,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
                   <TText style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
                     10.1 เฟอร์นิเจอร์ / Furniture
                   </TText>
-                  {data.furnitureList.map((item, i) => (
-                    <ChecklistRow key={`f-${i}`} item={item} num={i + 1} />
-                  ))}
+                  <ItemTable items={data.furnitureList} />
                 </>
               )}
               {data.applianceList.length > 0 && (
@@ -638,9 +895,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
                   <TText style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
                     10.2 เครื่องใช้ไฟฟ้า / Electrical Appliances
                   </TText>
-                  {data.applianceList.map((item, i) => (
-                    <ChecklistRow key={`a-${i}`} item={item} num={i + 1} />
-                  ))}
+                  <ItemTable items={data.applianceList} />
                 </>
               )}
               {data.otherItems.length > 0 && (
@@ -648,9 +903,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
                   <TText style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
                     10.3 รายการอื่นๆ / Other Items
                   </TText>
-                  {data.otherItems.map((item, i) => (
-                    <ChecklistRow key={`o-${i}`} item={item} num={i + 1} />
-                  ))}
+                  <ItemTable items={data.otherItems} />
                 </>
               )}
             </>
@@ -684,11 +937,27 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           const th = c.th?.trim();
           const en = c.en?.trim();
           if (!th && !en) return null;
-          const body = th && en ? `${th} / ${en}` : th || en;
-          return <Bullet key={`cc-${i}`}>{`${num} ${body}`}</Bullet>;
+          // Stack TH then EN like the standard bullets so the bilingual
+          // pairing reads consistently across all sections.
+          return (
+            <View key={`cc-${i}`} style={{ marginBottom: 3 }} wrap={false}>
+              {th && (
+                <TText style={[styles.paragraph, styles.bullet, { marginBottom: 0 }]}>
+                  {`${num} ${th}`}
+                </TText>
+              )}
+              {en && (
+                <TText style={[styles.paragraph, styles.bullet, { marginBottom: 0 }]}>
+                  {`${num} ${en}`}
+                </TText>
+              )}
+            </View>
+          );
         })}
 
-        {/* Closing + Signatures — wrap together so signatures never split off */}
+        {/* Closing + formal signatures — wrap together so the signature
+            block never splits across pages. Lives in the main Page wrap so
+            it stays on the same page as the tail of section 11. */}
         <View wrap={false} style={{ marginTop: 12 }}>
           <TText style={[styles.paragraph, { fontSize: 9 }]}>
             สัญญาฉบับนี้ทำขึ้น 2 ฉบับ มีข้อความตรงกัน ผู้ให้เช่าและผู้เช่าถือไว้คนละฉบับ
@@ -723,6 +992,13 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
             </View>
           </View>
         </View>
+
+        <PageFooter
+          lessorName={data.lessorName}
+          lesseeName={data.lesseeName}
+        />
+        {/* Hides the footer on the formal-signature sub-page only. */}
+        <FooterCover />
       </Page>
 
       {/* Appendix: ID card / passport images, one page per party. Rendered

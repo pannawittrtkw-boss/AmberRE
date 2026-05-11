@@ -68,40 +68,63 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Generate contract number: CON-YYYY-NNN
+    // Generate contract number: CON-YYYY-NNNN
+    // Derive the sequence from the highest existing contractNumber for the
+    // year — not from a row count — so deleting a contract doesn't reuse
+    // its number and trigger a unique-constraint violation on the next
+    // create. Retry on P2002 in the (rare) event of a concurrent insert.
     const year = new Date().getFullYear();
-    const yearStart = new Date(`${year}-01-01`);
-    const count = await prisma.contract.count({
-      where: { createdAt: { gte: yearStart } },
-    });
-    const contractNumber = `CON-${year}-${String(count + 1).padStart(4, "0")}`;
+    const prefix = `CON-${year}-`;
+    const nextSeq = async () => {
+      const last = await prisma.contract.findFirst({
+        where: { contractNumber: { startsWith: prefix } },
+        orderBy: { contractNumber: "desc" },
+        select: { contractNumber: true },
+      });
+      if (!last) return 1;
+      const tail = last.contractNumber.slice(prefix.length);
+      const parsed = parseInt(tail, 10);
+      return Number.isFinite(parsed) ? parsed + 1 : 1;
+    };
 
-    const contract = await prisma.contract.create({
-      data: {
-        contractNumber,
+    let contract;
+    let seq = await nextSeq();
+    const MAX_ATTEMPTS = 5;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      const contractNumber = `${prefix}${String(seq).padStart(4, "0")}`;
+      try {
+        contract = await prisma.contract.create({
+          data: {
+            contractNumber,
         contractDate: new Date(body.contractDate),
         startDate: new Date(body.startDate),
         endDate: new Date(body.endDate),
         termMonths: Number(body.termMonths) || 12,
 
         lessorName: String(body.lessorName).trim(),
+        lessorNameEn: body.lessorNameEn || null,
         lessorNationality: body.lessorNationality || null,
         lessorIdCard: body.lessorIdCard || null,
         lessorAddress: body.lessorAddress || null,
+        lessorAddressEn: body.lessorAddressEn || null,
         lessorPhone: body.lessorPhone || null,
         lessorIdImage: body.lessorIdImage || null,
 
         lesseeName: String(body.lesseeName).trim(),
+        lesseeNameEn: body.lesseeNameEn || null,
         lesseeNationality: body.lesseeNationality || null,
         lesseeIdCard: body.lesseeIdCard || null,
         lesseeAddress: body.lesseeAddress || null,
+        lesseeAddressEn: body.lesseeAddressEn || null,
         lesseePhone: body.lesseePhone || null,
         lesseeIdImage: body.lesseeIdImage || null,
 
         jointLesseeName: body.jointLesseeName || null,
+        jointLesseeNameEn: body.jointLesseeNameEn || null,
         jointLesseeNationality: body.jointLesseeNationality || null,
         jointLesseeIdCard: body.jointLesseeIdCard || null,
         jointLesseeAddress: body.jointLesseeAddress || null,
+        jointLesseeAddressEn: body.jointLesseeAddressEn || null,
         jointLesseePhone: body.jointLesseePhone || null,
         jointLesseeIdImage: body.jointLesseeIdImage || null,
 
@@ -111,13 +134,16 @@ export async function POST(req: NextRequest) {
         buildingName: body.buildingName || null,
         floorNumber: body.floorNumber || null,
         propertyAddress: String(body.propertyAddress).trim(),
+        propertyAddressEn: body.propertyAddressEn || null,
         sizeSqm: body.sizeSqm ? Number(body.sizeSqm) : null,
 
         monthlyRent: Number(body.monthlyRent),
         paymentDay: Number(body.paymentDay) || 1,
         bankName: body.bankName || null,
         bankBranch: body.bankBranch || null,
+        bankBranchEn: body.bankBranchEn || null,
         bankAccountName: body.bankAccountName || null,
+        bankAccountNameEn: body.bankAccountNameEn || null,
         bankAccountNumber: body.bankAccountNumber || null,
         latePaymentFee: Number(body.latePaymentFee) || 500,
 
@@ -134,6 +160,28 @@ export async function POST(req: NextRequest) {
         createdById,
       },
     });
+        break;
+      } catch (err: unknown) {
+        // P2002 = unique constraint violation. Bump the seq and retry —
+        // the only field with a unique constraint we can collide on is
+        // `contractNumber`. After MAX_ATTEMPTS give up and surface the error.
+        const code =
+          typeof err === "object" && err && "code" in err
+            ? (err as { code?: string }).code
+            : undefined;
+        if (code === "P2002" && attempt < MAX_ATTEMPTS - 1) {
+          seq += 1;
+          continue;
+        }
+        throw err;
+      }
+    }
+    if (!contract) {
+      return NextResponse.json(
+        { success: false, error: "Could not allocate contract number" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({ success: true, data: contract });
   } catch (err: any) {

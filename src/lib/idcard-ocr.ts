@@ -5,6 +5,11 @@
 
 export interface OcrParsedFields {
   name?: string;
+  // English-only rendering of the holder's name. For Thai IDs this is the
+  // bilingual Latin transliteration printed under the Thai name (e.g.
+  // "Miss Panida Srijampa"). For passports it equals `name` since
+  // passports only carry the Latin form.
+  nameEn?: string;
   idNumber?: string;
   address?: string;
   nationality?: string;
@@ -257,6 +262,52 @@ function findEnglishName(lines: string[]): string | undefined {
   return undefined;
 }
 
+// Thai national ID cards print the holder's English name on the same
+// face of the card under labels like "Name Miss Panida" and
+// "Last name Srijampa". The text is mixed-case so it doesn't match
+// `findEnglishName` (which requires uppercase passport-style tokens) —
+// this helper handles the Thai-ID layout specifically.
+function findThaiIdEnglishName(lines: string[]): string | undefined {
+  let givenNames: string | undefined;
+  let surname: string | undefined;
+
+  // Strip a label prefix from a line and return the remaining value if it
+  // contains Latin letters.
+  const valueAfter = (ln: string, labelRe: RegExp): string | undefined => {
+    const stripped = ln.replace(labelRe, "").trim();
+    if (stripped && /[A-Za-z]/.test(stripped) && !/[฀-๿]/.test(stripped)) {
+      return stripped;
+    }
+    return undefined;
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const ln = lines[i];
+
+    if (!surname && /^Last\s*name\b/i.test(ln)) {
+      surname =
+        valueAfter(ln, /^Last\s*name\s*[:\-]?\s*/i) ||
+        // Value may be on the next non-empty Latin line
+        lines.slice(i + 1, i + 3).find((next) => /[A-Za-z]/.test(next) && !/[฀-๿]/.test(next))?.trim();
+    }
+
+    // "Name" label, but NOT "Last name" — and NOT after we already matched
+    // surname on this line. Skip the label that's bilingual with Thai
+    // labels like "ชื่อตัวและชื่อสกุล Name".
+    if (!givenNames && /(?:^|\s)Name\b/i.test(ln) && !/^Last\s*name/i.test(ln)) {
+      // Drop everything up through the "Name" anchor
+      givenNames =
+        valueAfter(ln, /^.*?Name\s*[:\-]?\s*/i) ||
+        lines.slice(i + 1, i + 3).find((next) => /[A-Za-z]/.test(next) && !/[฀-๿]/.test(next))?.trim();
+    }
+  }
+
+  if (givenNames && surname) return `${givenNames} ${surname}`;
+  if (givenNames) return givenNames;
+  if (surname) return surname;
+  return undefined;
+}
+
 function findThaiAddress(lines: string[]): string | undefined {
   // "ที่อยู่" label can be alone on a line; the address spans 1-3 lines
   // until something like "วันออกบัตร" / "Date of Issue" / "วันที่ออกบัตร".
@@ -336,18 +387,25 @@ export function parseIdCardOcr(rawText: string): OcrParsedFields {
     : "unknown";
 
   if (docType === "passport") {
+    const passportName = findEnglishName(lines);
     return {
       documentType: "passport",
-      name: findEnglishName(lines),
+      name: passportName,
+      // Passports only carry the Latin name — mirror it into nameEn so
+      // callers can fill an "EN" form field without re-detecting doc type.
+      nameEn: passportName,
       idNumber: findPassportNumber(text),
       nationality: findNationality(text),
     };
   }
 
-  // Default to Thai ID card parsing
+  // Default to Thai ID card parsing — Thai IDs are bilingual, so try to
+  // pull the Latin transliteration too (mixed-case "Miss Panida Srijampa"
+  // form, distinct from the all-caps passport form).
   return {
     documentType: docType,
     name: findThaiName(lines) || findEnglishName(lines),
+    nameEn: findThaiIdEnglishName(lines) || findEnglishName(lines),
     idNumber: findThaiIdNumber(text) || findPassportNumber(text),
     address: findThaiAddress(lines),
     nationality: findNationality(text) || (isThaiId ? "ไทย" : undefined),

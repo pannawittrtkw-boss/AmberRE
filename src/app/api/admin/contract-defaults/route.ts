@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import {
   DEFAULT_CLAUSES_SETTING_KEY,
   CLAUSE_OVERRIDES_SETTING_KEY,
+  CLAUSE_BASELINE_SETTING_KEY,
   parseCustomClauses,
   serializeCustomClauses,
   parseClauseOverrides,
@@ -20,10 +21,12 @@ export const runtime = "nodejs";
  *
  * Returns the global default contract template, used to seed new contracts:
  *   - clauses          → array of {th, en} appended after section 11.6
- *   - clauseOverrides  → map of {key: {th?, en?}} that overrides the
- *                        standard clauses (sections 2-11) at creation
+ *   - clauseBaseline   → frozen "Standard" snapshot (the layer Reset goes
+ *                        back to). Edits stack on top.
+ *   - clauseOverrides  → working overrides on top of baseline (the user's
+ *                        current edits). Empty when fully reset.
  *
- * Both are stored as JSON in SiteSetting.valueTh under separate keys.
+ * All three are stored as JSON in SiteSetting.valueTh under separate keys.
  */
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -34,12 +37,15 @@ export async function GET() {
     );
   }
 
-  const [appendedSetting, overridesSetting] = await Promise.all([
+  const [appendedSetting, overridesSetting, baselineSetting] = await Promise.all([
     prisma.siteSetting.findUnique({
       where: { key: DEFAULT_CLAUSES_SETTING_KEY },
     }),
     prisma.siteSetting.findUnique({
       where: { key: CLAUSE_OVERRIDES_SETTING_KEY },
+    }),
+    prisma.siteSetting.findUnique({
+      where: { key: CLAUSE_BASELINE_SETTING_KEY },
     }),
   ]);
 
@@ -48,6 +54,7 @@ export async function GET() {
     data: {
       clauses: parseCustomClauses(appendedSetting?.valueTh),
       clauseOverrides: parseClauseOverrides(overridesSetting?.valueTh),
+      clauseBaseline: parseClauseOverrides(baselineSetting?.valueTh),
     },
   });
 }
@@ -70,7 +77,11 @@ export async function PUT(req: NextRequest) {
     );
   }
 
-  let body: { clauses?: CustomClause[]; clauseOverrides?: ClauseOverrideMap };
+  let body: {
+    clauses?: CustomClause[];
+    clauseOverrides?: ClauseOverrideMap;
+    clauseBaseline?: ClauseOverrideMap;
+  };
   try {
     body = await req.json();
   } catch {
@@ -92,6 +103,18 @@ export async function PUT(req: NextRequest) {
     });
   }
 
+  if (body.clauseBaseline && typeof body.clauseBaseline === "object") {
+    const serialised = serializeClauseOverrides(body.clauseBaseline);
+    await prisma.siteSetting.upsert({
+      where: { key: CLAUSE_BASELINE_SETTING_KEY },
+      update: { valueTh: serialised || null },
+      create: {
+        key: CLAUSE_BASELINE_SETTING_KEY,
+        valueTh: serialised || null,
+      },
+    });
+  }
+
   if (body.clauseOverrides && typeof body.clauseOverrides === "object") {
     const serialised = serializeClauseOverrides(body.clauseOverrides);
     await prisma.siteSetting.upsert({
@@ -105,12 +128,15 @@ export async function PUT(req: NextRequest) {
   }
 
   // Re-read to return the canonical state
-  const [appendedSetting, overridesSetting] = await Promise.all([
+  const [appendedSetting, overridesSetting, baselineSetting] = await Promise.all([
     prisma.siteSetting.findUnique({
       where: { key: DEFAULT_CLAUSES_SETTING_KEY },
     }),
     prisma.siteSetting.findUnique({
       where: { key: CLAUSE_OVERRIDES_SETTING_KEY },
+    }),
+    prisma.siteSetting.findUnique({
+      where: { key: CLAUSE_BASELINE_SETTING_KEY },
     }),
   ]);
 
@@ -119,6 +145,7 @@ export async function PUT(req: NextRequest) {
     data: {
       clauses: parseCustomClauses(appendedSetting?.valueTh),
       clauseOverrides: parseClauseOverrides(overridesSetting?.valueTh),
+      clauseBaseline: parseClauseOverrides(baselineSetting?.valueTh),
     },
   });
 }

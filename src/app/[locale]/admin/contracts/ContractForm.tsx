@@ -17,6 +17,7 @@ import {
   serializeCustomClauses,
   parseClauseOverrides,
   serializeClauseOverrides,
+  mergeClauseOverrides,
 } from "@/lib/contract-clauses";
 import {
   FURNITURE_OPTIONS,
@@ -78,23 +79,29 @@ export default function ContractForm({
     termMonths: initialData?.termMonths || 12,
 
     lessorName: initialData?.lessorName || "",
+    lessorNameEn: initialData?.lessorNameEn || "",
     lessorNationality: initialData?.lessorNationality || "ไทย",
     lessorIdCard: initialData?.lessorIdCard || "",
     lessorAddress: initialData?.lessorAddress || "",
+    lessorAddressEn: initialData?.lessorAddressEn || "",
     lessorPhone: initialData?.lessorPhone || "",
     lessorIdImage: initialData?.lessorIdImage || "",
 
     lesseeName: initialData?.lesseeName || "",
+    lesseeNameEn: initialData?.lesseeNameEn || "",
     lesseeNationality: initialData?.lesseeNationality || "ไทย",
     lesseeIdCard: initialData?.lesseeIdCard || "",
     lesseeAddress: initialData?.lesseeAddress || "",
+    lesseeAddressEn: initialData?.lesseeAddressEn || "",
     lesseePhone: initialData?.lesseePhone || "",
     lesseeIdImage: initialData?.lesseeIdImage || "",
 
     jointLesseeName: initialData?.jointLesseeName || "",
+    jointLesseeNameEn: initialData?.jointLesseeNameEn || "",
     jointLesseeNationality: initialData?.jointLesseeNationality || "",
     jointLesseeIdCard: initialData?.jointLesseeIdCard || "",
     jointLesseeAddress: initialData?.jointLesseeAddress || "",
+    jointLesseeAddressEn: initialData?.jointLesseeAddressEn || "",
     jointLesseePhone: initialData?.jointLesseePhone || "",
     jointLesseeIdImage: initialData?.jointLesseeIdImage || "",
 
@@ -104,13 +111,16 @@ export default function ContractForm({
     buildingName: initialData?.buildingName || "",
     floorNumber: initialData?.floorNumber || "",
     propertyAddress: initialData?.propertyAddress || "",
+    propertyAddressEn: initialData?.propertyAddressEn || "",
     sizeSqm: initialData?.sizeSqm || "",
 
     monthlyRent: initialData?.monthlyRent || "",
     paymentDay: initialData?.paymentDay || 1,
     bankName: initialData?.bankName || "",
     bankBranch: initialData?.bankBranch || "",
+    bankBranchEn: initialData?.bankBranchEn || "",
     bankAccountName: initialData?.bankAccountName || "",
+    bankAccountNameEn: initialData?.bankAccountNameEn || "",
     bankAccountNumber: initialData?.bankAccountNumber || "",
     // Transient — only used to preview the bank-book image during OCR. Not
     // persisted to the DB; the API ignores unknown fields.
@@ -134,7 +144,22 @@ export default function ContractForm({
   const [customClauses, setCustomClauses] = useState<CustomClause[]>(
     parseCustomClauses(initialData?.customClauses)
   );
+  // The editor's two-layer model:
+  //   templateBaseline → the "Standard" the editor falls back to (gray
+  //                      reset target). For NEW contracts this is the
+  //                      site template (baseline + overrides merged); for
+  //                      EXISTING contracts it's the contract's own
+  //                      saved snapshot — so reopening an edit shows 0
+  //                      "edited" badges until the user actually changes
+  //                      something this session.
+  //   clauseOverrides  → only the user's in-session edits stacked on top.
+  //
+  // At submit, the two layers are merged back into the contract's snapshot
+  // (`Contract.clauseOverrides` field) so the PDF render is unchanged.
   const [clauseOverrides, setClauseOverrides] = useState<ClauseOverrideMap>(
+    {}
+  );
+  const [templateBaseline, setTemplateBaseline] = useState<ClauseOverrideMap>(
     parseClauseOverrides(initialData?.clauseOverrides)
   );
 
@@ -142,10 +167,14 @@ export default function ContractForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // On NEW contracts: snapshot from the global default template
-  // (both appended clauses 11.7+ AND clause overrides for sections 2-11).
+  // On NEW contracts: pull the template (custom 11.7+ clauses, baseline,
+  // and any working overrides on top) and seat it as the editor's
+  // baseline. The user's own edits go into `clauseOverrides` on top —
+  // so the per-section "edited" badge counts only the user's edits, not
+  // the inherited template text. At submit time the two layers are
+  // merged into the contract's own snapshot.
   // Skipped when editing an existing contract — that contract already
-  // holds its own copy, which may diverge from the current template.
+  // holds its own self-contained snapshot.
   useEffect(() => {
     if (isEdit) return;
     if (initialData?.customClauses || initialData?.clauseOverrides) return;
@@ -155,12 +184,15 @@ export default function ContractForm({
       .then((data) => {
         if (cancelled || !data?.success) return;
         const clauses = data.data?.clauses as CustomClause[] | undefined;
+        const baseline = data.data?.clauseBaseline as
+          | ClauseOverrideMap
+          | undefined;
         const overrides = data.data?.clauseOverrides as
           | ClauseOverrideMap
           | undefined;
+        const merged = mergeClauseOverrides(baseline, overrides);
         if (clauses && clauses.length > 0) setCustomClauses(clauses);
-        if (overrides && Object.keys(overrides).length > 0)
-          setClauseOverrides(overrides);
+        if (Object.keys(merged).length > 0) setTemplateBaseline(merged);
       })
       .catch(() => {});
     return () => {
@@ -179,14 +211,21 @@ export default function ContractForm({
     } catch {}
   };
 
+  // Refresh the editor's baseline from the latest template and drop the
+  // user's own edits. After this, the editor shows 0 edits everywhere.
   const handleResetOverridesFromTemplate = async () => {
     try {
       const res = await fetch("/api/admin/contract-defaults");
       const data = await res.json();
       if (data?.success) {
-        setClauseOverrides(
-          (data.data?.clauseOverrides as ClauseOverrideMap) || {}
-        );
+        const baseline = data.data?.clauseBaseline as
+          | ClauseOverrideMap
+          | undefined;
+        const overrides = data.data?.clauseOverrides as
+          | ClauseOverrideMap
+          | undefined;
+        setTemplateBaseline(mergeClauseOverrides(baseline, overrides));
+        setClauseOverrides({});
       }
     } catch {}
   };
@@ -229,16 +268,24 @@ export default function ContractForm({
     const payload = {
       ...form,
       jointLesseeName: showJoint ? form.jointLesseeName : "",
+      jointLesseeNameEn: showJoint ? form.jointLesseeNameEn : "",
       jointLesseeNationality: showJoint ? form.jointLesseeNationality : "",
       jointLesseeIdCard: showJoint ? form.jointLesseeIdCard : "",
       jointLesseeAddress: showJoint ? form.jointLesseeAddress : "",
+      jointLesseeAddressEn: showJoint ? form.jointLesseeAddressEn : "",
       jointLesseePhone: showJoint ? form.jointLesseePhone : "",
       jointLesseeIdImage: showJoint ? form.jointLesseeIdImage : "",
       furnitureList: furniture.length ? JSON.stringify(furniture) : "",
       applianceList: appliances.length ? JSON.stringify(appliances) : "",
       otherItems: otherItems.length ? JSON.stringify(otherItems) : "",
       customClauses: serializeCustomClauses(customClauses),
-      clauseOverrides: serializeClauseOverrides(clauseOverrides),
+      // Snapshot of the contract's clauses = template baseline + user edits.
+      // PDF render reads only this field, so the merge has to happen here
+      // (templateBaseline is empty for an edited contract — that contract's
+      // self-contained snapshot lives in `clauseOverrides` already).
+      clauseOverrides: serializeClauseOverrides(
+        mergeClauseOverrides(templateBaseline, clauseOverrides)
+      ),
     };
 
     const url = isEdit
@@ -342,6 +389,18 @@ export default function ContractForm({
               className={inputCls}
             />
           </Field>
+          <Field
+            label={
+              locale === "th" ? "ชื่อ-นามสกุล (EN)" : "Name (EN)"
+            }
+          >
+            <input
+              value={form.lessorNameEn}
+              onChange={(e) => update("lessorNameEn", e.target.value)}
+              className={inputCls}
+              placeholder={locale === "th" ? "ใช้ในสัญญาส่วนภาษาอังกฤษ" : "Used in the English part of the contract"}
+            />
+          </Field>
           <Field label={locale === "th" ? "สัญชาติ" : "Nationality"}>
             <input
               value={form.lessorNationality}
@@ -362,6 +421,18 @@ export default function ContractForm({
               value={form.lessorAddress}
               onChange={(e) => update("lessorAddress", e.target.value)}
               className={inputCls}
+            />
+          </Field>
+          <Field
+            label={locale === "th" ? "ที่อยู่ (EN)" : "Address (EN)"}
+            colSpan={2}
+          >
+            <textarea
+              rows={2}
+              value={form.lessorAddressEn}
+              onChange={(e) => update("lessorAddressEn", e.target.value)}
+              className={inputCls}
+              placeholder={locale === "th" ? "ใช้ในสัญญาส่วนภาษาอังกฤษ" : "Used in the English part of the contract"}
             />
           </Field>
           <Field label={locale === "th" ? "เบอร์โทร" : "Phone"}>
@@ -389,11 +460,17 @@ export default function ContractForm({
                   (o.documentType === "passport" && o.nationality
                     ? o.nationality
                     : "");
+                // Passports carry no Thai name — use the English name in
+                // both fields so the Thai-language part of the contract
+                // still has something to show.
+                const thaiName =
+                  o.name || (o.documentType === "passport" ? o.nameEn : "") || "";
                 // Replace, don't merge — uploading a new card always wipes
                 // the previous values on the related fields.
                 setForm((prev) => ({
                   ...prev,
-                  lessorName: o.name || "",
+                  lessorName: thaiName,
+                  lessorNameEn: o.nameEn || "",
                   lessorNationality: o.nationality || "",
                   lessorIdCard: o.idNumber || "",
                   lessorAddress: addressFallback,
@@ -404,6 +481,8 @@ export default function ContractForm({
                 const out: Array<{ label: string; value: string }> = [];
                 if (o.name)
                   out.push({ label: locale === "th" ? "ชื่อ" : "Name", value: o.name });
+                if (o.nameEn && o.nameEn !== o.name)
+                  out.push({ label: locale === "th" ? "ชื่อ (EN)" : "Name (EN)", value: o.nameEn });
                 if (o.idNumber)
                   out.push({ label: locale === "th" ? "เลข ID" : "ID No.", value: o.idNumber });
                 if (o.nationality)
@@ -427,6 +506,18 @@ export default function ContractForm({
               value={form.lesseeName}
               onChange={(e) => update("lesseeName", e.target.value)}
               className={inputCls}
+            />
+          </Field>
+          <Field
+            label={
+              locale === "th" ? "ชื่อ-นามสกุล (EN)" : "Name (EN)"
+            }
+          >
+            <input
+              value={form.lesseeNameEn}
+              onChange={(e) => update("lesseeNameEn", e.target.value)}
+              className={inputCls}
+              placeholder={locale === "th" ? "ใช้ในสัญญาส่วนภาษาอังกฤษ" : "Used in the English part of the contract"}
             />
           </Field>
           <Field label={locale === "th" ? "สัญชาติ" : "Nationality"}>
@@ -459,6 +550,18 @@ export default function ContractForm({
             />
           </Field>
           <Field
+            label={locale === "th" ? "ที่อยู่ (EN)" : "Address (EN)"}
+            colSpan={2}
+          >
+            <textarea
+              rows={2}
+              value={form.lesseeAddressEn}
+              onChange={(e) => update("lesseeAddressEn", e.target.value)}
+              className={inputCls}
+              placeholder={locale === "th" ? "ใช้ในสัญญาส่วนภาษาอังกฤษ" : "Used in the English part of the contract"}
+            />
+          </Field>
+          <Field
             label={
               locale === "th"
                 ? "รูปบัตรประชาชน / พาสปอร์ต"
@@ -477,9 +580,12 @@ export default function ContractForm({
                   (o.documentType === "passport" && o.nationality
                     ? o.nationality
                     : "");
+                const thaiName =
+                  o.name || (o.documentType === "passport" ? o.nameEn : "") || "";
                 setForm((prev) => ({
                   ...prev,
-                  lesseeName: o.name || "",
+                  lesseeName: thaiName,
+                  lesseeNameEn: o.nameEn || "",
                   lesseeIdCard: o.idNumber || "",
                   lesseeAddress: addressFallback,
                   lesseeNationality: o.nationality || "",
@@ -490,6 +596,8 @@ export default function ContractForm({
                 const out: Array<{ label: string; value: string }> = [];
                 if (o.name)
                   out.push({ label: locale === "th" ? "ชื่อ" : "Name", value: o.name });
+                if (o.nameEn && o.nameEn !== o.name)
+                  out.push({ label: locale === "th" ? "ชื่อ (EN)" : "Name (EN)", value: o.nameEn });
                 if (o.idNumber)
                   out.push({ label: locale === "th" ? "เลข ID" : "ID No.", value: o.idNumber });
                 if (o.address)
@@ -526,6 +634,14 @@ export default function ContractForm({
                   className={inputCls}
                 />
               </Field>
+              <Field label={locale === "th" ? "ชื่อ (EN)" : "Name (EN)"}>
+                <input
+                  value={form.jointLesseeNameEn}
+                  onChange={(e) => update("jointLesseeNameEn", e.target.value)}
+                  className={inputCls}
+                  placeholder={locale === "th" ? "ใช้ในสัญญาส่วนภาษาอังกฤษ" : "Used in the English part of the contract"}
+                />
+              </Field>
               <Field label={locale === "th" ? "สัญชาติ" : "Nationality"}>
                 <input
                   value={form.jointLesseeNationality}
@@ -556,6 +672,18 @@ export default function ContractForm({
                 />
               </Field>
               <Field
+                label={locale === "th" ? "ที่อยู่ (EN)" : "Address (EN)"}
+                colSpan={2}
+              >
+                <textarea
+                  rows={2}
+                  value={form.jointLesseeAddressEn}
+                  onChange={(e) => update("jointLesseeAddressEn", e.target.value)}
+                  className={inputCls}
+                  placeholder={locale === "th" ? "ใช้ในสัญญาส่วนภาษาอังกฤษ" : "Used in the English part of the contract"}
+                />
+              </Field>
+              <Field
                 label={
                   locale === "th"
                     ? "รูปบัตรประชาชน / พาสปอร์ต"
@@ -574,9 +702,12 @@ export default function ContractForm({
                       (o.documentType === "passport" && o.nationality
                         ? o.nationality
                         : "");
+                    const thaiName =
+                      o.name || (o.documentType === "passport" ? o.nameEn : "") || "";
                     setForm((prev) => ({
                       ...prev,
-                      jointLesseeName: o.name || "",
+                      jointLesseeName: thaiName,
+                      jointLesseeNameEn: o.nameEn || "",
                       jointLesseeIdCard: o.idNumber || "",
                       jointLesseeAddress: addressFallback,
                       jointLesseeNationality: o.nationality || "",
@@ -587,6 +718,8 @@ export default function ContractForm({
                     const out: Array<{ label: string; value: string }> = [];
                     if (o.name)
                       out.push({ label: locale === "th" ? "ชื่อ" : "Name", value: o.name });
+                    if (o.nameEn && o.nameEn !== o.name)
+                      out.push({ label: locale === "th" ? "ชื่อ (EN)" : "Name (EN)", value: o.nameEn });
                     if (o.idNumber)
                       out.push({ label: locale === "th" ? "เลข ID" : "ID No.", value: o.idNumber });
                     if (o.address)
@@ -652,6 +785,20 @@ export default function ContractForm({
               value={form.propertyAddress}
               onChange={(e) => update("propertyAddress", e.target.value)}
               className={inputCls}
+            />
+          </Field>
+          <Field
+            label={
+              locale === "th" ? "ที่อยู่ทรัพย์สิน (EN)" : "Address (EN)"
+            }
+            colSpan={2}
+          >
+            <textarea
+              rows={2}
+              value={form.propertyAddressEn}
+              onChange={(e) => update("propertyAddressEn", e.target.value)}
+              className={inputCls}
+              placeholder={locale === "th" ? "ใช้ในสัญญาส่วนภาษาอังกฤษ" : "Used in the English part of the contract"}
             />
           </Field>
         </Grid>
@@ -754,11 +901,27 @@ export default function ContractForm({
               className={inputCls}
             />
           </Field>
+          <Field label={locale === "th" ? "สาขา (EN)" : "Branch (EN)"}>
+            <input
+              value={form.bankBranchEn}
+              onChange={(e) => update("bankBranchEn", e.target.value)}
+              className={inputCls}
+              placeholder={locale === "th" ? "ใช้ในสัญญาส่วนภาษาอังกฤษ" : "Used in the English part of the contract"}
+            />
+          </Field>
           <Field label={locale === "th" ? "ชื่อบัญชี" : "Account Name"}>
             <input
               value={form.bankAccountName}
               onChange={(e) => update("bankAccountName", e.target.value)}
               className={inputCls}
+            />
+          </Field>
+          <Field label={locale === "th" ? "ชื่อบัญชี (EN)" : "Account Name (EN)"}>
+            <input
+              value={form.bankAccountNameEn}
+              onChange={(e) => update("bankAccountNameEn", e.target.value)}
+              className={inputCls}
+              placeholder={locale === "th" ? "ใช้ในสัญญาส่วนภาษาอังกฤษ" : "Used in the English part of the contract"}
             />
           </Field>
           <Field label={locale === "th" ? "เลขที่บัญชี" : "Account Number"}>
@@ -872,6 +1035,7 @@ export default function ContractForm({
           onChange={setClauseOverrides}
           locale={locale}
           sectionsFilter={["2", "3", "4", "5", "6", "7", "8", "9", "10"]}
+          baseline={templateBaseline}
         />
       </Card>
 
@@ -896,6 +1060,7 @@ export default function ContractForm({
               locale={locale}
               sectionsFilter={["11"]}
               hideHeader
+              baseline={templateBaseline}
             />
           </div>
           <div className="border-t border-stone-200 pt-4">

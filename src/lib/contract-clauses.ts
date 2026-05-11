@@ -50,6 +50,11 @@ export type ClauseOverrideMap = Record<string, ClauseOverride>;
 
 export const DEFAULT_CLAUSES_SETTING_KEY = "contract_default_clauses";
 export const CLAUSE_OVERRIDES_SETTING_KEY = "contract_clause_overrides";
+// Snapshot of the "Standard" baseline. Edits in the template editor stack
+// on top of this baseline (= STANDARD_CLAUSES + baseline + overrides).
+// Resetting a clause drops the override and falls back to baseline, not
+// to the hard-coded STANDARD_CLAUSES.
+export const CLAUSE_BASELINE_SETTING_KEY = "contract_clause_baseline";
 
 // ---------------------------------------------------------------------------
 // Standard clause text (matches the original hard-coded copy verbatim).
@@ -316,6 +321,35 @@ export function serializeClauseOverrides(map: ClauseOverrideMap): string {
     }
   }
   return Object.keys(cleaned).length > 0 ? JSON.stringify(cleaned) : "";
+}
+
+/**
+ * Merges a stack of override maps into one — later maps win per
+ * (key, lang) pair. Used to fold the saved `baseline` and the working
+ * `overrides` into a single map for downstream consumers (e.g. seeding
+ * a new contract's snapshot).
+ */
+export function mergeClauseOverrides(
+  ...layers: Array<ClauseOverrideMap | null | undefined>
+): ClauseOverrideMap {
+  const out: ClauseOverrideMap = {};
+  for (const layer of layers) {
+    if (!layer) continue;
+    for (const [key, value] of Object.entries(layer)) {
+      if (!value) continue;
+      const existing = out[key] || {};
+      out[key] = {
+        ...existing,
+        ...(typeof value.th === "string" && value.th.length > 0
+          ? { th: value.th }
+          : {}),
+        ...(typeof value.en === "string" && value.en.length > 0
+          ? { en: value.en }
+          : {}),
+      };
+    }
+  }
+  return out;
 }
 
 /**

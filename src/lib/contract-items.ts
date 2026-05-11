@@ -30,6 +30,8 @@ export const APPLIANCE_OPTIONS: Bilingual[] = [
   { key: "washingMachine", th: "เครื่องซักผ้า", en: "Washing Machine" },
   { key: "digitalDoorLock", th: "ดิจิตอลล็อค", en: "Digital Door Lock" },
   { key: "waterHeater", th: "เครื่องทำน้ำอุ่น", en: "Water Heater" },
+  { key: "airRemote", th: "รีโมทแอร์", en: "Air Remote" },
+  { key: "tvRemote", th: "รีโมททีวี", en: "TV Remote" },
 ];
 
 export const OTHER_ITEM_OPTIONS: Bilingual[] = [
@@ -40,7 +42,27 @@ export const OTHER_ITEM_OPTIONS: Bilingual[] = [
   { key: "parkingKeycard", th: "คีย์การ์ดที่จอดรถ", en: "Parking Keycard" },
 ];
 
-export type ContractItem = { key: string; qty: number };
+// Catalog items reference a key in FURNITURE_OPTIONS / APPLIANCE_OPTIONS /
+// OTHER_ITEM_OPTIONS. Custom (user-entered) items don't appear in any catalog
+// and carry their own bilingual labels — they exist on a single contract only.
+export type ContractItem = {
+  key: string;
+  qty: number;
+  // Present only on custom rows. The PDF prefers these when the key is not
+  // found in the catalog passed to buildChecklist.
+  th?: string;
+  en?: string;
+};
+
+const CUSTOM_KEY_PREFIX = "custom:";
+
+export function isCustomItem(item: ContractItem): boolean {
+  return item.key.startsWith(CUSTOM_KEY_PREFIX);
+}
+
+export function makeCustomKey(): string {
+  return `${CUSTOM_KEY_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 /**
  * Parse the JSON-encoded list stored in a contract field.
@@ -56,7 +78,12 @@ export function parseContractItems(json: string | null | undefined): ContractIte
       .filter(
         (x) => x && typeof x.key === "string" && typeof x.qty === "number" && x.qty > 0
       )
-      .map((x) => ({ key: x.key, qty: Math.max(1, Math.floor(x.qty)) }));
+      .map((x) => ({
+        key: x.key,
+        qty: Math.max(1, Math.floor(x.qty)),
+        ...(typeof x.th === "string" && x.th.length > 0 ? { th: x.th } : {}),
+        ...(typeof x.en === "string" && x.en.length > 0 ? { en: x.en } : {}),
+      }));
   } catch {
     return [];
   }

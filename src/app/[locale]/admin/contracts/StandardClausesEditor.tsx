@@ -12,7 +12,7 @@ import {
 interface Props {
   /**
    * Current overrides — keyed by clause.key. Empty/missing overrides fall
-   * through to the standard text shown next to each input.
+   * through to the baseline (if provided) and then to STANDARD_CLAUSES.
    */
   value: ClauseOverrideMap;
   onChange: (overrides: ClauseOverrideMap) => void;
@@ -30,6 +30,13 @@ interface Props {
    * sub-section of a larger editor that already shows its own summary.
    */
   hideHeader?: boolean;
+  /**
+   * Frozen "Standard" snapshot. When provided, the textarea pre-fills
+   * with `override[lang] ?? baseline[key][lang] ?? clause[lang]`, and
+   * Reset drops the override (falls back to baseline). "Edited" badges
+   * track only the override layer above the baseline.
+   */
+  baseline?: ClauseOverrideMap;
 }
 
 const inputCls =
@@ -69,7 +76,16 @@ export default function StandardClausesEditor({
   locale,
   sectionsFilter,
   hideHeader,
+  baseline,
 }: Props) {
+  // Effective "standard" text after the baseline layer is applied. This is
+  // what an unedited textarea shows, and what we compare against to decide
+  // whether the user has actually overridden a clause.
+  const standardOf = (clause: ContractClause, lang: "th" | "en"): string => {
+    const b = baseline?.[clause.key]?.[lang];
+    if (typeof b === "string" && b.length > 0) return b;
+    return clause[lang];
+  };
   // When the editor is filtered to just one or two sections, expand them
   // by default — there's no point making the user click. Otherwise start
   // collapsed so the page is scannable.
@@ -94,10 +110,11 @@ export default function StandardClausesEditor({
   ) => {
     const current = value[clause.key] || {};
     const next: ClauseOverrideMap = { ...value };
-    const standardText = clause[lang];
-    // Treat "matches the standard exactly" as no-override so the clause
-    // falls back automatically. Lets the textarea start out pre-filled
-    // with the standard copy without dirtying every clause.
+    const standardText = standardOf(clause, lang);
+    // Treat "matches the standard (baseline-merged) text exactly" as
+    // no-override so the clause falls back automatically. Lets the
+    // textarea start out pre-filled with the standard copy without
+    // dirtying every clause.
     if (text === standardText || text.trim() === "") {
       const cleared = { ...current };
       delete cleared[lang];
@@ -252,8 +269,8 @@ export default function StandardClausesEditor({
                             {locale === "th" ? "ภาษาไทย" : "Thai"}
                           </label>
                           <textarea
-                            rows={Math.max(3, Math.ceil(clause.th.length / 60))}
-                            value={override.th ?? clause.th}
+                            rows={Math.max(3, Math.ceil(standardOf(clause, "th").length / 60))}
+                            value={override.th ?? standardOf(clause, "th")}
                             onChange={(e) =>
                               setOverride(clause, "th", e.target.value)
                             }
@@ -265,8 +282,8 @@ export default function StandardClausesEditor({
                             English
                           </label>
                           <textarea
-                            rows={Math.max(3, Math.ceil(clause.en.length / 60))}
-                            value={override.en ?? clause.en}
+                            rows={Math.max(3, Math.ceil(standardOf(clause, "en").length / 60))}
+                            value={override.en ?? standardOf(clause, "en")}
                             onChange={(e) =>
                               setOverride(clause, "en", e.target.value)
                             }
