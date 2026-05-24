@@ -52,7 +52,7 @@ export default function AdminLayout({
 
   // Pages in /admin that CO_AGENT is allowed to access
   const CO_AGENT_ALLOWED_PATHS = [
-    "/admin/properties/add",
+    "/admin/properties",   // includes /add, /[id]/edit, etc.
     "/admin/contracts",
     "/admin/electricity-calculator",
     "/admin/accounting",
@@ -61,7 +61,7 @@ export default function AdminLayout({
     role === "CO_AGENT" &&
     CO_AGENT_ALLOWED_PATHS.some((p) => pathname.includes(p));
 
-  // Legacy alias used below for the clean (no-sidebar) layout on the add-property page
+  // Add-property page: render without sidebar (full-width form)
   const isCoAgentAddPage = role === "CO_AGENT" && pathname.includes("/admin/properties/add");
 
   useEffect(() => {
@@ -100,6 +100,7 @@ export default function AdminLayout({
   // Workspace nav shown to CO_AGENT (only pages they own)
   const agentNavItems = [
     { href: `/${locale}/agent`, icon: User, label: locale === "th" ? "Agent Portal" : "Agent Portal" },
+    { href: `/${locale}/admin/properties`, icon: Building2, label: locale === "th" ? "ทรัพย์ของฉัน" : "My Properties" },
     { href: `/${locale}/admin/contracts`, icon: FileSignature, label: locale === "th" ? "สัญญาเช่า" : "Contracts" },
     { href: `/${locale}/admin/electricity-calculator`, icon: Zap, label: messages.electricityCalculator?.navLabel || "Electricity Calc" },
     { href: `/${locale}/admin/accounting`, icon: Wallet, label: t.accounting || "Accounting" },

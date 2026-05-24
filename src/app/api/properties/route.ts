@@ -6,6 +6,11 @@ import prisma from "@/lib/prisma";
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+
+    // When a CO_AGENT is calling, restrict results to only their own properties
+    const session = await getServerSession(authOptions);
+    const callerRole = (session?.user as any)?.role;
+    const callerId = session?.user ? Number((session.user as any).id) : null;
     const keyword = searchParams.get("keyword") || "";
     const listingType = searchParams.get("listingType") || "";
     const propertyType = searchParams.get("propertyType") || "";
@@ -92,6 +97,11 @@ export async function GET(req: NextRequest) {
       where.propertyAmenities = {
         some: { amenityId: { in: ids } },
       };
+    }
+
+    // CO_AGENT: always scope to their own properties only
+    if (callerRole === "CO_AGENT" && callerId) {
+      where.agentId = callerId;
     }
 
     const [properties, total] = await Promise.all([
