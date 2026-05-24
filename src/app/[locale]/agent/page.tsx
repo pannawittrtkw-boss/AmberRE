@@ -76,7 +76,8 @@ export default function AgentPortalPage({ params }: { params: Promise<{ locale: 
     Promise.all([
       fetch("/api/agent/profile").then(r => r.json()),
       fetch("/api/agent/properties").then(r => r.json()),
-    ]).then(([pd, pp]) => {
+      fetch("/api/contact-unlock?stats=1").then(r => r.json()).catch(() => null),
+    ]).then(([pd, pp, ul]) => {
       if (pd.success) {
         setProfile(pd.data);
         setForm({
@@ -88,9 +89,7 @@ export default function AgentPortalPage({ params }: { params: Promise<{ locale: 
         });
       }
       if (pp.success) setProperties(pp.data);
-    });
-    fetch("/api/contact-unlock?stats=1").then(r => r.json()).then(d => {
-      if (d.success) setUnlockStats({ used: d.data.usedThisMonth, quota: d.data.quota });
+      if (ul?.success) setUnlockStats({ used: ul.data.usedThisMonth, quota: ul.data.quota });
     }).finally(() => setLoading(false));
   }, [session, locale, router]);
 

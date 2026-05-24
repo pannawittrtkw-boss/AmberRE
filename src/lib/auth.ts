@@ -48,17 +48,22 @@ export const authOptions: NextAuthOptions = {
       const now = Date.now();
       const stale = !lastSync || now - lastSync > 60_000;
       if (token.id && (user || trigger === "update" || stale)) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: Number(token.id) },
-          select: { role: true, isActive: true, subscriptionTier: true },
-        });
-        if (!dbUser || !dbUser.isActive) {
-          // User disabled or removed — drop the session
-          return {} as typeof token;
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: Number(token.id) },
+            select: { role: true, isActive: true, subscriptionTier: true },
+          });
+          if (!dbUser || !dbUser.isActive) {
+            // User disabled or removed — drop the session
+            return {} as typeof token;
+          }
+          token.role = dbUser.role;
+          (token as any).subscriptionTier = dbUser.subscriptionTier ?? "STANDARD";
+          (token as any).lastSync = now;
+        } catch {
+          // DB temporarily unreachable or schema mismatch — keep existing token data
+          (token as any).lastSync = now;
         }
-        token.role = dbUser.role;
-        (token as any).subscriptionTier = dbUser.subscriptionTier;
-        (token as any).lastSync = now;
       }
 
       return token;
