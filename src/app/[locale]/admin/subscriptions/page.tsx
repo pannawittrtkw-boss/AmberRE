@@ -42,6 +42,7 @@ export default function SubscriptionsPage({ params }: { params: Promise<{ locale
   const [locale, setLocale] = useState("th");
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -53,12 +54,18 @@ export default function SubscriptionsPage({ params }: { params: Promise<{ locale
 
   const fetchAgents = useCallback(async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       const res = await fetch("/api/admin/subscriptions");
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const d = await res.json();
-      if (d.success) setAgents(d.data);
-    } catch (e) {
+      const text = await res.text();
+      const d = JSON.parse(text);
+      if (d.success) {
+        setAgents(d.data);
+      } else {
+        setFetchError(d.error || `Error ${res.status}`);
+      }
+    } catch (e: any) {
+      setFetchError(e?.message || "Failed to load");
       console.error("Failed to load subscriptions:", e);
     } finally {
       setLoading(false);
@@ -150,13 +157,20 @@ export default function SubscriptionsPage({ params }: { params: Promise<{ locale
         />
       </div>
 
+      {/* Error banner */}
+      {fetchError && (
+        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
+          <strong>API Error:</strong> {fetchError} — กรุณา restart dev server แล้วลองใหม่
+        </div>
+      )}
+
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
         {loading ? (
           <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-gray-400 text-sm">
-            {search ? "ไม่พบ Agent ที่ตรงกับการค้นหา" : "ยังไม่มี CO_AGENT ในระบบ"}
+            {search ? "ไม่พบ Agent ที่ตรงกับการค้นหา" : "ยังไม่มี Agent ในระบบ"}
           </div>
         ) : (
           <div className="overflow-x-auto">
