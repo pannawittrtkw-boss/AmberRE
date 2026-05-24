@@ -5,10 +5,17 @@ import prisma from "@/lib/prisma";
 
 const SETTING_KEY = "agent_menu_config";
 
+const ALL_KEYS = [
+  "dashboard", "properties", "projects", "users", "messages", "articles",
+  "portfolio", "electricity-calculator", "accounting", "contracts",
+  "closed-contracts", "subscriptions", "menu-config", "reviews", "settings", "languages",
+];
+
 export const DEFAULT_MENU_CONFIG: Record<string, string[]> = {
   STANDARD: ["properties"],
-  PRO: ["properties", "contracts", "electricity-calculator"],
-  ELITE: ["properties", "contracts", "electricity-calculator", "accounting"],
+  PRO:      ["properties", "contracts", "electricity-calculator"],
+  ELITE:    ["properties", "contracts", "electricity-calculator", "accounting"],
+  ADMIN:    ALL_KEYS,
 };
 
 export async function GET() {
@@ -17,8 +24,10 @@ export async function GET() {
     if (!row?.valueTh) {
       return NextResponse.json({ success: true, data: DEFAULT_MENU_CONFIG });
     }
-    const data = JSON.parse(row.valueTh);
-    return NextResponse.json({ success: true, data });
+    const stored = JSON.parse(row.valueTh);
+    // Ensure ADMIN key always has full access if not stored yet
+    if (!stored.ADMIN) stored.ADMIN = ALL_KEYS;
+    return NextResponse.json({ success: true, data: stored });
   } catch {
     return NextResponse.json({ success: true, data: DEFAULT_MENU_CONFIG });
   }
@@ -32,7 +41,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    // body: { STANDARD: string[], PRO: string[], ELITE: string[] }
+    // body: { STANDARD: string[], PRO: string[], ELITE: string[], ADMIN: string[] }
     await prisma.siteSetting.upsert({
       where: { key: SETTING_KEY },
       update: { valueTh: JSON.stringify(body) },

@@ -10,11 +10,32 @@ import {
   Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature, Lock, Crown, LayoutList,
 } from "lucide-react";
 
+// All possible agent workspace items (keyed for config filtering)
 const ALL_AGENT_MENU_ITEMS = [
-  { key: "properties",             href: (l: string) => `/${l}/admin/properties`,             icon: Building2,    labelTh: "ทรัพย์ของฉัน",  labelEn: "My Properties" },
-  { key: "contracts",              href: (l: string) => `/${l}/admin/contracts`,              icon: FileSignature, labelTh: "สัญญาเช่า",     labelEn: "Contracts" },
-  { key: "electricity-calculator", href: (l: string) => `/${l}/admin/electricity-calculator`, icon: Zap,           labelTh: "คำนวณค่าไฟ",    labelEn: "Electricity Calc" },
-  { key: "accounting",             href: (l: string) => `/${l}/admin/accounting`,             icon: Wallet,        labelTh: "บัญชี",         labelEn: "Accounting" },
+  { key: "properties",             href: (l: string) => `/${l}/admin/properties`,             icon: Building2,     labelTh: "ทรัพย์ของฉัน",  labelEn: "My Properties" },
+  { key: "contracts",              href: (l: string) => `/${l}/admin/contracts`,              icon: FileSignature,  labelTh: "สัญญาเช่า",     labelEn: "Contracts" },
+  { key: "electricity-calculator", href: (l: string) => `/${l}/admin/electricity-calculator`, icon: Zap,            labelTh: "คำนวณค่าไฟ",    labelEn: "Electricity Calc" },
+  { key: "accounting",             href: (l: string) => `/${l}/admin/accounting`,             icon: Wallet,         labelTh: "บัญชี",         labelEn: "Accounting" },
+];
+
+// All admin nav items with their config key
+const ALL_ADMIN_NAV = [
+  { key: "dashboard",              icon: LayoutDashboard, hrefSuffix: "",                         labelKey: "dashboard" },
+  { key: "properties",             icon: Building2,       hrefSuffix: "/properties",               labelKey: "propertyManagement" },
+  { key: "projects",               icon: Layers,          hrefSuffix: "/projects",                 labelKey: "projectManagement" },
+  { key: "users",                  icon: Users,           hrefSuffix: "/users",                    labelKey: "userManagement" },
+  { key: "messages",               icon: Mail,            hrefSuffix: "/messages",                 labelKey: null, labelFallback: { th: "ข้อความติดต่อ", en: "Messages" }, badge: true },
+  { key: "articles",               icon: FileText,        hrefSuffix: "/articles",                 labelKey: "articleManagement" },
+  { key: "portfolio",              icon: Trophy,          hrefSuffix: "/portfolio",                labelKey: "portfolioManagement", fallback: "Portfolio" },
+  { key: "electricity-calculator", icon: Zap,             hrefSuffix: "/electricity-calculator",   labelKey: null, labelMsg: "electricityCalculator.navLabel", fallback: "Electricity Calc" },
+  { key: "accounting",             icon: Wallet,          hrefSuffix: "/accounting",               labelKey: "accounting", fallback: "Accounting" },
+  { key: "contracts",              icon: FileSignature,   hrefSuffix: "/contracts",                labelKey: null, labelFallback: { th: "สัญญาเช่า", en: "Contracts" } },
+  { key: "closed-contracts",       icon: Lock,            hrefSuffix: "/closed-contracts",         labelKey: null, labelFallback: { th: "Closed Contracts", en: "Closed Contracts" } },
+  { key: "subscriptions",          icon: Crown,           hrefSuffix: "/subscriptions",            labelKey: null, labelFallback: { th: "จัดการ Package", en: "Subscriptions" } },
+  { key: "menu-config",            icon: LayoutList,      hrefSuffix: "/menu-config",              labelKey: null, labelFallback: { th: "เมนูตาม Package", en: "Menu Config" } },
+  { key: "reviews",                icon: Star,            hrefSuffix: "/reviews",                  labelKey: "reviewModeration" },
+  { key: "settings",               icon: Settings,        hrefSuffix: "/settings",                 labelKey: "settings", fallback: "Settings" },
+  { key: "languages",              icon: Globe,           hrefSuffix: "/settings/languages",       labelKey: "languageSettings", fallback: "ตั้งค่าภาษา" },
 ];
 
 export default function AdminLayout({
@@ -40,7 +61,6 @@ export default function AdminLayout({
     });
   }, [params]);
 
-  // Fetch menu config once (used to filter CO_AGENT sidebar)
   const fetchMenuConfig = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/menu-config");
@@ -53,15 +73,13 @@ export default function AdminLayout({
 
   useEffect(() => { fetchMenuConfig(); }, [fetchMenuConfig]);
 
-  // Poll unread message count for the sidebar badge
+  // Poll unread message count
   useEffect(() => {
     if ((session?.user as any)?.role !== "ADMIN") return;
     const fetchUnread = () => {
       fetch("/api/admin/messages")
         .then((r) => r.json())
-        .then((d) => {
-          if (d.success) setUnreadMessages(d.data.unreadCount);
-        })
+        .then((d) => { if (d.success) setUnreadMessages(d.data.unreadCount); })
         .catch(() => {});
     };
     fetchUnread();
@@ -72,7 +90,6 @@ export default function AdminLayout({
   const role = (session?.user as any)?.role;
   const userTier: string = (session?.user as any)?.subscriptionTier ?? "STANDARD";
 
-  // Pages in /admin that CO_AGENT is allowed to access
   const CO_AGENT_ALLOWED_PATHS = [
     "/admin/properties",
     "/admin/contracts",
@@ -83,7 +100,6 @@ export default function AdminLayout({
     role === "CO_AGENT" &&
     CO_AGENT_ALLOWED_PATHS.some((p) => pathname.includes(p));
 
-  // Add-property page: render without sidebar (full-width form)
   const isCoAgentAddPage = role === "CO_AGENT" && pathname.includes("/admin/properties/add");
 
   useEffect(() => {
@@ -94,10 +110,7 @@ export default function AdminLayout({
     }
   }, [session, status, router, locale, role, pathname, isCoAgentAllowed]);
 
-  // Close sidebar on route change (mobile)
-  useEffect(() => {
-    setSidebarOpen(false);
-  }, [pathname]);
+  useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
   if (status === "loading" || !messages) {
     return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
@@ -105,54 +118,53 @@ export default function AdminLayout({
 
   if (role !== "ADMIN" && !isCoAgentAllowed) return null;
 
-  // CO_AGENT on add-property page: render only the content, no admin sidebar
   if (isCoAgentAddPage) {
-    return (
-      <div className="bg-gray-50 min-h-screen p-4 sm:p-6">
-        {children}
-      </div>
-    );
+    return <div className="bg-gray-50 min-h-screen p-4 sm:p-6">{children}</div>;
   }
 
-  // CO_AGENT on workspace pages: sidebar with limited nav filtered by subscription tier
   const isCoAgentWorkspace = role === "CO_AGENT" && !isCoAgentAddPage;
-
   const t = messages.admin;
 
-  // Build CO_AGENT nav: filter by menu config for their tier
-  const allowedKeys: string[] = menuConfig?.[userTier] ?? ALL_AGENT_MENU_ITEMS.map((i) => i.key);
+  // CO_AGENT sidebar: filter by tier menu config
+  const agentAllowedKeys: string[] = menuConfig?.[userTier] ?? ALL_AGENT_MENU_ITEMS.map((i) => i.key);
   const agentNavItems = ALL_AGENT_MENU_ITEMS
-    .filter((item) => allowedKeys.includes(item.key))
+    .filter((item) => agentAllowedKeys.includes(item.key))
     .map((item) => ({
       href: item.href(locale),
       icon: item.icon,
       label: locale === "th" ? item.labelTh : item.labelEn,
     }));
 
-  const navItems = [
-    { href: `/${locale}/admin`, icon: LayoutDashboard, label: t.dashboard },
-    { href: `/${locale}/admin/properties`, icon: Building2, label: t.propertyManagement },
-    { href: `/${locale}/admin/projects`, icon: Layers, label: t.projectManagement || "Projects" },
-    { href: `/${locale}/admin/users`, icon: Users, label: t.userManagement },
-    { href: `/${locale}/admin/messages`, icon: Mail, label: locale === "th" ? "ข้อความติดต่อ" : "Messages", badge: unreadMessages },
-    { href: `/${locale}/admin/articles`, icon: FileText, label: t.articleManagement },
-    { href: `/${locale}/admin/portfolio`, icon: Trophy, label: t.portfolioManagement || "Portfolio" },
-    { href: `/${locale}/admin/electricity-calculator`, icon: Zap, label: messages.electricityCalculator?.navLabel || "Electricity Calc" },
-    { href: `/${locale}/admin/accounting`, icon: Wallet, label: t.accounting || "Accounting" },
-    { href: `/${locale}/admin/contracts`, icon: FileSignature, label: locale === "th" ? "สัญญาเช่า" : "Contracts" },
-    { href: `/${locale}/admin/closed-contracts`, icon: Lock, label: locale === "th" ? "Closed Contracts" : "Closed Contracts" },
-    { href: `/${locale}/admin/subscriptions`, icon: Crown, label: locale === "th" ? "จัดการ Package" : "Subscriptions" },
-    { href: `/${locale}/admin/menu-config`, icon: LayoutList, label: locale === "th" ? "เมนูตาม Package" : "Menu Config" },
-    { href: `/${locale}/admin/reviews`, icon: Star, label: t.reviewModeration },
-    { href: `/${locale}/admin/settings`, icon: Settings, label: t.settings || "Settings" },
-    { href: `/${locale}/admin/settings/languages`, icon: Globe, label: t.languageSettings || "ตั้งค่าภาษา" },
-  ];
+  // Admin sidebar: filter by ADMIN menu config
+  // "menu-config" is always visible to admin to prevent lockout
+  const adminAllowedKeys: string[] = menuConfig?.ADMIN ?? ALL_ADMIN_NAV.map((i) => i.key);
+  const getLabel = (item: (typeof ALL_ADMIN_NAV)[number]): string => {
+    if (item.labelKey) return t[item.labelKey] || (item as any).fallback || item.key;
+    if (item.labelMsg) {
+      const parts = item.labelMsg.split(".");
+      return messages[parts[0]]?.[parts[1]] || (item as any).fallback || item.key;
+    }
+    if ((item as any).labelFallback) {
+      return locale === "th" ? (item as any).labelFallback.th : (item as any).labelFallback.en;
+    }
+    return item.key;
+  };
 
-  const renderNavList = (items: typeof navItems) => (
+  const navItems = ALL_ADMIN_NAV
+    .filter((item) => item.key === "menu-config" || adminAllowedKeys.includes(item.key))
+    .map((item) => ({
+      key: item.key,
+      href: `/${locale}/admin${item.hrefSuffix}`,
+      icon: item.icon,
+      label: getLabel(item),
+      badge: (item as any).badge ? unreadMessages : undefined,
+    }));
+
+  const renderNavList = (items: { href: string; icon: any; label: string; badge?: number }[]) => (
     <nav className="space-y-1">
       {items.map((item) => {
-        const isActive = pathname === item.href || (item.href !== `/${locale}/agent` && pathname.startsWith(item.href));
-        const badge = (item as any).badge as number | undefined;
+        const isActive = pathname === item.href || pathname.startsWith(item.href + "/") ||
+          (item.href.endsWith("/admin") && pathname === item.href);
         return (
           <Link
             key={item.href}
@@ -163,9 +175,9 @@ export default function AdminLayout({
           >
             <item.icon className="w-4 h-4" />
             <span className="flex-1">{item.label}</span>
-            {badge && badge > 0 ? (
+            {item.badge && item.badge > 0 ? (
               <span className="bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                {badge > 99 ? "99+" : badge}
+                {item.badge > 99 ? "99+" : item.badge}
               </span>
             ) : null}
           </Link>
@@ -185,7 +197,6 @@ export default function AdminLayout({
 
   return (
     <div className="flex" style={{ minHeight: "calc(100vh - 64px)" }}>
-      {/* Mobile top bar */}
       <div className="lg:hidden fixed top-16 left-0 right-0 z-40 bg-gray-900 text-white px-4 py-2 flex items-center gap-3">
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1">
           {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -193,12 +204,10 @@ export default function AdminLayout({
         <span className="text-sm font-medium">{t.dashboard}</span>
       </div>
 
-      {/* Mobile overlay */}
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-30 bg-black/50" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* Sidebar - Desktop: always visible, Mobile: slide-in */}
       <aside
         className={`
           fixed lg:relative top-0 left-0 z-40 w-64 flex-shrink-0 transition-transform duration-200
@@ -214,7 +223,6 @@ export default function AdminLayout({
         </div>
       </aside>
 
-      {/* Main Content */}
       <div className="flex-1 bg-gray-50 p-4 sm:p-6 pt-16 lg:pt-6 min-w-0">
         {children}
       </div>

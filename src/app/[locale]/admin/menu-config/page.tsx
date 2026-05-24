@@ -3,26 +3,47 @@
 import { useState, useEffect, useCallback } from "react";
 import { Loader2, Save, RotateCcw, CheckCircle2 } from "lucide-react";
 
-const TIERS = ["STANDARD", "PRO", "ELITE"] as const;
+const TIERS = ["STANDARD", "PRO", "ELITE", "ADMIN"] as const;
 type Tier = (typeof TIERS)[number];
 
 const MENU_ITEMS = [
-  { key: "properties",             label: "ทรัพย์ของฉัน",        labelEn: "My Properties" },
-  { key: "contracts",              label: "สัญญาเช่า",           labelEn: "Contracts" },
-  { key: "electricity-calculator", label: "คำนวณค่าไฟ",          labelEn: "Electricity Calculator" },
-  { key: "accounting",             label: "บัญชี / รายรับ-รายจ่าย", labelEn: "Accounting" },
+  { key: "dashboard",              labelTh: "Dashboard",                    labelEn: "Dashboard",            group: "admin" },
+  { key: "properties",             labelTh: "จัดการทรัพย์สิน",              labelEn: "Property Management",  group: "admin" },
+  { key: "projects",               labelTh: "จัดการโครงการ",                labelEn: "Projects",             group: "admin" },
+  { key: "users",                  labelTh: "จัดการผู้ใช้",                  labelEn: "User Management",      group: "admin" },
+  { key: "messages",               labelTh: "ข้อความติดต่อ",                 labelEn: "Messages",             group: "admin" },
+  { key: "articles",               labelTh: "จัดการบทความ",                  labelEn: "Article Management",   group: "admin" },
+  { key: "portfolio",              labelTh: "Portfolio",                    labelEn: "Portfolio",            group: "admin" },
+  { key: "reviews",                labelTh: "Review Moderation",            labelEn: "Review Moderation",    group: "admin" },
+  { key: "subscriptions",          labelTh: "จัดการ Package",               labelEn: "Subscriptions",        group: "admin" },
+  { key: "menu-config",            labelTh: "เมนูตาม Package",              labelEn: "Menu Config",          group: "admin" },
+  { key: "settings",               labelTh: "ตั้งค่า",                       labelEn: "Settings",             group: "admin" },
+  { key: "languages",              labelTh: "ตั้งค่าภาษา",                  labelEn: "Language Settings",    group: "admin" },
+  { key: "electricity-calculator", labelTh: "คำนวณค่าไฟ",                   labelEn: "Electricity Calc",     group: "agent" },
+  { key: "accounting",             labelTh: "บัญชี / รายรับ-รายจ่าย",       labelEn: "Accounting",           group: "agent" },
+  { key: "contracts",              labelTh: "สัญญาเช่า",                     labelEn: "Contracts",            group: "agent" },
+  { key: "closed-contracts",       labelTh: "Closed Contracts",             labelEn: "Closed Contracts",     group: "agent" },
 ];
 
-const TIER_LABEL: Record<Tier, { color: string; badge: string }> = {
-  STANDARD: { color: "text-gray-700 bg-gray-100",  badge: "Standard" },
-  PRO:      { color: "text-blue-700 bg-blue-100",   badge: "Pro" },
-  ELITE:    { color: "text-amber-700 bg-amber-100", badge: "Elite" },
-};
+const ALL_KEYS = MENU_ITEMS.map((m) => m.key);
 
 const DEFAULT_CONFIG: Record<Tier, string[]> = {
   STANDARD: ["properties"],
-  PRO: ["properties", "contracts", "electricity-calculator"],
-  ELITE: ["properties", "contracts", "electricity-calculator", "accounting"],
+  PRO:      ["properties", "contracts", "electricity-calculator"],
+  ELITE:    ["properties", "contracts", "electricity-calculator", "accounting"],
+  ADMIN:    ALL_KEYS,
+};
+
+const TIER_META: Record<Tier, { color: string; badge: string; desc: string }> = {
+  STANDARD: { color: "text-gray-700 bg-gray-100",   badge: "Standard", desc: "แพ็กเกจพื้นฐาน" },
+  PRO:      { color: "text-blue-700 bg-blue-100",    badge: "Pro",      desc: "แพ็กเกจโปร" },
+  ELITE:    { color: "text-amber-700 bg-amber-100",  badge: "Elite",    desc: "แพ็กเกจพรีเมียม" },
+  ADMIN:    { color: "text-purple-700 bg-purple-100",badge: "Admin",    desc: "ผู้ดูแลระบบ" },
+};
+
+const GROUP_LABEL: Record<string, string> = {
+  admin: "หน้า Admin",
+  agent: "หน้า Agent Workspace",
 };
 
 export default function MenuConfigPage() {
@@ -55,6 +76,13 @@ export default function MenuConfigPage() {
         : [...current, key];
       return { ...prev, [tier]: next };
     });
+    setSaved(false);
+  };
+
+  const toggleAll = (tier: Tier) => {
+    const current = config[tier] ?? [];
+    const allChecked = ALL_KEYS.every((k) => current.includes(k));
+    setConfig((prev) => ({ ...prev, [tier]: allChecked ? [] : ALL_KEYS }));
     setSaved(false);
   };
 
@@ -91,12 +119,14 @@ export default function MenuConfigPage() {
     );
   }
 
+  const groups = ["admin", "agent"] as const;
+
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-5xl">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">จัดการเมนูตาม Package</h1>
         <p className="text-sm text-gray-500 mt-1">
-          กำหนดว่า Agent แต่ละ Package จะสามารถเข้าใช้งานหน้าใดได้บ้าง
+          กำหนดสิทธิ์การเข้าถึงเมนูสำหรับแต่ละ Package / Role
         </p>
       </div>
 
@@ -107,82 +137,95 @@ export default function MenuConfigPage() {
       )}
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        {/* Header row */}
-        <div className="grid grid-cols-[1fr_repeat(3,_120px)] bg-gray-50 border-b border-gray-200">
-          <div className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-            ฟีเจอร์ / Feature
-          </div>
+        {/* Header */}
+        <div className="grid border-b border-gray-200 bg-gray-50" style={{ gridTemplateColumns: "1fr repeat(4, 110px)" }}>
+          <div className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">เมนู / Feature</div>
           {TIERS.map((tier) => (
-            <div key={tier} className="px-3 py-3 text-center">
-              <span className={`inline-block text-xs font-bold px-2.5 py-1 rounded-full ${TIER_LABEL[tier].color}`}>
-                {TIER_LABEL[tier].badge}
+            <div key={tier} className="px-2 py-3 text-center">
+              <span className={`inline-block text-xs font-bold px-2.5 py-1 rounded-full ${TIER_META[tier].color}`}>
+                {TIER_META[tier].badge}
               </span>
+              {/* Select-all toggle */}
+              <button
+                onClick={() => toggleAll(tier)}
+                className="block mx-auto mt-1.5 text-[10px] text-gray-400 hover:text-blue-500 transition-colors"
+              >
+                {ALL_KEYS.every((k) => (config[tier] ?? []).includes(k)) ? "ยกเลิกทั้งหมด" : "เลือกทั้งหมด"}
+              </button>
             </div>
           ))}
         </div>
 
-        {/* Feature rows */}
-        {MENU_ITEMS.map((item, idx) => (
-          <div
-            key={item.key}
-            className={`grid grid-cols-[1fr_repeat(3,_120px)] items-center ${
-              idx !== MENU_ITEMS.length - 1 ? "border-b border-gray-100" : ""
-            }`}
-          >
-            <div className="px-5 py-4">
-              <div className="text-sm font-medium text-gray-800">{item.label}</div>
-              <div className="text-xs text-gray-400">{item.labelEn}</div>
-            </div>
-            {TIERS.map((tier) => {
-              const checked = (config[tier] ?? []).includes(item.key);
-              return (
-                <div key={tier} className="px-3 py-4 flex justify-center">
-                  <button
-                    onClick={() => toggle(tier, item.key)}
-                    className={`w-6 h-6 rounded flex items-center justify-center transition-colors border-2 ${
-                      checked
-                        ? "bg-blue-600 border-blue-600 text-white"
-                        : "border-gray-300 bg-white hover:border-blue-400"
-                    }`}
-                    title={checked ? "คลิกเพื่อปิดการใช้งาน" : "คลิกเพื่อเปิดการใช้งาน"}
-                  >
-                    {checked && (
-                      <svg className="w-3.5 h-3.5" viewBox="0 0 12 12" fill="none">
-                        <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    )}
-                  </button>
+        {/* Rows grouped by section */}
+        {groups.map((group) => {
+          const items = MENU_ITEMS.filter((m) => m.group === group);
+          return (
+            <div key={group}>
+              {/* Group header */}
+              <div className="px-5 py-2 bg-gray-50/60 border-y border-gray-100">
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                  {GROUP_LABEL[group]}
+                </span>
+              </div>
+
+              {items.map((item, idx) => (
+                <div
+                  key={item.key}
+                  className={`grid items-center ${idx !== items.length - 1 ? "border-b border-gray-100" : ""}`}
+                  style={{ gridTemplateColumns: "1fr repeat(4, 110px)" }}
+                >
+                  <div className="px-5 py-3.5">
+                    <div className="text-sm font-medium text-gray-800">{item.labelTh}</div>
+                    <div className="text-xs text-gray-400">{item.labelEn}</div>
+                  </div>
+                  {TIERS.map((tier) => {
+                    const checked = (config[tier] ?? []).includes(item.key);
+                    return (
+                      <div key={tier} className="px-2 py-3.5 flex justify-center">
+                        <button
+                          onClick={() => toggle(tier, item.key)}
+                          className={`w-5 h-5 rounded flex items-center justify-center transition-colors border-2 flex-shrink-0 ${
+                            checked
+                              ? tier === "ADMIN"
+                                ? "bg-purple-600 border-purple-600 text-white"
+                                : "bg-blue-600 border-blue-600 text-white"
+                              : "border-gray-300 bg-white hover:border-blue-400"
+                          }`}
+                        >
+                          {checked && (
+                            <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
+                              <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3 mt-4">
-        {TIERS.map((tier) => (
-          <div key={tier} className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className={`inline-block text-xs font-bold px-2 py-0.5 rounded-full mb-2 ${TIER_LABEL[tier].color}`}>
-              {TIER_LABEL[tier].badge}
+              ))}
             </div>
-            <ul className="space-y-1">
-              {MENU_ITEMS.map((item) => {
-                const has = (config[tier] ?? []).includes(item.key);
-                return (
-                  <li key={item.key} className={`text-xs flex items-center gap-1.5 ${has ? "text-gray-700" : "text-gray-300"}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${has ? "bg-green-500" : "bg-gray-200"}`} />
-                    {item.label}
-                  </li>
-                );
-              })}
-            </ul>
+          );
+        })}
+      </div>
+
+      {/* Summary */}
+      <div className="grid grid-cols-4 gap-3 mt-4">
+        {TIERS.map((tier) => (
+          <div key={tier} className="bg-white rounded-lg border border-gray-200 p-3">
+            <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded-full mb-2 ${TIER_META[tier].color}`}>
+              {TIER_META[tier].badge}
+            </span>
+            <div className="text-xs text-gray-500 mb-1.5">{TIER_META[tier].desc}</div>
+            <div className="text-lg font-bold text-gray-800">
+              {(config[tier] ?? []).length}
+              <span className="text-xs font-normal text-gray-400"> / {ALL_KEYS.length} เมนู</span>
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Action buttons */}
-      <div className="flex items-center gap-3 mt-6">
+      {/* Actions */}
+      <div className="flex items-center gap-3 mt-5">
         <button
           onClick={save}
           disabled={saving}
