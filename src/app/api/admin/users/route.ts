@@ -16,6 +16,10 @@ export async function GET() {
     select: {
       id: true, email: true, firstName: true, lastName: true,
       phone: true, role: true, isActive: true, createdAt: true,
+      lineId: true,
+      coAgentApplication: {
+        select: { id: true, companyName: true, status: true, createdAt: true },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
