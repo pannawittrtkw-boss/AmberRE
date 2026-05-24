@@ -171,11 +171,11 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
                     )}
                     {(session.user as any)?.role === "CO_AGENT" && (
                       <Link
-                        href={`/${locale}/agent`}
+                        href={`/${locale}/admin/properties`}
                         className="block px-4 py-2 text-sm text-amber-600 font-medium hover:bg-amber-50"
                         onClick={() => setUserMenuOpen(false)}
                       >
-                        {locale === "th" ? "Agent Portal" : "Agent Portal"}
+                        {locale === "th" ? "Agent Workspace" : "Agent Workspace"}
                       </Link>
                     )}
                     <Link

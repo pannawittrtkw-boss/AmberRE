@@ -99,7 +99,6 @@ export default function AdminLayout({
 
   // Workspace nav shown to CO_AGENT (only pages they own)
   const agentNavItems = [
-    { href: `/${locale}/agent`, icon: User, label: locale === "th" ? "Agent Portal" : "Agent Portal" },
     { href: `/${locale}/admin/properties`, icon: Building2, label: locale === "th" ? "ทรัพย์ของฉัน" : "My Properties" },
     { href: `/${locale}/admin/contracts`, icon: FileSignature, label: locale === "th" ? "สัญญาเช่า" : "Contracts" },
     { href: `/${locale}/admin/electricity-calculator`, icon: Zap, label: messages.electricityCalculator?.navLabel || "Electricity Calc" },
