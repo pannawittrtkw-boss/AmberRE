@@ -36,6 +36,15 @@ export default function AdminCoAgentsPage({ params }: { params: Promise<{ locale
     fetchApplications();
   };
 
+  const updateTier = async (userId: number, tier: string) => {
+    await fetch("/api/admin/co-agents/tier", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, tier }),
+    });
+    fetchApplications();
+  };
+
   if (!messages || loading) return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
 
   return (
@@ -53,6 +62,7 @@ export default function AdminCoAgentsPage({ params }: { params: Promise<{ locale
                 <th className="text-left py-3 px-4">{locale === "th" ? "เบอร์โทร" : "Phone"}</th>
                 <th className="text-left py-3 px-4">Line ID</th>
                 <th className="text-left py-3 px-4">{locale === "th" ? "สถานะ" : "Status"}</th>
+                <th className="text-left py-3 px-4">Plan</th>
                 <th className="text-center py-3 px-4">{locale === "th" ? "จัดการ" : "Actions"}</th>
               </tr>
             </thead>
@@ -73,6 +83,17 @@ export default function AdminCoAgentsPage({ params }: { params: Promise<{ locale
                       app.status === "REJECTED" ? "bg-red-100 text-red-700" :
                       "bg-yellow-100 text-yellow-700"
                     }`}>{app.status}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <select
+                      value={app.user.subscriptionTier || "STANDARD"}
+                      onChange={(e) => updateTier(app.user.id, e.target.value)}
+                      className="text-xs border border-gray-200 rounded px-2 py-1 bg-white"
+                    >
+                      <option value="STANDARD">STANDARD</option>
+                      <option value="PRO">PRO</option>
+                      <option value="ELITE">ELITE</option>
+                    </select>
                   </td>
                   <td className="py-3 px-4 text-center">
                     {app.status === "PENDING" && (

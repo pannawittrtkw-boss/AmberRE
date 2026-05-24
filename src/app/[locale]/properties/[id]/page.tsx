@@ -19,12 +19,15 @@ import {
   ArrowRight,
 } from "lucide-react";
 import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { getIntlLocale } from "@/lib/utils";
 import { getStationFullName } from "@/lib/stations";
 import ImageGallery from "@/components/property/ImageGallery";
 import FeaturedPropertyCard from "@/components/property/FeaturedPropertyCard";
 import AdminEditButton from "@/components/property/AdminEditButton";
 import AgentContactButtons from "@/components/property/AgentContactButtons";
+import ContactUnlockCard from "@/components/property/ContactUnlockCard";
 import PropertyInquiryForm from "@/components/property/PropertyInquiryForm";
 import MarketingDescription from "@/components/property/MarketingDescription";
 import SectionTitle from "@/components/ui/SectionTitle";
@@ -183,6 +186,10 @@ export default async function PropertyDetailPage({
   const { locale, id } = await params;
   const messages = await getMessages(locale);
   const t = messages.property;
+
+  const session = await getServerSession(authOptions);
+  const viewerRole = (session?.user as any)?.role as string | undefined;
+  const viewerId = session?.user ? Number((session.user as any).id) : null;
 
   const property = await prisma.property.findUnique({
     where: { id: parseInt(id) },
@@ -809,7 +816,8 @@ export default async function PropertyDetailPage({
                 </div>
               )}
 
-              <AgentContactButtons
+              <ContactUnlockCard
+                propertyId={property.id}
                 phone={property.agent?.phone || contactPhone}
                 lineId={property.agent?.lineId || contactLine}
                 locale={locale}

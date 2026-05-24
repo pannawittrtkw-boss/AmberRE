@@ -6,6 +6,10 @@ import prisma from "@/lib/prisma";
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const session = await getServerSession(authOptions);
+    const viewerRole = (session?.user as any)?.role as string | undefined;
+    const viewerId = session?.user ? Number((session.user as any).id) : null;
+
     const property = await prisma.property.findUnique({
       where: { id: parseInt(id) },
       include: {
@@ -33,7 +37,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       data: { views: { increment: 1 } },
     });
 
-    return NextResponse.json({ success: true, data: property });
+    // Mask owner contact on exclusive properties for non-admin / non-owning agents
+    const canSeeOwnerContact =
+      viewerRole === "ADMIN" ||
+      (property.agentId && viewerId === property.agentId);
+
+    const result: any = { ...property };
+    if (property.isExclusive && !canSeeOwnerContact) {
+      result.ownerPhone = null;
+      result.ownerLineId = null;
+      result.ownerFacebookUrl = null;
+    }
+
+    return NextResponse.json({ success: true, data: result });
   } catch (error) {
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }

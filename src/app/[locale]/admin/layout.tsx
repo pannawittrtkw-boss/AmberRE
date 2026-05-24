@@ -7,7 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Building2, Users, FileText, UserCheck, Star, Loader2, Settings,
-  Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature, Lock,
+  Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature, Lock, User,
 } from "lucide-react";
 
 export default function AdminLayout({
@@ -49,16 +49,28 @@ export default function AdminLayout({
   }, [session, pathname]);
 
   const role = (session?.user as any)?.role;
-  // CO_AGENT can access only the property add/edit pages (to use the same form as admin)
+
+  // Pages in /admin that CO_AGENT is allowed to access
+  const CO_AGENT_ALLOWED_PATHS = [
+    "/admin/properties/add",
+    "/admin/contracts",
+    "/admin/electricity-calculator",
+    "/admin/accounting",
+  ];
+  const isCoAgentAllowed =
+    role === "CO_AGENT" &&
+    CO_AGENT_ALLOWED_PATHS.some((p) => pathname.includes(p));
+
+  // Legacy alias used below for the clean (no-sidebar) layout on the add-property page
   const isCoAgentAddPage = role === "CO_AGENT" && pathname.includes("/admin/properties/add");
 
   useEffect(() => {
     if (status === "unauthenticated") router.push(`/${locale}/auth/login`);
     if (session && role !== "ADMIN" && role !== "CO_AGENT") router.push(`/${locale}`);
-    if (session && role === "CO_AGENT" && !pathname.includes("/admin/properties/add")) {
+    if (session && role === "CO_AGENT" && !isCoAgentAllowed) {
       router.push(`/${locale}/agent`);
     }
-  }, [session, status, router, locale, role, pathname]);
+  }, [session, status, router, locale, role, pathname, isCoAgentAllowed]);
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -69,7 +81,7 @@ export default function AdminLayout({
     return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
   }
 
-  if (role !== "ADMIN" && !isCoAgentAddPage) return null;
+  if (role !== "ADMIN" && !isCoAgentAllowed) return null;
 
   // CO_AGENT on add-property page: render only the content, no admin sidebar
   if (isCoAgentAddPage) {
@@ -80,7 +92,19 @@ export default function AdminLayout({
     );
   }
 
+  // CO_AGENT on workspace pages (contracts/electricity/accounting): sidebar with limited nav
+  const isCoAgentWorkspace = role === "CO_AGENT" && !isCoAgentAddPage;
+
   const t = messages.admin;
+
+  // Workspace nav shown to CO_AGENT (only pages they own)
+  const agentNavItems = [
+    { href: `/${locale}/agent`, icon: User, label: locale === "th" ? "Agent Portal" : "Agent Portal" },
+    { href: `/${locale}/admin/contracts`, icon: FileSignature, label: locale === "th" ? "สัญญาเช่า" : "Contracts" },
+    { href: `/${locale}/admin/electricity-calculator`, icon: Zap, label: messages.electricityCalculator?.navLabel || "Electricity Calc" },
+    { href: `/${locale}/admin/accounting`, icon: Wallet, label: t.accounting || "Accounting" },
+  ];
+
   const navItems = [
     { href: `/${locale}/admin`, icon: LayoutDashboard, label: t.dashboard },
     { href: `/${locale}/admin/properties`, icon: Building2, label: t.propertyManagement },
@@ -99,32 +123,38 @@ export default function AdminLayout({
     { href: `/${locale}/admin/settings/languages`, icon: Globe, label: t.languageSettings || "ตั้งค่าภาษา" },
   ];
 
+  const renderNavList = (items: typeof navItems) => (
+    <nav className="space-y-1">
+      {items.map((item) => {
+        const isActive = pathname === item.href || (item.href !== `/${locale}/agent` && pathname.startsWith(item.href));
+        const badge = (item as any).badge as number | undefined;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+              isActive ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"
+            }`}
+          >
+            <item.icon className="w-4 h-4" />
+            <span className="flex-1">{item.label}</span>
+            {badge && badge > 0 ? (
+              <span className="bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                {badge > 99 ? "99+" : badge}
+              </span>
+            ) : null}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+
   const SidebarContent = () => (
     <>
-      <h2 className="text-lg font-bold mb-6">{t.dashboard}</h2>
-      <nav className="space-y-1">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          const badge = (item as any).badge as number | undefined;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                isActive ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"
-              }`}
-            >
-              <item.icon className="w-4 h-4" />
-              <span className="flex-1">{item.label}</span>
-              {badge && badge > 0 ? (
-                <span className="bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                  {badge > 99 ? "99+" : badge}
-                </span>
-              ) : null}
-            </Link>
-          );
-        })}
-      </nav>
+      <h2 className="text-lg font-bold mb-6">
+        {isCoAgentWorkspace ? (locale === "th" ? "Agent Workspace" : "Agent Workspace") : t.dashboard}
+      </h2>
+      {isCoAgentWorkspace ? renderNavList(agentNavItems) : renderNavList(navItems)}
     </>
   );
 

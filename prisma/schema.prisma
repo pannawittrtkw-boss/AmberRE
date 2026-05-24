@@ -8,6 +8,16 @@ datasource db {
 }
 
 // ==========================================
+// Enums
+// ==========================================
+
+enum SubscriptionTier {
+  STANDARD
+  PRO
+  ELITE
+}
+
+// ==========================================
 // 1. Authentication & User Management
 // ==========================================
 
@@ -26,6 +36,14 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  // B2B SaaS — subscription & agent website
+  subscriptionTier  SubscriptionTier  @default(STANDARD)
+  tierExpiredAt     DateTime?
+  hasAgentWebsite   Boolean           @default(false)
+  subdomain         String?           @unique @db.VarChar(100)
+  customDomain      String?           @unique @db.VarChar(200)
+  themeConfig       Json?
+
   properties         Property[]         @relation("OwnerProperties")
   agentProperties    Property[]         @relation("AgentProperties")
   articles           Article[]
@@ -38,6 +56,7 @@ model User {
   activityLogs       ActivityLog[]
   passwordResets     PasswordResetToken[]
   contracts          Contract[]
+  contactUnlockLogs  ContactUnlockLog[]
 }
 
 model Contract {
@@ -225,6 +244,10 @@ model Property {
   exclusiveStartDate  DateTime?
   exclusiveEndDate    DateTime?
 
+  // B2B SaaS
+  coBrokeCommission   String?  @db.VarChar(50)
+  isPremiumBoost      Boolean  @default(false)
+
   ownerId    Int
   owner      User   @relation("OwnerProperties", fields: [ownerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   agentId    Int?
@@ -238,6 +261,20 @@ model Property {
   reviews            Review[]
   commissions        CommissionSharing[]
   contracts          Contract[]
+  contactUnlockLogs  ContactUnlockLog[]
+}
+
+model ContactUnlockLog {
+  id           Int      @id @default(autoincrement())
+  agentId      Int
+  propertyId   Int
+  unlockedAt   DateTime @default(now())
+
+  agent    User     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, propertyId])
+  @@index([agentId])
 }
 
 model PropertyImage {

@@ -3,18 +3,32 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
+async function assertContractAccess(session: any, contractId: number) {
+  const role = (session?.user as any)?.role;
+  if (!["ADMIN", "CO_AGENT"].includes(role)) return false;
+  if (role === "ADMIN") return true;
+  // CO_AGENT: verify the contract's property belongs to them
+  const contract = await prisma.contract.findUnique({
+    where: { id: contractId },
+    select: { property: { select: { agentId: true } } },
+  });
+  const userId = Number((session.user as any).id);
+  return contract?.property?.agentId === userId;
+}
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
+  const { id } = await params;
+  const contractId = parseInt(id, 10);
+  if (!session?.user || !(await assertContractAccess(session, contractId))) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 
-  const { id } = await params;
   const contract = await prisma.contract.findUnique({
-    where: { id: parseInt(id, 10) },
+    where: { id: contractId },
   });
   if (!contract) {
     return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
@@ -27,16 +41,17 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
+  const { id } = await params;
+  const contractId = parseInt(id, 10);
+  if (!session?.user || !(await assertContractAccess(session, contractId))) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 
   try {
-    const { id } = await params;
     const body = await req.json();
 
     const contract = await prisma.contract.update({
-      where: { id: parseInt(id, 10) },
+      where: { id: contractId },
       data: {
         contractDate: body.contractDate ? new Date(body.contractDate) : undefined,
         startDate: body.startDate ? new Date(body.startDate) : undefined,
@@ -125,12 +140,13 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
+  const { id } = await params;
+  const contractId = parseInt(id, 10);
+  if (!session?.user || !(await assertContractAccess(session, contractId))) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 
   try {
-    const { id } = await params;
     const body = await req.json();
 
     const ALLOWED_STATUSES = ["DRAFT", "ACTIVE", "EXPIRED", "TERMINATED"];
@@ -142,7 +158,7 @@ export async function PATCH(
     }
 
     const contract = await prisma.contract.update({
-      where: { id: parseInt(id, 10) },
+      where: { id: contractId },
       data: {
         ...(body.status ? { status: body.status } : {}),
       },
@@ -164,13 +180,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
+  const { id } = await params;
+  const contractId = parseInt(id, 10);
+  if (!session?.user || !(await assertContractAccess(session, contractId))) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 
   try {
-    const { id } = await params;
-    await prisma.contract.delete({ where: { id: parseInt(id, 10) } });
+    await prisma.contract.delete({ where: { id: contractId } });
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ success: false, error: "Failed" }, { status: 500 });

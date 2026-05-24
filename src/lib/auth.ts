@@ -50,13 +50,14 @@ export const authOptions: NextAuthOptions = {
       if (token.id && (user || trigger === "update" || stale)) {
         const dbUser = await prisma.user.findUnique({
           where: { id: Number(token.id) },
-          select: { role: true, isActive: true },
+          select: { role: true, isActive: true, subscriptionTier: true },
         });
         if (!dbUser || !dbUser.isActive) {
           // User disabled or removed — drop the session
           return {} as typeof token;
         }
         token.role = dbUser.role;
+        (token as any).subscriptionTier = dbUser.subscriptionTier;
         (token as any).lastSync = now;
       }
 
@@ -66,6 +67,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as any).role = token.role;
         (session.user as any).id = token.id;
+        (session.user as any).subscriptionTier = (token as any).subscriptionTier ?? "STANDARD";
       }
       return session;
     },

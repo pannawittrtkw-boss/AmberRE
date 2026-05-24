@@ -5,11 +5,21 @@ import prisma from "@/lib/prisma";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
+  const role = (session?.user as any)?.role;
+  if (!session?.user || !["ADMIN", "CO_AGENT"].includes(role)) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 
+  const userId = Number((session.user as any).id);
+
+  // CO_AGENT sees only contracts linked to properties they own (agentId = them)
+  const where =
+    role === "CO_AGENT"
+      ? { property: { agentId: userId } }
+      : {};
+
   const contracts = await prisma.contract.findMany({
+    where,
     orderBy: { createdAt: "desc" },
     include: {
       property: {
@@ -23,7 +33,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
+  const role = (session?.user as any)?.role;
+  if (!session?.user || !["ADMIN", "CO_AGENT"].includes(role)) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 

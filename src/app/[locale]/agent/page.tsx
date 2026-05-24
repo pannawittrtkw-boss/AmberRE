@@ -7,7 +7,7 @@ import Link from "next/link";
 import {
   User, Building2, Plus, Phone, MessageSquare, Loader2,
   CheckCircle, Clock, XCircle, Edit3, Image as ImageIcon,
-  ArrowRight, AlertCircle,
+  ArrowRight, AlertCircle, Crown, Unlock,
 } from "lucide-react";
 
 type Profile = {
@@ -56,6 +56,7 @@ export default function AgentPortalPage({ params }: { params: Promise<{ locale: 
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ firstName: "", lastName: "", phone: "", lineId: "", companyName: "" });
+  const [unlockStats, setUnlockStats] = useState<{ used: number; quota: number | null } | null>(null);
 
   useEffect(() => {
     params.then(({ locale: l }) => setLocale(l));
@@ -87,6 +88,9 @@ export default function AgentPortalPage({ params }: { params: Promise<{ locale: 
         });
       }
       if (pp.success) setProperties(pp.data);
+    });
+    fetch("/api/contact-unlock?stats=1").then(r => r.json()).then(d => {
+      if (d.success) setUnlockStats({ used: d.data.usedThisMonth, quota: d.data.quota });
     }).finally(() => setLoading(false));
   }, [session, locale, router]);
 
@@ -110,6 +114,12 @@ export default function AgentPortalPage({ params }: { params: Promise<{ locale: 
   }
 
   const appStatus = profile?.coAgentApplication?.status;
+  const tier = (session?.user as any)?.subscriptionTier ?? "STANDARD";
+  const tierColors: Record<string, string> = {
+    STANDARD: "bg-stone-100 text-stone-700 border-stone-200",
+    PRO: "bg-blue-50 text-blue-700 border-blue-200",
+    ELITE: "bg-amber-50 text-amber-700 border-amber-200",
+  };
 
   return (
     <div className="bg-stone-50 min-h-screen py-10 px-4">
@@ -149,6 +159,25 @@ export default function AgentPortalPage({ params }: { params: Promise<{ locale: 
             <p className="text-sm text-red-700">ใบสมัครของคุณไม่ได้รับการอนุมัติ กรุณาติดต่อทีมงาน</p>
           </div>
         )}
+
+        {/* Subscription tier card */}
+        <div className={`rounded-xl border p-4 flex items-center justify-between ${tierColors[tier] || tierColors.STANDARD}`}>
+          <div className="flex items-center gap-3">
+            <Crown className="w-5 h-5" />
+            <div>
+              <p className="font-semibold text-sm">{tier} Plan</p>
+              {unlockStats && (
+                <p className="text-xs opacity-75">
+                  Contact unlocks: {unlockStats.used}/{unlockStats.quota ?? "∞"} this month
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs">
+            <Unlock className="w-3.5 h-3.5" />
+            {tier === "STANDARD" ? "Upgrade for unlimited" : "Unlimited access"}
+          </div>
+        </div>
 
         {/* Profile card */}
         <div className="bg-white rounded-2xl border p-6 shadow-sm">
