@@ -28,7 +28,10 @@ type User = {
   coAgentApplication: CoAgentApp | null;
 };
 
-const ROLES = ["BUYER", "OWNER", "AGENT", "CO_AGENT", "ADMIN"];
+// CO_AGENT is the internal role for agents; shown as "AGENT" in the UI
+const ROLES = ["BUYER", "OWNER", "AGENT", "ADMIN"];
+const ROLE_LABEL: Record<string, string> = { CO_AGENT: "AGENT" };
+const ROLE_VALUE: Record<string, string> = { AGENT: "CO_AGENT" };
 
 export default function AdminUsersPage({ params }: { params: Promise<{ locale: string }> }) {
   const { data: session } = useSession();
@@ -63,10 +66,11 @@ export default function AdminUsersPage({ params }: { params: Promise<{ locale: s
   }, [refresh]);
 
   const updateRole = async (userId: number, role: string) => {
+    const dbRole = ROLE_VALUE[role] ?? role; // AGENT → CO_AGENT
     await fetch("/api/admin/users", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, role }),
+      body: JSON.stringify({ userId, role: dbRole }),
     });
     await refresh();
   };
@@ -245,7 +249,7 @@ export default function AdminUsersPage({ params }: { params: Promise<{ locale: s
                       <td className="py-3 px-4 text-gray-600">{u.phone || "-"}</td>
                       <td className="py-3 px-4">
                         <select
-                          value={u.role}
+                          value={ROLE_LABEL[u.role] ?? u.role}
                           onChange={(e) => updateRole(u.id, e.target.value)}
                           className="border rounded px-2 py-1 text-xs"
                         >
@@ -380,7 +384,7 @@ function UserFormModal({
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [lastName, setLastName] = useState(user?.lastName || "");
   const [phone, setPhone] = useState(user?.phone || "");
-  const [role, setRole] = useState(user?.role || "BUYER");
+  const [role, setRole] = useState(ROLE_LABEL[user?.role || ""] ?? user?.role ?? "BUYER");
   const [isActive, setIsActive] = useState(user?.isActive ?? true);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -393,7 +397,7 @@ function UserFormModal({
 
     const url = mode === "add" ? "/api/admin/users" : `/api/admin/users/${user!.id}`;
     const method = mode === "add" ? "POST" : "PUT";
-    const body: any = { email, firstName, lastName, phone, role, isActive };
+    const body: any = { email, firstName, lastName, phone, role: ROLE_VALUE[role] ?? role, isActive };
     if (mode === "add" || password) body.password = password;
 
     const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -435,8 +439,8 @@ function UserFormModal({
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Role</label>
-            <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full border rounded px-3 py-2 text-sm">
-              {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+            <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full border rounded px-3 py-2 text-sm capitalize">
+              {ROLES.map((r) => <option key={r} value={r}>{r.charAt(0) + r.slice(1).toLowerCase()}</option>)}
             </select>
           </div>
           {mode === "edit" && (
