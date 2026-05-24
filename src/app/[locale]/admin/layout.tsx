@@ -1,14 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Building2, Users, FileText, Star, Loader2, Settings,
-  Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature, Lock, User, Crown,
+  Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature, Lock, Crown, LayoutList,
 } from "lucide-react";
+
+const ALL_AGENT_MENU_ITEMS = [
+  { key: "properties",             href: (l: string) => `/${l}/admin/properties`,             icon: Building2,    labelTh: "ทรัพย์ของฉัน",  labelEn: "My Properties" },
+  { key: "contracts",              href: (l: string) => `/${l}/admin/contracts`,              icon: FileSignature, labelTh: "สัญญาเช่า",     labelEn: "Contracts" },
+  { key: "electricity-calculator", href: (l: string) => `/${l}/admin/electricity-calculator`, icon: Zap,           labelTh: "คำนวณค่าไฟ",    labelEn: "Electricity Calc" },
+  { key: "accounting",             href: (l: string) => `/${l}/admin/accounting`,             icon: Wallet,        labelTh: "บัญชี",         labelEn: "Accounting" },
+];
 
 export default function AdminLayout({
   children,
@@ -24,6 +31,7 @@ export default function AdminLayout({
   const [messages, setMessages] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [menuConfig, setMenuConfig] = useState<Record<string, string[]> | null>(null);
 
   useEffect(() => {
     params.then(({ locale: l }) => {
@@ -31,6 +39,19 @@ export default function AdminLayout({
       import(`@/messages/${l}.json`).then((m) => setMessages(m.default));
     });
   }, [params]);
+
+  // Fetch menu config once (used to filter CO_AGENT sidebar)
+  const fetchMenuConfig = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/menu-config");
+      const d = await res.json();
+      if (d.success) setMenuConfig(d.data);
+    } catch {
+      // fall back to showing all items
+    }
+  }, []);
+
+  useEffect(() => { fetchMenuConfig(); }, [fetchMenuConfig]);
 
   // Poll unread message count for the sidebar badge
   useEffect(() => {
@@ -49,10 +70,11 @@ export default function AdminLayout({
   }, [session, pathname]);
 
   const role = (session?.user as any)?.role;
+  const userTier: string = (session?.user as any)?.subscriptionTier ?? "STANDARD";
 
   // Pages in /admin that CO_AGENT is allowed to access
   const CO_AGENT_ALLOWED_PATHS = [
-    "/admin/properties",   // includes /add, /[id]/edit, etc.
+    "/admin/properties",
     "/admin/contracts",
     "/admin/electricity-calculator",
     "/admin/accounting",
@@ -92,18 +114,20 @@ export default function AdminLayout({
     );
   }
 
-  // CO_AGENT on workspace pages (contracts/electricity/accounting): sidebar with limited nav
+  // CO_AGENT on workspace pages: sidebar with limited nav filtered by subscription tier
   const isCoAgentWorkspace = role === "CO_AGENT" && !isCoAgentAddPage;
 
   const t = messages.admin;
 
-  // Workspace nav shown to CO_AGENT (only pages they own)
-  const agentNavItems = [
-    { href: `/${locale}/admin/properties`, icon: Building2, label: locale === "th" ? "ทรัพย์ของฉัน" : "My Properties" },
-    { href: `/${locale}/admin/contracts`, icon: FileSignature, label: locale === "th" ? "สัญญาเช่า" : "Contracts" },
-    { href: `/${locale}/admin/electricity-calculator`, icon: Zap, label: messages.electricityCalculator?.navLabel || "Electricity Calc" },
-    { href: `/${locale}/admin/accounting`, icon: Wallet, label: t.accounting || "Accounting" },
-  ];
+  // Build CO_AGENT nav: filter by menu config for their tier
+  const allowedKeys: string[] = menuConfig?.[userTier] ?? ALL_AGENT_MENU_ITEMS.map((i) => i.key);
+  const agentNavItems = ALL_AGENT_MENU_ITEMS
+    .filter((item) => allowedKeys.includes(item.key))
+    .map((item) => ({
+      href: item.href(locale),
+      icon: item.icon,
+      label: locale === "th" ? item.labelTh : item.labelEn,
+    }));
 
   const navItems = [
     { href: `/${locale}/admin`, icon: LayoutDashboard, label: t.dashboard },
@@ -118,6 +142,7 @@ export default function AdminLayout({
     { href: `/${locale}/admin/contracts`, icon: FileSignature, label: locale === "th" ? "สัญญาเช่า" : "Contracts" },
     { href: `/${locale}/admin/closed-contracts`, icon: Lock, label: locale === "th" ? "Closed Contracts" : "Closed Contracts" },
     { href: `/${locale}/admin/subscriptions`, icon: Crown, label: locale === "th" ? "จัดการ Package" : "Subscriptions" },
+    { href: `/${locale}/admin/menu-config`, icon: LayoutList, label: locale === "th" ? "เมนูตาม Package" : "Menu Config" },
     { href: `/${locale}/admin/reviews`, icon: Star, label: t.reviewModeration },
     { href: `/${locale}/admin/settings`, icon: Settings, label: t.settings || "Settings" },
     { href: `/${locale}/admin/settings/languages`, icon: Globe, label: t.languageSettings || "ตั้งค่าภาษา" },
@@ -152,7 +177,7 @@ export default function AdminLayout({
   const SidebarContent = () => (
     <>
       <h2 className="text-lg font-bold mb-6">
-        {isCoAgentWorkspace ? (locale === "th" ? "Agent Workspace" : "Agent Workspace") : t.dashboard}
+        {isCoAgentWorkspace ? "Agent Workspace" : t.dashboard}
       </h2>
       {isCoAgentWorkspace ? renderNavList(agentNavItems) : renderNavList(navItems)}
     </>
