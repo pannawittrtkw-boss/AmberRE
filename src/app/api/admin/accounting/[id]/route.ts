@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 export async function PUT(
@@ -6,12 +8,31 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    const role = (session.user as any).role;
+    const userId = Number((session.user as any).id);
+    if (role !== "ADMIN" && role !== "CO_AGENT") {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+
     const { id } = await params;
+    const txnId = parseInt(id);
+
+    if (role === "CO_AGENT") {
+      const existing = await prisma.transaction.findUnique({ where: { id: txnId }, select: { createdById: true } });
+      if (!existing || existing.createdById !== userId) {
+        return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+      }
+    }
+
     const body = await req.json();
     const { date, amount, type, recordType, category, description, payee, slipUrl } = body;
 
     const txn = await prisma.transaction.update({
-      where: { id: parseInt(id) },
+      where: { id: txnId },
       data: {
         ...(date && { date: new Date(date) }),
         ...(amount !== undefined && { amount: parseFloat(amount) }),
@@ -40,10 +61,27 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    const role = (session.user as any).role;
+    const userId = Number((session.user as any).id);
+    if (role !== "ADMIN" && role !== "CO_AGENT") {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+
     const { id } = await params;
-    await prisma.transaction.delete({
-      where: { id: parseInt(id) },
-    });
+    const txnId = parseInt(id);
+
+    if (role === "CO_AGENT") {
+      const existing = await prisma.transaction.findUnique({ where: { id: txnId }, select: { createdById: true } });
+      if (!existing || existing.createdById !== userId) {
+        return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+      }
+    }
+
+    await prisma.transaction.delete({ where: { id: txnId } });
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

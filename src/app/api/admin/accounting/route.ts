@@ -1,101 +1,85 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    const role = (session.user as any).role;
+    const userId = Number((session.user as any).id);
+    if (role !== "ADMIN" && role !== "CO_AGENT") {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+
     const { searchParams } = new URL(req.url);
     const yearParam = searchParams.get("year");
-    const monthParam = searchParams.get("month"); // 1-12
+    const monthParam = searchParams.get("month");
 
     const year = yearParam ? parseInt(yearParam) : new Date().getFullYear();
     const month = monthParam ? parseInt(monthParam) : new Date().getMonth() + 1;
 
-    // Current month range
     const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 1);
-
-    // Previous month range
+    const endDate   = new Date(year, month, 1);
     const prevStart = new Date(year, month - 2, 1);
-    const prevEnd = new Date(year, month - 1, 1);
-
-    // Full year range for chart
+    const prevEnd   = new Date(year, month - 1, 1);
     const yearStart = new Date(year, 0, 1);
-    const yearEnd = new Date(year + 1, 0, 1);
+    const yearEnd   = new Date(year + 1, 0, 1);
+
+    // CO_AGENT sees only their own transactions; ADMIN sees all
+    const scopeFilter = role === "CO_AGENT" ? { createdById: userId } : {};
 
     const [currentTxns, prevTxns, yearTxns] = await Promise.all([
       prisma.transaction.findMany({
-        where: { date: { gte: startDate, lt: endDate } },
+        where: { date: { gte: startDate, lt: endDate }, ...scopeFilter },
         orderBy: { date: "desc" },
       }),
       prisma.transaction.findMany({
-        where: {
-          date: { gte: prevStart, lt: prevEnd },
-          recordType: "ACTUAL",
-        },
+        where: { date: { gte: prevStart, lt: prevEnd }, recordType: "ACTUAL", ...scopeFilter },
       }),
       prisma.transaction.findMany({
-        where: {
-          date: { gte: yearStart, lt: yearEnd },
-          recordType: "ACTUAL",
-        },
+        where: { date: { gte: yearStart, lt: yearEnd }, recordType: "ACTUAL", ...scopeFilter },
         select: { date: true, amount: true, type: true, category: true },
       }),
     ]);
 
-    // Aggregate by month for chart, including category breakdown
     type MonthStats = {
-      income: number;
-      expense: number;
+      income: number; expense: number;
       incomeByCategory: Record<string, number>;
       expenseByCategory: Record<string, number>;
     };
     const monthlyStats: Record<number, MonthStats> = {};
     for (let i = 1; i <= 12; i++) {
-      monthlyStats[i] = {
-        income: 0,
-        expense: 0,
-        incomeByCategory: {},
-        expenseByCategory: {},
-      };
+      monthlyStats[i] = { income: 0, expense: 0, incomeByCategory: {}, expenseByCategory: {} };
     }
     for (const t of yearTxns) {
       const m = t.date.getMonth() + 1;
       const amt = Number(t.amount);
       if (t.type === "INCOME") {
         monthlyStats[m].income += amt;
-        monthlyStats[m].incomeByCategory[t.category] =
-          (monthlyStats[m].incomeByCategory[t.category] || 0) + amt;
+        monthlyStats[m].incomeByCategory[t.category] = (monthlyStats[m].incomeByCategory[t.category] || 0) + amt;
       } else if (t.type === "EXPENSE") {
         monthlyStats[m].expense += amt;
-        monthlyStats[m].expenseByCategory[t.category] =
-          (monthlyStats[m].expenseByCategory[t.category] || 0) + amt;
+        monthlyStats[m].expenseByCategory[t.category] = (monthlyStats[m].expenseByCategory[t.category] || 0) + amt;
       }
     }
     const chartData = Object.entries(monthlyStats).map(([m, v]) => ({
-      month: parseInt(m),
-      income: v.income,
-      expense: v.expense,
-      net: v.income - v.expense,
-      incomeByCategory: v.incomeByCategory,
-      expenseByCategory: v.expenseByCategory,
+      month: parseInt(m), income: v.income, expense: v.expense, net: v.income - v.expense,
+      incomeByCategory: v.incomeByCategory, expenseByCategory: v.expenseByCategory,
     }));
 
     return NextResponse.json({
       success: true,
       data: {
-        transactions: currentTxns.map((t) => ({
-          ...t,
-          amount: Number(t.amount),
-        })),
-        previousMonth: prevTxns.map((t) => ({
-          ...t,
-          amount: Number(t.amount),
-        })),
+        transactions: currentTxns.map((t) => ({ ...t, amount: Number(t.amount) })),
+        previousMonth: prevTxns.map((t) => ({ ...t, amount: Number(t.amount) })),
         yearlyChart: chartData,
       },
     });
   } catch (error: unknown) {
-    console.error("Accounting GET error:", error);
     const message = error instanceof Error ? error.message : "Internal server error";
     return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
@@ -103,14 +87,21 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    const role = (session.user as any).role;
+    const userId = Number((session.user as any).id);
+    if (role !== "ADMIN" && role !== "CO_AGENT") {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+
     const body = await req.json();
     const { date, amount, type, recordType, category, description, payee, slipUrl } = body;
 
     if (!date || amount === undefined || !type || !category) {
-      return NextResponse.json(
-        { success: false, error: "Missing required fields" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
     }
 
     const txn = await prisma.transaction.create({
@@ -123,15 +114,12 @@ export async function POST(req: NextRequest) {
         description: description || "",
         payee: payee || null,
         slipUrl: slipUrl || null,
+        createdById: userId,
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: { ...txn, amount: Number(txn.amount) },
-    });
+    return NextResponse.json({ success: true, data: { ...txn, amount: Number(txn.amount) } });
   } catch (error: unknown) {
-    console.error("Accounting POST error:", error);
     const message = error instanceof Error ? error.message : "Internal server error";
     return NextResponse.json({ success: false, error: message }, { status: 500 });
   }

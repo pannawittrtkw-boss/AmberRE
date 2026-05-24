@@ -5,7 +5,11 @@ import prisma from "@/lib/prisma";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
+  if (!session?.user) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+  const role = (session.user as any).role;
+  if (role !== "ADMIN" && role !== "CO_AGENT") {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 

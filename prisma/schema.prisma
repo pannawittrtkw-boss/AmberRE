@@ -57,6 +57,7 @@ model User {
   passwordResets     PasswordResetToken[]
   contracts          Contract[]
   contactUnlockLogs  ContactUnlockLog[]
+  transactions       Transaction[]
 }
 
 model Contract {
@@ -529,13 +530,17 @@ model Transaction {
   recordType  String   @default("ACTUAL") @db.VarChar(20) // ACTUAL | FORECAST
   category    String   @db.VarChar(100)
   description String   @db.Text
-  payee       String?  @db.VarChar(100) // For transportation/admin: "Namphung", "Yung", etc.
+  payee       String?  @db.VarChar(100)
   slipUrl     String?  @db.VarChar(500)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  createdById Int?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
   @@index([date])
   @@index([type, recordType])
+  @@index([createdById])
 }
 
 model Shareholder {
