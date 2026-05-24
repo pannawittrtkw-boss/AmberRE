@@ -49,19 +49,24 @@ export const authOptions: NextAuthOptions = {
       const stale = !lastSync || now - lastSync > 60_000;
       if (token.id && (user || trigger === "update" || stale)) {
         try {
-          const dbUser = await prisma.user.findUnique({
-            where: { id: Number(token.id) },
-            select: { role: true, isActive: true, subscriptionTier: true },
-          });
+          // Raw SQL bypasses stale Prisma client — reads subscriptionTier even
+          // if the generated client hasn't been regenerated after migration.
+          type Row = { role: string; isActive: boolean; subscriptionTier: string | null };
+          const rows = await prisma.$queryRaw<Row[]>`
+            SELECT role, "isActive", "subscriptionTier"
+            FROM "User"
+            WHERE id = ${Number(token.id)}
+            LIMIT 1
+          `;
+          const dbUser = rows[0];
           if (!dbUser || !dbUser.isActive) {
-            // User disabled or removed — drop the session
             return {} as typeof token;
           }
           token.role = dbUser.role;
           (token as any).subscriptionTier = dbUser.subscriptionTier ?? "STANDARD";
           (token as any).lastSync = now;
         } catch {
-          // DB temporarily unreachable or schema mismatch — keep existing token data
+          // DB temporarily unreachable — keep existing token data
           (token as any).lastSync = now;
         }
       }
