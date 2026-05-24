@@ -10,7 +10,8 @@ export async function GET() {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
-    const agents = await prisma.user.findMany({
+    // Base query — fields that have always existed
+    const baseAgents = await prisma.user.findMany({
       where: { role: "CO_AGENT" },
       select: {
         id: true,
@@ -18,8 +19,6 @@ export async function GET() {
         lastName: true,
         email: true,
         phone: true,
-        subscriptionTier: true,
-        tierExpiredAt: true,
         isActive: true,
         createdAt: true,
         coAgentApplication: {
@@ -29,31 +28,48 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
-    // Count unlocks per agent — graceful fallback if ContactUnlockLog doesn't exist yet
+    // Try to enrich with new B2B fields — silently skip if Prisma client is stale
+    type Enriched = { subscriptionTier: string; tierExpiredAt: string | null };
+    let enrichMap: Record<number, Enriched> = {};
+    try {
+      const rich = await (prisma.user as any).findMany({
+        where: { role: "CO_AGENT" },
+        select: { id: true, subscriptionTier: true, tierExpiredAt: true },
+      }) as Array<{ id: number } & Enriched>;
+      enrichMap = Object.fromEntries(
+        rich.map((r) => [r.id, { subscriptionTier: r.subscriptionTier ?? "STANDARD", tierExpiredAt: r.tierExpiredAt ?? null }])
+      );
+    } catch {
+      // Stale Prisma client — default to STANDARD for all
+    }
+
+    // Count monthly unlocks — skip if ContactUnlockLog not yet in schema
     let monthlyMap: Record<number, number> = {};
     let totalMap: Record<number, number> = {};
     try {
       const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-      const [monthlyUsage, totalUsage] = await Promise.all([
-        prisma.contactUnlockLog.groupBy({
+      const [monthly, total] = await Promise.all([
+        (prisma as any).contactUnlockLog.groupBy({
           by: ["agentId"],
           where: { unlockedAt: { gte: startOfMonth } },
           _count: { agentId: true },
         }),
-        prisma.contactUnlockLog.groupBy({
+        (prisma as any).contactUnlockLog.groupBy({
           by: ["agentId"],
           _count: { agentId: true },
         }),
       ]);
-      monthlyMap = Object.fromEntries(monthlyUsage.map((m) => [m.agentId, m._count.agentId]));
-      totalMap = Object.fromEntries(totalUsage.map((m) => [m.agentId, m._count.agentId]));
+      monthlyMap = Object.fromEntries((monthly as any[]).map((m: any) => [m.agentId, m._count.agentId]));
+      totalMap  = Object.fromEntries((total  as any[]).map((m: any) => [m.agentId, m._count.agentId]));
     } catch {
-      // Table may not exist yet — return zero counts
+      // Table not available yet
     }
 
-    const data = agents.map((a) => ({
+    const data = baseAgents.map((a) => ({
       ...a,
-      unlocksTotal: totalMap[a.id] ?? 0,
+      subscriptionTier: enrichMap[a.id]?.subscriptionTier ?? "STANDARD",
+      tierExpiredAt:    enrichMap[a.id]?.tierExpiredAt    ?? null,
+      unlocksTotal:     totalMap[a.id]   ?? 0,
       unlocksThisMonth: monthlyMap[a.id] ?? 0,
     }));
 
@@ -85,7 +101,7 @@ export async function PUT(req: NextRequest) {
       updateData.tierExpiredAt = tierExpiredAt ? new Date(tierExpiredAt) : null;
     }
 
-    const updated = await prisma.user.update({
+    const updated = await (prisma.user as any).update({
       where: { id: Number(userId) },
       data: updateData,
       select: { id: true, subscriptionTier: true, tierExpiredAt: true },
