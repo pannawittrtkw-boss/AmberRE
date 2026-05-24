@@ -54,6 +54,8 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [menuConfig, setMenuConfig] = useState<Record<string, string[]> | null>(null);
+  // Fetch tier fresh from DB — avoids stale JWT cache showing wrong tier
+  const [freshTier, setFreshTier] = useState<string | null>(null);
 
   useEffect(() => {
     params.then(({ locale: l }) => {
@@ -64,11 +66,16 @@ export default function AdminLayout({
 
   const fetchMenuConfig = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/menu-config");
-      const d = await res.json();
-      if (d.success) setMenuConfig(d.data);
+      const [cfgRes, tierRes] = await Promise.all([
+        fetch("/api/admin/menu-config"),
+        fetch("/api/agent/tier"),
+      ]);
+      const cfg = await cfgRes.json();
+      const tierData = await tierRes.json();
+      if (cfg.success) setMenuConfig(cfg.data);
+      if (tierData.success) setFreshTier(tierData.tier);
     } catch {
-      // fall back to showing all items
+      // fall back to session value / showing all items
     }
   }, []);
 
@@ -89,7 +96,8 @@ export default function AdminLayout({
   }, [session, pathname]);
 
   const role = (session?.user as any)?.role;
-  const userTier: string = (session?.user as any)?.subscriptionTier ?? "STANDARD";
+  // Prefer freshTier (direct DB read) over JWT-cached session value
+  const userTier: string = freshTier ?? (session?.user as any)?.subscriptionTier ?? "STANDARD";
 
   const CO_AGENT_ALLOWED_PATHS = [
     "/admin/agent-dashboard",
