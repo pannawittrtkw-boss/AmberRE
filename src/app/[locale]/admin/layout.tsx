@@ -10,13 +10,22 @@ import {
   Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature, Lock, Crown, LayoutList,
 } from "lucide-react";
 
-// All possible agent workspace items (keyed for config filtering)
+// Full list of every menu item a CO_AGENT can ever be given access to.
+// Sensitive admin pages (users, settings, languages, menu-config, subscriptions)
+// are intentionally excluded — the backend still enforces their own auth checks.
 const ALL_AGENT_MENU_ITEMS = [
-  { key: "agent-dashboard",        href: (l: string) => `/${l}/admin/agent-dashboard`,       icon: LayoutDashboard, labelTh: "ภาพรวม",        labelEn: "Dashboard" },
-  { key: "properties",             href: (l: string) => `/${l}/admin/properties`,             icon: Building2,       labelTh: "ทรัพย์ของฉัน",  labelEn: "My Properties" },
-  { key: "contracts",              href: (l: string) => `/${l}/admin/contracts`,              icon: FileSignature,   labelTh: "สัญญาเช่า",     labelEn: "Contracts" },
-  { key: "electricity-calculator", href: (l: string) => `/${l}/admin/electricity-calculator`, icon: Zap,             labelTh: "คำนวณค่าไฟ",    labelEn: "Electricity Calc" },
-  { key: "accounting",             href: (l: string) => `/${l}/admin/accounting`,             icon: Wallet,          labelTh: "บัญชี",         labelEn: "Accounting" },
+  { key: "agent-dashboard",        href: (l: string) => `/${l}/admin/agent-dashboard`,       icon: LayoutDashboard, labelTh: "ภาพรวม",              labelEn: "Dashboard" },
+  { key: "properties",             href: (l: string) => `/${l}/admin/properties`,             icon: Building2,       labelTh: "ทรัพย์ของฉัน",        labelEn: "My Properties" },
+  { key: "projects",               href: (l: string) => `/${l}/admin/projects`,               icon: Layers,          labelTh: "โครงการ",              labelEn: "Projects" },
+  { key: "contracts",              href: (l: string) => `/${l}/admin/contracts`,              icon: FileSignature,   labelTh: "สัญญาเช่า",            labelEn: "Contracts" },
+  { key: "closed-contracts",       href: (l: string) => `/${l}/admin/closed-contracts`,       icon: Lock,            labelTh: "สัญญาที่ปิดแล้ว",      labelEn: "Closed Contracts" },
+  { key: "electricity-calculator", href: (l: string) => `/${l}/admin/electricity-calculator`, icon: Zap,             labelTh: "คำนวณค่าไฟ",           labelEn: "Electricity Calc" },
+  { key: "accounting",             href: (l: string) => `/${l}/admin/accounting`,             icon: Wallet,          labelTh: "งบการเงิน / บัญชี",    labelEn: "Accounting" },
+  { key: "messages",               href: (l: string) => `/${l}/admin/messages`,               icon: Mail,            labelTh: "ข้อความติดต่อ",         labelEn: "Messages" },
+  { key: "reviews",                href: (l: string) => `/${l}/admin/reviews`,                icon: Star,            labelTh: "รีวิว",                 labelEn: "Reviews" },
+  { key: "portfolio",              href: (l: string) => `/${l}/admin/portfolio`,              icon: Trophy,          labelTh: "Portfolio",             labelEn: "Portfolio" },
+  { key: "articles",               href: (l: string) => `/${l}/admin/articles`,               icon: FileText,        labelTh: "บทความ",               labelEn: "Articles" },
+  { key: "dashboard",              href: (l: string) => `/${l}/admin`,                        icon: LayoutDashboard, labelTh: "Admin Dashboard",      labelEn: "Admin Dashboard" },
 ];
 
 // All admin nav items with their config key
@@ -99,12 +108,19 @@ export default function AdminLayout({
   // Prefer freshTier (direct DB read) over JWT-cached session value
   const userTier: string = freshTier ?? (session?.user as any)?.subscriptionTier ?? "STANDARD";
 
+  // All paths a CO_AGENT may visit — matches keys in ALL_AGENT_MENU_ITEMS
   const CO_AGENT_ALLOWED_PATHS = [
     "/admin/agent-dashboard",
     "/admin/properties",
+    "/admin/projects",
     "/admin/contracts",
+    "/admin/closed-contracts",
     "/admin/electricity-calculator",
     "/admin/accounting",
+    "/admin/messages",
+    "/admin/reviews",
+    "/admin/portfolio",
+    "/admin/articles",
   ];
   const isCoAgentAllowed =
     role === "CO_AGENT" &&

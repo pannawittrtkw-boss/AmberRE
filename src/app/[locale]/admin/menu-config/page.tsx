@@ -6,32 +6,36 @@ import { Loader2, Save, RotateCcw, CheckCircle2 } from "lucide-react";
 const TIERS = ["STANDARD", "PRO", "ELITE", "ADMIN"] as const;
 type Tier = (typeof TIERS)[number];
 
+// Two groups — "admin-only" keys can only appear in ADMIN column,
+// "shared" keys can be enabled for any role including agents.
 const MENU_ITEMS = [
-  { key: "dashboard",              labelTh: "Dashboard",                    labelEn: "Dashboard",            group: "admin" },
-  { key: "properties",             labelTh: "จัดการทรัพย์สิน",              labelEn: "Property Management",  group: "admin" },
-  { key: "projects",               labelTh: "จัดการโครงการ",                labelEn: "Projects",             group: "admin" },
+  // ─── Admin-only pages ─────────────────────────────────────────────────────
+  { key: "dashboard",              labelTh: "Dashboard (Admin)",            labelEn: "Dashboard (Admin)",    group: "admin" },
   { key: "users",                  labelTh: "จัดการผู้ใช้",                  labelEn: "User Management",      group: "admin" },
-  { key: "messages",               labelTh: "ข้อความติดต่อ",                 labelEn: "Messages",             group: "admin" },
-  { key: "articles",               labelTh: "จัดการบทความ",                  labelEn: "Article Management",   group: "admin" },
-  { key: "portfolio",              labelTh: "Portfolio",                    labelEn: "Portfolio",            group: "admin" },
-  { key: "reviews",                labelTh: "Review Moderation",            labelEn: "Review Moderation",    group: "admin" },
   { key: "subscriptions",          labelTh: "จัดการ Package",               labelEn: "Subscriptions",        group: "admin" },
   { key: "menu-config",            labelTh: "เมนูตาม Package",              labelEn: "Menu Config",          group: "admin" },
   { key: "settings",               labelTh: "ตั้งค่า",                       labelEn: "Settings",             group: "admin" },
   { key: "languages",              labelTh: "ตั้งค่าภาษา",                  labelEn: "Language Settings",    group: "admin" },
-  { key: "agent-dashboard",        labelTh: "ภาพรวม (Dashboard)",           labelEn: "Dashboard (Agent)",    group: "agent" },
-  { key: "electricity-calculator", labelTh: "คำนวณค่าไฟ",                   labelEn: "Electricity Calc",     group: "agent" },
-  { key: "accounting",             labelTh: "บัญชี / รายรับ-รายจ่าย",       labelEn: "Accounting",           group: "agent" },
-  { key: "contracts",              labelTh: "สัญญาเช่า",                     labelEn: "Contracts",            group: "agent" },
-  { key: "closed-contracts",       labelTh: "Closed Contracts",             labelEn: "Closed Contracts",     group: "agent" },
+  // ─── Shared pages (Admin + Agent Workspace) ───────────────────────────────
+  { key: "agent-dashboard",        labelTh: "ภาพรวม (Agent Dashboard)",     labelEn: "Agent Dashboard",      group: "shared" },
+  { key: "properties",             labelTh: "ทรัพย์สิน",                     labelEn: "Properties",           group: "shared" },
+  { key: "projects",               labelTh: "โครงการ",                       labelEn: "Projects",             group: "shared" },
+  { key: "contracts",              labelTh: "สัญญาเช่า",                     labelEn: "Contracts",            group: "shared" },
+  { key: "closed-contracts",       labelTh: "สัญญาที่ปิดแล้ว",               labelEn: "Closed Contracts",     group: "shared" },
+  { key: "electricity-calculator", labelTh: "คำนวณค่าไฟ",                   labelEn: "Electricity Calc",     group: "shared" },
+  { key: "accounting",             labelTh: "งบการเงิน / บัญชี",             labelEn: "Accounting",           group: "shared" },
+  { key: "messages",               labelTh: "ข้อความติดต่อ",                  labelEn: "Messages",             group: "shared" },
+  { key: "reviews",                labelTh: "รีวิว",                         labelEn: "Reviews",              group: "shared" },
+  { key: "portfolio",              labelTh: "Portfolio",                    labelEn: "Portfolio",            group: "shared" },
+  { key: "articles",               labelTh: "บทความ",                        labelEn: "Articles",             group: "shared" },
 ];
 
-const ALL_KEYS = MENU_ITEMS.map((m) => m.key);
+const ALL_KEYS = [...new Set(MENU_ITEMS.map((m) => m.key))];
 
 const DEFAULT_CONFIG: Record<Tier, string[]> = {
   STANDARD: ["agent-dashboard", "properties"],
-  PRO:      ["agent-dashboard", "properties", "contracts", "electricity-calculator"],
-  ELITE:    ["agent-dashboard", "properties", "contracts", "electricity-calculator", "accounting"],
+  PRO:      ["agent-dashboard", "properties", "projects", "contracts", "electricity-calculator", "accounting"],
+  ELITE:    ["agent-dashboard", "properties", "projects", "contracts", "closed-contracts", "electricity-calculator", "accounting", "messages", "reviews"],
   ADMIN:    ALL_KEYS,
 };
 
@@ -43,8 +47,8 @@ const TIER_META: Record<Tier, { color: string; badge: string; desc: string }> = 
 };
 
 const GROUP_LABEL: Record<string, string> = {
-  admin: "หน้า Admin",
-  agent: "หน้า Agent Workspace",
+  admin:  "Admin เท่านั้น",
+  shared: "ใช้งานได้ทุก Role",
 };
 
 export default function MenuConfigPage() {
@@ -120,7 +124,7 @@ export default function MenuConfigPage() {
     );
   }
 
-  const groups = ["admin", "agent"] as const;
+  const groups = ["admin", "shared"] as const;
 
   return (
     <div className="max-w-5xl">
