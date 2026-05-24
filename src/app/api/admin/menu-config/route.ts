@@ -9,12 +9,13 @@ const ALL_KEYS = [
   "dashboard", "properties", "projects", "users", "messages", "articles",
   "portfolio", "electricity-calculator", "accounting", "contracts",
   "closed-contracts", "subscriptions", "menu-config", "reviews", "settings", "languages",
+  "agent-dashboard",
 ];
 
 export const DEFAULT_MENU_CONFIG: Record<string, string[]> = {
-  STANDARD: ["properties"],
-  PRO:      ["properties", "contracts", "electricity-calculator"],
-  ELITE:    ["properties", "contracts", "electricity-calculator", "accounting"],
+  STANDARD: ["agent-dashboard", "properties"],
+  PRO:      ["agent-dashboard", "properties", "contracts", "electricity-calculator"],
+  ELITE:    ["agent-dashboard", "properties", "contracts", "electricity-calculator", "accounting"],
   ADMIN:    ALL_KEYS,
 };
 

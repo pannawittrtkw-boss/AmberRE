@@ -12,10 +12,11 @@ import {
 
 // All possible agent workspace items (keyed for config filtering)
 const ALL_AGENT_MENU_ITEMS = [
-  { key: "properties",             href: (l: string) => `/${l}/admin/properties`,             icon: Building2,     labelTh: "ทรัพย์ของฉัน",  labelEn: "My Properties" },
-  { key: "contracts",              href: (l: string) => `/${l}/admin/contracts`,              icon: FileSignature,  labelTh: "สัญญาเช่า",     labelEn: "Contracts" },
-  { key: "electricity-calculator", href: (l: string) => `/${l}/admin/electricity-calculator`, icon: Zap,            labelTh: "คำนวณค่าไฟ",    labelEn: "Electricity Calc" },
-  { key: "accounting",             href: (l: string) => `/${l}/admin/accounting`,             icon: Wallet,         labelTh: "บัญชี",         labelEn: "Accounting" },
+  { key: "agent-dashboard",        href: (l: string) => `/${l}/admin/agent-dashboard`,       icon: LayoutDashboard, labelTh: "ภาพรวม",        labelEn: "Dashboard" },
+  { key: "properties",             href: (l: string) => `/${l}/admin/properties`,             icon: Building2,       labelTh: "ทรัพย์ของฉัน",  labelEn: "My Properties" },
+  { key: "contracts",              href: (l: string) => `/${l}/admin/contracts`,              icon: FileSignature,   labelTh: "สัญญาเช่า",     labelEn: "Contracts" },
+  { key: "electricity-calculator", href: (l: string) => `/${l}/admin/electricity-calculator`, icon: Zap,             labelTh: "คำนวณค่าไฟ",    labelEn: "Electricity Calc" },
+  { key: "accounting",             href: (l: string) => `/${l}/admin/accounting`,             icon: Wallet,          labelTh: "บัญชี",         labelEn: "Accounting" },
 ];
 
 // All admin nav items with their config key
@@ -91,6 +92,7 @@ export default function AdminLayout({
   const userTier: string = (session?.user as any)?.subscriptionTier ?? "STANDARD";
 
   const CO_AGENT_ALLOWED_PATHS = [
+    "/admin/agent-dashboard",
     "/admin/properties",
     "/admin/contracts",
     "/admin/electricity-calculator",

@@ -19,6 +19,7 @@ const MENU_ITEMS = [
   { key: "menu-config",            labelTh: "เมนูตาม Package",              labelEn: "Menu Config",          group: "admin" },
   { key: "settings",               labelTh: "ตั้งค่า",                       labelEn: "Settings",             group: "admin" },
   { key: "languages",              labelTh: "ตั้งค่าภาษา",                  labelEn: "Language Settings",    group: "admin" },
+  { key: "agent-dashboard",        labelTh: "ภาพรวม (Dashboard)",           labelEn: "Dashboard (Agent)",    group: "agent" },
   { key: "electricity-calculator", labelTh: "คำนวณค่าไฟ",                   labelEn: "Electricity Calc",     group: "agent" },
   { key: "accounting",             labelTh: "บัญชี / รายรับ-รายจ่าย",       labelEn: "Accounting",           group: "agent" },
   { key: "contracts",              labelTh: "สัญญาเช่า",                     labelEn: "Contracts",            group: "agent" },
@@ -28,9 +29,9 @@ const MENU_ITEMS = [
 const ALL_KEYS = MENU_ITEMS.map((m) => m.key);
 
 const DEFAULT_CONFIG: Record<Tier, string[]> = {
-  STANDARD: ["properties"],
-  PRO:      ["properties", "contracts", "electricity-calculator"],
-  ELITE:    ["properties", "contracts", "electricity-calculator", "accounting"],
+  STANDARD: ["agent-dashboard", "properties"],
+  PRO:      ["agent-dashboard", "properties", "contracts", "electricity-calculator"],
+  ELITE:    ["agent-dashboard", "properties", "contracts", "electricity-calculator", "accounting"],
   ADMIN:    ALL_KEYS,
 };
 
