@@ -43,6 +43,8 @@ export default function CoAgentPage({
     companyName: "",
     licenseNumber: "",
     experienceYears: "",
+    phone: "",
+    lineId: "",
   });
   const [properties, setProperties] = useState<any[]>([]);
   const [loadingProps, setLoadingProps] = useState(true);
@@ -752,44 +754,49 @@ export default function CoAgentPage({
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-stone-700 mb-1.5">
-                      {locale === "th" ? "ชื่อบริษัท" : "Company Name"}
+                      {locale === "th" ? "บริษัท / ทีม (ถ้ามี)" : "Company / Team (optional)"}
                     </label>
                     <input
                       type="text"
                       value={form.companyName}
-                      onChange={(e) =>
-                        setForm({ ...form, companyName: e.target.value })
-                      }
+                      onChange={(e) => setForm({ ...form, companyName: e.target.value })}
                       className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30 focus:border-[#C8A951]"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-stone-700 mb-1.5">
-                      {locale === "th"
-                        ? "หมายเลขใบอนุญาต"
-                        : "License Number"}
+                      {locale === "th" ? "เบอร์โทรติดต่อ *" : "Contact Phone *"}
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      placeholder="08x-xxx-xxxx"
+                      className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30 focus:border-[#C8A951]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-1.5">
+                      Line ID *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={form.lineId}
+                      onChange={(e) => setForm({ ...form, lineId: e.target.value })}
+                      placeholder="@yourlineid"
+                      className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30 focus:border-[#C8A951]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-1.5">
+                      {locale === "th" ? "หมายเลขใบอนุญาต (ถ้ามี)" : "License Number (optional)"}
                     </label>
                     <input
                       type="text"
                       value={form.licenseNumber}
-                      onChange={(e) =>
-                        setForm({ ...form, licenseNumber: e.target.value })
-                      }
-                      className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30 focus:border-[#C8A951]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1.5">
-                      {locale === "th"
-                        ? "ประสบการณ์ (ปี)"
-                        : "Experience (years)"}
-                    </label>
-                    <input
-                      type="number"
-                      value={form.experienceYears}
-                      onChange={(e) =>
-                        setForm({ ...form, experienceYears: e.target.value })
-                      }
+                      onChange={(e) => setForm({ ...form, licenseNumber: e.target.value })}
                       className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30 focus:border-[#C8A951]"
                     />
                   </div>

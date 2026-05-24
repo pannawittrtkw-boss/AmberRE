@@ -50,8 +50,8 @@ export default function AdminCoAgentsPage({ params }: { params: Promise<{ locale
                 <th className="text-left py-3 px-4">ID</th>
                 <th className="text-left py-3 px-4">{locale === "th" ? "ชื่อ" : "Name"}</th>
                 <th className="text-left py-3 px-4">{locale === "th" ? "บริษัท" : "Company"}</th>
-                <th className="text-left py-3 px-4">{locale === "th" ? "ใบอนุญาต" : "License"}</th>
-                <th className="text-left py-3 px-4">{locale === "th" ? "ประสบการณ์" : "Experience"}</th>
+                <th className="text-left py-3 px-4">{locale === "th" ? "เบอร์โทร" : "Phone"}</th>
+                <th className="text-left py-3 px-4">Line ID</th>
                 <th className="text-left py-3 px-4">{locale === "th" ? "สถานะ" : "Status"}</th>
                 <th className="text-center py-3 px-4">{locale === "th" ? "จัดการ" : "Actions"}</th>
               </tr>
@@ -60,10 +60,13 @@ export default function AdminCoAgentsPage({ params }: { params: Promise<{ locale
               {applications.map((app: any) => (
                 <tr key={app.id} className="border-t hover:bg-gray-50">
                   <td className="py-3 px-4">{app.id}</td>
-                  <td className="py-3 px-4">{app.user.firstName} {app.user.lastName}</td>
+                  <td className="py-3 px-4">
+                    <div className="font-medium">{app.user.firstName} {app.user.lastName}</div>
+                    <div className="text-xs text-gray-400">{app.user.email}</div>
+                  </td>
                   <td className="py-3 px-4">{app.companyName || "-"}</td>
-                  <td className="py-3 px-4">{app.licenseNumber || "-"}</td>
-                  <td className="py-3 px-4">{app.experienceYears ? `${app.experienceYears} yrs` : "-"}</td>
+                  <td className="py-3 px-4">{app.user.phone || "-"}</td>
+                  <td className="py-3 px-4">{app.user.lineId || "-"}</td>
                   <td className="py-3 px-4">
                     <span className={`px-2 py-1 rounded text-xs ${
                       app.status === "APPROVED" ? "bg-green-100 text-green-700" :

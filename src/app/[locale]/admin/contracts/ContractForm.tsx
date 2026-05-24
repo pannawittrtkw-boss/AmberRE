@@ -141,6 +141,15 @@ export default function ContractForm({
   const [otherItems, setOtherItems] = useState<ContractItem[]>(
     parseContractItems(initialData?.otherItems)
   );
+  const [furnitureNone, setFurnitureNone] = useState<boolean>(
+    !!initialData?.furnitureNone
+  );
+  const [applianceNone, setApplianceNone] = useState<boolean>(
+    !!initialData?.applianceNone
+  );
+  const [otherItemsNone, setOtherItemsNone] = useState<boolean>(
+    !!initialData?.otherItemsNone
+  );
   const [customClauses, setCustomClauses] = useState<CustomClause[]>(
     parseCustomClauses(initialData?.customClauses)
   );
@@ -275,9 +284,24 @@ export default function ContractForm({
       jointLesseeAddressEn: showJoint ? form.jointLesseeAddressEn : "",
       jointLesseePhone: showJoint ? form.jointLesseePhone : "",
       jointLesseeIdImage: showJoint ? form.jointLesseeIdImage : "",
-      furnitureList: furniture.length ? JSON.stringify(furniture) : "",
-      applianceList: appliances.length ? JSON.stringify(appliances) : "",
-      otherItems: otherItems.length ? JSON.stringify(otherItems) : "",
+      // When a section is flagged as "no items", drop the items array
+      // entirely — the PDF will paint a blank checklist from the catalog
+      // regardless of what was previously selected.
+      furnitureList:
+        furnitureNone || furniture.length === 0
+          ? ""
+          : JSON.stringify(furniture),
+      applianceList:
+        applianceNone || appliances.length === 0
+          ? ""
+          : JSON.stringify(appliances),
+      otherItems:
+        otherItemsNone || otherItems.length === 0
+          ? ""
+          : JSON.stringify(otherItems),
+      furnitureNone,
+      applianceNone,
+      otherItemsNone,
       customClauses: serializeCustomClauses(customClauses),
       // Snapshot of the contract's clauses = template baseline + user edits.
       // PDF render reads only this field, so the merge has to happen here
@@ -975,6 +999,8 @@ export default function ContractForm({
           value={furniture}
           onChange={setFurniture}
           locale={locale}
+          noneSelected={furnitureNone}
+          onNoneSelectedChange={setFurnitureNone}
         />
       </Card>
 
@@ -989,6 +1015,8 @@ export default function ContractForm({
           value={appliances}
           onChange={setAppliances}
           locale={locale}
+          noneSelected={applianceNone}
+          onNoneSelectedChange={setApplianceNone}
         />
       </Card>
 
@@ -1003,6 +1031,8 @@ export default function ContractForm({
           value={otherItems}
           onChange={setOtherItems}
           locale={locale}
+          noneSelected={otherItemsNone}
+          onNoneSelectedChange={setOtherItemsNone}
         />
       </Card>
 

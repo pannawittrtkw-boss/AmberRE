@@ -96,6 +96,9 @@ export async function PUT(
         furnitureList: body.furnitureList || null,
         applianceList: body.applianceList || null,
         otherItems: body.otherItems || null,
+        furnitureNone: !!body.furnitureNone,
+        applianceNone: !!body.applianceNone,
+        otherItemsNone: !!body.otherItemsNone,
 
         customClauses: body.customClauses || null,
         clauseOverrides: body.clauseOverrides || null,
@@ -109,6 +112,48 @@ export async function PUT(
     console.error("Update contract error:", err);
     return NextResponse.json(
       { success: false, error: err?.message || "Internal server error", code: err?.code },
+      { status: 500 }
+    );
+  }
+}
+
+// Partial update — currently scoped to `status` only. Lets the
+// contracts table flip status inline without sending the full PUT
+// payload (which clobbers any optional field missing from the body).
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user || (session.user as any).role !== "ADMIN") {
+    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+  }
+
+  try {
+    const { id } = await params;
+    const body = await req.json();
+
+    const ALLOWED_STATUSES = ["DRAFT", "ACTIVE", "EXPIRED", "TERMINATED"];
+    if (body.status && !ALLOWED_STATUSES.includes(body.status)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid status" },
+        { status: 400 }
+      );
+    }
+
+    const contract = await prisma.contract.update({
+      where: { id: parseInt(id, 10) },
+      data: {
+        ...(body.status ? { status: body.status } : {}),
+      },
+    });
+
+    return NextResponse.json({ success: true, data: contract });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Internal server error";
+    console.error("Patch contract error:", err);
+    return NextResponse.json(
+      { success: false, error: message },
       { status: 500 }
     );
   }

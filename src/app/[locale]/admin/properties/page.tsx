@@ -21,8 +21,12 @@ import {
   Trash2,
   ChevronDown,
   Train,
+  Receipt,
+  Lock,
 } from "lucide-react";
 import { LINES } from "@/components/admin/StationMapSelector";
+import BookingReceiptModal from "./BookingReceiptModal";
+import ExclusiveModal from "./ExclusiveModal";
 
 const FURNITURE_ITEMS: Record<string, { en: string; th: string }> = {
   bed: { en: "Bed", th: "เตียง" },
@@ -83,6 +87,8 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
   const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailModal, setDetailModal] = useState<any>(null);
+  const [receiptModal, setReceiptModal] = useState<any>(null);
+  const [exclusiveModal, setExclusiveModal] = useState<any>(null);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
@@ -101,6 +107,7 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
   const [filterMinPrice, setFilterMinPrice] = useState("");
   const [filterMaxPrice, setFilterMaxPrice] = useState("");
   const [filterStation, setFilterStation] = useState("");
+  const [filterExclusive, setFilterExclusive] = useState(false);
 
   useEffect(() => {
     params.then(({ locale: l }) => {
@@ -189,15 +196,18 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
       });
       if (!matched) return false;
     }
+    // Exclusive contract
+    if (filterExclusive && !p.isExclusive) return false;
     return true;
   });
 
-  const hasActiveFilters = filterStatus || filterListing || filterPriority || filterCategory || filterMinPrice || filterMaxPrice || filterStation;
+  const hasActiveFilters = filterStatus || filterListing || filterPriority || filterCategory || filterMinPrice || filterMaxPrice || filterStation || filterExclusive;
 
   const clearFilters = () => {
     setSearchText(""); setFilterStatus(""); setFilterListing("");
     setFilterPriority(""); setFilterCategory("");
     setFilterMinPrice(""); setFilterMaxPrice(""); setFilterStation("");
+    setFilterExclusive(false);
   };
 
   // Generate month tabs from properties
@@ -372,6 +382,18 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                 <label className="block text-xs font-medium text-gray-500 mb-1">สถานี BTS/MRT</label>
                 <input type="text" value={filterStation} onChange={(e) => setFilterStation(e.target.value)} placeholder="E16, ปู่เจ้า" className="w-full border rounded-lg px-3 py-2 text-sm" />
               </div>
+              <div className="flex items-end gap-2">
+                <label className="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 hover:bg-amber-100 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={filterExclusive}
+                    onChange={(e) => setFilterExclusive(e.target.checked)}
+                    className="accent-amber-600"
+                  />
+                  <Lock className="w-3.5 h-3.5" />
+                  สัญญาปิดเท่านั้น
+                </label>
+              </div>
               <div className="flex items-end">
                 {hasActiveFilters && (
                   <button onClick={clearFilters} className="text-sm text-red-500 hover:text-red-700 underline">
@@ -463,6 +485,9 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
           const statusInfo = STATUS_MAP[p.status] || STATUS_MAP.PENDING;
           const price = Number(p.price);
           const salePrice = Number(p.salePrice);
+          const exclusiveDaysLeft = p.isExclusive && p.exclusiveEndDate
+            ? Math.ceil((new Date(p.exclusiveEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+            : null;
 
           return (
             <div key={p.id} className="bg-white rounded-xl border shadow-sm overflow-hidden">
@@ -474,6 +499,11 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                     <h3 className="font-semibold text-gray-900 truncate">
                       {p.projectName || p.titleTh || "-"}
                     </h3>
+                    {p.postFrom === "CO_AGENT" && p.agent && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-medium flex-shrink-0">
+                        Co-Agent: {p.agent.firstName} {p.agent.lastName}
+                      </span>
+                    )}
                     <select
                       value={p.status || "PENDING"}
                       onChange={async (e) => {
@@ -508,6 +538,19 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                     )}
                     {p.priority === "URGENT" && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">Urgent</span>
+                    )}
+                    {p.isExclusive && (
+                      <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                        exclusiveDaysLeft !== null && exclusiveDaysLeft < 0 ? "bg-red-100 text-red-700" :
+                        exclusiveDaysLeft !== null && exclusiveDaysLeft <= 45 ? "bg-yellow-100 text-yellow-700" :
+                        "bg-amber-100 text-amber-800"
+                      }`}>
+                        <Lock className="w-2.5 h-2.5" />
+                        สัญญาปิด
+                        {exclusiveDaysLeft !== null && (
+                          exclusiveDaysLeft < 0 ? " (หมดแล้ว)" : ` (${exclusiveDaysLeft}ว)`
+                        )}
+                      </span>
                     )}
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
@@ -563,6 +606,20 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                   )}
                 </div>
                 <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setExclusiveModal(p)}
+                    className={`p-2 rounded-lg transition-colors ${p.isExclusive ? "text-amber-600 bg-amber-50 hover:bg-amber-100" : "hover:bg-gray-100 text-gray-400"}`}
+                    title="สัญญาปิด"
+                  >
+                    <Lock className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setReceiptModal(p)}
+                    className="p-2 hover:bg-green-50 rounded-lg text-green-700 transition-colors"
+                    title="Create ใบรับเงินมัดจำ"
+                  >
+                    <Receipt className="w-4 h-4" />
+                  </button>
                   <Link href={`/${locale}/admin/contracts/new?propertyId=${p.id}`} className="p-2 hover:bg-amber-50 rounded-lg text-amber-700 transition-colors" title="Create Contract">
                     <FileSignature className="w-4 h-4" />
                   </Link>
@@ -634,6 +691,15 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                   )}
                   {p.category === "LUXURY" && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">Luxury</span>}
                   {p.priority === "URGENT" && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">Urgent</span>}
+                  {p.isExclusive && (
+                    <span className={`inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                      exclusiveDaysLeft !== null && exclusiveDaysLeft < 0 ? "bg-red-100 text-red-700" :
+                      exclusiveDaysLeft !== null && exclusiveDaysLeft <= 45 ? "bg-yellow-100 text-yellow-700" :
+                      "bg-amber-100 text-amber-800"
+                    }`}>
+                      <Lock className="w-2.5 h-2.5" />สัญญาปิด
+                    </span>
+                  )}
                 </div>
 
                 {/* Stations */}
@@ -667,6 +733,20 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                         <FileText className="w-4 h-4" />
                       </button>
                     )}
+                    <button
+                      onClick={() => setExclusiveModal(p)}
+                      className={`p-2 rounded-lg transition-colors ${p.isExclusive ? "text-amber-600 bg-amber-50 hover:bg-amber-100" : "hover:bg-gray-100 text-gray-400"}`}
+                      title="สัญญาปิด"
+                    >
+                      <Lock className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setReceiptModal(p)}
+                      className="p-2 hover:bg-green-50 rounded-lg text-green-700 transition-colors"
+                      title="Create ใบรับเงินมัดจำ"
+                    >
+                      <Receipt className="w-4 h-4" />
+                    </button>
                     <Link href={`/${locale}/admin/contracts/new?propertyId=${p.id}`} className="p-2 hover:bg-amber-50 rounded-lg text-amber-700 transition-colors" title="Create Contract">
                       <FileSignature className="w-4 h-4" />
                     </Link>
@@ -752,6 +832,23 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
           </div>
         )}
       </div>
+
+      {/* Exclusive Contract Modal */}
+      {exclusiveModal && (
+        <ExclusiveModal
+          property={exclusiveModal}
+          onClose={() => setExclusiveModal(null)}
+          onSaved={fetchProperties}
+        />
+      )}
+
+      {/* Booking Receipt Modal */}
+      {receiptModal && (
+        <BookingReceiptModal
+          property={receiptModal}
+          onClose={() => setReceiptModal(null)}
+        />
+      )}
 
       {/* Room Items Detail Modal */}
       {detailModal && (

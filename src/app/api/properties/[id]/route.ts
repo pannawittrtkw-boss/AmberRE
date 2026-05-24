@@ -74,7 +74,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       "status", "category", "priority", "note",
     ];
     const boolFields = [
-      "kitchenPartition", "bedroomPartition", "isFeatured", "isPopular", "isSold",
+      "kitchenPartition", "bedroomPartition", "isFeatured", "isPopular", "isSold", "isExclusive",
     ];
     const intFields = ["bedrooms", "bathrooms", "floor", "views", "projectId"];
 
@@ -96,6 +96,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (rawData.latitude !== undefined) updateData.latitude = rawData.latitude !== null ? Number(rawData.latitude) : null;
     if (rawData.longitude !== undefined) updateData.longitude = rawData.longitude !== null ? Number(rawData.longitude) : null;
     if (rawData.availableDate !== undefined) updateData.availableDate = rawData.availableDate ? new Date(rawData.availableDate) : null;
+    if (rawData.exclusiveStartDate !== undefined) updateData.exclusiveStartDate = rawData.exclusiveStartDate ? new Date(rawData.exclusiveStartDate) : null;
+    if (rawData.exclusiveEndDate !== undefined) updateData.exclusiveEndDate = rawData.exclusiveEndDate ? new Date(rawData.exclusiveEndDate) : null;
 
     // JSON stringify arrays
     if (furnitureDetails !== undefined) {

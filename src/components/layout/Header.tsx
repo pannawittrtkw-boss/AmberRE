@@ -169,6 +169,15 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
                         {t.admin}
                       </Link>
                     )}
+                    {(session.user as any)?.role === "CO_AGENT" && (
+                      <Link
+                        href={`/${locale}/agent`}
+                        className="block px-4 py-2 text-sm text-amber-600 font-medium hover:bg-amber-50"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        {locale === "th" ? "Agent Portal" : "Agent Portal"}
+                      </Link>
+                    )}
                     <Link
                       href={`/${locale}/profile/change-password`}
                       className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-yellow-50 hover:text-[#C8A951]"

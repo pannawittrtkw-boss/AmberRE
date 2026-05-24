@@ -13,6 +13,15 @@ interface ItemSelectorProps {
   value: ContractItem[];
   onChange: (items: ContractItem[]) => void;
   locale: string;
+  /**
+   * "No items in this section" flag. When true the section is shipped to
+   * the PDF as a blank checklist (all qty = 0) for the staff to fill in
+   * manually. The catalog checkboxes are disabled while this is on; the
+   * previously selected items are remembered and restored when the flag
+   * is unticked.
+   */
+  noneSelected?: boolean;
+  onNoneSelectedChange?: (v: boolean) => void;
 }
 
 export default function ItemSelector({
@@ -20,6 +29,8 @@ export default function ItemSelector({
   value,
   onChange,
   locale,
+  noneSelected = false,
+  onNoneSelectedChange,
 }: ItemSelectorProps) {
   const find = (key: string) => value.find((v) => v.key === key);
 
@@ -81,36 +92,67 @@ export default function ItemSelector({
     onChange(value.filter((v) => v.key !== key));
   };
 
+  const handleNoneToggle = (checked: boolean) => {
+    onNoneSelectedChange?.(checked);
+  };
+
   return (
     <div className="space-y-3">
-      <div className="flex justify-end">
-        <label className="flex items-center gap-2 text-xs text-stone-600 cursor-pointer">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <label
+          className={`flex items-center gap-2 text-xs cursor-pointer ${
+            noneSelected ? "text-rose-700 font-medium" : "text-stone-600"
+          }`}
+        >
           <input
             type="checkbox"
-            checked={allChecked}
+            checked={noneSelected}
+            onChange={(e) => handleNoneToggle(e.target.checked)}
+            className="w-4 h-4 accent-rose-500"
+          />
+          {locale === "th"
+            ? "ไม่มีรายการในส่วนนี้ (PDF จะพิมพ์เป็น checklist เปล่าให้กรอกมือ)"
+            : "No items in this section (PDF prints a blank checklist for manual entry)"}
+        </label>
+        <label
+          className={`flex items-center gap-2 text-xs cursor-pointer ${
+            noneSelected ? "text-stone-400" : "text-stone-600"
+          }`}
+        >
+          <input
+            type="checkbox"
+            checked={allChecked && !noneSelected}
             onChange={toggleAll}
+            disabled={noneSelected}
             className="w-4 h-4 accent-[#C8A951]"
           />
           {locale === "th" ? "เลือกทั้งหมด" : "Select all"}
         </label>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div
+        className={`grid grid-cols-1 sm:grid-cols-2 gap-2 ${
+          noneSelected ? "opacity-50" : ""
+        }`}
+      >
         {options.map((o) => {
           const sel = find(o.key);
-          const checked = !!sel;
+          const checked = !!sel && !noneSelected;
           return (
             <label
               key={o.key}
-              className={`flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer transition-colors ${
-                checked
-                  ? "bg-amber-50 border-[#C8A951]"
-                  : "bg-white border-stone-200 hover:border-stone-300"
+              className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-colors ${
+                noneSelected
+                  ? "bg-stone-50 border-stone-200 cursor-not-allowed"
+                  : checked
+                  ? "bg-amber-50 border-[#C8A951] cursor-pointer"
+                  : "bg-white border-stone-200 hover:border-stone-300 cursor-pointer"
               }`}
             >
               <input
                 type="checkbox"
                 checked={checked}
                 onChange={() => toggle(o.key)}
+                disabled={noneSelected}
                 className="w-4 h-4 accent-[#C8A951]"
               />
               <span className="flex-1 text-sm">
@@ -119,9 +161,9 @@ export default function ItemSelector({
               <input
                 type="number"
                 min={1}
-                value={sel?.qty ?? ""}
+                value={noneSelected ? 0 : sel?.qty ?? ""}
                 placeholder="-"
-                disabled={!checked}
+                disabled={!checked || noneSelected}
                 onChange={(e) => updateQty(o.key, Number(e.target.value))}
                 onClick={(e) => e.stopPropagation()}
                 className="w-14 text-center border rounded-md px-1 py-0.5 text-sm disabled:bg-stone-100 disabled:text-stone-400"
@@ -131,8 +173,10 @@ export default function ItemSelector({
         })}
       </div>
 
-      {/* Custom items — visible only on this contract */}
-      {customs.length > 0 && (
+      {/* Custom items — visible only on this contract.
+          Hidden entirely when "none selected" is on so the section
+          really does look empty. */}
+      {!noneSelected && customs.length > 0 && (
         <div className="space-y-2 pt-2 border-t border-stone-200">
           <p className="text-xs text-stone-500">
             {locale === "th" ? "รายการที่เพิ่มเอง" : "Custom items"}
@@ -181,7 +225,8 @@ export default function ItemSelector({
       <button
         type="button"
         onClick={addCustom}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-stone-700 border border-stone-300 hover:bg-stone-50 rounded-lg"
+        disabled={noneSelected}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-stone-700 border border-stone-300 hover:bg-stone-50 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <Plus className="w-3.5 h-3.5" />
         {locale === "th" ? "เพิ่มรายการเอง" : "Add custom item"}

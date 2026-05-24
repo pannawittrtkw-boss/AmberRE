@@ -465,7 +465,13 @@ function renderClause(
 // chunk to the next page when the section heading sat near the bottom
 // of the previous page, leaving the heading orphaned with empty space
 // underneath — which the user explicitly rejected.
-function ItemTable({ items }: { items: PdfChecklistItem[] }) {
+function ItemTable({
+  items,
+  noneSelected,
+}: {
+  items: PdfChecklistItem[];
+  noneSelected?: boolean;
+}) {
   if (items.length === 0) return null;
   return (
     <View style={styles.itemTable}>
@@ -484,23 +490,30 @@ function ItemTable({ items }: { items: PdfChecklistItem[] }) {
           </TText>
         </View>
       </View>
-      {items.map((item, i) => (
-        <View key={i} style={styles.itemTableRow} wrap={false}>
-          <View style={styles.itemTableCellNo}>
-            <TText style={{ textAlign: "center" }}>{i + 1}</TText>
+      {items.map((item, i) => {
+        // In "no items" mode the Qty cell is left blank so the staff
+        // can write the actual count by hand on the printed copy.
+        const qtyLabel = noneSelected
+          ? " "
+          : item.checked && item.qty
+          ? String(item.qty)
+          : "-";
+        return (
+          <View key={i} style={styles.itemTableRow} wrap={false}>
+            <View style={styles.itemTableCellNo}>
+              <TText style={{ textAlign: "center" }}>{i + 1}</TText>
+            </View>
+            <View style={styles.itemTableCellListing}>
+              <TText>
+                {item.th} / {item.en}
+              </TText>
+            </View>
+            <View style={styles.itemTableCellQty}>
+              <TText style={{ textAlign: "center" }}>{qtyLabel}</TText>
+            </View>
           </View>
-          <View style={styles.itemTableCellListing}>
-            <TText>
-              {item.th} / {item.en}
-            </TText>
-          </View>
-          <View style={styles.itemTableCellQty}>
-            <TText style={{ textAlign: "center" }}>
-              {item.checked && item.qty ? item.qty : "-"}
-            </TText>
-          </View>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 }
@@ -572,6 +585,12 @@ export interface ContractPdfData {
   furnitureList: PdfChecklistItem[];
   applianceList: PdfChecklistItem[];
   otherItems: PdfChecklistItem[];
+  // When a `*None` flag is set, the matching table renders as a blank
+  // checklist (all qty = 0, nothing ticked) so the contract can be
+  // printed and filled in by hand.
+  furnitureNone?: boolean;
+  applianceNone?: boolean;
+  otherItemsNone?: boolean;
 
   // Optional per-contract custom clauses appended after section 11.6.
   // Each clause is rendered as a numbered bullet (11.7, 11.8, ...).
@@ -887,7 +906,10 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
                   <TText style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
                     10.1 เฟอร์นิเจอร์ / Furniture
                   </TText>
-                  <ItemTable items={data.furnitureList} />
+                  <ItemTable
+                    items={data.furnitureList}
+                    noneSelected={data.furnitureNone}
+                  />
                 </>
               )}
               {data.applianceList.length > 0 && (
@@ -895,7 +917,10 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
                   <TText style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
                     10.2 เครื่องใช้ไฟฟ้า / Electrical Appliances
                   </TText>
-                  <ItemTable items={data.applianceList} />
+                  <ItemTable
+                    items={data.applianceList}
+                    noneSelected={data.applianceNone}
+                  />
                 </>
               )}
               {data.otherItems.length > 0 && (
@@ -903,7 +928,10 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
                   <TText style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
                     10.3 รายการอื่นๆ / Other Items
                   </TText>
-                  <ItemTable items={data.otherItems} />
+                  <ItemTable
+                    items={data.otherItems}
+                    noneSelected={data.otherItemsNone}
+                  />
                 </>
               )}
             </>

@@ -189,7 +189,13 @@ export default async function PropertyDetailPage({
     include: {
       images: { orderBy: { sortOrder: "asc" } },
       owner: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
-      agent: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
+      agent: {
+        select: {
+          id: true, firstName: true, lastName: true, phone: true, email: true,
+          lineId: true, profileImage: true,
+          coAgentApplication: { select: { companyName: true, status: true } },
+        },
+      },
       propertyAmenities: { include: { amenity: true } },
       project: true,
       reviews: {
@@ -756,30 +762,56 @@ export default async function PropertyDetailPage({
 
             {/* Contact Card */}
             <div className="bg-white rounded-3xl p-6 shadow-sm">
-              <div className="flex items-center gap-4 mb-5">
-                <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={siteSettings.logo || "/placeholder.png"}
-                    alt="NPB Property"
-                    className="w-full h-full object-contain"
-                  />
+              {property.agent ? (
+                /* Co-Agent card */
+                <div className="flex items-center gap-4 mb-5">
+                  {property.agent.profileImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={property.agent.profileImage}
+                      alt={`${property.agent.firstName} ${property.agent.lastName}`}
+                      className="w-16 h-16 rounded-full object-cover flex-shrink-0 border-2 border-amber-200"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 border-2 border-amber-200">
+                      <span className="text-amber-600 font-bold text-xl">
+                        {property.agent.firstName.charAt(0)}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-bold text-stone-900">
+                      {property.agent.firstName} {property.agent.lastName}
+                    </p>
+                    {property.agent.coAgentApplication?.companyName && (
+                      <p className="text-xs text-stone-500">{property.agent.coAgentApplication.companyName}</p>
+                    )}
+                    <p className="text-xs text-amber-600 font-medium mt-0.5">Co-Agent · NPB Property</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-bold text-stone-900">
-                    NPB Property
-                  </p>
-                  <p className="text-xs text-stone-500">
-                    {locale === "th"
-                      ? "ตัวแทนอสังหาฯ มืออาชีพ"
-                      : "Professional Real Estate Agent"}
-                  </p>
+              ) : (
+                /* Default NPB card */
+                <div className="flex items-center gap-4 mb-5">
+                  <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={siteSettings.logo || "/placeholder.png"}
+                      alt="NPB Property"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <div>
+                    <p className="font-bold text-stone-900">NPB Property</p>
+                    <p className="text-xs text-stone-500">
+                      {locale === "th" ? "ตัวแทนอสังหาฯ มืออาชีพ" : "Professional Real Estate Agent"}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <AgentContactButtons
-                phone={contactPhone}
-                lineId={contactLine}
+                phone={property.agent?.phone || contactPhone}
+                lineId={property.agent?.lineId || contactLine}
                 locale={locale}
               />
 

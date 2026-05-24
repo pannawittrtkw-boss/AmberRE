@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, password, firstName, lastName, phone, role } = body;
+    const { email, password, firstName, lastName, phone, role, lineId, companyName, agentType } = body;
 
     if (!email || !password || !firstName || !lastName) {
       return NextResponse.json(
@@ -24,6 +24,9 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
+    // Agent registers with BUYER role until admin approves the co-agent application
+    const assignedRole = role === "AGENT" ? "BUYER" : (role || "BUYER");
+
     const user = await prisma.user.create({
       data: {
         email,
@@ -31,9 +34,22 @@ export async function POST(req: NextRequest) {
         firstName,
         lastName,
         phone: phone || null,
-        role: role || "BUYER",
+        lineId: role === "AGENT" && lineId ? lineId : null,
+        role: assignedRole,
       },
     });
+
+    // Auto-create pending co-agent application when registering as Agent
+    if (role === "AGENT") {
+      await prisma.coAgentApplication.create({
+        data: {
+          userId: user.id,
+          companyName: agentType === "COMPANY" && companyName ? companyName : null,
+          licenseNumber: null,
+          experienceYears: null,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -43,6 +59,7 @@ export async function POST(req: NextRequest) {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        pendingAgent: role === "AGENT",
       },
     });
   } catch (error) {

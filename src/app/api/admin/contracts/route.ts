@@ -128,7 +128,12 @@ export async function POST(req: NextRequest) {
         jointLesseePhone: body.jointLesseePhone || null,
         jointLesseeIdImage: body.jointLesseeIdImage || null,
 
-        propertyId,
+        // Prisma 6 rejects writing the scalar FK (`propertyId`) directly on
+        // a `@relation`-mapped field at create time — use the nested
+        // connect form (omit entirely when there's no property to link).
+        ...(propertyId
+          ? { property: { connect: { id: propertyId } } }
+          : {}),
         projectName: String(body.projectName).trim(),
         unitNumber: String(body.unitNumber).trim(),
         buildingName: body.buildingName || null,
@@ -152,12 +157,19 @@ export async function POST(req: NextRequest) {
         furnitureList: body.furnitureList || null,
         applianceList: body.applianceList || null,
         otherItems: body.otherItems || null,
+        furnitureNone: !!body.furnitureNone,
+        applianceNone: !!body.applianceNone,
+        otherItemsNone: !!body.otherItemsNone,
 
         customClauses: body.customClauses || null,
         clauseOverrides: body.clauseOverrides || null,
 
         status: body.status || "DRAFT",
-        createdById,
+        // Same nested-write requirement applies to `createdBy` — Prisma 6
+        // refuses the raw `createdById` scalar at create time.
+        ...(createdById
+          ? { createdBy: { connect: { id: createdById } } }
+          : {}),
       },
     });
         break;

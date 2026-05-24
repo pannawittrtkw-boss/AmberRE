@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { LogIn, Loader2, Sparkles, ArrowRight, Building2 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { LogIn, Loader2, Sparkles, ArrowRight, Building2, CheckCircle } from "lucide-react";
 
 export default function LoginPage({
   params,
@@ -12,6 +12,8 @@ export default function LoginPage({
   params: Promise<{ locale: string }>;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const agentNotice = searchParams.get("notice") === "agent";
   const [locale, setLocale] = useState("th");
   const [messages, setMessages] = useState<any>(null);
   const [email, setEmail] = useState("");
@@ -140,6 +142,17 @@ export default function LoginPage({
                 ? "กรอกข้อมูลด้านล่างเพื่อเข้าสู่ระบบ"
                 : "Enter your credentials below to sign in"}
             </p>
+
+            {agentNotice && (
+              <div className="mb-4 bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-start gap-2.5">
+                <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-green-700">
+                  {locale === "th"
+                    ? "สมัครสมาชิก Agent เรียบร้อยแล้ว! กรุณา Login เข้าสู่ระบบ — บัญชีของคุณจะถูก Activate หลังจากทีม NPB Property อนุมัติ"
+                    : "Agent account registered! Please log in — your account will be activated after NPB Property team reviews your application."}
+                </p>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (

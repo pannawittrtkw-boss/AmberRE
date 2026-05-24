@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   ArrowLeft,
   Save,
@@ -97,9 +98,11 @@ export default function AddPropertyPage({
   params: Promise<{ locale: string }>;
 }) {
   const router = useRouter();
+  const { data: session } = useSession();
   const searchParams = useSearchParams();
   const editId = searchParams.get("edit");
   const isEditMode = !!editId;
+  const isAgentMode = (session?.user as any)?.role === "CO_AGENT";
 
   const [locale, setLocale] = useState("th");
   const [saving, setSaving] = useState(false);
@@ -521,7 +524,7 @@ export default function AddPropertyPage({
 
       const data = await res.json();
       if (data.success) {
-        router.push(`/${locale}/admin/properties`);
+        router.push(isAgentMode ? `/${locale}/agent` : `/${locale}/admin/properties`);
       } else {
         alert(data.error || "Failed to save property");
       }
@@ -541,16 +544,23 @@ export default function AddPropertyPage({
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <Link
-          href={`/${locale}/admin/properties`}
+          href={isAgentMode ? `/${locale}/agent` : `/${locale}/admin/properties`}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <h1 className="text-xl sm:text-2xl font-bold">
-          {isEditMode
-            ? locale === "th" ? "แก้ไขข้อมูลห้อง" : "Edit Property"
-            : locale === "th" ? "เพิ่มข้อมูลห้อง" : "Add Property"}
-        </h1>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold">
+            {isEditMode
+              ? locale === "th" ? "แก้ไขข้อมูลห้อง" : "Edit Property"
+              : locale === "th" ? "เพิ่มทรัพย์ใหม่" : "Add Property"}
+          </h1>
+          {isAgentMode && (
+            <p className="text-sm text-amber-600 mt-0.5">
+              ทรัพย์จะถูกส่งให้ทีม NPB Property พิจารณาเผยแพร่
+            </p>
+          )}
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -1380,6 +1390,11 @@ export default function AddPropertyPage({
               {locale === "th" ? "สถานะและหมายเหตุ" : "Status & Notes"}
             </h2>
           </div>
+          {isAgentMode && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-700 mb-4">
+              ทรัพย์ที่เพิ่มจะมีสถานะ <strong>รออนุมัติ (PENDING)</strong> และทีม NPB Property จะพิจารณาเผยแพร่ในระบบ
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Available Date */}
             <div>
@@ -1394,43 +1409,47 @@ export default function AddPropertyPage({
               />
             </div>
 
-            {/* Status */}
-            <div>
-              <label className="block text-sm font-semibold mb-2">Status</label>
-              <select
-                value={form.status}
-                onChange={(e) => updateForm("status", e.target.value)}
-                className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none bg-white"
-              >
-                {STATUS_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="block text-sm font-semibold mb-2">Category</label>
-              <div className="flex items-center gap-6 mt-1">
-                {["NORMAL", "LUXURY"].map((val) => (
-                  <label key={val} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="category"
-                      value={val}
-                      checked={form.category === val}
-                      onChange={(e) => updateForm("category", e.target.value)}
-                      className="w-5 h-5 text-amber-600 focus:ring-amber-500"
-                    />
-                    <span className="text-sm font-medium">
-                      {val === "NORMAL" ? "Normal" : "Luxury"}
-                    </span>
-                  </label>
-                ))}
+            {/* Status — admin only */}
+            {!isAgentMode && (
+              <div>
+                <label className="block text-sm font-semibold mb-2">Status</label>
+                <select
+                  value={form.status}
+                  onChange={(e) => updateForm("status", e.target.value)}
+                  className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none bg-white"
+                >
+                  {STATUS_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
               </div>
-            </div>
+            )}
+
+            {/* Category — admin only */}
+            {!isAgentMode && (
+              <div>
+                <label className="block text-sm font-semibold mb-2">Category</label>
+                <div className="flex items-center gap-6 mt-1">
+                  {["NORMAL", "LUXURY"].map((val) => (
+                    <label key={val} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="category"
+                        value={val}
+                        checked={form.category === val}
+                        onChange={(e) => updateForm("category", e.target.value)}
+                        className="w-5 h-5 text-amber-600 focus:ring-amber-500"
+                      />
+                      <span className="text-sm font-medium">
+                        {val === "NORMAL" ? "Normal" : "Luxury"}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Note */}
             <div>
@@ -1444,34 +1463,36 @@ export default function AddPropertyPage({
               />
             </div>
 
-            {/* Priority */}
-            <div>
-              <label className="block text-sm font-semibold mb-2">Priority</label>
-              <div className="flex items-center gap-6 mt-1">
-                {["NORMAL", "URGENT"].map((val) => (
-                  <label key={val} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="priority"
-                      value={val}
-                      checked={form.priority === val}
-                      onChange={(e) => updateForm("priority", e.target.value)}
-                      className="w-5 h-5 text-amber-600 focus:ring-amber-500"
-                    />
-                    <span className="text-sm font-medium">
-                      {val === "NORMAL" ? "Normal" : "Urgent"}
-                    </span>
-                  </label>
-                ))}
+            {/* Priority — admin only */}
+            {!isAgentMode && (
+              <div>
+                <label className="block text-sm font-semibold mb-2">Priority</label>
+                <div className="flex items-center gap-6 mt-1">
+                  {["NORMAL", "URGENT"].map((val) => (
+                    <label key={val} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="priority"
+                        value={val}
+                        checked={form.priority === val}
+                        onChange={(e) => updateForm("priority", e.target.value)}
+                        className="w-5 h-5 text-amber-600 focus:ring-amber-500"
+                      />
+                      <span className="text-sm font-medium">
+                        {val === "NORMAL" ? "Normal" : "Urgent"}
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
         {/* Submit */}
         <div className="flex justify-end gap-3 pb-8">
           <Link
-            href={`/${locale}/admin/properties`}
+            href={isAgentMode ? `/${locale}/agent` : `/${locale}/admin/properties`}
             className="px-6 py-3 border rounded-lg hover:bg-gray-50 transition-colors font-medium"
           >
             {locale === "th" ? "ยกเลิก" : "Cancel"}

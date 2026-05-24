@@ -11,7 +11,7 @@ export async function GET() {
     }
 
     const applications = await prisma.coAgentApplication.findMany({
-      include: { user: { select: { firstName: true, lastName: true, email: true } } },
+      include: { user: { select: { firstName: true, lastName: true, email: true, phone: true, lineId: true } } },
       orderBy: { createdAt: "desc" },
     });
 

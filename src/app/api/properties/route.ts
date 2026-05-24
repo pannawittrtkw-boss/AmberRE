@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
     const userId = Number((session.user as any).id);
     const role = (session.user as any).role;
 
-    if (!["OWNER", "AGENT", "ADMIN"].includes(role)) {
+    if (!["OWNER", "AGENT", "CO_AGENT", "ADMIN"].includes(role)) {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
         sourceLink: sourceLink || null,
         linkPage: linkPage || null,
         building: building || null,
-        postFrom: postFrom || "OWNER",
+        postFrom: role === "CO_AGENT" ? "CO_AGENT" : (postFrom || "OWNER"),
         furnitureDetails: furnitureDetails ? JSON.stringify(furnitureDetails) : null,
         electricalAppliances: electricalAppliances ? JSON.stringify(electricalAppliances) : null,
         facilities: facilities ? JSON.stringify(facilities) : null,
@@ -195,12 +195,13 @@ export async function POST(req: NextRequest) {
         coAgentPhone: coAgentPhone || null,
         coAgentLineId: coAgentLineId || null,
         coAgentFacebookUrl: coAgentFacebookUrl || null,
-        status: status || "PENDING",
+        // CO_AGENT: always PENDING, admin-submitted uses form value
+        status: role === "CO_AGENT" ? "PENDING" : (status || "PENDING"),
         category: category || "NORMAL",
         priority: priority || "NORMAL",
         note: note || null,
-        ownerId: role === "OWNER" ? userId : userId,
-        agentId: role === "AGENT" ? userId : null,
+        ownerId: userId,
+        agentId: (role === "AGENT" || role === "CO_AGENT") ? userId : null,
         ...(amenityIds?.length && {
           propertyAmenities: {
             create: amenityIds.map((id: number) => ({ amenityId: id })),

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Building2, Users, FileText, UserCheck, Star, Loader2, Settings,
-  Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature,
+  Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature, Lock,
 } from "lucide-react";
 
 export default function AdminLayout({
@@ -48,10 +48,17 @@ export default function AdminLayout({
     return () => clearInterval(id);
   }, [session, pathname]);
 
+  const role = (session?.user as any)?.role;
+  // CO_AGENT can access only the property add/edit pages (to use the same form as admin)
+  const isCoAgentAddPage = role === "CO_AGENT" && pathname.includes("/admin/properties/add");
+
   useEffect(() => {
     if (status === "unauthenticated") router.push(`/${locale}/auth/login`);
-    if (session && (session.user as any)?.role !== "ADMIN") router.push(`/${locale}`);
-  }, [session, status, router, locale]);
+    if (session && role !== "ADMIN" && role !== "CO_AGENT") router.push(`/${locale}`);
+    if (session && role === "CO_AGENT" && !pathname.includes("/admin/properties/add")) {
+      router.push(`/${locale}/agent`);
+    }
+  }, [session, status, router, locale, role, pathname]);
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -62,7 +69,16 @@ export default function AdminLayout({
     return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
   }
 
-  if ((session?.user as any)?.role !== "ADMIN") return null;
+  if (role !== "ADMIN" && !isCoAgentAddPage) return null;
+
+  // CO_AGENT on add-property page: render only the content, no admin sidebar
+  if (isCoAgentAddPage) {
+    return (
+      <div className="bg-gray-50 min-h-screen p-4 sm:p-6">
+        {children}
+      </div>
+    );
+  }
 
   const t = messages.admin;
   const navItems = [
@@ -76,6 +92,7 @@ export default function AdminLayout({
     { href: `/${locale}/admin/electricity-calculator`, icon: Zap, label: messages.electricityCalculator?.navLabel || "Electricity Calc" },
     { href: `/${locale}/admin/accounting`, icon: Wallet, label: t.accounting || "Accounting" },
     { href: `/${locale}/admin/contracts`, icon: FileSignature, label: locale === "th" ? "สัญญาเช่า" : "Contracts" },
+    { href: `/${locale}/admin/closed-contracts`, icon: Lock, label: locale === "th" ? "Closed Contracts" : "Closed Contracts" },
     { href: `/${locale}/admin/co-agents`, icon: UserCheck, label: t.coAgentApproval },
     { href: `/${locale}/admin/reviews`, icon: Star, label: t.reviewModeration },
     { href: `/${locale}/admin/settings`, icon: Settings, label: t.settings || "Settings" },

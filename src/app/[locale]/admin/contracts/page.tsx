@@ -1,8 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Loader2, FileText, Plus, Eye, Pencil, Trash2, Download, Settings } from "lucide-react";
+import {
+  Loader2,
+  FileText,
+  Plus,
+  Eye,
+  Pencil,
+  Trash2,
+  Download,
+  Settings,
+  Copy,
+  Paperclip,
+  Share2,
+  X,
+  CheckCircle2,
+  Upload,
+} from "lucide-react";
 import { getIntlLocale } from "@/lib/utils";
 
 type Contract = {
@@ -17,6 +32,8 @@ type Contract = {
   unitNumber: string;
   monthlyRent: string;
   status: string;
+  signedPdfUrl?: string | null;
+  shareToken?: string | null;
   property?: { id: number; titleTh: string; projectName: string | null } | null;
 };
 
@@ -27,6 +44,194 @@ const STATUS_COLORS: Record<string, string> = {
   TERMINATED: "bg-red-100 text-red-700",
 };
 
+const STATUS_OPTIONS = ["DRAFT", "ACTIVE", "EXPIRED", "TERMINATED"] as const;
+
+// ── Upload signed PDF modal ──────────────────────────────────────────────────
+function SignedPdfModal({
+  contract,
+  locale,
+  onClose,
+  onSaved,
+}: {
+  contract: Contract;
+  locale: string;
+  onClose: () => void;
+  onSaved: (updated: Pick<Contract, "id" | "signedPdfUrl" | "shareToken">) => void;
+}) {
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const shareUrl = contract.shareToken
+    ? `${window.location.origin}/${locale}/contracts/share/${contract.shareToken}`
+    : null;
+
+  const handleUpload = async () => {
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`/api/admin/contracts/${contract.id}/signed-pdf`, {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "Upload failed");
+      onSaved({ id: contract.id, signedPdfUrl: data.data.signedPdfUrl, shareToken: data.data.shareToken });
+    } catch (e: any) {
+      setError(e.message || "Upload failed");
+    }
+    setUploading(false);
+  };
+
+  const handleRemove = async () => {
+    if (!confirm("ลบไฟล์สัญญาที่เซ็นแล้ว?")) return;
+    const res = await fetch(`/api/admin/contracts/${contract.id}/signed-pdf`, { method: "DELETE" });
+    const data = await res.json();
+    if (data.success) onSaved({ id: contract.id, signedPdfUrl: null, shareToken: contract.shareToken });
+  };
+
+  const copyLink = () => {
+    if (!shareUrl) return;
+    navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl max-w-lg w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b">
+          <div className="flex items-center gap-2">
+            <Paperclip className="w-4 h-4 text-amber-600" />
+            <h3 className="font-semibold text-gray-900">
+              {locale === "th" ? "สัญญาที่เซ็นแล้ว" : "Signed Contract"}
+            </h3>
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-4">
+          <p className="text-sm text-gray-500">
+            {contract.contractNumber} · {contract.projectName} #{contract.unitNumber}
+          </p>
+
+          {/* Existing signed PDF */}
+          {contract.signedPdfUrl && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                  <span className="text-sm font-medium text-green-800">มีไฟล์สัญญาที่เซ็นแล้ว</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <a
+                    href={contract.signedPdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2 py-1 text-xs bg-white border border-green-300 text-green-700 rounded hover:bg-green-50 flex items-center gap-1"
+                  >
+                    <Eye className="w-3 h-3" /> ดู
+                  </a>
+                  <button
+                    onClick={handleRemove}
+                    className="px-2 py-1 text-xs bg-white border border-red-200 text-red-500 rounded hover:bg-red-50"
+                  >
+                    ลบ
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Share link */}
+          {shareUrl && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-xs font-medium text-blue-700 mb-2 flex items-center gap-1">
+                <Share2 className="w-3.5 h-3.5" />
+                {locale === "th" ? "ลิงก์แชร์สำหรับดู PDF Online" : "Share link to view PDF online"}
+              </p>
+              <div className="flex gap-2">
+                <input
+                  readOnly
+                  value={shareUrl}
+                  className="flex-1 text-xs bg-white border border-blue-200 rounded px-2 py-1.5 text-gray-700 select-all"
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                />
+                <button
+                  onClick={copyLink}
+                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${copied ? "bg-green-500 text-white" : "bg-blue-600 text-white hover:bg-blue-700"}`}
+                >
+                  {copied ? "✓ Copied" : locale === "th" ? "คัดลอก" : "Copy"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Upload new file */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-2">
+              {contract.signedPdfUrl
+                ? (locale === "th" ? "อัปโหลดไฟล์ใหม่ (แทนที่เดิม)" : "Upload replacement file")
+                : (locale === "th" ? "แนบไฟล์สัญญาที่เซ็นแล้ว (.pdf สูงสุด 20MB)" : "Attach signed contract PDF (max 20MB)")}
+            </label>
+            <div
+              className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-amber-400 transition-colors cursor-pointer"
+              onClick={() => inputRef.current?.click()}
+            >
+              {file ? (
+                <div className="flex items-center justify-center gap-2 text-sm text-green-700">
+                  <FileText className="w-4 h-4" />
+                  {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                </div>
+              ) : (
+                <div className="text-sm text-gray-400 space-y-1">
+                  <Upload className="w-6 h-6 mx-auto text-gray-300" />
+                  <p>คลิกเพื่อเลือกไฟล์ PDF</p>
+                </div>
+              )}
+            </div>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="application/pdf,.pdf"
+              className="hidden"
+              onChange={(e) => { setFile(e.target.files?.[0] || null); setError(""); }}
+            />
+          </div>
+
+          {error && <p className="text-xs text-red-600">{error}</p>}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t bg-gray-50 rounded-b-xl">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
+            {locale === "th" ? "ปิด" : "Close"}
+          </button>
+          {file && (
+            <button
+              onClick={handleUpload}
+              disabled={uploading}
+              className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 disabled:opacity-60"
+            >
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {uploading ? (locale === "th" ? "กำลังอัปโหลด..." : "Uploading...") : (locale === "th" ? "อัปโหลด" : "Upload")}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main page ───────────────────────────────────────────────────────────────
 export default function AdminContractsPage({
   params,
 }: {
@@ -35,6 +240,8 @@ export default function AdminContractsPage({
   const [locale, setLocale] = useState("th");
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
+  const [signedModal, setSignedModal] = useState<Contract | null>(null);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
 
   useEffect(() => {
     params.then(({ locale: l }) => setLocale(l));
@@ -54,6 +261,38 @@ export default function AdminContractsPage({
     if (!confirm(locale === "th" ? `ลบสัญญา ${c.contractNumber}?` : `Delete ${c.contractNumber}?`)) return;
     await fetch(`/api/admin/contracts/${c.id}`, { method: "DELETE" });
     await refresh();
+  };
+
+  const handleStatusChange = async (c: Contract, status: string) => {
+    if (status === c.status) return;
+    setContracts((prev) => prev.map((x) => (x.id === c.id ? { ...x, status } : x)));
+    try {
+      const res = await fetch(`/api/admin/contracts/${c.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "Failed");
+    } catch {
+      await refresh();
+    }
+  };
+
+  const handleSignedSaved = (updated: Pick<Contract, "id" | "signedPdfUrl" | "shareToken">) => {
+    setContracts((prev) =>
+      prev.map((x) => x.id === updated.id ? { ...x, ...updated } : x)
+    );
+    // Reopen modal with updated data
+    setSignedModal((prev) => prev ? { ...prev, ...updated } : null);
+  };
+
+  const copyShareLink = (c: Contract) => {
+    if (!c.shareToken) return;
+    const url = `${window.location.origin}/${locale}/contracts/share/${c.shareToken}`;
+    navigator.clipboard.writeText(url);
+    setCopiedId(c.id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   if (loading)
@@ -97,7 +336,7 @@ export default function AdminContractsPage({
 
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1000px] text-sm">
+          <table className="w-full min-w-[1100px] text-sm">
             <thead className="bg-gray-50">
               <tr>
                 <th className="text-left py-3 px-4">เลขที่</th>
@@ -119,30 +358,43 @@ export default function AdminContractsPage({
               ) : (
                 contracts.map((c) => (
                   <tr key={c.id} className="border-t hover:bg-gray-50">
-                    <td className="py-3 px-4 font-mono text-xs">{c.contractNumber}</td>
+                    <td className="py-3 px-4">
+                      <div className="font-mono text-xs">{c.contractNumber}</div>
+                      {/* Signed badge */}
+                      {c.signedPdfUrl && (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full mt-1 font-medium">
+                          <Paperclip className="w-2.5 h-2.5" />
+                          {locale === "th" ? "เซ็นแล้ว" : "Signed"}
+                        </span>
+                      )}
+                    </td>
                     <td className="py-3 px-4">
                       <div className="font-medium">{c.projectName}</div>
                       <div className="text-xs text-gray-500">#{c.unitNumber}</div>
                     </td>
                     <td className="py-3 px-4">{c.lesseeName}</td>
                     <td className="py-3 px-4 text-xs">
-                      {new Date(c.startDate).toLocaleDateString(getIntlLocale(locale))} →{" "}
-                      {new Date(c.endDate).toLocaleDateString(getIntlLocale(locale))}
+                      {new Date(c.startDate).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+                      {" → "}
+                      {new Date(c.endDate).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" })}
                     </td>
                     <td className="py-3 px-4 text-right">
                       ฿{Number(c.monthlyRent).toLocaleString()}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span
-                        className={`text-xs px-2 py-1 rounded ${
-                          STATUS_COLORS[c.status] || "bg-gray-100 text-gray-700"
-                        }`}
+                      <select
+                        value={c.status}
+                        onChange={(e) => handleStatusChange(c, e.target.value)}
+                        className={`text-xs px-2 py-1 rounded border-0 focus:outline-none focus:ring-1 focus:ring-stone-300 cursor-pointer ${STATUS_COLORS[c.status] || "bg-gray-100 text-gray-700"}`}
                       >
-                        {c.status}
-                      </span>
+                        {STATUS_OPTIONS.map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center justify-end gap-1">
+                        {/* Download generated PDF */}
                         <a
                           href={`/api/admin/contracts/${c.id}/pdf`}
                           target="_blank"
@@ -152,6 +404,28 @@ export default function AdminContractsPage({
                         >
                           <Download className="w-4 h-4" />
                         </a>
+                        {/* Attach signed PDF */}
+                        <button
+                          onClick={() => setSignedModal(c)}
+                          title={locale === "th" ? "แนบสัญญาที่เซ็นแล้ว" : "Attach signed contract"}
+                          className={`p-1.5 rounded transition-colors ${c.signedPdfUrl ? "text-green-600 bg-green-50 hover:bg-green-100" : "text-gray-400 hover:bg-gray-100"}`}
+                        >
+                          <Paperclip className="w-4 h-4" />
+                        </button>
+                        {/* Share link (only when signed PDF exists) */}
+                        {c.signedPdfUrl && c.shareToken && (
+                          <button
+                            onClick={() => copyShareLink(c)}
+                            title={locale === "th" ? "คัดลอกลิงก์แชร์" : "Copy share link"}
+                            className={`p-1.5 rounded transition-colors ${copiedId === c.id ? "text-green-600 bg-green-50" : "text-blue-500 hover:bg-blue-50"}`}
+                          >
+                            {copiedId === c.id ? (
+                              <CheckCircle2 className="w-4 h-4" />
+                            ) : (
+                              <Share2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        )}
                         <Link
                           href={`/${locale}/admin/contracts/${c.id}`}
                           title={locale === "th" ? "ดู" : "View"}
@@ -165,6 +439,13 @@ export default function AdminContractsPage({
                           className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
                         >
                           <Pencil className="w-4 h-4" />
+                        </Link>
+                        <Link
+                          href={`/${locale}/admin/contracts/new?copyFromId=${c.id}`}
+                          title={locale === "th" ? "คัดลอกเป็นสัญญาใหม่" : "Copy to new contract"}
+                          className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded"
+                        >
+                          <Copy className="w-4 h-4" />
                         </Link>
                         <button
                           onClick={() => handleDelete(c)}
@@ -182,6 +463,16 @@ export default function AdminContractsPage({
           </table>
         </div>
       </div>
+
+      {/* Signed PDF modal */}
+      {signedModal && (
+        <SignedPdfModal
+          contract={signedModal}
+          locale={locale}
+          onClose={() => setSignedModal(null)}
+          onSaved={handleSignedSaved}
+        />
+      )}
     </div>
   );
 }

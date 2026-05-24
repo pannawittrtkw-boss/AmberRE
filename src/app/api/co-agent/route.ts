@@ -17,7 +17,16 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { companyName, licenseNumber, experienceYears } = body;
+    const { companyName, licenseNumber, experienceYears, lineId, phone } = body;
+
+    // Save lineId + phone to User profile
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(lineId !== undefined && { lineId: lineId || null }),
+        ...(phone !== undefined && { phone: phone || null }),
+      },
+    });
 
     const application = await prisma.coAgentApplication.create({
       data: {
@@ -44,7 +53,9 @@ export async function GET() {
     const userId = Number((session.user as any).id);
     const application = await prisma.coAgentApplication.findUnique({
       where: { userId },
-      include: { user: { select: { firstName: true, lastName: true, email: true } } },
+      include: {
+        user: { select: { firstName: true, lastName: true, email: true, phone: true, lineId: true, profileImage: true } },
+      },
     });
 
     return NextResponse.json({ success: true, data: application });

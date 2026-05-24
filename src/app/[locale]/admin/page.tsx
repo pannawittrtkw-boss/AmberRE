@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Building2, Users, Eye, Clock, Loader2 } from "lucide-react";
+import { Building2, Users, Eye, Clock, Loader2, FileSignature } from "lucide-react";
+import Link from "next/link";
 
 export default function AdminDashboardPage({ params }: { params: Promise<{ locale: string }> }) {
   const [locale, setLocale] = useState("th");
@@ -28,10 +29,11 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ local
   const t = messages.admin;
 
   const statCards = [
-    { icon: Building2, label: t.totalProperties, value: stats?.totalProperties || 0, color: "bg-blue-500" },
-    { icon: Users, label: t.totalUsers, value: stats?.totalUsers || 0, color: "bg-green-500" },
-    { icon: Eye, label: t.totalViews, value: stats?.totalViews || 0, color: "bg-purple-500" },
-    { icon: Clock, label: t.pendingApprovals, value: stats?.pendingApprovals || 0, color: "bg-yellow-500" },
+    { icon: Building2, label: t.totalProperties, value: stats?.totalProperties || 0, color: "bg-blue-500", href: `/${locale}/admin/properties` },
+    { icon: FileSignature, label: locale === "th" ? "สัญญาเช่าที่ใช้งานอยู่" : "Active Contracts", value: stats?.activeContractsCount || 0, color: "bg-emerald-600", href: `/${locale}/admin/contracts` },
+    { icon: Users, label: t.totalUsers, value: stats?.totalUsers || 0, color: "bg-green-500", href: `/${locale}/admin/users` },
+    { icon: Clock, label: t.pendingApprovals, value: stats?.pendingApprovals || 0, color: "bg-yellow-500", href: `/${locale}/admin/co-agents` },
+    { icon: Eye, label: t.totalViews, value: stats?.totalViews || 0, color: "bg-purple-500", href: null },
   ];
 
   return (
@@ -39,20 +41,29 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ local
       <h1 className="text-2xl font-bold mb-6">{t.dashboard}</h1>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {statCards.map((card, i) => (
-          <div key={i} className="bg-white rounded-xl shadow-sm border p-6">
-            <div className="flex items-center gap-4">
-              <div className={`${card.color} p-3 rounded-lg`}>
-                <card.icon className="w-6 h-6 text-white" />
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
+        {statCards.map((card, i) => {
+          const inner = (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-gray-500 leading-tight">{card.label}</p>
+                <div className={`${card.color} p-1.5 rounded-lg opacity-80`}>
+                  <card.icon className="w-3.5 h-3.5 text-white" />
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-500">{card.label}</p>
-                <p className="text-2xl font-bold">{card.value.toLocaleString()}</p>
-              </div>
+              <p className="text-3xl font-bold text-gray-900 tracking-tight">{card.value.toLocaleString()}</p>
             </div>
-          </div>
-        ))}
+          );
+          return card.href ? (
+            <Link key={i} href={card.href} className="bg-white rounded-xl shadow-sm border p-4 hover:shadow-md hover:border-gray-300 transition-all">
+              {inner}
+            </Link>
+          ) : (
+            <div key={i} className="bg-white rounded-xl shadow-sm border p-4">
+              {inner}
+            </div>
+          );
+        })}
       </div>
 
       {/* Recent Properties */}

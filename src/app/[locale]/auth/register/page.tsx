@@ -4,31 +4,55 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  UserPlus,
-  Loader2,
-  Sparkles,
-  ArrowRight,
-  Building2,
+  UserPlus, Loader2, Sparkles, ArrowRight, Building2,
+  User, Home, Briefcase,
 } from "lucide-react";
 
-export default function RegisterPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+const ROLES = [
+  {
+    value: "BUYER",
+    icon: User,
+    labelTh: "ผู้ซื้อ / ผู้เช่า",
+    labelEn: "Buyer / Renter",
+    descTh: "ค้นหาทรัพย์และบันทึกรายการโปรด",
+    descEn: "Browse listings and save favorites",
+  },
+  {
+    value: "OWNER",
+    icon: Home,
+    labelTh: "เจ้าของทรัพย์",
+    labelEn: "Property Owner",
+    descTh: "ลงประกาศทรัพย์สินของคุณ",
+    descEn: "List your own property",
+  },
+  {
+    value: "AGENT",
+    icon: Briefcase,
+    labelTh: "Agent",
+    labelEn: "Agent",
+    descTh: "นายหน้า / Co-Agent ร่วมขายกับ NPB",
+    descEn: "Broker / Co-Agent partnering with NPB",
+  },
+];
+
+export default function RegisterPage({ params }: { params: Promise<{ locale: string }> }) {
   const router = useRouter();
   const [locale, setLocale] = useState("th");
   const [messages, setMessages] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
-    email: "",
-    password: "",
-    confirmPassword: "",
+    role: "",
     firstName: "",
     lastName: "",
+    email: "",
     phone: "",
-    role: "BUYER",
+    password: "",
+    confirmPassword: "",
+    // Agent-specific
+    agentType: "FREELANCE" as "FREELANCE" | "COMPANY",
+    companyName: "",
+    lineId: "",
   });
 
   useEffect(() => {
@@ -38,14 +62,27 @@ export default function RegisterPage({
     });
   }, [params]);
 
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm(f => ({ ...f, [k]: e.target.value }));
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
+    if (!form.role) {
+      setError(locale === "th" ? "กรุณาเลือกประเภทสมาชิก" : "Please select a role");
+      return;
+    }
     if (form.password !== form.confirmPassword) {
-      setError(
-        locale === "th" ? "รหัสผ่านไม่ตรงกัน" : "Passwords do not match"
-      );
+      setError(locale === "th" ? "รหัสผ่านไม่ตรงกัน" : "Passwords do not match");
+      return;
+    }
+    if (form.role === "AGENT" && !form.lineId.trim()) {
+      setError(locale === "th" ? "กรุณากรอก Line ID" : "Please enter your Line ID");
+      return;
+    }
+    if (form.role === "AGENT" && !form.phone.trim()) {
+      setError(locale === "th" ? "กรุณากรอกเบอร์โทรติดต่อ" : "Please enter your phone number");
       return;
     }
 
@@ -61,12 +98,19 @@ export default function RegisterPage({
           lastName: form.lastName,
           phone: form.phone || undefined,
           role: form.role,
+          lineId: form.role === "AGENT" ? form.lineId : undefined,
+          companyName: form.role === "AGENT" && form.agentType === "COMPANY" ? form.companyName : undefined,
+          agentType: form.role === "AGENT" ? form.agentType : undefined,
         }),
       });
 
       const data = await res.json();
       if (data.success) {
-        router.push(`/${locale}/auth/login`);
+        // Agent: redirect to login with notice; others: straight to login
+        const loginUrl = data.data.pendingAgent
+          ? `/${locale}/auth/login?notice=agent`
+          : `/${locale}/auth/login`;
+        router.push(loginUrl);
       } else {
         setError(data.error || "Registration failed");
       }
@@ -83,6 +127,7 @@ export default function RegisterPage({
       </div>
     );
   const t = messages.auth;
+  const isAgent = form.role === "AGENT";
 
   return (
     <div className="bg-stone-50 min-h-screen">
@@ -91,7 +136,6 @@ export default function RegisterPage({
         <div className="hidden lg:flex relative bg-gradient-to-br from-stone-900 via-stone-800 to-[#5a4621] text-white p-12 overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-[#C8A951]/20 rounded-full blur-3xl -translate-y-32 translate-x-32" />
           <div className="absolute bottom-0 left-0 w-72 h-72 bg-[#C8A951]/10 rounded-full blur-3xl translate-y-20 -translate-x-20" />
-
           <div className="relative flex flex-col justify-between w-full max-w-md">
             <div>
               <div className="flex items-center gap-2 text-[#E8C97A] text-xs uppercase tracking-widest font-medium mb-3">
@@ -100,17 +144,9 @@ export default function RegisterPage({
               </div>
               <h1 className="text-4xl xl:text-5xl font-bold leading-tight mb-4">
                 {locale === "th" ? (
-                  <>
-                    เริ่มต้นการค้นหา
-                    <br />
-                    <span className="text-[#E8C97A]">บ้านในฝัน</span>
-                  </>
+                  <><span className="text-[#E8C97A]">เริ่มต้น</span><br />การค้นหาบ้านในฝัน</>
                 ) : (
-                  <>
-                    Start Your
-                    <br />
-                    <span className="text-[#E8C97A]">Property Journey</span>
-                  </>
+                  <>Start Your<br /><span className="text-[#E8C97A]">Property Journey</span></>
                 )}
               </h1>
               <p className="text-white/70 leading-relaxed">
@@ -119,26 +155,17 @@ export default function RegisterPage({
                   : "Sign up for free to start exploring listings, save favorites, and connect with agents."}
               </p>
             </div>
-
             <div className="space-y-3 mt-12">
               {[
                 { th: "ใช้งานฟรีไม่มีค่าใช้จ่าย", en: "100% free to use" },
-                {
-                  th: "ทรัพย์คุณภาพคัดสรรจากทั่วประเทศ",
-                  en: "Curated quality listings",
-                },
-                {
-                  th: "ทีมตัวแทนมืออาชีพ",
-                  en: "Professional agent team",
-                },
+                { th: "ทรัพย์คุณภาพคัดสรรจากทั่วประเทศ", en: "Curated quality listings" },
+                { th: "ทีมตัวแทนมืออาชีพ", en: "Professional agent team" },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3 text-white/80">
                   <div className="w-8 h-8 rounded-full bg-[#C8A951]/20 border border-[#C8A951]/30 flex items-center justify-center">
                     <Sparkles className="w-3.5 h-3.5 text-[#E8C97A]" />
                   </div>
-                  <span className="text-sm">
-                    {locale === "th" ? item.th : item.en}
-                  </span>
+                  <span className="text-sm">{locale === "th" ? item.th : item.en}</span>
                 </div>
               ))}
             </div>
@@ -146,7 +173,7 @@ export default function RegisterPage({
         </div>
 
         {/* RIGHT — Form */}
-        <div className="flex items-center justify-center px-4 py-12 lg:py-12 overflow-y-auto">
+        <div className="flex items-start justify-center px-4 py-10 lg:py-12 overflow-y-auto">
           <div className="w-full max-w-md">
             <div className="lg:hidden text-center mb-8">
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-stone-900 text-white mb-3">
@@ -158,122 +185,172 @@ export default function RegisterPage({
               <span className="w-6 h-px bg-[#C8A951]" />
               {locale === "th" ? "สมัครสมาชิก" : "Create Account"}
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-stone-900 mb-2">
-              {t.registerTitle}
-            </h2>
-            <p className="text-sm text-stone-500 mb-8">
-              {locale === "th"
-                ? "ใช้เวลาเพียง 1 นาทีเพื่อสร้างบัญชี"
-                : "Takes less than a minute"}
+            <h2 className="text-3xl md:text-4xl font-bold text-stone-900 mb-2">{t.registerTitle}</h2>
+            <p className="text-sm text-stone-500 mb-7">
+              {locale === "th" ? "ใช้เวลาเพียง 1 นาทีเพื่อสร้างบัญชี" : "Takes less than a minute"}
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
                 <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl text-sm">
                   {error}
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <Field label={t.firstName}>
-                  <input
-                    type="text"
-                    value={form.firstName}
-                    onChange={(e) =>
-                      setForm({ ...form, firstName: e.target.value })
-                    }
-                    required
-                    className={inputCls}
-                  />
-                </Field>
-                <Field label={t.lastName}>
-                  <input
-                    type="text"
-                    value={form.lastName}
-                    onChange={(e) =>
-                      setForm({ ...form, lastName: e.target.value })
-                    }
-                    required
-                    className={inputCls}
-                  />
-                </Field>
-              </div>
-
-              <Field label={t.email}>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  required
-                  autoComplete="email"
-                  className={inputCls}
-                />
-              </Field>
-
-              <Field label={t.phone}>
-                <input
-                  type="tel"
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  className={inputCls}
-                />
-              </Field>
-
-              <div className="grid grid-cols-2 gap-3">
-                <Field label={t.password}>
-                  <input
-                    type="password"
-                    value={form.password}
-                    onChange={(e) =>
-                      setForm({ ...form, password: e.target.value })
-                    }
-                    required
-                    minLength={6}
-                    autoComplete="new-password"
-                    className={inputCls}
-                  />
-                </Field>
-                <Field label={t.confirmPassword}>
-                  <input
-                    type="password"
-                    value={form.confirmPassword}
-                    onChange={(e) =>
-                      setForm({ ...form, confirmPassword: e.target.value })
-                    }
-                    required
-                    autoComplete="new-password"
-                    className={inputCls}
-                  />
-                </Field>
-              </div>
-
-              <Field label={t.role}>
-                <select
-                  value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value })}
-                  className={inputCls}
-                >
-                  <option value="BUYER">{t.buyer}</option>
-                  <option value="OWNER">{t.owner}</option>
-                  <option value="AGENT">{t.agent}</option>
-                </select>
-              </Field>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full inline-flex items-center justify-center gap-2 bg-[#C8A951] hover:bg-[#B8993F] text-white py-3.5 rounded-full font-semibold text-sm transition-colors disabled:opacity-50"
-              >
-                {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <UserPlus className="w-4 h-4" />
+              {/* ── Step 1: Role ── */}
+              <div>
+                <label className="block text-sm font-semibold text-stone-700 mb-2">
+                  {locale === "th" ? "คุณเป็นใคร?" : "Who are you?"} <span className="text-rose-500">*</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {ROLES.map(r => {
+                    const Icon = r.icon;
+                    const selected = form.role === r.value;
+                    return (
+                      <button
+                        key={r.value}
+                        type="button"
+                        onClick={() => setForm(f => ({ ...f, role: r.value }))}
+                        className={`relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-center ${
+                          selected
+                            ? "border-[#C8A951] bg-amber-50 shadow-sm"
+                            : "border-stone-200 bg-white hover:border-stone-300"
+                        }`}
+                      >
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${selected ? "bg-[#C8A951]" : "bg-stone-100"}`}>
+                          <Icon className={`w-4 h-4 ${selected ? "text-white" : "text-stone-500"}`} />
+                        </div>
+                        <span className={`text-xs font-medium leading-tight ${selected ? "text-[#C8A951]" : "text-stone-600"}`}>
+                          {locale === "th" ? r.labelTh : r.labelEn}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {form.role && (
+                  <p className="text-xs text-stone-400 mt-1.5 text-center">
+                    {ROLES.find(r => r.value === form.role)?.[locale === "th" ? "descTh" : "descEn"]}
+                  </p>
                 )}
-                {t.registerTitle}
-              </button>
+              </div>
+
+              {/* ── Step 2: Personal Info ── */}
+              {form.role && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label={t.firstName}>
+                      <input type="text" required value={form.firstName} onChange={set("firstName")} className={inputCls} />
+                    </Field>
+                    <Field label={t.lastName}>
+                      <input type="text" required value={form.lastName} onChange={set("lastName")} className={inputCls} />
+                    </Field>
+                  </div>
+
+                  <Field label={t.email}>
+                    <input type="email" required autoComplete="email" value={form.email} onChange={set("email")} className={inputCls} />
+                  </Field>
+
+                  <Field label={`${t.phone}${isAgent ? " *" : ""}`}>
+                    <input type="tel" required={isAgent} value={form.phone} onChange={set("phone")} className={inputCls} placeholder="08x-xxx-xxxx" />
+                  </Field>
+
+                  {/* ── Agent extra fields ── */}
+                  {isAgent && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-4">
+                      <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">
+                        {locale === "th" ? "ข้อมูล Agent" : "Agent Info"}
+                      </p>
+
+                      {/* Freelance / Company toggle */}
+                      <div>
+                        <label className="block text-sm font-medium text-stone-700 mb-2">
+                          {locale === "th" ? "ประเภท Agent" : "Agent Type"} <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {(["FREELANCE", "COMPANY"] as const).map(type => (
+                            <button
+                              key={type}
+                              type="button"
+                              onClick={() => setForm(f => ({ ...f, agentType: type }))}
+                              className={`py-2.5 px-4 rounded-xl border-2 text-sm font-medium transition-all ${
+                                form.agentType === type
+                                  ? "border-amber-500 bg-amber-500 text-white"
+                                  : "border-stone-200 bg-white text-stone-600 hover:border-amber-300"
+                              }`}
+                            >
+                              {type === "FREELANCE"
+                                ? (locale === "th" ? "Freelance" : "Freelance")
+                                : (locale === "th" ? "บริษัท" : "Company")}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Company name — only if Company */}
+                      {form.agentType === "COMPANY" && (
+                        <Field label={locale === "th" ? "ชื่อบริษัท *" : "Company Name *"}>
+                          <input
+                            type="text"
+                            required
+                            value={form.companyName}
+                            onChange={set("companyName")}
+                            placeholder={locale === "th" ? "ชื่อบริษัทอสังหาฯ..." : "Real estate company name..."}
+                            className={inputCls}
+                          />
+                        </Field>
+                      )}
+
+                      {/* Line ID */}
+                      <Field label="Line ID *">
+                        <input
+                          type="text"
+                          required
+                          value={form.lineId}
+                          onChange={set("lineId")}
+                          placeholder="@yourlineid"
+                          className={inputCls}
+                        />
+                      </Field>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label={t.password}>
+                      <input
+                        type="password"
+                        required
+                        minLength={6}
+                        autoComplete="new-password"
+                        value={form.password}
+                        onChange={set("password")}
+                        className={inputCls}
+                      />
+                    </Field>
+                    <Field label={t.confirmPassword}>
+                      <input
+                        type="password"
+                        required
+                        autoComplete="new-password"
+                        value={form.confirmPassword}
+                        onChange={set("confirmPassword")}
+                        className={inputCls}
+                      />
+                    </Field>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full inline-flex items-center justify-center gap-2 bg-[#C8A951] hover:bg-[#B8993F] text-white py-3.5 rounded-full font-semibold text-sm transition-colors disabled:opacity-50"
+                  >
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                    {t.registerTitle}
+                  </button>
+                </>
+              )}
             </form>
 
-            <p className="text-center mt-8 text-sm text-stone-500">
+            <p className="text-center mt-6 text-sm text-stone-500">
               {t.hasAccount}{" "}
               <Link
                 href={`/${locale}/auth/login`}
@@ -291,20 +368,12 @@ export default function RegisterPage({
 }
 
 const inputCls =
-  "w-full px-4 py-3 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30 focus:border-[#C8A951]";
+  "w-full px-4 py-3 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30 focus:border-[#C8A951] bg-white";
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-stone-700 mb-1.5">
-        {label}
-      </label>
+      <label className="block text-sm font-medium text-stone-700 mb-1.5">{label}</label>
       {children}
     </div>
   );

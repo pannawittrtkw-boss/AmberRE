@@ -212,6 +212,9 @@ export async function GET(
     furnitureList: buildChecklist(contract.furnitureList, FURNITURE_OPTIONS),
     applianceList: buildChecklist(contract.applianceList, APPLIANCE_OPTIONS),
     otherItems: buildChecklist(contract.otherItems, OTHER_ITEM_OPTIONS),
+    furnitureNone: !!contract.furnitureNone,
+    applianceNone: !!contract.applianceNone,
+    otherItemsNone: !!contract.otherItemsNone,
 
     customClauses: parseCustomClauses(contract.customClauses),
     // Per-contract clause snapshot: STANDARD_CLAUSES from code + the

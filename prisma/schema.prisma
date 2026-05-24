@@ -21,6 +21,7 @@ model User {
   role          String    @default("BUYER") @db.VarChar(20)
   language      String    @default("th") @db.VarChar(5)
   profileImage  String?   @db.VarChar(500)
+  lineId        String?   @db.VarChar(100)
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -106,6 +107,14 @@ model Contract {
   applianceList String? @db.Text
   otherItems    String? @db.Text
 
+  // "No items" markers — when true, the corresponding section is rendered
+  // on the PDF as a blank checklist (all qty = 0) for the staff to fill
+  // in manually. The matching list field is treated as empty in that
+  // case, but is preserved in case the flag is later unticked.
+  furnitureNone Boolean @default(false)
+  applianceNone Boolean @default(false)
+  otherItemsNone Boolean @default(false)
+
   // Custom clauses appended to section 11 of the contract. JSON array of
   // { th, en } pairs. Initialised on creation from the global default
   // template (SiteSetting "contract_default_clauses") but freely editable
@@ -124,6 +133,10 @@ model Contract {
 
   // Status
   status String @default("DRAFT") @db.VarChar(20) // DRAFT | ACTIVE | EXPIRED | TERMINATED
+
+  // Signed contract upload & share
+  signedPdfUrl String? @db.VarChar(500)
+  shareToken   String? @unique @db.VarChar(100)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -208,6 +221,9 @@ model Property {
   category            String?  @default("NORMAL") @db.VarChar(20)
   priority            String?  @default("NORMAL") @db.VarChar(20)
   note                String?  @db.Text
+  isExclusive         Boolean  @default(false)
+  exclusiveStartDate  DateTime?
+  exclusiveEndDate    DateTime?
 
   ownerId    Int
   owner      User   @relation("OwnerProperties", fields: [ownerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
