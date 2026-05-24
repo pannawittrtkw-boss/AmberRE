@@ -53,10 +53,16 @@ export default function SubscriptionsPage({ params }: { params: Promise<{ locale
 
   const fetchAgents = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/admin/subscriptions");
-    const d = await res.json();
-    if (d.success) setAgents(d.data);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/admin/subscriptions");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const d = await res.json();
+      if (d.success) setAgents(d.data);
+    } catch (e) {
+      console.error("Failed to load subscriptions:", e);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchAgents(); }, [fetchAgents]);
@@ -71,18 +77,23 @@ export default function SubscriptionsPage({ params }: { params: Promise<{ locale
 
   const saveEdit = async (agentId: number) => {
     setSaving(agentId);
-    await fetch("/api/admin/subscriptions", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: agentId,
-        tier: editForm.tier,
-        tierExpiredAt: editForm.expiry || null,
-      }),
-    });
-    setEditingId(null);
-    setSaving(null);
-    fetchAgents();
+    try {
+      await fetch("/api/admin/subscriptions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: agentId,
+          tier: editForm.tier,
+          tierExpiredAt: editForm.expiry || null,
+        }),
+      });
+    } catch (e) {
+      console.error("Failed to save:", e);
+    } finally {
+      setEditingId(null);
+      setSaving(null);
+      fetchAgents();
+    }
   };
 
   const filtered = agents.filter((a) => {
