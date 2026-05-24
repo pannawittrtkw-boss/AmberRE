@@ -17,6 +17,8 @@ import {
   X,
   CheckCircle2,
   Upload,
+  Clock,
+  XCircle,
 } from "lucide-react";
 import { getIntlLocale } from "@/lib/utils";
 
@@ -242,15 +244,21 @@ export default function AdminContractsPage({
   const [loading, setLoading] = useState(true);
   const [signedModal, setSignedModal] = useState<Contract | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [stats, setStats] = useState<{ draft: number; active: number; expiringSoon: number; expired: number } | null>(null);
 
   useEffect(() => {
     params.then(({ locale: l }) => setLocale(l));
   }, [params]);
 
   const refresh = async () => {
-    const res = await fetch("/api/admin/contracts");
-    const data = await res.json();
-    if (data.success) setContracts(data.data);
+    const [contractsRes, statsRes] = await Promise.all([
+      fetch("/api/admin/contracts"),
+      fetch("/api/admin/agent-stats"),
+    ]);
+    const contractsData = await contractsRes.json();
+    if (contractsData.success) setContracts(contractsData.data);
+    const statsData = await statsRes.json();
+    if (statsData.success) setStats(statsData.data);
   };
 
   useEffect(() => {
@@ -333,6 +341,28 @@ export default function AdminContractsPage({
           </Link>
         </div>
       </div>
+
+      {/* Stats cards */}
+      {stats && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+          {[
+            { label: locale === "th" ? "แบบร่าง" : "Draft",           value: stats.draft,         icon: FileText,     bg: "bg-gray-50",   border: "border-gray-200",  val: "text-gray-800",  icon_: "text-gray-500" },
+            { label: locale === "th" ? "กำลังใช้งาน" : "Active",       value: stats.active,        icon: CheckCircle2, bg: "bg-green-50",  border: "border-green-200", val: "text-green-700", icon_: "text-green-600" },
+            { label: locale === "th" ? "ใกล้หมดสัญญา" : "Expiring",    value: stats.expiringSoon,  icon: Clock,        bg: "bg-amber-50",  border: "border-amber-200", val: "text-amber-700", icon_: "text-amber-600" },
+            { label: locale === "th" ? "หมดสัญญาแล้ว" : "Expired",     value: stats.expired,       icon: XCircle,      bg: "bg-red-50",    border: "border-red-200",   val: "text-red-700",   icon_: "text-red-500" },
+          ].map((card) => (
+            <div key={card.label} className={`rounded-xl border px-5 py-4 flex items-center gap-4 ${card.bg} ${card.border}`}>
+              <div className={`p-2.5 rounded-lg bg-white/70 ${card.icon_}`}>
+                <card.icon className="w-5 h-5" />
+              </div>
+              <div>
+                <div className={`text-2xl font-bold leading-none ${card.val}`}>{card.value}</div>
+                <div className="text-xs text-gray-500 mt-1">{card.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
         <div className="overflow-x-auto">
