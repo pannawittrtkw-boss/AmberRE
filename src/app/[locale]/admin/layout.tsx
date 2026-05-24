@@ -7,7 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Building2, Users, FileText, UserCheck, Star, Loader2, Settings,
-  Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature, Lock, User,
+  Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature, Lock, User, Crown,
 } from "lucide-react";
 
 export default function AdminLayout({
@@ -118,6 +118,7 @@ export default function AdminLayout({
     { href: `/${locale}/admin/contracts`, icon: FileSignature, label: locale === "th" ? "สัญญาเช่า" : "Contracts" },
     { href: `/${locale}/admin/closed-contracts`, icon: Lock, label: locale === "th" ? "Closed Contracts" : "Closed Contracts" },
     { href: `/${locale}/admin/co-agents`, icon: UserCheck, label: t.coAgentApproval },
+    { href: `/${locale}/admin/subscriptions`, icon: Crown, label: locale === "th" ? "จัดการ Package" : "Subscriptions" },
     { href: `/${locale}/admin/reviews`, icon: Star, label: t.reviewModeration },
     { href: `/${locale}/admin/settings`, icon: Settings, label: t.settings || "Settings" },
     { href: `/${locale}/admin/settings/languages`, icon: Globe, label: t.languageSettings || "ตั้งค่าภาษา" },
