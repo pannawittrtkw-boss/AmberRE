@@ -10,7 +10,7 @@ export async function GET() {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
-    // Base query — fields that have always existed
+    // Base fields — always available regardless of Prisma client version
     const baseAgents = await prisma.user.findMany({
       where: { role: "CO_AGENT" },
       select: {
@@ -28,41 +28,42 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
-    // Try to enrich with new B2B fields — silently skip if Prisma client is stale
-    type Enriched = { subscriptionTier: string; tierExpiredAt: string | null };
-    let enrichMap: Record<number, Enriched> = {};
+    // Use raw SQL to read new fields — bypasses stale Prisma client entirely
+    type RawTier = { id: number; subscriptionTier: string; tierExpiredAt: Date | null };
+    let enrichMap: Record<number, RawTier> = {};
     try {
-      const rich = await (prisma.user as any).findMany({
-        where: { role: "CO_AGENT" },
-        select: { id: true, subscriptionTier: true, tierExpiredAt: true },
-      }) as Array<{ id: number } & Enriched>;
-      enrichMap = Object.fromEntries(
-        rich.map((r) => [r.id, { subscriptionTier: r.subscriptionTier ?? "STANDARD", tierExpiredAt: r.tierExpiredAt ?? null }])
-      );
+      const rows = await prisma.$queryRaw<RawTier[]>`
+        SELECT id, "subscriptionTier", "tierExpiredAt"
+        FROM "User"
+        WHERE role = 'CO_AGENT'
+      `;
+      enrichMap = Object.fromEntries(rows.map((r) => [r.id, r]));
     } catch {
-      // Stale Prisma client — default to STANDARD for all
+      // Column not yet in DB — fall back to STANDARD
     }
 
-    // Count monthly unlocks — skip if ContactUnlockLog not yet in schema
+    // Monthly unlock counts via raw SQL
     let monthlyMap: Record<number, number> = {};
     let totalMap: Record<number, number> = {};
     try {
       const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
       const [monthly, total] = await Promise.all([
-        (prisma as any).contactUnlockLog.groupBy({
-          by: ["agentId"],
-          where: { unlockedAt: { gte: startOfMonth } },
-          _count: { agentId: true },
-        }),
-        (prisma as any).contactUnlockLog.groupBy({
-          by: ["agentId"],
-          _count: { agentId: true },
-        }),
+        prisma.$queryRaw<{ agentId: number; cnt: bigint }[]>`
+          SELECT "agentId", COUNT(*) AS cnt
+          FROM "ContactUnlockLog"
+          WHERE "unlockedAt" >= ${startOfMonth}
+          GROUP BY "agentId"
+        `,
+        prisma.$queryRaw<{ agentId: number; cnt: bigint }[]>`
+          SELECT "agentId", COUNT(*) AS cnt
+          FROM "ContactUnlockLog"
+          GROUP BY "agentId"
+        `,
       ]);
-      monthlyMap = Object.fromEntries((monthly as any[]).map((m: any) => [m.agentId, m._count.agentId]));
-      totalMap  = Object.fromEntries((total  as any[]).map((m: any) => [m.agentId, m._count.agentId]));
+      monthlyMap = Object.fromEntries(monthly.map((r) => [r.agentId, Number(r.cnt)]));
+      totalMap   = Object.fromEntries(total.map((r) => [r.agentId, Number(r.cnt)]));
     } catch {
-      // Table not available yet
+      // Table not yet in DB
     }
 
     const data = baseAgents.map((a) => ({
@@ -95,19 +96,32 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid input" }, { status: 400 });
     }
 
-    const updateData: any = {};
-    if (tier) updateData.subscriptionTier = tier;
-    if (tierExpiredAt !== undefined) {
-      updateData.tierExpiredAt = tierExpiredAt ? new Date(tierExpiredAt) : null;
+    const id = Number(userId);
+    const expiry = tierExpiredAt ? new Date(tierExpiredAt) : null;
+
+    // Raw SQL update — works even when Prisma client doesn't know the new columns
+    if (tier && expiry !== undefined) {
+      await prisma.$executeRaw`
+        UPDATE "User"
+        SET "subscriptionTier" = ${tier}::"SubscriptionTier",
+            "tierExpiredAt"    = ${expiry}
+        WHERE id = ${id}
+      `;
+    } else if (tier) {
+      await prisma.$executeRaw`
+        UPDATE "User"
+        SET "subscriptionTier" = ${tier}::"SubscriptionTier"
+        WHERE id = ${id}
+      `;
+    } else if (expiry !== undefined) {
+      await prisma.$executeRaw`
+        UPDATE "User"
+        SET "tierExpiredAt" = ${expiry}
+        WHERE id = ${id}
+      `;
     }
 
-    const updated = await (prisma.user as any).update({
-      where: { id: Number(userId) },
-      data: updateData,
-      select: { id: true, subscriptionTier: true, tierExpiredAt: true },
-    });
-
-    return NextResponse.json({ success: true, data: updated });
+    return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error("Subscriptions PUT error:", err);
     return NextResponse.json({ success: false, error: err?.message || "Internal server error" }, { status: 500 });
