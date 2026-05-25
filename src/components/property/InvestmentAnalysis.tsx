@@ -199,16 +199,16 @@ export default function InvestmentAnalysis({ locale, defaults }: Props) {
               const paybackWithLoan = loanAmt > 0 && equity > 0 && freeCashFlow > 0 ? equity / (freeCashFlow * 12) : null;
               return (
                 <>
-                  <div className="flex justify-between pt-1 border-t border-stone-100">
-                    <span className="text-stone-500">{isTh ? "คืนทุน (ซื้อสด)" : "Payback — Cash"}</span>
-                    <span className="font-medium">
+                  <div className="flex justify-between items-center pt-1 border-t border-stone-100">
+                    <span className="font-semibold text-stone-700">{isTh ? "คืนทุน (ซื้อสด)" : "Payback — Cash"}</span>
+                    <span className="font-bold text-violet-600 text-base">
                       {paybackNoLoan !== null ? `${paybackNoLoan.toFixed(1)} ${isTh ? "ปี" : "yrs"}` : "N/A"}
                     </span>
                   </div>
                   {loanAmt > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-stone-500">{isTh ? "คืนทุน (กู้ธนาคาร)" : "Payback — Loan"}</span>
-                      <span className="font-medium">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-stone-700">{isTh ? "คืนทุน (กู้ธนาคาร)" : "Payback — Loan"}</span>
+                      <span className="font-bold text-violet-500 text-base">
                         {paybackWithLoan !== null ? `${paybackWithLoan.toFixed(1)} ${isTh ? "ปี" : "yrs"}` : "N/A"}
                       </span>
                     </div>
