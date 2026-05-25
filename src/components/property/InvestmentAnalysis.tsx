@@ -193,10 +193,39 @@ export default function InvestmentAnalysis({ locale, defaults }: Props) {
               <span className="font-medium">฿{fmt(rentPerYear)}</span>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-stone-100 space-y-1 text-xs text-stone-400">
-            <p>• <strong className="text-stone-500">Gross Yield</strong> = ค่าเช่า/ปี ÷ ต้นทุนรวม × 100</p>
-            <p>• <strong className="text-stone-500">Net Yield (ROI)</strong> = NOI/ปี ÷ ต้นทุนรวม × 100</p>
-            {loanAmt > 0 && <p>• <strong className="text-stone-500">Cash-on-Cash</strong> = Free Cash Flow/ปี ÷ เงินดาวน์ × 100</p>}
+          <div className="mt-3 pt-3 border-t border-stone-100 space-y-3 text-xs">
+            <div>
+              <p className="font-semibold text-stone-500 mb-0.5">
+                Gross Yield = {isTh ? "ค่าเช่า/ปี ÷ ต้นทุนรวม × 100" : "Annual Rent ÷ Total Cost × 100"}
+              </p>
+              <p className="text-stone-400 leading-relaxed">
+                {isTh
+                  ? "วัดผลตอบแทนก่อนหักค่าใช้จ่าย — ใช้เปรียบเทียบทรัพย์หลายรายการได้อย่างรวดเร็ว ยิ่งสูงยิ่งดี แต่ยังไม่สะท้อนค่าใช้จ่ายจริง"
+                  : "Measures return before expenses — useful for quick comparison across properties. Higher is better, but doesn't reflect actual costs."}
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold text-stone-500 mb-0.5">
+                Net Yield (ROI) = {isTh ? "NOI/ปี ÷ ต้นทุนรวม × 100" : "Annual NOI ÷ Total Cost × 100"}
+              </p>
+              <p className="text-stone-400 leading-relaxed">
+                {isTh
+                  ? "ผลตอบแทนสุทธิหลังหักค่าใช้จ่ายทั้งหมด (Cap Rate) — ตัวเลขที่นักลงทุนมืออาชีพใช้ตัดสินใจ บอกว่าทรัพย์นี้คุ้มค่าการลงทุนจริงหรือไม่"
+                  : "Net return after all operating expenses (Cap Rate) — the key metric professionals use to evaluate a deal. Tells you the true yield on your capital."}
+              </p>
+            </div>
+            {loanAmt > 0 && (
+              <div>
+                <p className="font-semibold text-stone-500 mb-0.5">
+                  Cash-on-Cash = {isTh ? "Free Cash Flow/ปี ÷ เงินดาวน์ × 100" : "Annual Free Cash Flow ÷ Down Payment × 100"}
+                </p>
+                <p className="text-stone-400 leading-relaxed">
+                  {isTh
+                    ? "ผลตอบแทนต่อเงินสดที่ลงทุนจริง (เงินดาวน์) — บอกว่าเงินที่จ่ายจริงของคุณได้ดอกผลกลับมาเท่าไหร่ต่อปี เหมาะสำหรับผู้ที่ใช้สินเชื่อ"
+                    : "Return on actual cash invested (down payment) — shows how much your out-of-pocket money earns per year. Most relevant when using a mortgage."}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
