@@ -290,13 +290,34 @@ export default function InvestmentAnalysis({ locale, defaults }: Props) {
           </div>
 
           {loanAmt > 0 ? (
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-stone-500">{isTh ? "ผ่อนค่างวด / เดือน" : "Monthly Payment"}</span><span className="font-medium">฿{fmt(monthlyPayment)}</span></div>
-              <div className="flex justify-between"><span className="text-stone-500">{isTh ? "ดอกเบี้ย (ประมาณ ปีแรก) / เดือน" : "Interest ~Year 1 / Month"}</span><span>฿{fmt(interestFirstMonth)}</span></div>
-              <div className="flex justify-between"><span className="text-stone-500">{isTh ? "เข้าเงินต้น (ประมาณ ปีแรก) / เดือน" : "Principal ~Year 1 / Month"}</span><span>฿{fmt(principalFirstMonth)}</span></div>
-              <div className="flex justify-between pt-2 border-t border-stone-100 font-bold">
-                <span className="text-blue-700">{isTh ? "กระแสเงินสด (Free Cash Flow) / เดือน" : "Free Cash Flow / Month"}</span>
-                <span className={freeCashFlow >= 0 ? "text-emerald-600" : "text-rose-600"}>฿{fmt(freeCashFlow)}</span>
+            <div className="text-sm">
+              {/* Header row */}
+              <div className="grid grid-cols-3 text-xs text-stone-400 font-medium mb-2 pb-2 border-b border-stone-100">
+                <span></span>
+                <span className="text-right">{isTh ? "/ เดือน" : "/ Month"}</span>
+                <span className="text-right">{isTh ? "/ ปี" : "/ Year"}</span>
+              </div>
+              <div className="space-y-2">
+                <div className="grid grid-cols-3">
+                  <span className="text-stone-500">{isTh ? "ผ่อนค่างวด" : "Monthly Payment"}</span>
+                  <span className="text-right font-medium">฿{fmt(monthlyPayment)}</span>
+                  <span className="text-right text-stone-500">฿{fmt(monthlyPayment * 12)}</span>
+                </div>
+                <div className="grid grid-cols-3">
+                  <span className="text-stone-500">{isTh ? "ดอกเบี้ย (ปีแรก)" : "Interest ~Yr1"}</span>
+                  <span className="text-right">฿{fmt(interestFirstMonth)}</span>
+                  <span className="text-right text-stone-500">฿{fmt(interestFirstMonth * 12)}</span>
+                </div>
+                <div className="grid grid-cols-3">
+                  <span className="text-stone-500">{isTh ? "เข้าเงินต้น (ปีแรก)" : "Principal ~Yr1"}</span>
+                  <span className="text-right">฿{fmt(principalFirstMonth)}</span>
+                  <span className="text-right text-stone-500">฿{fmt(principalFirstMonth * 12)}</span>
+                </div>
+                <div className="grid grid-cols-3 pt-2 border-t border-stone-100 font-bold">
+                  <span className="text-blue-700">{isTh ? "Free Cash Flow" : "Free Cash Flow"}</span>
+                  <span className={`text-right ${freeCashFlow >= 0 ? "text-emerald-600" : "text-rose-600"}`}>฿{fmt(freeCashFlow)}</span>
+                  <span className={`text-right ${freeCashFlow >= 0 ? "text-emerald-600" : "text-rose-600"}`}>฿{fmt(freeCashFlow * 12)}</span>
+                </div>
               </div>
             </div>
           ) : (
