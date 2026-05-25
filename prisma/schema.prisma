@@ -249,6 +249,19 @@ model Property {
   coBrokeCommission   String?  @db.VarChar(50)
   isPremiumBoost      Boolean  @default(false)
 
+  // Investment analysis (SALE / RENT_AND_SALE only)
+  invPurchasePrice       Decimal? @db.Decimal(18, 2)
+  invRenovationCost      Decimal? @db.Decimal(18, 2)
+  invExpectedRentPerMonth Decimal? @db.Decimal(18, 2)
+  invCommonFeePerYear    Decimal? @db.Decimal(18, 2)
+  invMaintenancePerYear  Decimal? @db.Decimal(18, 2)
+  invLandTaxRate         Decimal? @db.Decimal(8, 4)
+  invVacancyMonths       Decimal? @db.Decimal(4, 2)
+  invBrokerFeeMonths     Decimal? @db.Decimal(4, 2)
+  invLoanAmount          Decimal? @db.Decimal(18, 2)
+  invLoanTermYears       Decimal? @db.Decimal(5, 2)
+  invLoanInterestRate    Decimal? @db.Decimal(6, 4)
+
   ownerId    Int
   owner      User   @relation("OwnerProperties", fields: [ownerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   agentId    Int?

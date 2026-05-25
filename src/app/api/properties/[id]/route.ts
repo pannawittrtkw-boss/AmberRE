@@ -115,6 +115,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (rawData.exclusiveStartDate !== undefined) updateData.exclusiveStartDate = rawData.exclusiveStartDate ? new Date(rawData.exclusiveStartDate) : null;
     if (rawData.exclusiveEndDate !== undefined) updateData.exclusiveEndDate = rawData.exclusiveEndDate ? new Date(rawData.exclusiveEndDate) : null;
 
+    const invFields = [
+      "invPurchasePrice", "invRenovationCost", "invExpectedRentPerMonth",
+      "invCommonFeePerYear", "invMaintenancePerYear", "invLandTaxRate",
+      "invVacancyMonths", "invBrokerFeeMonths",
+      "invLoanAmount", "invLoanTermYears", "invLoanInterestRate",
+    ];
+    for (const key of invFields) {
+      if (rawData[key] !== undefined) updateData[key] = rawData[key] != null ? Number(rawData[key]) : null;
+    }
+
     // JSON stringify arrays
     if (furnitureDetails !== undefined) {
       updateData.furnitureDetails = Array.isArray(furnitureDetails) ? JSON.stringify(furnitureDetails) : furnitureDetails;

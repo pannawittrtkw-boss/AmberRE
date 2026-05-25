@@ -162,6 +162,10 @@ export async function POST(req: NextRequest) {
       coAgentName, coAgentPhone, coAgentLineId, coAgentFacebookUrl,
       status, category, priority, note, imageUrls, projectId,
       condition, landSizeRai, landSizeNgan, landSizeWa,
+      invPurchasePrice, invRenovationCost, invExpectedRentPerMonth,
+      invCommonFeePerYear, invMaintenancePerYear, invLandTaxRate,
+      invVacancyMonths, invBrokerFeeMonths,
+      invLoanAmount, invLoanTermYears, invLoanInterestRate,
     } = body;
 
     const property = await prisma.property.create({
@@ -227,6 +231,17 @@ export async function POST(req: NextRequest) {
           },
         }),
         nearbyStations: stationIds?.length ? JSON.stringify(stationIds) : null,
+        invPurchasePrice: invPurchasePrice != null ? Number(invPurchasePrice) : null,
+        invRenovationCost: invRenovationCost != null ? Number(invRenovationCost) : null,
+        invExpectedRentPerMonth: invExpectedRentPerMonth != null ? Number(invExpectedRentPerMonth) : null,
+        invCommonFeePerYear: invCommonFeePerYear != null ? Number(invCommonFeePerYear) : null,
+        invMaintenancePerYear: invMaintenancePerYear != null ? Number(invMaintenancePerYear) : null,
+        invLandTaxRate: invLandTaxRate != null ? Number(invLandTaxRate) : null,
+        invVacancyMonths: invVacancyMonths != null ? Number(invVacancyMonths) : null,
+        invBrokerFeeMonths: invBrokerFeeMonths != null ? Number(invBrokerFeeMonths) : null,
+        invLoanAmount: invLoanAmount != null ? Number(invLoanAmount) : null,
+        invLoanTermYears: invLoanTermYears != null ? Number(invLoanTermYears) : null,
+        invLoanInterestRate: invLoanInterestRate != null ? Number(invLoanInterestRate) : null,
       },
       include: {
         images: true,

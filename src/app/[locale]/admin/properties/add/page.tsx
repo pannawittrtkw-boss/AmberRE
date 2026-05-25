@@ -164,6 +164,22 @@ export default function AddPropertyPage({
   const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
   const [selectedStations, setSelectedStations] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+
+  // Investment analysis fields
+  const [invForm, setInvForm] = useState({
+    invPurchasePrice: "",
+    invRenovationCost: "",
+    invExpectedRentPerMonth: "",
+    invCommonFeePerYear: "",
+    invMaintenancePerYear: "",
+    invLandTaxRate: "0.02",
+    invVacancyMonths: "1",
+    invBrokerFeeMonths: "1",
+    invLoanAmount: "",
+    invLoanTermYears: "30",
+    invLoanInterestRate: "2.5",
+  });
+  const updateInv = (key: string, value: string) => setInvForm((prev) => ({ ...prev, [key]: value }));
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   // AI project lookup
@@ -279,6 +295,21 @@ export default function AddPropertyPage({
 
         // Set linked project
         if (p.projectId) setSelectedProjectId(p.projectId);
+
+        // Load investment fields
+        setInvForm({
+          invPurchasePrice: p.invPurchasePrice ? String(Number(p.invPurchasePrice)) : "",
+          invRenovationCost: p.invRenovationCost ? String(Number(p.invRenovationCost)) : "",
+          invExpectedRentPerMonth: p.invExpectedRentPerMonth ? String(Number(p.invExpectedRentPerMonth)) : "",
+          invCommonFeePerYear: p.invCommonFeePerYear ? String(Number(p.invCommonFeePerYear)) : "",
+          invMaintenancePerYear: p.invMaintenancePerYear ? String(Number(p.invMaintenancePerYear)) : "",
+          invLandTaxRate: p.invLandTaxRate ? String(Number(p.invLandTaxRate)) : "0.02",
+          invVacancyMonths: p.invVacancyMonths ? String(Number(p.invVacancyMonths)) : "1",
+          invBrokerFeeMonths: p.invBrokerFeeMonths ? String(Number(p.invBrokerFeeMonths)) : "1",
+          invLoanAmount: p.invLoanAmount ? String(Number(p.invLoanAmount)) : "",
+          invLoanTermYears: p.invLoanTermYears ? String(Number(p.invLoanTermYears)) : "30",
+          invLoanInterestRate: p.invLoanInterestRate ? String(Number(p.invLoanInterestRate)) : "2.5",
+        });
       })
       .catch(() => {})
       .finally(() => setLoadingEdit(false));
@@ -510,6 +541,20 @@ export default function AddPropertyPage({
         availableDate: form.availableDate || null,
         imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
         stationIds,
+        // Investment fields (only include if purchasePrice is filled)
+        ...(invForm.invPurchasePrice ? {
+          invPurchasePrice: parseFloat(invForm.invPurchasePrice) || null,
+          invRenovationCost: invForm.invRenovationCost ? parseFloat(invForm.invRenovationCost) : null,
+          invExpectedRentPerMonth: invForm.invExpectedRentPerMonth ? parseFloat(invForm.invExpectedRentPerMonth) : null,
+          invCommonFeePerYear: invForm.invCommonFeePerYear ? parseFloat(invForm.invCommonFeePerYear) : null,
+          invMaintenancePerYear: invForm.invMaintenancePerYear ? parseFloat(invForm.invMaintenancePerYear) : null,
+          invLandTaxRate: invForm.invLandTaxRate ? parseFloat(invForm.invLandTaxRate) : null,
+          invVacancyMonths: invForm.invVacancyMonths ? parseFloat(invForm.invVacancyMonths) : null,
+          invBrokerFeeMonths: invForm.invBrokerFeeMonths ? parseFloat(invForm.invBrokerFeeMonths) : null,
+          invLoanAmount: invForm.invLoanAmount ? parseFloat(invForm.invLoanAmount) : null,
+          invLoanTermYears: invForm.invLoanTermYears ? parseFloat(invForm.invLoanTermYears) : null,
+          invLoanInterestRate: invForm.invLoanInterestRate ? parseFloat(invForm.invLoanInterestRate) : null,
+        } : {}),
       };
 
       const apiUrl = isEditMode
@@ -1488,6 +1533,92 @@ export default function AddPropertyPage({
             )}
           </div>
         </div>
+
+        {/* Investment Analysis — SALE / RENT_AND_SALE only */}
+        {(form.listingType === "SALE" || form.listingType === "RENT_AND_SALE") && (
+          <div className="bg-white rounded-2xl shadow-sm p-6 space-y-5">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-lg font-bold">ข้อมูลการลงทุน</span>
+              <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full font-medium">Investment Analysis</span>
+              <span className="text-xs text-stone-400">(สำหรับ Investor)</span>
+            </div>
+
+            {/* Cost */}
+            <div>
+              <p className="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3">ต้นทุน</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">ราคาซื้อ (รวมส่วนลด) <span className="text-red-400">*</span></label>
+                  <input type="number" min="0" placeholder="เช่น 3190000" value={invForm.invPurchasePrice} onChange={(e) => updateInv("invPurchasePrice", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">ค่าตกแต่ง + ต่อเติม</label>
+                  <input type="number" min="0" placeholder="เช่น 417000" value={invForm.invRenovationCost} onChange={(e) => updateInv("invRenovationCost", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
+                </div>
+              </div>
+              {invForm.invPurchasePrice && (
+                <p className="mt-2 text-sm text-stone-500">
+                  ต้นทุนรวม: <span className="font-semibold text-stone-700">฿{((parseFloat(invForm.invPurchasePrice) || 0) + (parseFloat(invForm.invRenovationCost) || 0)).toLocaleString()}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Rental Income */}
+            <div>
+              <p className="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3">รายได้ค่าเช่า</p>
+              <div>
+                <label className="block text-sm font-medium mb-1">ค่าเช่าต่อเดือน (บาท){form.listingType === "RENT_AND_SALE" && <span className="text-stone-400 text-xs ml-1">(หรือปล่อยว่างเพื่อใช้จากราคาเช่าของห้อง)</span>}</label>
+                <input type="number" min="0" placeholder={form.listingType === "RENT_AND_SALE" ? `ใช้ราคาเช่า ${form.price || "—"} บาท/เดือน` : "เช่น 32500"} value={invForm.invExpectedRentPerMonth} onChange={(e) => updateInv("invExpectedRentPerMonth", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
+              </div>
+            </div>
+
+            {/* Expenses */}
+            <div>
+              <p className="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3">ค่าใช้จ่าย / ปี</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">ค่านายหน้า (กี่เดือน ต่อสัญญา 1 ปี)</label>
+                  <input type="number" min="0" step="0.5" placeholder="1" value={invForm.invBrokerFeeMonths} onChange={(e) => updateInv("invBrokerFeeMonths", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">ค่าส่วนกลาง / ปี (บาท)</label>
+                  <input type="number" min="0" placeholder="เช่น 15000" value={invForm.invCommonFeePerYear} onChange={(e) => updateInv("invCommonFeePerYear", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">ค่าบำรุงรักษา / ปี (บาท) <span className="text-stone-400 text-xs">(แม่บ้าน, ล้างแอร์ ฯลฯ)</span></label>
+                  <input type="number" min="0" placeholder="เช่น 5310" value={invForm.invMaintenancePerYear} onChange={(e) => updateInv("invMaintenancePerYear", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">ภาษีที่ดิน (% ต่อปี)</label>
+                  <input type="number" min="0" step="0.001" placeholder="0.02" value={invForm.invLandTaxRate} onChange={(e) => updateInv("invLandTaxRate", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">ห้องว่างเฉลี่ย (เดือน / ปี)</label>
+                  <input type="number" min="0" step="0.5" max="12" placeholder="1" value={invForm.invVacancyMonths} onChange={(e) => updateInv("invVacancyMonths", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
+                </div>
+              </div>
+            </div>
+
+            {/* Loan */}
+            <div>
+              <p className="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3">ข้อมูลสินเชื่อ (ไม่บังคับ)</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">วงเงินกู้ (บาท)</label>
+                  <input type="number" min="0" placeholder="เช่น 2500000" value={invForm.invLoanAmount} onChange={(e) => updateInv("invLoanAmount", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">ระยะเวลาผ่อน (ปี)</label>
+                  <input type="number" min="1" max="40" placeholder="30" value={invForm.invLoanTermYears} onChange={(e) => updateInv("invLoanTermYears", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">อัตราดอกเบี้ย (% ต่อปี)</label>
+                  <input type="number" min="0" step="0.01" placeholder="2.5" value={invForm.invLoanInterestRate} onChange={(e) => updateInv("invLoanInterestRate", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Submit */}
         <div className="flex justify-end gap-3 pb-8">
