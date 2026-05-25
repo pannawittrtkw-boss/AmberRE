@@ -110,15 +110,13 @@ export default function ContactPage({
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="flex items-center gap-2 text-[#E8C97A] text-xs uppercase tracking-widest font-medium mb-3">
             <span className="w-6 h-px bg-[#E8C97A]" />
-            {locale === "th" ? "ติดต่อเรา" : "Get in Touch"}
+            {t.getInTouch}
           </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-3">
             {t.title}
           </h1>
           <p className="text-lg text-white/70 max-w-2xl">
-            {locale === "th"
-              ? "ทีมงานของเรายินดีให้คำปรึกษาและช่วยคุณค้นหาทรัพย์ที่ใช่"
-              : "Our team is ready to help you find the perfect property"}
+            {t.heroSubtitle}
           </p>
         </div>
       </section>
@@ -134,22 +132,16 @@ export default function ContactPage({
                     <CheckCircle className="w-8 h-8 text-emerald-600" />
                   </div>
                   <h2 className="text-2xl font-bold text-stone-900 mb-2">
-                    {locale === "th"
-                      ? "ส่งข้อความสำเร็จ!"
-                      : "Message Sent!"}
+                    {t.messageSentTitle}
                   </h2>
                   <p className="text-stone-500 mb-5">
-                    {locale === "th"
-                      ? "ทีมงานของเราจะติดต่อกลับโดยเร็วที่สุด"
-                      : "Our team will get back to you shortly"}
+                    {t.messageSentDesc}
                   </p>
                   <button
                     onClick={() => setSuccess(false)}
                     className="inline-flex items-center gap-2 text-[#C8A951] hover:text-[#B8993F] font-medium"
                   >
-                    {locale === "th"
-                      ? "ส่งข้อความอีกครั้ง"
-                      : "Send another message"}
+                    {t.sendAnother}
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -157,17 +149,13 @@ export default function ContactPage({
                 <>
                   <div className="flex items-center gap-2 text-[#C8A951] text-xs uppercase tracking-widest font-medium mb-2">
                     <span className="w-6 h-px bg-[#C8A951]" />
-                    {locale === "th" ? "ส่งข้อความ" : "Send Message"}
+                    {t.send}
                   </div>
                   <h2 className="text-2xl md:text-3xl font-bold text-stone-900 mb-2">
-                    {locale === "th"
-                      ? "บอกเราว่าคุณสนใจอะไร"
-                      : "Tell us what you're looking for"}
+                    {t.formTitle}
                   </h2>
                   <p className="text-sm text-stone-500 mb-8">
-                    {locale === "th"
-                      ? "กรอกฟอร์มด้านล่าง ทีมงานจะติดต่อกลับภายใน 24 ชั่วโมง"
-                      : "Fill out the form below and we'll respond within 24 hours"}
+                    {t.formSubtitle}
                   </p>
 
                   <form onSubmit={handleSubmit} className="space-y-5">
@@ -252,21 +240,21 @@ export default function ContactPage({
             <div className="bg-white rounded-3xl shadow-sm p-7">
               <div className="flex items-center gap-2 text-[#C8A951] text-xs uppercase tracking-widest font-medium mb-2">
                 <span className="w-6 h-px bg-[#C8A951]" />
-                {locale === "th" ? "ช่องทางติดต่อ" : "Contact Info"}
+                {t.contactInfo}
               </div>
               <h3 className="font-bold text-xl text-stone-900 mb-5">
-                {locale === "th" ? "พร้อมให้บริการ" : "Reach Out To Us"}
+                {t.reachOut}
               </h3>
               <div className="space-y-4 text-sm">
                 <ContactRow
                   icon={<Mail className="w-4 h-4 text-[#C8A951]" />}
-                  label={locale === "th" ? "อีเมล" : "Email"}
+                  label={t.emailLabel}
                   value={contactInfo.email}
                   href={`mailto:${contactInfo.email}`}
                 />
                 <ContactRow
                   icon={<Phone className="w-4 h-4 text-[#C8A951]" />}
-                  label={locale === "th" ? "โทรศัพท์" : "Phone"}
+                  label={t.phoneLabel}
                   value={contactInfo.phone}
                   href={`tel:${contactInfo.phone.replace(/[^0-9+]/g, "")}`}
                 />
@@ -286,7 +274,7 @@ export default function ContactPage({
                 />
                 <ContactRow
                   icon={<MapPin className="w-4 h-4 text-rose-500" />}
-                  label={locale === "th" ? "ที่ตั้ง" : "Location"}
+                  label={t.location}
                   value={contactInfo.location}
                 />
               </div>

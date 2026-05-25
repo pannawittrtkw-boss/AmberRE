@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Loader2,
-  Camera,
   MapPin,
   Building2,
   Layers,
@@ -39,6 +38,11 @@ interface Props {
 export default function FeaturedProjectsGrid({ locale }: Props) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [messages, setMessages] = useState<any>(null);
+
+  useEffect(() => {
+    import(`@/messages/${locale}.json`).then((m) => setMessages(m.default));
+  }, [locale]);
 
   useEffect(() => {
     fetch("/api/projects")
@@ -50,7 +54,7 @@ export default function FeaturedProjectsGrid({ locale }: Props) {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
+  if (loading || !messages) {
     return (
       <div className="flex justify-center py-12">
         <Loader2 className="w-6 h-6 animate-spin text-[#C8A951]" />
@@ -69,7 +73,7 @@ export default function FeaturedProjectsGrid({ locale }: Props) {
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {displayProjects.map((p) => (
-          <ProjectCard key={p.id} project={p} locale={locale} />
+          <ProjectCard key={p.id} project={p} locale={locale} messages={messages} />
         ))}
       </div>
 
@@ -80,9 +84,7 @@ export default function FeaturedProjectsGrid({ locale }: Props) {
             href={`/${locale}/projects`}
             className="inline-flex items-center gap-2 px-6 py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-full text-sm font-medium transition-colors"
           >
-            {locale === "th"
-              ? `ดูโครงการทั้งหมด (${projects.length})`
-              : `View All Projects (${projects.length})`}
+            {messages.home.viewAllProjects} ({projects.length})
           </Link>
         </div>
       )}
@@ -90,13 +92,16 @@ export default function FeaturedProjectsGrid({ locale }: Props) {
   );
 }
 
-function ProjectCard({ project, locale }: { project: Project; locale: string }) {
+function ProjectCard({ project, locale, messages }: { project: Project; locale: string; messages: any }) {
   const title = locale !== "th" && project.nameEn ? project.nameEn : project.nameTh;
   const subtitle = locale !== "th" && project.nameTh !== project.nameEn ? project.nameTh : null;
 
   const locationParts = [project.location, project.district, project.province]
     .filter(Boolean)
     .join(", ");
+
+  const tp = messages.property;
+  const tc = messages.common;
 
   return (
     <Link href={`/${locale}/projects/${project.id}`} className="block group">
@@ -120,7 +125,7 @@ function ProjectCard({ project, locale }: { project: Project; locale: string }) 
           {project.isPopular && (
             <div className="absolute top-3 left-3 flex items-center gap-1 bg-[#C8A951] text-white text-xs font-medium px-2.5 py-1 rounded-full shadow">
               <Star className="w-3 h-3 fill-white" />
-              {locale === "th" ? "แนะนำ" : "Featured"}
+              {tp.featured}
             </div>
           )}
 
@@ -128,8 +133,7 @@ function ProjectCard({ project, locale }: { project: Project; locale: string }) 
           {project._count.properties > 0 && (
             <div className="absolute top-3 right-3 bg-white/95 backdrop-blur text-stone-900 text-[10px] font-semibold px-2.5 py-1 rounded-full shadow flex items-center gap-1">
               <Home className="w-3 h-3" />
-              {project._count.properties}{" "}
-              {locale === "th" ? "ห้องว่าง" : "units"}
+              {project._count.properties} {tp.units}
             </div>
           )}
 
@@ -152,7 +156,7 @@ function ProjectCard({ project, locale }: { project: Project; locale: string }) 
           <div className="flex gap-1.5 mb-2">
             <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[11px] font-medium px-2 py-0.5 rounded">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              {locale === "th" ? "พร้อมเข้าอยู่" : "Ready"}
+              {tp.readyToMove}
             </span>
             {project.developer && (
               <span className="inline-flex bg-amber-50 text-[#8B6F2F] text-[11px] font-medium px-2 py-0.5 rounded truncate max-w-[140px]">
@@ -188,7 +192,7 @@ function ProjectCard({ project, locale }: { project: Project; locale: string }) 
             {project.floors != null && (
               <span className="flex items-center gap-1">
                 <Building2 className="w-3.5 h-3.5 text-stone-400" />
-                {project.floors} {locale === "th" ? "ชั้น" : "Fl"}
+                {project.floors} {tp.floor}
               </span>
             )}
             {project.yearCompleted != null && (
@@ -204,23 +208,23 @@ function ProjectCard({ project, locale }: { project: Project; locale: string }) 
             <div className="flex items-center gap-2 flex-1">
               <div className="flex-1 bg-emerald-50 rounded-lg px-2.5 py-1.5">
                 <div className="text-[9px] text-emerald-700 uppercase tracking-wider font-semibold">
-                  {locale === "th" ? "เช่า" : "Rent"}
+                  {tc.rent}
                 </div>
                 <div className="text-sm font-bold text-emerald-700 leading-tight">
                   {project.rentsCount ?? 0}
                   <span className="text-[10px] font-normal text-emerald-600 ml-0.5">
-                    {locale === "th" ? "ห้อง" : "units"}
+                    {tp.units}
                   </span>
                 </div>
               </div>
               <div className="flex-1 bg-amber-50 rounded-lg px-2.5 py-1.5">
                 <div className="text-[9px] text-[#8B6F2F] uppercase tracking-wider font-semibold">
-                  {locale === "th" ? "ขาย" : "Sale"}
+                  {tc.sale}
                 </div>
                 <div className="text-sm font-bold text-[#8B6F2F] leading-tight">
                   {project.salesCount ?? 0}
                   <span className="text-[10px] font-normal text-[#8B6F2F] ml-0.5">
-                    {locale === "th" ? "ห้อง" : "units"}
+                    {tp.units}
                   </span>
                 </div>
               </div>
@@ -230,7 +234,7 @@ function ProjectCard({ project, locale }: { project: Project; locale: string }) 
           {/* View link */}
           <div className="mt-2 text-right">
             <span className="text-xs font-medium text-stone-700 group-hover:text-[#C8A951] transition-colors">
-              {locale === "th" ? "ดูรายละเอียด →" : "View →"}
+              {tp.viewDetails} →
             </span>
           </div>
         </div>

@@ -14,6 +14,7 @@ export default async function ArticlesPage({
 }) {
   const { locale } = await params;
   const messages = await getMessages(locale);
+  const ta = messages.articles;
 
   const [articles, categories, heroSetting] = await Promise.all([
     prisma.article.findMany({
@@ -54,15 +55,13 @@ export default async function ArticlesPage({
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="flex items-center gap-2 text-[#E8C97A] text-xs uppercase tracking-widest font-medium mb-3">
             <span className="w-6 h-px bg-[#E8C97A]" />
-            {locale === "th" ? "บทความ" : "Insights"}
+            {ta.tagline}
           </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-3">
             {messages.common.articles}
           </h1>
           <p className="text-lg text-white/70 max-w-2xl">
-            {locale === "th"
-              ? "ความรู้และข่าวสารวงการอสังหาริมทรัพย์ที่จะช่วยให้คุณตัดสินใจได้อย่างมั่นใจ"
-              : "Real estate insights and stories to help you decide with confidence"}
+            {ta.heroSubtitle}
           </p>
         </div>
       </section>
@@ -114,7 +113,7 @@ export default async function ArticlesPage({
                     )}
                     <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 bg-[#C8A951] text-white text-[10px] font-semibold uppercase tracking-widest px-3 py-1.5 rounded-full">
                       <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                      {locale === "th" ? "บทความล่าสุด" : "Latest"}
+                      {ta.latest}
                     </div>
                   </div>
                   <div className="order-2 lg:order-2">
@@ -142,7 +141,7 @@ export default async function ArticlesPage({
                       </span>
                     </div>
                     <span className="inline-flex items-center gap-2 text-stone-900 font-medium group-hover:gap-3 transition-all">
-                      {locale === "th" ? "อ่านต่อ" : "Read Article"}
+                      {ta.readArticle}
                       <ArrowRight className="w-4 h-4" />
                     </span>
                   </div>
@@ -155,12 +154,10 @@ export default async function ArticlesPage({
               <div className="border-t border-stone-200 pt-12">
                 <div className="flex items-center gap-2 text-[#C8A951] text-xs uppercase tracking-widest font-medium mb-2">
                   <span className="w-6 h-px bg-[#C8A951]" />
-                  {locale === "th" ? "บทความทั้งหมด" : "All Articles"}
+                  {ta.allArticles}
                 </div>
                 <h2 className="text-2xl md:text-3xl font-bold text-stone-900 mb-8">
-                  {locale === "th"
-                    ? `บทความ (${rest.length})`
-                    : `${rest.length} more articles`}
+                  {rest.length} {ta.moreArticles}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {rest.map((article) => {

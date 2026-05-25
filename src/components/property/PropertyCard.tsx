@@ -65,12 +65,12 @@ export default function PropertyCard({
           <div className="absolute top-3 left-3 flex gap-1.5 flex-wrap max-w-[70%]">
             {isRent && (
               <span className="bg-emerald-500 text-white text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full shadow-sm">
-                {locale === "th" ? "เช่า" : "Rent"}
+                {messages.common.rent}
               </span>
             )}
             {isSale && (
               <span className="bg-[#C8A951] text-white text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full shadow-sm">
-                {locale === "th" ? "ขาย" : "Sale"}
+                {messages.common.sale}
               </span>
             )}
             {property.condition === "FIRST_HAND" && (
@@ -131,9 +131,7 @@ export default function PropertyCard({
             {property.propertyType !== "LAND" && (
               <span className="flex items-center gap-1">
                 <Bed className="w-3.5 h-3.5 text-[#C8A951]" />
-                {property.bedrooms === 0
-                  ? (locale === "th" ? "สตูดิโอ" : "Studio")
-                  : property.bedrooms}
+                {property.bedrooms === 0 ? t.studio : property.bedrooms}
               </span>
             )}
             {property.propertyType !== "LAND" && property.bathrooms > 0 && (
@@ -153,9 +151,7 @@ export default function PropertyCard({
               property.floor > 0 && (
                 <span className="flex items-center gap-1">
                   <Layers className="w-3.5 h-3.5 text-[#C8A951]" />
-                  {locale === "th"
-                    ? `ชั้น ${property.floor}`
-                    : `Floor ${property.floor}`}
+                  {`${t.floor} ${property.floor}`}
                 </span>
               )}
           </div>
@@ -164,7 +160,7 @@ export default function PropertyCard({
           <div className="mt-auto pt-4 flex items-end justify-between gap-2">
             <div className="min-w-0 flex-1">
               <div className="text-[10px] uppercase tracking-widest text-stone-400">
-                {locale === "th" ? "ราคา" : "Price"}
+                {t.price}
               </div>
               {isRent && isSale ? (
                 <div className="space-y-0.5">
@@ -177,7 +173,7 @@ export default function PropertyCard({
                   {Number(property.salePrice) > 0 && (
                     <div className="text-xs sm:text-sm text-stone-500">
                       <span className="text-[10px] uppercase tracking-widest text-stone-400 mr-1">
-                        {locale === "th" ? "ขาย" : "Sale"}
+                        {messages.common.sale}
                       </span>
                       ฿{formatPrice(Number(property.salePrice))}
                     </div>

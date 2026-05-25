@@ -148,30 +148,18 @@ export default function PropertiesPage({
           {/* Badge with gold lines */}
           <div className="inline-flex items-center gap-3 text-[#E8C97A] text-[11px] uppercase tracking-[0.3em] font-medium mb-3">
             <span className="w-10 h-px bg-gradient-to-r from-transparent to-[#C8A951]" />
-            {locale === "th" ? "อสังหาริมทรัพย์" : "Listings"}
+            {messages.properties.badge}
             <span className="w-10 h-px bg-gradient-to-l from-transparent to-[#C8A951]" />
           </div>
 
           {/* Heading */}
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.05] mb-3 tracking-tight">
-            {locale === "th" ? (
-              <>
-                คัดสรร
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E8C97A] via-[#C8A951] to-[#8B6F2F]">
-                  {" "}
-                  ที่อยู่อาศัย{" "}
-                </span>
-                คุณภาพ
-              </>
-            ) : (
-              <>
-                Discover Premium
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E8C97A] via-[#C8A951] to-[#8B6F2F]">
-                  {" "}
-                  Properties
-                </span>
-              </>
-            )}
+            {messages.properties.heroPrefix}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E8C97A] via-[#C8A951] to-[#8B6F2F]">
+              {" "}
+              {messages.properties.heroHighlight}{" "}
+            </span>
+            {messages.properties.heroSuffix}
           </h1>
 
           {/* Gold accent line */}
@@ -183,9 +171,7 @@ export default function PropertiesPage({
 
           {/* Subtitle */}
           <p className="text-base md:text-lg text-stone-400 max-w-2xl mx-auto leading-relaxed font-light">
-            {locale === "th"
-              ? `ค้นพบ ${total.toLocaleString()} ห้องคุณภาพ พร้อมข้อมูลครบถ้วนเพื่อการตัดสินใจที่ดีที่สุด`
-              : `Browse ${total.toLocaleString()} curated listings — complete details, sharp insights, smart decisions.`}
+            {messages.properties.heroSubtitlePre} {total.toLocaleString()} {messages.properties.heroSubtitlePost}
           </p>
 
           {/* Stats strip */}
@@ -195,7 +181,7 @@ export default function PropertiesPage({
                 {total.toLocaleString()}
               </div>
               <div className="text-[10px] text-stone-500 uppercase tracking-widest mt-1.5">
-                {locale === "th" ? "รายการทั้งหมด" : "Total Listings"}
+                {messages.properties.totalListings}
               </div>
             </div>
             <div className="px-6">
@@ -203,7 +189,7 @@ export default function PropertiesPage({
                 4.9
               </div>
               <div className="text-[10px] text-stone-500 uppercase tracking-widest mt-1.5">
-                {locale === "th" ? "คะแนนรีวิว" : "Avg Rating"}
+                {messages.properties.avgRating}
               </div>
             </div>
             <div className="px-6">
@@ -211,7 +197,7 @@ export default function PropertiesPage({
                 24/7
               </div>
               <div className="text-[10px] text-stone-500 uppercase tracking-widest mt-1.5">
-                {locale === "th" ? "บริการ" : "Support"}
+                {messages.properties.support}
               </div>
             </div>
           </div>
@@ -247,10 +233,10 @@ export default function PropertiesPage({
                   <span className="font-bold text-stone-900">
                     {total.toLocaleString()}
                   </span>{" "}
-                  {locale === "th" ? "รายการ" : "results"}
+                  {messages.properties.results}
                 </p>
                 <p className="text-xs text-stone-400">
-                  {locale === "th" ? "หน้า" : "Page"} {page} / {totalPages}
+                  {messages.properties.page} {page} / {totalPages}
                 </p>
               </div>
             )}
@@ -266,9 +252,7 @@ export default function PropertiesPage({
                   {messages.common.noResults}
                 </p>
                 <p className="text-stone-400 text-sm mt-1">
-                  {locale === "th"
-                    ? "ลองปรับตัวกรองอื่น"
-                    : "Try adjusting your filters"}
+                  {messages.properties.tryAdjustFilters}
                 </p>
               </div>
             ) : (

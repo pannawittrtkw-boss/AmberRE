@@ -35,6 +35,7 @@ export default function ProjectsListPage({
   params: Promise<{ locale: string }>;
 }) {
   const [locale, setLocale] = useState("th");
+  const [messages, setMessages] = useState<any>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -50,7 +51,10 @@ export default function ProjectsListPage({
   }, []);
 
   useEffect(() => {
-    params.then(({ locale: l }) => setLocale(l));
+    params.then(({ locale: l }) => {
+      setLocale(l);
+      import(`@/messages/${l}.json`).then((m) => setMessages(m.default));
+    });
   }, [params]);
 
   const fetchProjects = useCallback(async () => {
@@ -72,6 +76,13 @@ export default function ProjectsListPage({
 
   const featured = projects.filter((p) => p.isPopular);
   const others = projects.filter((p) => !p.isPopular);
+
+  if (!messages)
+    return (
+      <div className="flex justify-center py-32">
+        <Loader2 className="w-8 h-8 animate-spin text-[#C8A951]" />
+      </div>
+    );
 
   return (
     <div className="bg-stone-50 min-h-screen">
@@ -111,30 +122,18 @@ export default function ProjectsListPage({
           {/* Badge */}
           <div className="inline-flex items-center gap-3 text-[#E8C97A] text-[11px] uppercase tracking-[0.3em] font-medium mb-3">
             <span className="w-10 h-px bg-gradient-to-r from-transparent to-[#C8A951]" />
-            {locale === "th" ? "โครงการ" : "Projects"}
+            {messages.projects.badge}
             <span className="w-10 h-px bg-gradient-to-l from-transparent to-[#C8A951]" />
           </div>
 
           {/* Heading */}
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.05] mb-3 tracking-tight">
-            {locale === "th" ? (
-              <>
-                ค้นหา
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E8C97A] via-[#C8A951] to-[#8B6F2F]">
-                  {" "}
-                  โครงการ{" "}
-                </span>
-                คุณภาพ
-              </>
-            ) : (
-              <>
-                Explore Curated
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E8C97A] via-[#C8A951] to-[#8B6F2F]">
-                  {" "}
-                  Projects
-                </span>
-              </>
-            )}
+            {messages.projects.heroPrefix}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E8C97A] via-[#C8A951] to-[#8B6F2F]">
+              {" "}
+              {messages.projects.heroHighlight}{" "}
+            </span>
+            {messages.projects.heroSuffix}
           </h1>
 
           {/* Gold accent line */}
@@ -146,9 +145,7 @@ export default function ProjectsListPage({
 
           {/* Subtitle */}
           <p className="text-base md:text-lg text-stone-400 max-w-2xl mx-auto leading-relaxed font-light">
-            {locale === "th"
-              ? "รวมโครงการอสังหาริมทรัพย์ พร้อมข้อมูลครบครัน สิ่งอำนวยความสะดวก และห้องพร้อมเช่า/ขาย"
-              : "Browse all projects with full details, facilities, and available units"}
+            {messages.projects.heroSubtitle}
           </p>
 
           {/* Search */}
@@ -158,11 +155,7 @@ export default function ProjectsListPage({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={
-                locale === "th"
-                  ? "ค้นหาด้วยชื่อโครงการ, developer, ทำเล..."
-                  : "Search by project name, developer, location..."
-              }
+              placeholder={messages.projects.searchPlaceholder}
               className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur text-white placeholder:text-stone-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8A951]/40 focus:border-[#C8A951]/40 focus:bg-white/10 transition-all"
             />
           </div>
@@ -180,11 +173,7 @@ export default function ProjectsListPage({
         ) : projects.length === 0 ? (
           <div className="text-center py-20">
             <Building2 className="w-12 h-12 mx-auto text-gray-300 mb-2" />
-            <p className="text-gray-500">
-              {locale === "th"
-                ? "ไม่พบโครงการ"
-                : "No projects found"}
-            </p>
+            <p className="text-gray-500">{messages.projects.noProjects}</p>
           </div>
         ) : (
           <>
@@ -193,13 +182,11 @@ export default function ProjectsListPage({
               <section className="mb-12">
                 <div className="flex items-center gap-2 mb-4">
                   <Star className="w-5 h-5 text-[#C8A951] fill-[#C8A951]" />
-                  <h2 className="text-xl font-bold">
-                    {locale === "th" ? "โครงการแนะนำ" : "Featured Projects"}
-                  </h2>
+                  <h2 className="text-xl font-bold">{messages.projects.featured}</h2>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                   {featured.map((p) => (
-                    <ProjectCard key={p.id} project={p} locale={locale} featured />
+                    <ProjectCard key={p.id} project={p} locale={locale} messages={messages} featured />
                   ))}
                 </div>
               </section>
@@ -208,17 +195,14 @@ export default function ProjectsListPage({
             {/* All */}
             <section>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">
-                  {locale === "th" ? "โครงการทั้งหมด" : "All Projects"}
-                </h2>
+                <h2 className="text-xl font-bold">{messages.projects.allProjects}</h2>
                 <span className="text-sm text-gray-500">
-                  {projects.length}{" "}
-                  {locale === "th" ? "โครงการ" : "projects"}
+                  {projects.length} {messages.projects.count}
                 </span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {others.map((p) => (
-                  <ProjectCard key={p.id} project={p} locale={locale} />
+                  <ProjectCard key={p.id} project={p} locale={locale} messages={messages} />
                 ))}
               </div>
             </section>
@@ -232,10 +216,12 @@ export default function ProjectsListPage({
 function ProjectCard({
   project,
   locale,
+  messages,
   featured,
 }: {
   project: Project;
   locale: string;
+  messages: any;
   featured?: boolean;
 }) {
   return (
@@ -260,13 +246,12 @@ function ProjectCard({
         {featured && (
           <span className="absolute top-3 left-3 bg-[#C8A951] text-white text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow">
             <Star className="w-3 h-3 fill-white" />
-            {locale === "th" ? "แนะนำ" : "Featured"}
+            {messages.projects.featuredBadge}
           </span>
         )}
         {project._count.properties > 0 && (
           <span className="absolute top-3 right-3 bg-white/95 text-gray-900 text-xs font-medium px-2.5 py-1 rounded-full shadow">
-            {project._count.properties}{" "}
-            {locale === "th" ? "ห้อง" : "units available"}
+            {project._count.properties} {messages.projects.availableUnits}
           </span>
         )}
       </div>
@@ -299,13 +284,13 @@ function ProjectCard({
             {project.totalUnits && (
               <span className="flex items-center gap-1">
                 <Layers className="w-3 h-3" />
-                {project.totalUnits} {locale === "th" ? "ยูนิต" : "units"}
+                {project.totalUnits} {messages.projects.totalUnits}
               </span>
             )}
             {project.floors && (
               <span className="flex items-center gap-1">
                 <Building2 className="w-3 h-3" />
-                {project.floors} {locale === "th" ? "ชั้น" : "floors"}
+                {project.floors} {messages.projects.floors}
               </span>
             )}
             {project.yearCompleted && (

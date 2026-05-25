@@ -13,7 +13,6 @@ interface Props {
 
 function mask(value: string): string {
   if (!value) return value;
-  // Show last 4 chars, mask the rest
   const clean = value.replace(/\s/g, "");
   return "*".repeat(Math.max(0, clean.length - 4)) + clean.slice(-4);
 }
@@ -23,14 +22,18 @@ export default function ContactUnlockCard({ propertyId, phone, lineId, locale }:
   const role = (session?.user as any)?.role;
   const tier: string = (session?.user as any)?.subscriptionTier ?? "STANDARD";
 
+  const [messages, setMessages] = useState<any>(null);
   const [unlocked, setUnlocked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [unlocking, setUnlocking] = useState(false);
   const [quota, setQuota] = useState<{ used: number; max: number | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Only CO_AGENT needs the paywall — all other roles see contacts directly
   const needsUnlock = role === "CO_AGENT";
+
+  useEffect(() => {
+    import(`@/messages/${locale}.json`).then((m) => setMessages(m.default));
+  }, [locale]);
 
   useEffect(() => {
     if (!needsUnlock) { setLoading(false); return; }
@@ -58,8 +61,9 @@ export default function ContactUnlockCard({ propertyId, phone, lineId, locale }:
       setUnlocked(true);
       if (quota) setQuota((q) => q ? { ...q, used: q.used + 1 } : q);
     } else if (d.error === "quota_exceeded") {
-      setError(locale === "th"
-        ? `ใช้ครบโควตา ${d.quota} ครั้ง/เดือนแล้ว อัพเกรดเป็น PRO หรือ ELITE เพื่อเข้าถึงไม่จำกัด`
+      const tc = messages?.common;
+      setError(tc
+        ? `${tc.unlimited ? "" : ""}${d.quota} — ${tc.unlimited}`
         : `Monthly quota of ${d.quota} unlocks reached. Upgrade to PRO or ELITE for unlimited access.`
       );
     } else {
@@ -68,7 +72,7 @@ export default function ContactUnlockCard({ propertyId, phone, lineId, locale }:
     setUnlocking(false);
   };
 
-  if (loading) {
+  if (loading || !messages) {
     return (
       <div className="flex justify-center py-4">
         <Loader2 className="w-5 h-5 animate-spin text-stone-400" />
@@ -76,28 +80,26 @@ export default function ContactUnlockCard({ propertyId, phone, lineId, locale }:
     );
   }
 
-  // Non-CO_AGENT: show contacts directly
+  const tc = messages.common;
+
   if (!needsUnlock) {
-    return <ContactButtons phone={phone} lineId={lineId} locale={locale} />;
+    return <ContactButtons phone={phone} lineId={lineId} callLabel={tc.call} />;
   }
 
-  // Unlocked state
   if (unlocked) {
     return (
       <div className="space-y-2">
         <div className="flex items-center gap-1.5 text-xs text-green-600 mb-2">
           <Unlock className="w-3.5 h-3.5" />
-          {locale === "th" ? "ติดต่อที่ unlock แล้ว" : "Contact unlocked"}
+          {tc.contactUnlocked}
         </div>
-        <ContactButtons phone={phone} lineId={lineId} locale={locale} />
+        <ContactButtons phone={phone} lineId={lineId} callLabel={tc.call} />
       </div>
     );
   }
 
-  // Locked state
   return (
     <div className="space-y-3">
-      {/* Masked contact preview */}
       <div className="space-y-2">
         <div className="flex items-center gap-3 p-3 bg-stone-50 rounded-xl border border-stone-200 opacity-60">
           <Phone className="w-4 h-4 text-stone-400" />
@@ -111,22 +113,18 @@ export default function ContactUnlockCard({ propertyId, phone, lineId, locale }:
         )}
       </div>
 
-      {/* Quota badge */}
       {quota && quota.max !== null && (
         <div className="text-xs text-stone-500 text-center">
-          {locale === "th"
-            ? `ใช้ไปแล้ว ${quota.used}/${quota.max} ครั้งเดือนนี้`
-            : `${quota.used}/${quota.max} unlocks used this month`}
+          {quota.used}/{quota.max} {tc.unlockContact}
         </div>
       )}
       {tier !== "STANDARD" && (
         <div className="flex items-center gap-1.5 text-xs text-amber-600 justify-center">
           <Crown className="w-3 h-3" />
-          {tier} — {locale === "th" ? "ไม่จำกัด" : "Unlimited"}
+          {tier} — {tc.unlimited}
         </div>
       )}
 
-      {/* Error */}
       {error && (
         <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-3">
           <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
@@ -134,7 +132,6 @@ export default function ContactUnlockCard({ propertyId, phone, lineId, locale }:
         </div>
       )}
 
-      {/* Unlock button */}
       <button
         onClick={handleUnlock}
         disabled={unlocking || (quota !== null && quota.max !== null && quota.used >= quota.max)}
@@ -145,13 +142,13 @@ export default function ContactUnlockCard({ propertyId, phone, lineId, locale }:
         ) : (
           <Lock className="w-4 h-4" />
         )}
-        {locale === "th" ? "ปลดล็อกช่องทางติดต่อ" : "Unlock Contact Info"}
+        {tc.unlockContact}
       </button>
     </div>
   );
 }
 
-function ContactButtons({ phone, lineId, locale }: { phone: string; lineId: string | null; locale: string }) {
+function ContactButtons({ phone, lineId, callLabel }: { phone: string; lineId: string | null; callLabel: string }) {
   return (
     <div className="space-y-2">
       {phone && (
@@ -160,7 +157,7 @@ function ContactButtons({ phone, lineId, locale }: { phone: string; lineId: stri
           className="w-full flex items-center justify-center gap-2 bg-[#C8A951] hover:bg-[#b8993f] text-white py-3 rounded-xl font-medium text-sm transition-colors"
         >
           <Phone className="w-4 h-4" />
-          {locale === "th" ? "โทรติดต่อ" : "Call"} {phone}
+          {callLabel} {phone}
         </a>
       )}
       {lineId && (

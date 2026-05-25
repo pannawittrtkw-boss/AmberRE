@@ -101,39 +101,40 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
           {/* Ready / Available date */}
           {isReady ? (
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-teal-600 text-white">
-              {locale === "th" ? "พร้อมเข้าอยู่" : "Ready to move in"}
+              {messages.property.readyToMove}
             </span>
           ) : (
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500 text-white">
-              {locale === "th"
-                ? `ว่าง ${availDate!.toLocaleDateString("th-TH", { day: "2-digit", month: "short", year: "2-digit" })}`
-                : `Available on ${availDate!.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })}`}
+              {messages.property.availablePrefix} {availDate!.toLocaleDateString(
+                ({ th: "th-TH", en: "en-GB", zh: "zh-CN", my: "my-MM" } as Record<string,string>)[locale] || "en-GB",
+                { day: "2-digit", month: "short", year: "2-digit" }
+              )}
             </span>
           )}
 
           {/* Rent tag */}
           {isRent && (
             <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded bg-[#C8A951] text-white">
-              {locale === "th" ? "เช่า" : "Rent"}
+              {messages.common.rent}
             </span>
           )}
 
           {/* Sale tag */}
           {isSale && (
             <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded bg-[#C8A951] text-white">
-              {locale === "th" ? "ขาย" : "Sale"}
+              {messages.common.sale}
             </span>
           )}
 
           {/* Condition tag */}
           {property.condition === "FIRST_HAND" && (
             <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded bg-blue-500 text-white">
-              {locale === "th" ? "มือ 1" : "Brand New"}
+              {messages.property.firstHand}
             </span>
           )}
           {property.condition === "SECOND_HAND" && (
             <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded bg-stone-700 text-white">
-              {locale === "th" ? "มือ 2" : "Pre-owned"}
+              {messages.property.secondHand}
             </span>
           )}
         </div>
@@ -165,19 +166,19 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
               <span className="flex items-center gap-0.5">
                 <Bed className="w-3.5 h-3.5" />{" "}
                 {property.bedrooms === 0
-                  ? locale === "th" ? "สตูดิโอ" : "Studio"
-                  : `${property.bedrooms} ${locale === "th" ? "ห้องนอน" : "Beds"}`}
+                  ? messages.property.studio
+                  : `${property.bedrooms} ${messages.property.beds}`}
               </span>
             )}
             {property.propertyType !== "LAND" && property.bathrooms > 0 && (
               <span className="flex items-center gap-0.5">
                 <Bath className="w-3.5 h-3.5" /> {property.bathrooms}{" "}
-                {locale === "th" ? "ห้องน้ำ" : "Baths"}
+                {messages.property.baths}
               </span>
             )}
             {sizeSqm && (
               <span className="flex items-center gap-0.5">
-                <Maximize className="w-3.5 h-3.5" /> {sizeSqm} m²
+                <Maximize className="w-3.5 h-3.5" /> {sizeSqm} {messages.property.sqm}
               </span>
             )}
             {property.propertyType !== "LAND" &&
@@ -185,9 +186,7 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
               Number(property.floor) > 0 && (
                 <span className="flex items-center gap-0.5">
                   <Building className="w-3.5 h-3.5" />{" "}
-                  {locale === "th"
-                    ? `ชั้น ${property.floor}`
-                    : `Floor ${property.floor}`}
+                  {`${messages.property.floor} ${property.floor}`}
                 </span>
               )}
           </div>
@@ -199,7 +198,7 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
                 ฿ {formatNumber(price, locale)}
                 {isRent && (
                   <span className="text-xs font-normal text-gray-500">
-                    {" "}{locale === "th" ? "/เดือน" : "/month"}
+                    {" "}{messages.property.perMonth}
                   </span>
                 )}
               </p>
@@ -207,7 +206,7 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
             {salePrice > 0 && price > 0 && (
               <p className="text-sm font-semibold text-stone-700 -mt-0.5">
                 <span className="text-[10px] uppercase tracking-widest text-gray-400 mr-1">
-                  {locale === "th" ? "ขาย" : "Sale"}
+                  {messages.common.sale}
                 </span>
                 ฿ {formatNumber(salePrice, locale)}
               </p>

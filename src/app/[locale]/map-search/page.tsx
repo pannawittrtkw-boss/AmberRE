@@ -93,7 +93,7 @@ export default function MapSearchPage({
     <div className="relative p-5 border-b border-white/10">
       <div className="flex items-center gap-2 text-[#E8C97A] text-[10px] uppercase tracking-[0.3em] font-medium mb-2">
         <span className="w-6 h-px bg-gradient-to-r from-transparent to-[#C8A951]" />
-        {locale === "th" ? "ค้นหาบนแผนที่" : "Map Search"}
+        {messages.common.mapSearch}
       </div>
       <h1 className="text-2xl font-bold flex items-center gap-2 tracking-tight">
         <MapIcon className="w-6 h-6 text-[#E8C97A]" />
@@ -105,7 +105,7 @@ export default function MapSearchPage({
         <span className="text-[#E8C97A] font-bold">
           {total.toLocaleString()}
         </span>{" "}
-        {locale === "th" ? "ทรัพย์บนแผนที่" : "listings on map"}
+        {messages.map.listingsOnMap}
       </p>
     </div>
   );
@@ -142,7 +142,7 @@ export default function MapSearchPage({
             <div className="bg-white rounded-2xl px-6 py-4 shadow-lg flex items-center gap-3">
               <Loader2 className="w-5 h-5 animate-spin text-[#C8A951]" />
               <span className="text-sm font-medium text-stone-700">
-                {locale === "th" ? "กำลังโหลด..." : "Loading..."}
+                {messages.map.loading}
               </span>
             </div>
           </div>
@@ -158,11 +158,11 @@ export default function MapSearchPage({
         <button
           onClick={() => setFilterOpen(true)}
           className="lg:hidden fixed bottom-5 right-5 z-[30] bg-stone-950 text-white rounded-full px-4 py-3 shadow-2xl flex items-center gap-2 border border-[#C8A951]/40 hover:bg-stone-900 transition-colors"
-          aria-label={locale === "th" ? "เปิดตัวกรอง" : "Open filters"}
+          aria-label={messages.map.openFilters}
         >
           <SlidersHorizontal className="w-4 h-4 text-[#E8C97A]" />
           <span className="text-sm font-medium">
-            {locale === "th" ? "ตัวกรอง" : "Filters"}
+            {messages.map.filters}
           </span>
           <span className="bg-[#C8A951] text-stone-900 text-[11px] font-bold rounded-full px-2 py-0.5 ml-1">
             {total.toLocaleString()}
@@ -189,14 +189,14 @@ export default function MapSearchPage({
             <div className="flex items-center justify-between px-5 pt-1 pb-3 border-b border-white/10 shrink-0">
               <div>
                 <div className="text-[#E8C97A] text-[10px] uppercase tracking-[0.3em] font-medium">
-                  {locale === "th" ? "ค้นหาบนแผนที่" : "Map Search"}
+                  {messages.common.mapSearch}
                 </div>
                 <div className="text-base font-bold tracking-tight flex items-center gap-2">
                   <MapIcon className="w-4 h-4 text-[#E8C97A]" />
                   {messages.common.mapSearch}
                   <span className="text-xs text-stone-400 font-normal ml-2">
                     <span className="text-[#E8C97A] font-bold">{total.toLocaleString()}</span>{" "}
-                    {locale === "th" ? "ทรัพย์" : "listings"}
+                    {messages.map.listings}
                   </span>
                 </div>
               </div>

@@ -23,7 +23,12 @@ export default function MapSearchBox({ map, locale }: MapSearchBoxProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState<any>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    import(`@/messages/${locale}.json`).then((m) => setMessages(m.default));
+  }, [locale]);
 
   // Close suggestions when clicking outside the box
   useEffect(() => {
@@ -42,18 +47,15 @@ export default function MapSearchBox({ map, locale }: MapSearchBoxProps) {
     if (!q) return;
     setLoading(true);
     setError(null);
+    const tm = messages?.map ?? {};
     try {
       const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
       const data = await res.json();
       if (!data.success) {
         setError(
           data.error === "No results"
-            ? locale === "th"
-              ? "ไม่พบพื้นที่นี้"
-              : "No results found"
-            : locale === "th"
-            ? "ค้นหาไม่สำเร็จ"
-            : "Search failed"
+            ? (tm.noResults || "No results found")
+            : (tm.searchFailed || "Search failed")
         );
         setResults([]);
         setOpen(true);
@@ -66,7 +68,7 @@ export default function MapSearchBox({ map, locale }: MapSearchBoxProps) {
       }
       setOpen(true);
     } catch {
-      setError(locale === "th" ? "ค้นหาไม่สำเร็จ" : "Search failed");
+      setError(tm.searchFailed || "Search failed");
     } finally {
       setLoading(false);
     }
@@ -97,6 +99,9 @@ export default function MapSearchBox({ map, locale }: MapSearchBoxProps) {
     setOpen(false);
   };
 
+  const tm = messages?.map ?? {};
+  const tc = messages?.common ?? {};
+
   return (
     <div
       ref={wrapRef}
@@ -112,11 +117,7 @@ export default function MapSearchBox({ map, locale }: MapSearchBoxProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => results.length > 0 && setOpen(true)}
-          placeholder={
-            locale === "th"
-              ? "ค้นหาพื้นที่ เช่น บางนา, สุขุมวิท, อโศก..."
-              : "Search area, e.g. Bangna, Sukhumvit..."
-          }
+          placeholder={tm.searchPlaceholder || "Search area..."}
           className="flex-1 px-3 py-2.5 text-sm bg-transparent outline-none"
         />
         {query && !loading && (
@@ -136,10 +137,8 @@ export default function MapSearchBox({ map, locale }: MapSearchBoxProps) {
         >
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin" />
-          ) : locale === "th" ? (
-            "ค้นหา"
           ) : (
-            "Go"
+            tc.search || "Search"
           )}
         </button>
       </form>

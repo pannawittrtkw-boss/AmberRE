@@ -175,7 +175,7 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
                         className="block px-4 py-2 text-sm text-amber-600 font-medium hover:bg-amber-50"
                         onClick={() => setUserMenuOpen(false)}
                       >
-                        {locale === "th" ? "Agent Workspace" : "Agent Workspace"}
+                        Agent Workspace
                       </Link>
                     )}
                     <Link
@@ -184,7 +184,7 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
                       onClick={() => setUserMenuOpen(false)}
                     >
                       <KeyRound className="w-3.5 h-3.5" />
-                      {locale === "th" ? "เปลี่ยนรหัสผ่าน" : "Change Password"}
+                      {messages?.common?.changePassword || "Change Password"}
                     </Link>
                     <button
                       onClick={() => signOut()}

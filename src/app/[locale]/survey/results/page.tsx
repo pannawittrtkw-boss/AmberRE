@@ -9,6 +9,7 @@ async function getMessages(locale: string) {
 export default async function SurveyResultsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const messages = await getMessages(locale);
+  const ts = messages.survey;
 
   const reviews = await prisma.review.findMany({
     where: { isApproved: true },
@@ -24,7 +25,7 @@ export default async function SurveyResultsPage({ params }: { params: Promise<{ 
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold mb-8">{locale === "th" ? "ผลรีวิวจากลูกค้า" : "Customer Reviews"}</h1>
+      <h1 className="text-3xl font-bold mb-8">{ts.customerReviews}</h1>
 
       {/* Summary */}
       <div className="bg-white rounded-xl shadow-sm border p-8 mb-8 text-center">
@@ -34,7 +35,7 @@ export default async function SurveyResultsPage({ params }: { params: Promise<{ 
             <Star key={s} className={`w-6 h-6 ${s <= Math.round(avgRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
           ))}
         </div>
-        <p className="text-gray-500">{reviews.length} {locale === "th" ? "รีวิว" : "reviews"}</p>
+        <p className="text-gray-500">{reviews.length} {ts.reviews}</p>
       </div>
 
       {/* Reviews List */}

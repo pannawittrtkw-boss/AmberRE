@@ -25,6 +25,7 @@ export default async function PortfolioPage({
   const { locale } = await params;
   const { page: pageStr } = await searchParams;
   const messages = await getMessages(locale);
+  const tp = messages.portfolio;
 
   const currentPage = Math.max(1, parseInt(pageStr || "1"));
   const [total, successStories, heroSetting] = await Promise.all([
@@ -71,28 +72,16 @@ export default async function PortfolioPage({
           <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col items-center justify-start text-center pt-16 sm:pt-20 lg:pt-24">
             {/* Tagline */}
             <div className="text-[#E8C97A] text-[11px] uppercase tracking-[0.35em] font-medium mb-3">
-              {locale === "th" ? "ผลงานของเรา" : "Our Portfolio"}
+              {tp.tagline}
             </div>
 
             {/* Heading */}
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-[1.2] tracking-tight drop-shadow-lg">
-              {locale === "th" ? (
-                <>
-                  เราไม่ได้แค่หาบ้าน
+                {tp.heroPrefix}
                   <br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E8C97A] via-[#C8A951] to-[#E8C97A]">
-                    เราส่งมอบความสุข
+                    {tp.heroHighlight}
                   </span>
-                </>
-              ) : (
-                <>
-                  We don&apos;t just find houses.
-                  <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E8C97A] via-[#C8A951] to-[#E8C97A]">
-                    We deliver happiness.
-                  </span>
-                </>
-              )}
             </h1>
 
             {/* Stats / subtitle */}
@@ -100,9 +89,7 @@ export default async function PortfolioPage({
               <span className="font-bold text-white">
                 {total.toLocaleString()}
               </span>
-              {locale === "th"
-                ? "ผลงานปิดการขาย/เช่าสำเร็จ"
-                : "Successful Sales & Rentals Delivered"}
+              {tp.successfulDeals}
               <Key className="w-3.5 h-3.5 text-[#E8C97A]" />
               <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400" />
             </p>
@@ -199,15 +186,7 @@ export default async function PortfolioPage({
         {total > 0 && totalPages > 1 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-12">
             <p className="text-sm text-stone-500">
-              {locale === "th"
-                ? `แสดง ${(currentPage - 1) * PER_PAGE + 1}-${Math.min(
-                    currentPage * PER_PAGE,
-                    total
-                  )} จาก ${total} ผลงาน`
-                : `Showing ${(currentPage - 1) * PER_PAGE + 1}-${Math.min(
-                    currentPage * PER_PAGE,
-                    total
-                  )} of ${total}`}
+              {`${tp.showing} ${(currentPage - 1) * PER_PAGE + 1}-${Math.min(currentPage * PER_PAGE, total)} ${tp.of} ${total}${tp.deals ? " " + tp.deals : ""}`}
             </p>
 
             <div className="flex items-center gap-1">

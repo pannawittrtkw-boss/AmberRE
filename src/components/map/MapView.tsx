@@ -64,6 +64,11 @@ export default function MapView({
 }: MapViewProps) {
   const [mounted, setMounted] = useState(false);
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
+  const [messages, setMessages] = useState<any>(null);
+
+  useEffect(() => {
+    import(`@/messages/${locale}.json`).then((m) => setMessages(m.default));
+  }, [locale]);
 
   useEffect(() => {
     setMounted(true);
@@ -74,10 +79,19 @@ export default function MapView({
       <div
         className={`${className} bg-gray-200 rounded-xl flex items-center justify-center`}
       >
-        Loading map...
+        {messages?.map?.loading || "Loading map..."}
       </div>
     );
   }
+
+  const tc = messages?.common ?? {};
+  const tp = messages?.property ?? {};
+
+  const listingLabel = (type: string) => {
+    if (type === "RENT") return tc.rent || "Rent";
+    if (type === "SALE") return tc.sale || "Sale";
+    return tc.rentAndSale || "Rent & Sale";
+  };
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat(getIntlLocale(locale)).format(price);
@@ -174,7 +188,7 @@ export default function MapView({
                 <div className="font-medium">{title}</div>
                 <div className="text-[10px] opacity-80">
                   ฿{formatPrice(displayPrice)}
-                  {isRent && (locale === "th" ? "/เดือน" : "/mo")}
+                  {isRent && (tp.perMonth || "/month")}
                 </div>
               </Tooltip>
 
@@ -185,7 +199,7 @@ export default function MapView({
                     ฿{formatPrice(displayPrice)}
                     {isRent && (
                       <span className="text-xs font-normal text-gray-500">
-                        {locale === "th" ? "/เดือน" : "/month"}
+                        {tp.perMonth || "/month"}
                       </span>
                     )}
                   </p>
@@ -194,28 +208,18 @@ export default function MapView({
                     isRent &&
                     property.listingType === "RENT_AND_SALE" && (
                       <p className="text-xs text-gray-600 mt-0.5">
-                        {locale === "th" ? "ขาย" : "Sale"}: ฿
+                        {tc.sale || "Sale"}: ฿
                         {formatPrice(Number(property.salePrice))}
                       </p>
                     )}
                   <p className="text-gray-500 text-xs mt-1">
-                    {property.listingType === "RENT"
-                      ? locale === "th"
-                        ? "เช่า"
-                        : "Rent"
-                      : property.listingType === "SALE"
-                      ? locale === "th"
-                        ? "ขาย"
-                        : "Sale"
-                      : locale === "th"
-                      ? "เช่า/ขาย"
-                      : "Rent / Sale"}
+                    {listingLabel(property.listingType)}
                   </p>
                   <a
                     href={`/${locale}/properties/${property.id}`}
                     className="inline-block mt-2 text-[#C8A951] hover:underline text-xs font-medium"
                   >
-                    {locale === "th" ? "ดูรายละเอียด →" : "View Details →"}
+                    {tp.viewDetails || "View Details"} →
                   </a>
                 </div>
               </Popup>

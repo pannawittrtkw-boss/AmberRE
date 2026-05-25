@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Phone } from "lucide-react";
 
 interface AgentContactButtonsProps {
@@ -29,7 +29,12 @@ export default function AgentContactButtons({
   lineId,
   locale,
 }: AgentContactButtonsProps) {
+  const [messages, setMessages] = useState<any>(null);
   const [phoneRevealed, setPhoneRevealed] = useState(false);
+
+  useEffect(() => {
+    import(`@/messages/${locale}.json`).then((m) => setMessages(m.default));
+  }, [locale]);
   const cleanPhone = phone.replace(/[^0-9+]/g, "");
 
   // Admin can put either:
@@ -51,6 +56,8 @@ export default function AgentContactButtons({
     }
   };
 
+  const tc = messages?.common;
+
   return (
     <div className="space-y-2 mb-5">
       <button
@@ -58,15 +65,11 @@ export default function AgentContactButtons({
         className="flex items-center justify-center gap-2 w-full py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-full font-medium text-sm transition-colors"
       >
         <Phone className="w-4 h-4" />
-        {phoneRevealed
-          ? phone
-          : locale === "th"
-          ? "โทรหาเจ้าหน้าที่"
-          : "Call Agent"}
+        {phoneRevealed ? phone : (tc?.callAgent || "Call Agent")}
       </button>
       {phoneRevealed && (
         <p className="text-center text-[11px] text-stone-400 -mt-1">
-          {locale === "th" ? "แตะอีกครั้งเพื่อโทร" : "Tap again to call"}
+          {tc?.tapToCall || "Tap again to call"}
         </p>
       )}
       <a

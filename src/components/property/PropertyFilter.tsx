@@ -128,7 +128,7 @@ export default function PropertyFilter({
       {/* Search */}
       <div>
         <label className={`block ${labelCls}`}>
-          {locale === "th" ? "ค้นหา" : "Search"}
+          {tc.search}
         </label>
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
@@ -145,7 +145,7 @@ export default function PropertyFilter({
       {/* Listing Type — segmented control */}
       <div>
         <label className={`block ${labelCls}`}>
-          {locale === "th" ? "เช่า / ขาย" : "Type"}
+          {t.listingTypeLabel}
         </label>
         <div className={`grid grid-cols-3 gap-1 p-1 rounded-xl ${segGroupCls}`}>
           {["", "RENT", "SALE"].map((type) => (
@@ -167,7 +167,7 @@ export default function PropertyFilter({
       {/* Property Type */}
       <div>
         <label className={`block ${labelCls}`}>
-          {locale === "th" ? "ประเภท" : "Property Type"}
+          {t.propertyTypeLabel}
         </label>
         <div className="grid grid-cols-2 gap-2">
           {["CONDO", "HOUSE", "TOWNHOUSE", "LAND"].map((type) => (
@@ -199,7 +199,7 @@ export default function PropertyFilter({
       {filters.propertyType !== "LAND" && (
         <div>
           <label className={`block ${labelCls}`}>
-            {t.condition || (locale === "th" ? "สภาพ" : "Condition")}
+            {t.condition}
           </label>
           <div className={`grid grid-cols-3 gap-1 p-1 rounded-xl ${segGroupCls}`}>
             {[
@@ -247,7 +247,7 @@ export default function PropertyFilter({
       >
         <span className="flex items-center gap-2">
           <SlidersHorizontal className="w-4 h-4" />
-          {locale === "th" ? "ตัวกรองเพิ่มเติม" : "Advanced Filters"}
+          {t.advancedFilters}
         </span>
         <ChevronDown
           className={`w-4 h-4 transition-transform ${
@@ -261,7 +261,7 @@ export default function PropertyFilter({
           {/* Building Type */}
           <div>
             <label className={`block ${labelCls}`}>
-              {locale === "th" ? "ประเภทอาคาร" : "Building Type"}
+              {t.buildingTypeLabel}
             </label>
             <div className="grid grid-cols-2 gap-2">
               {["LOW_RISE", "HIGH_RISE"].map((type) => (
@@ -335,14 +335,11 @@ export default function PropertyFilter({
                 <Train className="w-4 h-4 text-[#C8A951]" />
                 {filters.stations.length > 0 ? (
                   <span className="font-semibold text-[#C8A951]">
-                    {filters.stations.length}{" "}
-                    {locale === "th" ? "สถานี" : "stations"}
+                    {filters.stations.length}{" "}{t.stationsSelected}
                   </span>
                 ) : (
                   <span className={isDark ? "text-stone-300" : "text-stone-700"}>
-                    {locale === "th"
-                      ? "เลือกสถานี"
-                      : "Select stations"}
+                    {t.selectStations}
                   </span>
                 )}
               </span>
@@ -407,7 +404,7 @@ export default function PropertyFilter({
             <span className={`font-bold ${countNumCls}`}>
               {propertyCount.toLocaleString()}
             </span>{" "}
-            {locale === "th" ? "รายการ" : "found"}
+            {t.itemsFound}
           </span>
         )}
         {hasFilters && (
@@ -416,7 +413,7 @@ export default function PropertyFilter({
             className="inline-flex items-center gap-1 text-xs font-medium text-rose-400 hover:text-rose-500 transition-colors"
           >
             <X className="w-3 h-3" />
-            {locale === "th" ? "ล้างตัวกรอง" : "Reset"}
+            {t.resetFilters}
           </button>
         )}
       </div>

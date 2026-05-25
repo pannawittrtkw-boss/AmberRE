@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Copy,
   Check,
@@ -69,43 +69,33 @@ export default function MarketingDescription({
   propertyUrl,
   imageUrls,
 }: Props) {
+  const [messages, setMessages] = useState<any>(null);
   const [copied, setCopied] = useState(false);
   const [shareStatus, setShareStatus] = useState<ShareStatus>("idle");
   const [activeTarget, setActiveTarget] = useState<ShareTarget | null>(null);
   const [shareProgress, setShareProgress] = useState({ done: 0, total: 0 });
   const [desktopHint, setDesktopHint] = useState<ShareTarget | null>(null);
 
-  const T = {
-    headerHint:
-      locale === "th"
-        ? "ข้อความพร้อมโพสต์ Facebook / LINE"
-        : "Ready to post on Facebook / LINE",
-    copy: locale === "th" ? "คัดลอกข้อความ" : "Copy text",
-    copied: locale === "th" ? "คัดลอกแล้ว" : "Copied",
-    download: locale === "th" ? "โหลดรูปทั้งหมด" : "Download all images",
-    shareFb: locale === "th" ? "แชร์ Facebook" : "Share to Facebook",
-    shareLine: locale === "th" ? "แชร์ LINE" : "Share to LINE",
-    preparing: locale === "th" ? "กำลังเตรียม..." : "Preparing...",
-    downloading: locale === "th" ? "กำลังดาวน์โหลดรูป" : "Downloading images",
-    done: locale === "th" ? "เสร็จแล้ว" : "Done",
-    desktopHintTitle:
-      locale === "th"
-        ? "ข้อความและรูปพร้อมแล้ว"
-        : "Text and images are ready",
-    desktopHintFb:
-      locale === "th"
-        ? "✓ ข้อความถูกคัดลอกแล้ว — กดวาง (Cmd/Ctrl + V) ในกล่อง “บอกอะไรสักหน่อยเกี่ยวกับสิ่งนี้...”\n✓ ในกล่อง dialog เลือก “แชร์ไปยัง > กลุ่ม” แล้วเลือกกลุ่มที่จะโพสต์\n• Preview รูป + ชื่อโครงการมาจากหน้าเว็บ ถ้าไม่ขึ้น Facebook อาจแคชไว้ ใช้เครื่องมือ Sharing Debugger รีเฟรชได้"
-        : "✓ Text copied — paste (Cmd/Ctrl + V) into the “Say something about this...” box\n✓ In the dialog tap “Share to > Group” to pick the group\n• The preview image + title come from the page; if missing, Facebook may have cached it — clear via Sharing Debugger",
-    desktopHintLine:
-      locale === "th"
-        ? "✓ ข้อความถูกคัดลอกแล้ว — เปิดแอป LINE บนคอม → เลือกแชท/กลุ่ม → กดวาง (Cmd/Ctrl + V)\n✓ รูปทั้งหมดถูกดาวน์โหลดแล้ว — ลากจากโฟลเดอร์ Downloads ใส่หน้าต่างแชท LINE\n• LINE ไม่มี web share API ที่ส่งเข้ากลุ่มจาก browser ได้ — ต้องใช้แอป LINE Desktop"
-        : "✓ Text copied — open the LINE Desktop app, pick a chat or group, then paste (Cmd/Ctrl + V)\n✓ All images downloaded — drag from your Downloads folder into the LINE chat\n• LINE has no web-share API for sending to groups from the browser — you need the LINE Desktop app",
-    openFacebook: locale === "th" ? "เปิด Facebook Share" : "Open Facebook Share",
-    openLine:
-      locale === "th"
-        ? "เปิดดาวน์โหลด LINE Desktop"
-        : "Get LINE Desktop",
-    close: locale === "th" ? "ปิด" : "Close",
+  useEffect(() => {
+    import(`@/messages/${locale}.json`).then((m) => setMessages(m.default));
+  }, [locale]);
+
+  const T = messages?.marketing ?? {
+    headerHint: "Ready to post on Facebook / LINE",
+    copy: "Copy text",
+    copied: "Copied",
+    download: "Download all images",
+    shareFb: "Share to Facebook",
+    shareLine: "Share to LINE",
+    preparing: "Preparing...",
+    downloading: "Downloading images",
+    done: "Done",
+    imagesReady: "Text and images are ready",
+    fbHint: "",
+    lineHint: "",
+    openFacebook: "Open Facebook Share",
+    openLine: "Get LINE Desktop",
+    close: "Close",
   };
 
   const handleCopy = async () => {
@@ -345,9 +335,9 @@ export default function MarketingDescription({
         >
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="font-semibold mb-1">{T.desktopHintTitle}</p>
+              <p className="font-semibold mb-1">{T.imagesReady}</p>
               <p className="whitespace-pre-line text-xs leading-relaxed">
-                {desktopHint === "line" ? T.desktopHintLine : T.desktopHintFb}
+                {desktopHint === "line" ? T.lineHint : T.fbHint}
               </p>
               <a
                 href={

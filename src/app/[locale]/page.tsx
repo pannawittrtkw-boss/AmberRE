@@ -95,7 +95,7 @@ export default async function HomePage({
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center">
             <div className="flex items-center gap-2 text-[#E8C97A] text-xs uppercase tracking-widest font-medium mb-4 justify-center">
               <span className="w-6 h-px bg-[#E8C97A]" />
-              {locale === "th" ? "บ้านดี คอนโดดี NPB Property" : "NPB Property"}
+              {t.slogan}
               <span className="w-6 h-px bg-[#E8C97A]" />
             </div>
             <h1 className="text-center text-4xl md:text-6xl lg:text-7xl font-bold leading-tight drop-shadow-2xl mb-5">
@@ -146,7 +146,7 @@ export default async function HomePage({
                         {count.toLocaleString()}
                       </span>
                       <span className="text-base font-medium text-stone-300">
-                        {locale === "th" ? "รายการ" : count === 1 ? "Listing" : "Listings"}
+                        {count === 1 ? tp.listing || "Listing" : tp.listings || "Listings"}
                       </span>
                     </div>
                   </Link>
@@ -161,13 +161,9 @@ export default async function HomePage({
       <section className="py-20 bg-white border-y border-stone-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <SectionTitle
-            badge={locale === "th" ? "แนะนำ" : "Featured"}
+            badge={tp.featured}
             title={t.featuredProperties}
-            subtitle={
-              locale === "th"
-                ? "ห้องที่ดีที่สุดที่เราคัดสรรมาให้คุณ"
-                : "Hand-picked listings curated for you"
-            }
+            subtitle={t.featuredSubtitle}
             align="center"
             className="mb-10"
           />
@@ -179,15 +175,9 @@ export default async function HomePage({
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <SectionTitle
-            badge={locale === "th" ? "โครงการ" : "Projects"}
-            title={
-              locale === "th" ? "โครงการแนะนำ" : "Featured Projects"
-            }
-            subtitle={
-              locale === "th"
-                ? "เลือกโครงการที่ใช่ พร้อมข้อมูลครบครันและห้องที่พร้อมเข้าอยู่"
-                : "Discover the right project with complete details and ready-to-move-in units"
-            }
+            badge={t.projects}
+            title={t.featuredProjectsTitle}
+            subtitle={t.featuredProjectsSubtitle}
             align="center"
             className="mb-10"
           />
@@ -214,9 +204,7 @@ export default async function HomePage({
               ) : (
                 <div className="w-full h-full min-h-[320px] bg-stone-900 flex items-center justify-center">
                   <span className="text-stone-600 text-sm">
-                    {locale === "th"
-                      ? "อัปโหลดรูปได้ที่หน้า Settings"
-                      : "Upload image in Settings"}
+                    {t.uploadImageHint}
                   </span>
                 </div>
               )}
@@ -228,20 +216,11 @@ export default async function HomePage({
             <div className="flex flex-col justify-center px-8 lg:px-16 py-20 lg:py-24">
               <div className="flex items-center gap-2 text-[#E8C97A] text-xs uppercase tracking-widest font-medium mb-3">
                 <span className="w-6 h-px bg-[#E8C97A]" />
-                {locale === "th" ? "ทำไมต้องเลือกเรา" : "Why Choose Us"}
+                {t.whyChooseUs}
               </div>
               <h2 className="text-3xl lg:text-5xl font-bold mb-12 leading-tight">
-                {locale === "th" ? (
-                  <>
-                    บ้านดี คอนโดดี{" "}
-                    <span className="text-[#E8C97A]">NPB Property</span>
-                  </>
-                ) : (
-                  <>
-                    The Trusted Choice in{" "}
-                    <span className="text-[#E8C97A]">Real Estate</span>
-                  </>
-                )}
+                {t.whyUsTitlePrefix}{" "}
+                <span className="text-[#E8C97A]">{t.whyUsTitleHighlight}</span>
               </h2>
               <div className="space-y-8">
                 {[
@@ -279,7 +258,7 @@ export default async function HomePage({
                 href={`/${locale}/contact`}
                 className="mt-12 inline-flex items-center gap-2 self-start bg-[#C8A951] hover:bg-[#D4B968] text-stone-900 font-semibold px-7 py-3 rounded-full text-sm transition-colors"
               >
-                {locale === "th" ? "ติดต่อเรา" : "Get in Touch"}
+                {t.getInTouch}
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>

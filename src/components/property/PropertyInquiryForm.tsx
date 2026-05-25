@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2, CheckCircle2 } from "lucide-react";
 
 interface PropertyInquiryFormProps {
@@ -14,15 +14,21 @@ export default function PropertyInquiryForm({
   propertyName,
   locale,
 }: PropertyInquiryFormProps) {
+  const [messages, setMessages] = useState<any>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState(
-    locale === "th" ? "สนใจห้องนี้..." : "I'm interested in this property..."
-  );
+  const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    import(`@/messages/${locale}.json`).then((m) => {
+      setMessages(m.default);
+      setMessage(m.default.common.interestedIn);
+    });
+  }, [locale]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,31 +44,29 @@ export default function PropertyInquiryForm({
           email,
           phone: phone || undefined,
           subject: `${propertyName} (#${propertyId})`,
-          message: `${message}\n\n— ${
-            locale === "th" ? "อ้างอิงทรัพย์" : "Property"
-          }: ${propertyName} (ID: ${propertyId})`,
+          message: `${message}\n\n— ${messages?.common?.propertyRef || "Property"}: ${propertyName} (ID: ${propertyId})`,
         }),
       });
       const data = await res.json();
       if (!data.success) {
-        setError(
-          data.error ||
-            (locale === "th" ? "ส่งไม่สำเร็จ ลองใหม่" : "Failed to send")
-        );
+        setError(data.error || messages?.common?.failedToSend || "Failed to send");
         setSubmitting(false);
         return;
       }
       setSuccess(true);
       setSubmitting(false);
-      // Clear form
       setName("");
       setPhone("");
       setEmail("");
     } catch {
-      setError(locale === "th" ? "ส่งไม่สำเร็จ ลองใหม่" : "Failed to send");
+      setError(messages?.common?.failedToSend || "Failed to send");
       setSubmitting(false);
     }
   };
+
+  if (!messages) return null;
+  const tc = messages.common;
+  const tp = messages.property;
 
   if (success) {
     return (
@@ -70,12 +74,10 @@ export default function PropertyInquiryForm({
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
           <CheckCircle2 className="w-8 h-8 text-green-600 mx-auto mb-2" />
           <p className="font-semibold text-green-800 text-sm">
-            {locale === "th" ? "ส่งสำเร็จ!" : "Message sent!"}
+            {tc.messageSent}
           </p>
           <p className="text-xs text-green-700 mt-1">
-            {locale === "th"
-              ? "เจ้าหน้าที่จะติดต่อกลับโดยเร็ว"
-              : "Our agent will contact you shortly"}
+            {tc.agentWillContact}
           </p>
         </div>
       </div>
@@ -88,7 +90,7 @@ export default function PropertyInquiryForm({
       className="space-y-3 pt-5 border-t border-stone-100"
     >
       <p className="text-xs uppercase tracking-widest text-stone-400">
-        {locale === "th" ? "ส่งข้อมูลติดต่อ" : "Inquiry Form"}
+        {tc.inquiryForm}
       </p>
 
       {error && (
@@ -103,7 +105,7 @@ export default function PropertyInquiryForm({
         required
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder={locale === "th" ? "ชื่อของคุณ" : "Your Name"}
+        placeholder={tp.yourName}
         className="w-full px-4 py-2.5 border border-stone-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#C8A951]/30 focus:border-[#C8A951]"
       />
       <input
@@ -111,7 +113,7 @@ export default function PropertyInquiryForm({
         name="phone"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
-        placeholder={locale === "th" ? "เบอร์โทร" : "Phone"}
+        placeholder={tp.yourPhone}
         className="w-full px-4 py-2.5 border border-stone-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#C8A951]/30 focus:border-[#C8A951]"
       />
       <input
@@ -137,9 +139,7 @@ export default function PropertyInquiryForm({
         className="w-full inline-flex items-center justify-center gap-2 py-3 bg-[#C8A951] hover:bg-[#B8993F] text-white rounded-full font-semibold text-sm transition-colors disabled:opacity-60"
       >
         {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-        {submitting
-          ? locale === "th" ? "กำลังส่ง..." : "Sending..."
-          : locale === "th" ? "ส่งข้อความ" : "Send Inquiry"}
+        {submitting ? tc.sending : tp.sendMessage}
       </button>
     </form>
   );

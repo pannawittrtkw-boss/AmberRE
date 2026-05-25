@@ -56,7 +56,7 @@ export default function FavoritesPage() {
       } catch {}
     } else {
       await navigator.clipboard.writeText(url);
-      alert(locale === "th" ? "คัดลอกลิงก์แล้ว" : "Link copied!");
+      alert(messages?.common?.linkCopied || "Link copied!");
     }
   };
 
@@ -106,7 +106,7 @@ export default function FavoritesPage() {
           <div>
             <div className="flex items-center gap-2 text-[#E8C97A] text-xs uppercase tracking-widest font-medium mb-2">
               <span className="w-6 h-px bg-[#E8C97A]" />
-              {locale === "th" ? "บันทึกไว้ดูภายหลัง" : "Saved Items"}
+              {messages.common.savedItems}
             </div>
             <h1 className="text-3xl md:text-4xl font-bold leading-tight flex items-center gap-3">
               {l.title}

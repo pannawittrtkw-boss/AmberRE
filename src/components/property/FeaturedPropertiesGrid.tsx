@@ -122,16 +122,14 @@ export default function FeaturedPropertiesGrid({ locale, messages }: FeaturedPro
       return (
         <div id="featured-results" className="text-center py-16 bg-white rounded-2xl">
           <p className="text-stone-500 text-sm">
-            {locale === "th"
-              ? "ไม่พบรายการที่ตรงกับเงื่อนไขการค้นหา"
-              : "No properties match your search"}
+            {messages.property.noPropertiesFound}
           </p>
           <a
             href={`/${locale}`}
             className="inline-flex items-center gap-1 mt-3 text-sm text-[#C8A951] hover:underline"
           >
             <X className="w-3.5 h-3.5" />
-            {locale === "th" ? "ล้างตัวกรอง" : "Clear filters"}
+            {messages.property.resetFilters}
           </a>
         </div>
       );
@@ -148,14 +146,14 @@ export default function FeaturedPropertiesGrid({ locale, messages }: FeaturedPro
             <span className="font-bold text-stone-900">
               {total.toLocaleString()}
             </span>{" "}
-            {locale === "th" ? "ผลลัพธ์การค้นหา" : "results found"}
+            {messages.property.itemsFound}
           </div>
           <a
             href={`/${locale}`}
             className="inline-flex items-center gap-1 text-sm text-rose-500 hover:text-rose-600 font-medium"
           >
             <X className="w-3.5 h-3.5" />
-            {locale === "th" ? "ล้างตัวกรอง" : "Clear filters"}
+            {messages.property.resetFilters}
           </a>
         </div>
       )}
@@ -172,7 +170,7 @@ export default function FeaturedPropertiesGrid({ locale, messages }: FeaturedPro
             }`}
           >
             <LayoutGrid className="w-4 h-4" />
-            {locale === "th" ? "รายการ" : "List"}
+            {messages.property.list}
           </button>
           <button
             onClick={() => setViewMode("map")}
@@ -183,7 +181,7 @@ export default function FeaturedPropertiesGrid({ locale, messages }: FeaturedPro
             }`}
           >
             <MapIcon className="w-4 h-4" />
-            {locale === "th" ? "แผนที่" : "Map"}
+            {messages.property.map}
           </button>
         </div>
       </div>

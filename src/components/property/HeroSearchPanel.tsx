@@ -255,8 +255,8 @@ export default function HeroSearchPanel({ locale, messages }: HeroSearchPanelPro
               className="px-2 sm:px-3 py-2 rounded-lg border border-gray-200 text-xs sm:text-sm text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-[#C8A951]"
             >
               <option value="">{t.anyDuration}</option>
-              <option value="monthly">{locale === "th" ? "รายเดือน" : "Monthly"}</option>
-              <option value="yearly">{locale === "th" ? "รายปี" : "Yearly"}</option>
+              <option value="monthly">{t.monthly}</option>
+              <option value="yearly">{t.yearly}</option>
             </select>
 
             {/* Stations Picker (modal trigger) */}
@@ -269,7 +269,7 @@ export default function HeroSearchPanel({ locale, messages }: HeroSearchPanelPro
               {selectedStationCodes.length > 0 ? (
                 <span className="text-[#C8A951] font-semibold">
                   {selectedStationCodes.length}{" "}
-                  {locale === "th" ? "สถานี" : "stations"}
+                  {tp.stationsSelected}
                 </span>
               ) : (
                 <span className="text-gray-700">{t.selectStations}</span>

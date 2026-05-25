@@ -42,6 +42,11 @@ export default function ComparePage() {
   const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [messages, setMessages] = useState<any>(null);
+
+  useEffect(() => {
+    import(`@/messages/${locale}.json`).then((m) => setMessages(m.default));
+  }, [locale]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 640);
@@ -190,11 +195,12 @@ export default function ComparePage() {
   };
   const l = labels[locale as keyof typeof labels] || labels.en;
 
+  const tp = messages?.property ?? {};
   const typeLabels: Record<string, string> = {
-    CONDO: locale === "th" ? "คอนโด" : "Condo",
-    HOUSE: locale === "th" ? "บ้านเดี่ยว" : "House",
-    TOWNHOUSE: locale === "th" ? "ทาวน์เฮาส์" : "Townhouse",
-    LAND: locale === "th" ? "ที่ดิน" : "Land",
+    CONDO: tp.condo || "Condo",
+    HOUSE: tp.house || "House",
+    TOWNHOUSE: tp.townhouse || "Townhouse",
+    LAND: tp.land || "Land",
   };
 
   const buildingLabels: Record<string, string> = {
@@ -223,7 +229,7 @@ export default function ComparePage() {
         seenAmenityIds.add(pa.amenity.id);
         allAmenities.push({
           id: pa.amenity.id,
-          name: locale === "th" ? pa.amenity.nameTh : pa.amenity.nameEn,
+          name: locale === "th" ? (pa.amenity.nameTh || pa.amenity.nameEn) : (pa.amenity.nameEn || pa.amenity.nameTh),
         });
       }
     }
@@ -258,7 +264,7 @@ export default function ComparePage() {
           <div>
             <div className="flex items-center gap-2 text-[#E8C97A] text-[10px] uppercase tracking-[0.3em] font-medium mb-3">
               <span className="w-8 h-px bg-gradient-to-r from-transparent to-[#C8A951]" />
-              {locale === "th" ? "เปรียบเทียบ" : "Compare"}
+              {messages?.common?.compare || "Compare"}
             </div>
             <h1 className="text-3xl md:text-4xl font-bold leading-tight tracking-tight">
               {l.title}
@@ -268,9 +274,7 @@ export default function ComparePage() {
                 <span className="text-[#E8C97A] font-bold">
                   {properties.length}
                 </span>{" "}
-                {locale === "th"
-                  ? "รายการที่เลือก"
-                  : "items selected"}
+                {messages?.common?.itemsSelected || "items selected"}
               </p>
             )}
           </div>
