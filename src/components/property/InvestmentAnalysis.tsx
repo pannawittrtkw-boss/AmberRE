@@ -228,12 +228,22 @@ export default function InvestmentAnalysis({ locale, defaults }: Props) {
             </div>
             {loanAmt > 0 && (() => {
               const equity = totalCost - loanAmt;
-              const cashOnCash = equity > 0 ? ((freeCashFlow * 12) / equity) * 100 : 0;
+              const cashOnCash = equity > 0 ? ((freeCashFlow * 12) / equity) * 100 : null;
+              const noEquity = equity <= 0;
               return (
-                <div className={`rounded-xl p-3 text-center ${cashOnCash >= 0 ? "bg-blue-50" : "bg-rose-50"}`}>
-                  <p className={`text-xs font-medium mb-1 ${cashOnCash >= 0 ? "text-blue-700" : "text-rose-700"}`}>Cash-on-Cash</p>
-                  <p className={`text-xl font-bold ${cashOnCash >= 0 ? "text-blue-600" : "text-rose-600"}`}>{cashOnCash.toFixed(2)}%</p>
-                  <p className="text-[10px] text-stone-400">{isTh ? "ผลตอบแทนต่อเงินลงทุน" : "Return on equity"}</p>
+                <div className={`rounded-xl p-3 text-center ${noEquity ? "bg-stone-50" : cashOnCash !== null && cashOnCash >= 0 ? "bg-blue-50" : "bg-rose-50"}`}>
+                  <p className={`text-xs font-medium mb-1 ${noEquity ? "text-stone-400" : cashOnCash !== null && cashOnCash >= 0 ? "text-blue-700" : "text-rose-700"}`}>Cash-on-Cash</p>
+                  {noEquity ? (
+                    <>
+                      <p className="text-xl font-bold text-stone-400">N/A</p>
+                      <p className="text-[10px] text-stone-400">{isTh ? "วงเงินกู้ = ต้นทุนรวม" : "Loan = total cost"}</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className={`text-xl font-bold ${cashOnCash !== null && cashOnCash >= 0 ? "text-blue-600" : "text-rose-600"}`}>{cashOnCash !== null ? cashOnCash.toFixed(2) : "0.00"}%</p>
+                      <p className="text-[10px] text-stone-400">{isTh ? `เงินดาวน์ ฿${fmt(equity)}` : `Down ฿${fmt(equity)}`}</p>
+                    </>
+                  )}
                 </div>
               );
             })()}
