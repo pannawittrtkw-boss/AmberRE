@@ -26,21 +26,25 @@ interface Props {
 export default function InvestmentAnalysis({ locale, defaults }: Props) {
   const [purchasePrice, setPurchasePrice] = useState(String(defaults.purchasePrice));
   const [renovationCost, setRenovationCost] = useState(String(defaults.renovationCost));
+  const [loanAmount, setLoanAmount] = useState(String(defaults.loanAmount || ""));
   const [loanTermYears, setLoanTermYears] = useState(defaults.loanTermYears || 30);
   const [loanInterestRate, setLoanInterestRate] = useState(String(defaults.loanInterestRate || 2.5));
 
   const isTh = locale === "th";
   const fmt = (n: number) => new Intl.NumberFormat("th-TH").format(Math.round(n));
 
+  const defaultLoanAmount = String(defaults.loanAmount || "");
   const isModified =
     purchasePrice !== String(defaults.purchasePrice) ||
     renovationCost !== String(defaults.renovationCost) ||
+    loanAmount !== defaultLoanAmount ||
     loanTermYears !== (defaults.loanTermYears || 30) ||
     loanInterestRate !== String(defaults.loanInterestRate || 2.5);
 
   const reset = () => {
     setPurchasePrice(String(defaults.purchasePrice));
     setRenovationCost(String(defaults.renovationCost));
+    setLoanAmount(defaultLoanAmount);
     setLoanTermYears(defaults.loanTermYears || 30);
     setLoanInterestRate(String(defaults.loanInterestRate || 2.5));
   };
@@ -66,7 +70,7 @@ export default function InvestmentAnalysis({ locale, defaults }: Props) {
   const netYield = totalCost > 0 ? (noi / totalCost) * 100 : 0;
   const noiPerMonth = noi / 12;
 
-  const loanAmt = defaults.loanAmount;
+  const loanAmt = parseFloat(loanAmount) || 0;
   let monthlyPayment = 0, interestFirstMonth = 0, principalFirstMonth = 0, freeCashFlow = noiPerMonth;
   if (loanAmt > 0) {
     const r = parseFloat(loanInterestRate) / 100 / 12;
@@ -256,44 +260,58 @@ export default function InvestmentAnalysis({ locale, defaults }: Props) {
         </div>
 
         {/* Loan — editable term + rate */}
-        {loanAmt > 0 && (
-          <div className="bg-white rounded-2xl p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <HandCoins className="w-4 h-4 text-stone-500" />
-              <span className="text-sm font-semibold text-stone-600 uppercase tracking-wide">{isTh ? "สินเชื่อ" : "Financing"}</span>
-              <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full ml-auto">{isTh ? "แก้ไขได้" : "Editable"}</span>
-            </div>
+        {/* Financing — always visible so user can enter/edit loan amount */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <HandCoins className="w-4 h-4 text-stone-500" />
+            <span className="text-sm font-semibold text-stone-600 uppercase tracking-wide">{isTh ? "สินเชื่อ" : "Financing"}</span>
+            <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full ml-auto">{isTh ? "แก้ไขได้" : "Editable"}</span>
+          </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div>
-                <label className="block text-xs text-stone-500 mb-1">{isTh ? "ระยะเวลาผ่อน (ปี)" : "Loan Term (years)"}</label>
-                <select
-                  value={loanTermYears}
-                  onChange={(e) => setLoanTermYears(Number(e.target.value))}
-                  className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 outline-none text-sm font-medium bg-white"
-                >
-                  {LOAN_TERM_OPTIONS.map((y) => (
-                    <option key={y} value={y}>{y} {isTh ? "ปี" : "years"}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-stone-500 mb-1">{isTh ? "อัตราดอกเบี้ย (% ต่อปี)" : "Interest Rate (% p.a.)"}</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={loanInterestRate}
-                  onChange={(e) => setLoanInterestRate(e.target.value)}
-                  className={inputCls}
-                />
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            <div>
+              <label className="block text-xs text-stone-500 mb-1">{isTh ? "วงเงินกู้ (บาท)" : "Loan Amount (฿)"}</label>
+              <input
+                type="number"
+                min="0"
+                placeholder={isTh ? "เช่น 1360000" : "e.g. 1360000"}
+                value={loanAmount}
+                onChange={(e) => setLoanAmount(e.target.value)}
+                className={inputCls}
+              />
+              {loanAmt > 0 && totalCost > 0 && (
+                <p className="text-[11px] text-stone-400 mt-1">
+                  LTV {((loanAmt / totalCost) * 100).toFixed(0)}% · {isTh ? "เงินดาวน์" : "Down"} ฿{fmt(Math.max(0, totalCost - loanAmt))}
+                </p>
+              )}
             </div>
+            <div>
+              <label className="block text-xs text-stone-500 mb-1">{isTh ? "ระยะเวลาผ่อน (ปี)" : "Loan Term (years)"}</label>
+              <select
+                value={loanTermYears}
+                onChange={(e) => setLoanTermYears(Number(e.target.value))}
+                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 outline-none text-sm font-medium bg-white"
+              >
+                {LOAN_TERM_OPTIONS.map((y) => (
+                  <option key={y} value={y}>{y} {isTh ? "ปี" : "years"}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-stone-500 mb-1">{isTh ? "อัตราดอกเบี้ย (% ต่อปี)" : "Interest Rate (% p.a.)"}</label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={loanInterestRate}
+                onChange={(e) => setLoanInterestRate(e.target.value)}
+                className={inputCls}
+              />
+            </div>
+          </div>
 
+          {loanAmt > 0 ? (
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between text-stone-400 text-xs mb-2">
-                <span>{isTh ? `วงเงินกู้ ฿${fmt(loanAmt)} · ผ่อน ${loanTermYears} ปี @ ${loanInterestRate}%` : `Loan ฿${fmt(loanAmt)} · ${loanTermYears}yr @ ${loanInterestRate}%`}</span>
-              </div>
               <div className="flex justify-between"><span className="text-stone-500">{isTh ? "ผ่อนค่างวด / เดือน" : "Monthly Payment"}</span><span className="font-medium">฿{fmt(monthlyPayment)}</span></div>
               <div className="flex justify-between"><span className="text-stone-500">{isTh ? "ดอกเบี้ย (ประมาณ ปีแรก) / เดือน" : "Interest ~Year 1 / Month"}</span><span>฿{fmt(interestFirstMonth)}</span></div>
               <div className="flex justify-between"><span className="text-stone-500">{isTh ? "เข้าเงินต้น (ประมาณ ปีแรก) / เดือน" : "Principal ~Year 1 / Month"}</span><span>฿{fmt(principalFirstMonth)}</span></div>
@@ -302,8 +320,10 @@ export default function InvestmentAnalysis({ locale, defaults }: Props) {
                 <span className={freeCashFlow >= 0 ? "text-emerald-600" : "text-rose-600"}>฿{fmt(freeCashFlow)}</span>
               </div>
             </div>
-          </div>
-        )}
+          ) : (
+            <p className="text-sm text-stone-400 text-center py-2">{isTh ? "กรอกวงเงินกู้เพื่อดูการคำนวณผ่อนชำระ" : "Enter loan amount to see payment breakdown"}</p>
+          )}
+        </div>
 
       </div>
     </section>
