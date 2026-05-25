@@ -17,11 +17,8 @@ import {
   Edit3,
   Sparkles,
   ArrowRight,
-  TrendingUp,
-  Wallet,
-  Receipt,
-  HandCoins,
 } from "lucide-react";
+import InvestmentAnalysis from "@/components/property/InvestmentAnalysis";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -282,46 +279,20 @@ export default async function PropertyDetailPage({
   const isSold = property.isSold || property.status === "SOLD";
   const isRented = property.status === "RENTED";
 
-  // Investment analysis calculations
-  const inv = property.invPurchasePrice ? (() => {
-    const purchasePrice = Number(property.invPurchasePrice);
-    const renovationCost = Number(property.invRenovationCost ?? 0);
-    const totalCost = purchasePrice + renovationCost;
-    const rentPerMonth = Number(property.invExpectedRentPerMonth ?? 0) || price;
-    const rentPerYear = rentPerMonth * 12;
-    const brokerFee = rentPerMonth * Number(property.invBrokerFeeMonths ?? 1);
-    const commonFee = Number(property.invCommonFeePerYear ?? 0);
-    const maintenance = Number(property.invMaintenancePerYear ?? 0);
-    const landTax = purchasePrice * (Number(property.invLandTaxRate ?? 0.02) / 100);
-    const vacancyCost = rentPerMonth * Number(property.invVacancyMonths ?? 1);
-    const operatingExpense = brokerFee + commonFee + maintenance + landTax + vacancyCost;
-    const grossYield = totalCost > 0 ? (rentPerYear / totalCost) * 100 : 0;
-    const noi = rentPerYear - operatingExpense;
-    const netYield = totalCost > 0 ? (noi / totalCost) * 100 : 0;
-    const noiPerMonth = noi / 12;
-
-    let monthlyPayment = 0, interestFirstMonth = 0, principalFirstMonth = 0, freeCashFlow = noiPerMonth;
-    const loanAmount = Number(property.invLoanAmount ?? 0);
-    if (loanAmount > 0) {
-      const r = Number(property.invLoanInterestRate ?? 2.5) / 100 / 12;
-      const n = Number(property.invLoanTermYears ?? 30) * 12;
-      monthlyPayment = r > 0 ? loanAmount * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1) : loanAmount / n;
-      interestFirstMonth = loanAmount * r;
-      principalFirstMonth = monthlyPayment - interestFirstMonth;
-      freeCashFlow = noiPerMonth - monthlyPayment;
-    }
-
-    const fmt = (n: number) => new Intl.NumberFormat("th-TH").format(Math.round(n));
-    return {
-      purchasePrice, renovationCost, totalCost, rentPerMonth, rentPerYear,
-      brokerFee, commonFee, maintenance, landTax, vacancyCost, operatingExpense,
-      grossYield, noi, netYield, noiPerMonth,
-      loanAmount, monthlyPayment, interestFirstMonth, principalFirstMonth, freeCashFlow,
-      loanTermYears: Number(property.invLoanTermYears ?? 30),
-      loanInterestRate: Number(property.invLoanInterestRate ?? 2.5),
-      fmt,
-    };
-  })() : null;
+  const hasInvestmentData = !!property.invPurchasePrice;
+  const invDefaults = hasInvestmentData ? {
+    purchasePrice: Number(property.invPurchasePrice),
+    renovationCost: Number(property.invRenovationCost ?? 0),
+    rentPerMonth: Number(property.invExpectedRentPerMonth ?? 0) || price,
+    brokerFeeMonths: Number(property.invBrokerFeeMonths ?? 1),
+    commonFeePerYear: Number(property.invCommonFeePerYear ?? 0),
+    maintenancePerYear: Number(property.invMaintenancePerYear ?? 0),
+    landTaxRate: Number(property.invLandTaxRate ?? 0.02),
+    vacancyMonths: Number(property.invVacancyMonths ?? 1),
+    loanAmount: Number(property.invLoanAmount ?? 0),
+    loanTermYears: Number(property.invLoanTermYears ?? 30),
+    loanInterestRate: Number(property.invLoanInterestRate ?? 2.5),
+  } : null;
 
   // Get site settings for logo + contact info
   const contactSettings = await prisma.siteSetting.findMany({
@@ -756,126 +727,8 @@ export default async function PropertyDetailPage({
             )}
 
             {/* Investment Analysis */}
-            {inv && isSale && (
-              <section>
-                <SectionTitle
-                  badge={locale === "th" ? "การลงทุน" : "Investment"}
-                  title={locale === "th" ? "วิเคราะห์ผลตอบแทนการลงทุน" : "Investment Analysis"}
-                  className="mb-5"
-                />
-                <div className="space-y-4">
-
-                  {/* Cost block */}
-                  <div className="bg-white rounded-2xl p-5 shadow-sm">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Wallet className="w-4 h-4 text-stone-500" />
-                      <span className="text-sm font-semibold text-stone-600 uppercase tracking-wide">{locale === "th" ? "ต้นทุน" : "Investment Cost"}</span>
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-stone-500">{locale === "th" ? "ราคาซื้อ (รวมส่วนลด)" : "Purchase Price"}</span>
-                        <span className="font-medium text-amber-700">฿{inv.fmt(inv.purchasePrice)}</span>
-                      </div>
-                      {inv.renovationCost > 0 && (
-                        <div className="flex justify-between">
-                          <span className="text-stone-500">{locale === "th" ? "ค่าตกแต่ง + ต่อเติม" : "Renovation Cost"}</span>
-                          <span className="font-medium">฿{inv.fmt(inv.renovationCost)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between pt-2 border-t border-stone-100 font-semibold">
-                        <span>{locale === "th" ? "ต้นทุนรวม" : "Total Investment"}</span>
-                        <span className="text-stone-800">฿{inv.fmt(inv.totalCost)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Yield block */}
-                  <div className="bg-white rounded-2xl p-5 shadow-sm">
-                    <div className="flex items-center gap-2 mb-4">
-                      <TrendingUp className="w-4 h-4 text-stone-500" />
-                      <span className="text-sm font-semibold text-stone-600 uppercase tracking-wide">{locale === "th" ? "ผลตอบแทนค่าเช่า" : "Rental Yield"}</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      <div className="bg-amber-50 rounded-xl p-4 text-center">
-                        <p className="text-xs text-amber-700 font-medium mb-1">Gross Rental Yield</p>
-                        <p className="text-2xl font-bold text-amber-600">{inv.grossYield.toFixed(2)}%</p>
-                        <p className="text-xs text-stone-400">{locale === "th" ? "ต่อปี" : "per year"}</p>
-                      </div>
-                      <div className="bg-emerald-50 rounded-xl p-4 text-center">
-                        <p className="text-xs text-emerald-700 font-medium mb-1">Net Rental Yield (Cap Rate)</p>
-                        <p className="text-2xl font-bold text-emerald-600">{inv.netYield.toFixed(2)}%</p>
-                        <p className="text-xs text-stone-400">{locale === "th" ? "ต่อปี" : "per year"}</p>
-                      </div>
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-stone-500">{locale === "th" ? "ค่าเช่า / เดือน" : "Monthly Rent"}</span>
-                        <span className="font-medium">฿{inv.fmt(inv.rentPerMonth)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-stone-500">{locale === "th" ? "ค่าเช่า / ปี" : "Annual Rent"}</span>
-                        <span className="font-medium">฿{inv.fmt(inv.rentPerYear)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Operating Expenses */}
-                  <div className="bg-white rounded-2xl p-5 shadow-sm">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Receipt className="w-4 h-4 text-stone-500" />
-                      <span className="text-sm font-semibold text-stone-600 uppercase tracking-wide">{locale === "th" ? "ค่าใช้จ่ายดำเนินงาน / ปี" : "Operating Expenses / Year"}</span>
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      {inv.brokerFee > 0 && <div className="flex justify-between"><span className="text-stone-500">{locale === "th" ? "ค่านายหน้า" : "Broker Fee"}</span><span>฿{inv.fmt(inv.brokerFee)}</span></div>}
-                      {inv.commonFee > 0 && <div className="flex justify-between"><span className="text-stone-500">{locale === "th" ? "ค่าส่วนกลาง" : "Common Fee"}</span><span>฿{inv.fmt(inv.commonFee)}</span></div>}
-                      {inv.maintenance > 0 && <div className="flex justify-between"><span className="text-stone-500">{locale === "th" ? "ค่าบำรุงรักษา" : "Maintenance"}</span><span>฿{inv.fmt(inv.maintenance)}</span></div>}
-                      {inv.landTax > 0 && <div className="flex justify-between"><span className="text-stone-500">{locale === "th" ? "ภาษีที่ดิน" : "Land Tax"}</span><span>฿{inv.fmt(inv.landTax)}</span></div>}
-                      {inv.vacancyCost > 0 && <div className="flex justify-between"><span className="text-stone-500">{locale === "th" ? "ห้องว่าง (ประมาณ)" : "Vacancy Loss"}</span><span>฿{inv.fmt(inv.vacancyCost)}</span></div>}
-                      <div className="flex justify-between pt-2 border-t border-stone-100 font-semibold text-rose-600">
-                        <span>Operating Expense</span>
-                        <span>฿{inv.fmt(inv.operatingExpense)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* NOI */}
-                  <div className="bg-white rounded-2xl p-5 shadow-sm">
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between font-semibold text-emerald-700">
-                        <span>{locale === "th" ? "กำไรจากค่าเช่าสุทธิ (NOI) / เดือน" : "Net Operating Income / Month"}</span>
-                        <span>฿{inv.fmt(inv.noiPerMonth)}</span>
-                      </div>
-                      <div className="flex justify-between font-semibold text-emerald-700">
-                        <span>{locale === "th" ? "กำไรจากค่าเช่าสุทธิ (NOI) / ปี" : "Net Operating Income / Year"}</span>
-                        <span>฿{inv.fmt(inv.noi)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Loan / Free Cash Flow */}
-                  {inv.loanAmount > 0 && (
-                    <div className="bg-white rounded-2xl p-5 shadow-sm">
-                      <div className="flex items-center gap-2 mb-4">
-                        <HandCoins className="w-4 h-4 text-stone-500" />
-                        <span className="text-sm font-semibold text-stone-600 uppercase tracking-wide">{locale === "th" ? "สินเชื่อ" : "Financing"}</span>
-                      </div>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between text-stone-400 text-xs mb-2">
-                          <span>{locale === "th" ? `ผ่อน ${inv.loanTermYears} ปี, fix rate ${inv.loanInterestRate}% (3 ปีแรก)` : `${inv.loanTermYears}yr loan @ ${inv.loanInterestRate}% fixed`}</span>
-                        </div>
-                        <div className="flex justify-between"><span className="text-stone-500">{locale === "th" ? "ผ่อนค่างวด / เดือน" : "Monthly Payment"}</span><span className="font-medium">฿{inv.fmt(inv.monthlyPayment)}</span></div>
-                        <div className="flex justify-between"><span className="text-stone-500">{locale === "th" ? "ดอกเบี้ย (ประมาณ ปีแรก) / เดือน" : "Interest ~Year 1 / Month"}</span><span>฿{inv.fmt(inv.interestFirstMonth)}</span></div>
-                        <div className="flex justify-between"><span className="text-stone-500">{locale === "th" ? "เข้าเงินต้น (ประมาณ ปีแรก) / เดือน" : "Principal ~Year 1 / Month"}</span><span>฿{inv.fmt(inv.principalFirstMonth)}</span></div>
-                        <div className="flex justify-between pt-2 border-t border-stone-100 font-bold text-blue-700">
-                          <span>{locale === "th" ? "กระแสเงินสด (Free Cash Flow) / เดือน" : "Free Cash Flow / Month"}</span>
-                          <span className={inv.freeCashFlow >= 0 ? "text-emerald-600" : "text-rose-600"}>฿{inv.fmt(inv.freeCashFlow)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                </div>
-              </section>
+            {hasInvestmentData && isSale && invDefaults && (
+              <InvestmentAnalysis locale={locale} defaults={invDefaults} />
             )}
 
             {/* Metadata */}
