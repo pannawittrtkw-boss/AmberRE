@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { TrendingUp, Wallet, Receipt, HandCoins, RotateCcw, BarChart3 } from "lucide-react";
+import { Wallet, Receipt, HandCoins, RotateCcw, BarChart3 } from "lucide-react";
 import SectionTitle from "@/components/ui/SectionTitle";
 
 const LOAN_TERM_OPTIONS = [5, 10, 15, 20, 25, 30];
@@ -144,25 +144,46 @@ export default function InvestmentAnalysis({ locale, defaults }: Props) {
           </div>
         </div>
 
-        {/* Yield */}
+        {/* ROI Summary — replaces old Rental Yield card */}
         <div className="bg-white rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-4 h-4 text-stone-500" />
-            <span className="text-sm font-semibold text-stone-600 uppercase tracking-wide">{isTh ? "ผลตอบแทนค่าเช่า" : "Rental Yield"}</span>
+            <BarChart3 className="w-4 h-4 text-stone-500" />
+            <span className="text-sm font-semibold text-stone-600 uppercase tracking-wide">ROI Summary</span>
           </div>
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="bg-amber-50 rounded-xl p-4 text-center">
-              <p className="text-xs text-amber-700 font-medium mb-1">Gross Rental Yield</p>
-              <p className="text-2xl font-bold text-amber-600">{grossYield.toFixed(2)}%</p>
-              <p className="text-xs text-stone-400">{isTh ? "ต่อปี" : "per year"}</p>
+          <div className={`grid gap-3 mb-4 ${loanAmt > 0 ? "grid-cols-3" : "grid-cols-2"}`}>
+            <div className="bg-amber-50 rounded-xl p-3 text-center">
+              <p className="text-xs text-amber-700 font-medium mb-1">Gross Yield</p>
+              <p className="text-xl font-bold text-amber-600">{grossYield.toFixed(2)}%</p>
+              <p className="text-[10px] text-stone-400">{isTh ? "ผลตอบแทนรวม/ปี" : "Total return/yr"}</p>
             </div>
-            <div className="bg-emerald-50 rounded-xl p-4 text-center">
-              <p className="text-xs text-emerald-700 font-medium mb-1">Net Rental Yield (Cap Rate)</p>
-              <p className="text-2xl font-bold text-emerald-600">{netYield.toFixed(2)}%</p>
-              <p className="text-xs text-stone-400">{isTh ? "ต่อปี" : "per year"}</p>
+            <div className="bg-emerald-50 rounded-xl p-3 text-center">
+              <p className="text-xs text-emerald-700 font-medium mb-1">Net Yield (ROI)</p>
+              <p className="text-xl font-bold text-emerald-600">{netYield.toFixed(2)}%</p>
+              <p className="text-[10px] text-stone-400">{isTh ? "หลังหักค่าใช้จ่าย/ปี" : "After expenses/yr"}</p>
             </div>
+            {loanAmt > 0 && (() => {
+              const equity = totalCost - loanAmt;
+              const cashOnCash = equity > 0 ? ((freeCashFlow * 12) / equity) * 100 : null;
+              const noEquity = equity <= 0;
+              return (
+                <div className={`rounded-xl p-3 text-center ${noEquity ? "bg-stone-50" : cashOnCash !== null && cashOnCash >= 0 ? "bg-blue-50" : "bg-rose-50"}`}>
+                  <p className={`text-xs font-medium mb-1 ${noEquity ? "text-stone-400" : cashOnCash !== null && cashOnCash >= 0 ? "text-blue-700" : "text-rose-700"}`}>Cash-on-Cash</p>
+                  {noEquity ? (
+                    <>
+                      <p className="text-xl font-bold text-stone-400">N/A</p>
+                      <p className="text-[10px] text-stone-400">{isTh ? "วงเงินกู้ = ต้นทุนรวม" : "Loan = total cost"}</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className={`text-xl font-bold ${cashOnCash !== null && cashOnCash >= 0 ? "text-blue-600" : "text-rose-600"}`}>{cashOnCash !== null ? cashOnCash.toFixed(2) : "0.00"}%</p>
+                      <p className="text-[10px] text-stone-400">{isTh ? `เงินดาวน์ ฿${fmt(equity)}` : `Down ฿${fmt(equity)}`}</p>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
           </div>
-          <div className="space-y-2 text-sm">
+          <div className="space-y-2 text-sm border-t border-stone-100 pt-3">
             <div className="flex justify-between">
               <span className="text-stone-500">{isTh ? "ค่าเช่า / เดือน" : "Monthly Rent"}</span>
               <span className="font-medium">฿{fmt(rent)}</span>
@@ -171,6 +192,11 @@ export default function InvestmentAnalysis({ locale, defaults }: Props) {
               <span className="text-stone-500">{isTh ? "ค่าเช่า / ปี" : "Annual Rent"}</span>
               <span className="font-medium">฿{fmt(rentPerYear)}</span>
             </div>
+          </div>
+          <div className="mt-3 pt-3 border-t border-stone-100 space-y-1 text-xs text-stone-400">
+            <p>• <strong className="text-stone-500">Gross Yield</strong> = ค่าเช่า/ปี ÷ ต้นทุนรวม × 100</p>
+            <p>• <strong className="text-stone-500">Net Yield (ROI)</strong> = NOI/ปี ÷ ต้นทุนรวม × 100</p>
+            {loanAmt > 0 && <p>• <strong className="text-stone-500">Cash-on-Cash</strong> = Free Cash Flow/ปี ÷ เงินดาวน์ × 100</p>}
           </div>
         </div>
 
@@ -213,53 +239,6 @@ export default function InvestmentAnalysis({ locale, defaults }: Props) {
           </div>
         </div>
 
-        {/* ROI Summary */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <BarChart3 className="w-4 h-4 text-stone-500" />
-            <span className="text-sm font-semibold text-stone-600 uppercase tracking-wide">ROI Summary</span>
-          </div>
-          <div className={`grid gap-3 ${loanAmt > 0 ? "grid-cols-3" : "grid-cols-2"}`}>
-            <div className="bg-amber-50 rounded-xl p-3 text-center">
-              <p className="text-xs text-amber-700 font-medium mb-1">Gross Yield</p>
-              <p className="text-xl font-bold text-amber-600">{grossYield.toFixed(2)}%</p>
-              <p className="text-[10px] text-stone-400">{isTh ? "ผลตอบแทนรวม/ปี" : "Total return/yr"}</p>
-            </div>
-            <div className="bg-emerald-50 rounded-xl p-3 text-center">
-              <p className="text-xs text-emerald-700 font-medium mb-1">Net Yield (ROI)</p>
-              <p className="text-xl font-bold text-emerald-600">{netYield.toFixed(2)}%</p>
-              <p className="text-[10px] text-stone-400">{isTh ? "หลังหักค่าใช้จ่าย/ปี" : "After expenses/yr"}</p>
-            </div>
-            {loanAmt > 0 && (() => {
-              const equity = totalCost - loanAmt;
-              const cashOnCash = equity > 0 ? ((freeCashFlow * 12) / equity) * 100 : null;
-              const noEquity = equity <= 0;
-              return (
-                <div className={`rounded-xl p-3 text-center ${noEquity ? "bg-stone-50" : cashOnCash !== null && cashOnCash >= 0 ? "bg-blue-50" : "bg-rose-50"}`}>
-                  <p className={`text-xs font-medium mb-1 ${noEquity ? "text-stone-400" : cashOnCash !== null && cashOnCash >= 0 ? "text-blue-700" : "text-rose-700"}`}>Cash-on-Cash</p>
-                  {noEquity ? (
-                    <>
-                      <p className="text-xl font-bold text-stone-400">N/A</p>
-                      <p className="text-[10px] text-stone-400">{isTh ? "วงเงินกู้ = ต้นทุนรวม" : "Loan = total cost"}</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className={`text-xl font-bold ${cashOnCash !== null && cashOnCash >= 0 ? "text-blue-600" : "text-rose-600"}`}>{cashOnCash !== null ? cashOnCash.toFixed(2) : "0.00"}%</p>
-                      <p className="text-[10px] text-stone-400">{isTh ? `เงินดาวน์ ฿${fmt(equity)}` : `Down ฿${fmt(equity)}`}</p>
-                    </>
-                  )}
-                </div>
-              );
-            })()}
-          </div>
-          <div className="mt-3 pt-3 border-t border-stone-100 space-y-1 text-xs text-stone-400">
-            <p>• <strong className="text-stone-500">Gross Yield</strong> = ค่าเช่า/ปี ÷ ต้นทุนรวม × 100</p>
-            <p>• <strong className="text-stone-500">Net Yield (ROI)</strong> = NOI/ปี ÷ ต้นทุนรวม × 100</p>
-            {loanAmt > 0 && <p>• <strong className="text-stone-500">Cash-on-Cash</strong> = Free Cash Flow/ปี ÷ เงินดาวน์ × 100</p>}
-          </div>
-        </div>
-
-        {/* Loan — editable term + rate */}
         {/* Financing — always visible so user can enter/edit loan amount */}
         <div className="bg-white rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
