@@ -192,6 +192,30 @@ export default function InvestmentAnalysis({ locale, defaults }: Props) {
               <span className="text-stone-500">{isTh ? "ค่าเช่า / ปี" : "Annual Rent"}</span>
               <span className="font-medium">฿{fmt(rentPerYear)}</span>
             </div>
+            {/* Payback Period */}
+            {(() => {
+              const equity = totalCost - loanAmt;
+              const paybackNoLoan = noi > 0 ? totalCost / noi : null;
+              const paybackWithLoan = loanAmt > 0 && equity > 0 && freeCashFlow > 0 ? equity / (freeCashFlow * 12) : null;
+              return (
+                <>
+                  <div className="flex justify-between pt-1 border-t border-stone-100">
+                    <span className="text-stone-500">{isTh ? "คืนทุน (ซื้อสด)" : "Payback — Cash"}</span>
+                    <span className="font-medium">
+                      {paybackNoLoan !== null ? `${paybackNoLoan.toFixed(1)} ${isTh ? "ปี" : "yrs"}` : "N/A"}
+                    </span>
+                  </div>
+                  {loanAmt > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-stone-500">{isTh ? "คืนทุน (กู้ธนาคาร)" : "Payback — Loan"}</span>
+                      <span className="font-medium">
+                        {paybackWithLoan !== null ? `${paybackWithLoan.toFixed(1)} ${isTh ? "ปี" : "yrs"}` : "N/A"}
+                      </span>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
           <div className="mt-3 pt-3 border-t border-stone-100 space-y-3 text-xs">
             <div>
@@ -223,6 +247,28 @@ export default function InvestmentAnalysis({ locale, defaults }: Props) {
                   {isTh
                     ? "ผลตอบแทนต่อเงินสดที่ลงทุนจริง (เงินดาวน์) — บอกว่าเงินที่จ่ายจริงของคุณได้ดอกผลกลับมาเท่าไหร่ต่อปี เหมาะสำหรับผู้ที่ใช้สินเชื่อ"
                     : "Return on actual cash invested (down payment) — shows how much your out-of-pocket money earns per year. Most relevant when using a mortgage."}
+                </p>
+              </div>
+            )}
+            <div>
+              <p className="font-semibold text-stone-500 mb-0.5">
+                {isTh ? "คืนทุน (ซื้อสด)" : "Payback — Cash"} = {isTh ? "ต้นทุนรวม ÷ NOI/ปี" : "Total Cost ÷ Annual NOI"}
+              </p>
+              <p className="text-stone-400 leading-relaxed">
+                {isTh
+                  ? "จำนวนปีที่ใช้คืนทุนทั้งหมดจากกำไรสุทธิ กรณีซื้อด้วยเงินสด — ยิ่งน้อยปียิ่งดี ส่วนใหญ่อสังหาฯ ไทยอยู่ที่ 10–25 ปี"
+                  : "Years to recover the full investment from net income, if paying cash. Lower is better — most Thai properties range 10–25 years."}
+              </p>
+            </div>
+            {loanAmt > 0 && (
+              <div>
+                <p className="font-semibold text-stone-500 mb-0.5">
+                  {isTh ? "คืนทุน (กู้ธนาคาร)" : "Payback — Loan"} = {isTh ? "เงินดาวน์ ÷ Free Cash Flow/ปี" : "Down Payment ÷ Annual Free Cash Flow"}
+                </p>
+                <p className="text-stone-400 leading-relaxed">
+                  {isTh
+                    ? "จำนวนปีที่ใช้คืนเงินดาวน์จาก Free Cash Flow — เหมาะสำหรับผู้กู้ซื้อ บอกว่าเงินที่จ่ายดาวน์จะได้คืนในกี่ปี"
+                    : "Years to recover your down payment from free cash flow — relevant for mortgage buyers, showing when your upfront cash is recouped."}
                 </p>
               </div>
             )}
