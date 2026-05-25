@@ -212,12 +212,12 @@ export default function InvestmentAnalysis({ locale, defaults }: Props) {
             {maintenance > 0 && <div className="flex justify-between"><span className="text-stone-500">{isTh ? "ค่าบำรุงรักษา" : "Maintenance"}</span><span>฿{fmt(maintenance)}</span></div>}
             {landTax > 0 && <div className="flex justify-between"><span className="text-stone-500">{isTh ? "ภาษีที่ดิน" : "Land Tax"}</span><span>฿{fmt(landTax)}</span></div>}
             {vacancyCost > 0 && <div className="flex justify-between"><span className="text-stone-500">{isTh ? "ห้องว่าง (ประมาณ)" : "Vacancy Loss"}</span><span>฿{fmt(vacancyCost)}</span></div>}
-            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-stone-100">
-              <div className="flex justify-between font-semibold text-rose-600 col-span-2 sm:col-span-1">
+            <div className="space-y-2 pt-2 border-t border-stone-100">
+              <div className="flex justify-between font-semibold text-rose-600">
                 <span>Operating Expense / {isTh ? "ปี" : "Year"}</span>
                 <span>฿{fmt(operatingExpense)}</span>
               </div>
-              <div className="flex justify-between font-semibold text-rose-500 col-span-2 sm:col-span-1">
+              <div className="flex justify-between font-semibold text-rose-500">
                 <span>Operating Expense / {isTh ? "เดือน" : "Month"}</span>
                 <span>฿{fmt(operatingExpensePerMonth)}</span>
               </div>
