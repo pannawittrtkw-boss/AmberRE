@@ -50,6 +50,8 @@ interface UnitType {
   type: string;
   size: string;
   planImageUrl: string;
+  priceMin: string;
+  priceMax: string;
 }
 
 interface ProjectFormProps {
@@ -232,7 +234,7 @@ export default function ProjectForm({ locale, projectId, initialData }: ProjectF
   };
 
   const addUnitType = () => {
-    setUnitTypes((prev) => [...prev, { type: "", size: "", planImageUrl: "" }]);
+    setUnitTypes((prev) => [...prev, { type: "", size: "", planImageUrl: "", priceMin: "", priceMax: "" }]);
   };
 
   const updateUnitType = (i: number, key: keyof UnitType, value: string) => {
@@ -309,6 +311,8 @@ export default function ProjectForm({ locale, projectId, initialData }: ProjectF
                 type: u.type || "",
                 size: u.size || "",
                 planImageUrl: "",
+                priceMin: u.priceMin || "",
+                priceMax: u.priceMax || "",
               }))
             : prev
         );
@@ -664,86 +668,113 @@ export default function ProjectForm({ locale, projectId, initialData }: ProjectF
       >
         <div className="space-y-3">
           {unitTypes.map((u, i) => (
-            <div
-              key={i}
-              className="grid grid-cols-12 gap-3 items-end p-3 bg-gray-50 rounded-lg"
-            >
-              <div className="col-span-12 md:col-span-4">
-                <label className="block text-xs text-gray-600 mb-1">
-                  Type / ประเภท {i + 1}
-                </label>
-                <input
-                  type="text"
-                  value={u.type}
-                  onChange={(e) => updateUnitType(i, "type", e.target.value)}
-                  className={inputCls}
-                  placeholder="e.g., 1 Bedroom"
-                />
-              </div>
-              <div className="col-span-12 md:col-span-3">
-                <label className="block text-xs text-gray-600 mb-1">
-                  Size (sqm) / ขนาด (ตร.ม.)
-                </label>
-                <input
-                  type="text"
-                  value={u.size}
-                  onChange={(e) => updateUnitType(i, "size", e.target.value)}
-                  className={inputCls}
-                  placeholder="e.g., 35-42"
-                />
-              </div>
-              <div className="col-span-10 md:col-span-4">
-                <label className="block text-xs text-gray-600 mb-1">
-                  Unit Plan Image
-                </label>
-                <input
-                  ref={(el) => {
-                    unitPlanRefs.current[i] = el;
-                  }}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleUnitPlanUpload(e, i)}
-                />
-                {u.planImageUrl ? (
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={u.planImageUrl}
-                      alt="Plan"
-                      className="w-10 h-10 object-cover rounded border"
-                    />
+            <div key={i} className="p-3 bg-gray-50 rounded-lg space-y-3">
+              {/* Row 1: Type, Size, Plan Image, Delete */}
+              <div className="grid grid-cols-12 gap-3 items-end">
+                <div className="col-span-12 md:col-span-4">
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Type / ประเภท {i + 1}
+                  </label>
+                  <input
+                    type="text"
+                    value={u.type}
+                    onChange={(e) => updateUnitType(i, "type", e.target.value)}
+                    className={inputCls}
+                    placeholder="e.g., 1 Bedroom"
+                  />
+                </div>
+                <div className="col-span-12 md:col-span-3">
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Size (sqm) / ขนาด (ตร.ม.)
+                  </label>
+                  <input
+                    type="text"
+                    value={u.size}
+                    onChange={(e) => updateUnitType(i, "size", e.target.value)}
+                    className={inputCls}
+                    placeholder="e.g., 35-42"
+                  />
+                </div>
+                <div className="col-span-10 md:col-span-4">
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Unit Plan Image
+                  </label>
+                  <input
+                    ref={(el) => {
+                      unitPlanRefs.current[i] = el;
+                    }}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleUnitPlanUpload(e, i)}
+                  />
+                  {u.planImageUrl ? (
+                    <div className="flex items-center gap-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={u.planImageUrl}
+                        alt="Plan"
+                        className="w-10 h-10 object-cover rounded border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => updateUnitType(i, "planImageUrl", "")}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
                     <button
                       type="button"
-                      onClick={() => updateUnitType(i, "planImageUrl", "")}
-                      className="text-xs text-red-600 hover:underline"
+                      onClick={() => unitPlanRefs.current[i]?.click()}
+                      disabled={uploading === `unit-${i}`}
+                      className="px-3 py-2 text-xs border-2 border-dashed rounded hover:bg-white"
                     >
-                      Remove
+                      {uploading === `unit-${i}` ? (
+                        <Loader2 className="w-3 h-3 animate-spin inline" />
+                      ) : (
+                        "Upload"
+                      )}
                     </button>
-                  </div>
-                ) : (
+                  )}
+                </div>
+                <div className="col-span-2 md:col-span-1 flex justify-end">
                   <button
                     type="button"
-                    onClick={() => unitPlanRefs.current[i]?.click()}
-                    disabled={uploading === `unit-${i}`}
-                    className="px-3 py-2 text-xs border-2 border-dashed rounded hover:bg-white"
+                    onClick={() => removeUnitType(i)}
+                    className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg"
                   >
-                    {uploading === `unit-${i}` ? (
-                      <Loader2 className="w-3 h-3 animate-spin inline" />
-                    ) : (
-                      "Upload"
-                    )}
+                    <Trash2 className="w-4 h-4" />
                   </button>
-                )}
+                </div>
               </div>
-              <div className="col-span-2 md:col-span-1 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => removeUnitType(i)}
-                  className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+              {/* Row 2: Price Range */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Price Min / ราคาเริ่มต้น (฿)
+                  </label>
+                  <input
+                    type="number"
+                    value={u.priceMin}
+                    onChange={(e) => updateUnitType(i, "priceMin", e.target.value)}
+                    className={inputCls}
+                    placeholder="e.g., 3500000"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Price Max / ราคาสูงสุด (฿)
+                  </label>
+                  <input
+                    type="number"
+                    value={u.priceMax}
+                    onChange={(e) => updateUnitType(i, "priceMax", e.target.value)}
+                    className={inputCls}
+                    placeholder="e.g., 4200000"
+                  />
+                </div>
               </div>
             </div>
           ))}
