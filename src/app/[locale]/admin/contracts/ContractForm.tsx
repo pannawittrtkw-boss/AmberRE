@@ -129,6 +129,7 @@ export default function ContractForm({
 
     securityDeposit: initialData?.securityDeposit || "",
 
+    contractType: initialData?.contractType || "NEW",
     status: initialData?.status || "DRAFT",
   });
 
@@ -357,6 +358,36 @@ export default function ContractForm({
 
       {/* Section 1: Contract Info */}
       <Card title={locale === "th" ? "ข้อมูลสัญญา" : "Contract Info"}>
+        {/* Contract Type toggle */}
+        <div className="flex items-center gap-3 mb-5">
+          <span className="text-sm font-medium text-stone-700">
+            {locale === "th" ? "ประเภทสัญญา" : "Contract Type"}
+          </span>
+          <div className="flex rounded-lg border border-stone-200 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => update("contractType", "NEW")}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                form.contractType === "NEW"
+                  ? "bg-[#C8A951] text-white"
+                  : "bg-white text-stone-600 hover:bg-stone-50"
+              }`}
+            >
+              {locale === "th" ? "สัญญาใหม่" : "New Contract"}
+            </button>
+            <button
+              type="button"
+              onClick={() => update("contractType", "RENEW")}
+              className={`px-4 py-2 text-sm font-medium transition-colors border-l border-stone-200 ${
+                form.contractType === "RENEW"
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-stone-600 hover:bg-stone-50"
+              }`}
+            >
+              {locale === "th" ? "ต่อสัญญา" : "Renewal"}
+            </button>
+          </div>
+        </div>
         <Grid>
           <Field label={locale === "th" ? "วันที่ทำสัญญา" : "Contract Date"} required>
             <input

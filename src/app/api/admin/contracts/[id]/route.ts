@@ -118,6 +118,7 @@ export async function PUT(
         customClauses: body.customClauses || null,
         clauseOverrides: body.clauseOverrides || null,
 
+        contractType: body.contractType || undefined,
         status: body.status || undefined,
       },
     });

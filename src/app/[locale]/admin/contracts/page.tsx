@@ -33,6 +33,7 @@ type Contract = {
   projectName: string;
   unitNumber: string;
   monthlyRent: string;
+  contractType: string;
   status: string;
   signedPdfUrl?: string | null;
   shareToken?: string | null;
@@ -390,6 +391,16 @@ export default function AdminContractsPage({
                   <tr key={c.id} className="border-t hover:bg-gray-50">
                     <td className="py-3 px-4">
                       <div className="font-mono text-xs">{c.contractNumber}</div>
+                      {/* Contract type badge */}
+                      <span className={`inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full mt-1 font-medium ${
+                        c.contractType === "RENEW"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-amber-50 text-amber-700"
+                      }`}>
+                        {c.contractType === "RENEW"
+                          ? (locale === "th" ? "ต่อสัญญา" : "Renewal")
+                          : (locale === "th" ? "สัญญาใหม่" : "New")}
+                      </span>
                       {/* Signed badge */}
                       {c.signedPdfUrl && (
                         <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full mt-1 font-medium">
