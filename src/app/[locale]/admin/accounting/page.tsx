@@ -630,6 +630,7 @@ export default function AccountingPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-gray-500 bg-gray-50/50">
+                  <th className="text-center px-3 py-2.5 font-normal w-10">No.</th>
                   <th
                     className="text-left px-4 py-2.5 font-normal cursor-pointer hover:text-gray-700"
                     onClick={() => handleSort("date")}
@@ -656,8 +657,9 @@ export default function AccountingPage() {
                 </tr>
               </thead>
               <tbody>
-                {displayTransactions.map((t) => (
+                {displayTransactions.map((t, idx) => (
                   <tr key={t.id} className="border-b last:border-b-0 hover:bg-gray-50">
+                    <td className="px-3 py-3 text-center text-xs text-gray-400">{idx + 1}</td>
                     <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
                       {new Date(t.date).toLocaleDateString("en-GB", {
                         day: "2-digit",
