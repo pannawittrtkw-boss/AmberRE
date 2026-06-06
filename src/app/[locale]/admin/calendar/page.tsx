@@ -319,6 +319,7 @@ export default function AdminCalendarPage({ params }: { params: Promise<{ locale
                           >
                             <Banknote className="w-2.5 h-2.5 shrink-0" />
                             <span className="truncate">{p.contract.projectName}</span>
+                            <span className="shrink-0 font-bold opacity-80">#{p.contract.unitNumber}</span>
                           </div>
                         ))}
                         {/* Paid rent */}
@@ -326,10 +327,11 @@ export default function AdminCalendarPage({ params }: { params: Promise<{ locale
                           <div
                             key={`pay-paid-${p.id}`}
                             className="truncate rounded px-1 py-0.5 text-[10px] font-medium border flex items-center gap-0.5 bg-gray-50 text-gray-400 border-gray-200"
-                            title={`${locale === "th" ? "ชำระแล้ว: " : "Paid: "}${p.contract.projectName}`}
+                            title={`${locale === "th" ? "ชำระแล้ว: " : "Paid: "}${p.contract.projectName} #${p.contract.unitNumber}`}
                           >
                             <CheckCircle2 className="w-2.5 h-2.5 shrink-0 text-green-500" />
                             <span className="truncate line-through">{p.contract.projectName}</span>
+                            <span className="shrink-0 font-bold opacity-60">#{p.contract.unitNumber}</span>
                           </div>
                         ))}
                         {/* Overflow count */}
@@ -408,7 +410,10 @@ export default function AdminCalendarPage({ params }: { params: Promise<{ locale
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
-                                <div className="font-medium text-sm truncate">{p.contract.projectName} #{p.contract.unitNumber}</div>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-medium text-sm truncate">{p.contract.projectName}</span>
+                                  <span className="shrink-0 bg-gray-800 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">#{p.contract.unitNumber}</span>
+                                </div>
                                 <div className="text-xs text-gray-600 truncate">{p.contract.lesseeName}</div>
                                 <div className="text-xs text-gray-400 font-mono">{p.contract.contractNumber}</div>
                               </div>
