@@ -105,6 +105,8 @@ export default function AccountingPage() {
       month: number;
       income: number;
       expense: number;
+      forecastIncome: number;
+      forecastExpense: number;
       net: number;
       incomeByCategory: Record<string, number>;
       expenseByCategory: Record<string, number>;
@@ -460,14 +462,22 @@ export default function AccountingPage() {
               Compare income, expense, and net profit by month
             </p>
           </div>
-          <div className="flex items-center gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-3 text-xs">
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-sm bg-emerald-500" />
-              Income
+              Income (Actual)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm bg-emerald-200 border border-emerald-400 border-dashed" />
+              Income (Forecast)
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-sm bg-rose-500" />
-              Expense
+              Expense (Actual)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm bg-rose-200 border border-rose-400 border-dashed" />
+              Expense (Forecast)
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-0.5 bg-blue-500" />
@@ -512,18 +522,17 @@ export default function AccountingPage() {
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <ReferenceLine y={0} stroke="#cbd5e1" />
+              {/* Actual income — stack group "inc" */}
               <Bar
                 dataKey="income"
-                name="Income"
+                name="Income (Actual)"
+                stackId="inc"
                 fill="#10b981"
-                radius={[4, 4, 0, 0]}
                 cursor="pointer"
                 onClick={(d: any) => {
                   if (d?.month) {
                     setMonth(d.month);
-                    if (d.income > 0) {
-                      setPieDrillDown({ month: d.month, type: "INCOME" });
-                    }
+                    if (d.income > 0) setPieDrillDown({ month: d.month, type: "INCOME" });
                   }
                 }}
               >
@@ -534,18 +543,32 @@ export default function AccountingPage() {
                   style={{ fill: "#059669", fontSize: 11, fontWeight: 600 }}
                 />
               </Bar>
+              {/* Forecast income — stacked on top, lighter color */}
+              <Bar
+                dataKey="forecastIncome"
+                name="Income (Forecast)"
+                stackId="inc"
+                fill="#6ee7b7"
+                radius={[4, 4, 0, 0]}
+              >
+                <LabelList
+                  dataKey="forecastIncome"
+                  position="top"
+                  formatter={chartLabelFormatter}
+                  style={{ fill: "#059669", fontSize: 10, fontWeight: 500 }}
+                />
+              </Bar>
+              {/* Actual expense — stack group "exp" */}
               <Bar
                 dataKey="expense"
-                name="Expense"
+                name="Expense (Actual)"
+                stackId="exp"
                 fill="#f43f5e"
-                radius={[4, 4, 0, 0]}
                 cursor="pointer"
                 onClick={(d: any) => {
                   if (d?.month) {
                     setMonth(d.month);
-                    if (d.expense > 0) {
-                      setPieDrillDown({ month: d.month, type: "EXPENSE" });
-                    }
+                    if (d.expense > 0) setPieDrillDown({ month: d.month, type: "EXPENSE" });
                   }
                 }}
               >
@@ -554,6 +577,21 @@ export default function AccountingPage() {
                   position="top"
                   formatter={chartLabelFormatter}
                   style={{ fill: "#e11d48", fontSize: 11, fontWeight: 600 }}
+                />
+              </Bar>
+              {/* Forecast expense — stacked on top */}
+              <Bar
+                dataKey="forecastExpense"
+                name="Expense (Forecast)"
+                stackId="exp"
+                fill="#fda4af"
+                radius={[4, 4, 0, 0]}
+              >
+                <LabelList
+                  dataKey="forecastExpense"
+                  position="top"
+                  formatter={chartLabelFormatter}
+                  style={{ fill: "#e11d48", fontSize: 10, fontWeight: 500 }}
                 />
               </Bar>
               <Line

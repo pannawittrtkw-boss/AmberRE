@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     // CO_AGENT sees only their own transactions; ADMIN sees all
     const scopeFilter = role === "CO_AGENT" ? { createdById: userId } : {};
 
-    const [currentTxns, prevTxns, yearTxns] = await Promise.all([
+    const [currentTxns, prevTxns, yearTxns, yearForecastTxns] = await Promise.all([
       prisma.transaction.findMany({
         where: { date: { gte: startDate, lt: endDate }, ...scopeFilter },
         orderBy: { date: "desc" },
@@ -44,16 +44,21 @@ export async function GET(req: NextRequest) {
         where: { date: { gte: yearStart, lt: yearEnd }, recordType: "ACTUAL", ...scopeFilter },
         select: { date: true, amount: true, type: true, category: true },
       }),
+      prisma.transaction.findMany({
+        where: { date: { gte: yearStart, lt: yearEnd }, recordType: "FORECAST", ...scopeFilter },
+        select: { date: true, amount: true, type: true },
+      }),
     ]);
 
     type MonthStats = {
       income: number; expense: number;
+      forecastIncome: number; forecastExpense: number;
       incomeByCategory: Record<string, number>;
       expenseByCategory: Record<string, number>;
     };
     const monthlyStats: Record<number, MonthStats> = {};
     for (let i = 1; i <= 12; i++) {
-      monthlyStats[i] = { income: 0, expense: 0, incomeByCategory: {}, expenseByCategory: {} };
+      monthlyStats[i] = { income: 0, expense: 0, forecastIncome: 0, forecastExpense: 0, incomeByCategory: {}, expenseByCategory: {} };
     }
     for (const t of yearTxns) {
       const m = t.date.getMonth() + 1;
@@ -66,8 +71,17 @@ export async function GET(req: NextRequest) {
         monthlyStats[m].expenseByCategory[t.category] = (monthlyStats[m].expenseByCategory[t.category] || 0) + amt;
       }
     }
+    for (const t of yearForecastTxns) {
+      const m = t.date.getMonth() + 1;
+      const amt = Number(t.amount);
+      if (t.type === "INCOME") monthlyStats[m].forecastIncome += amt;
+      else if (t.type === "EXPENSE") monthlyStats[m].forecastExpense += amt;
+    }
     const chartData = Object.entries(monthlyStats).map(([m, v]) => ({
-      month: parseInt(m), income: v.income, expense: v.expense, net: v.income - v.expense,
+      month: parseInt(m),
+      income: v.income, expense: v.expense,
+      forecastIncome: v.forecastIncome, forecastExpense: v.forecastExpense,
+      net: v.income - v.expense,
       incomeByCategory: v.incomeByCategory, expenseByCategory: v.expenseByCategory,
     }));
 
