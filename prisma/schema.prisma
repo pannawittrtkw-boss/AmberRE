@@ -167,8 +167,27 @@ model Contract {
   createdById Int?
   createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
+  rentPayments RentPayment[]
+
   @@index([propertyId])
   @@index([status])
+}
+
+model RentPayment {
+  id         Int       @id @default(autoincrement())
+  contractId Int
+  contract   Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  dueDate    DateTime
+  amount     Decimal   @db.Decimal(18, 2)
+  isPaid     Boolean   @default(false)
+  paidAt     DateTime?
+  note       String?   @db.Text
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([contractId, dueDate])
+  @@index([dueDate])
+  @@index([isPaid])
 }
 
 model PasswordResetToken {
