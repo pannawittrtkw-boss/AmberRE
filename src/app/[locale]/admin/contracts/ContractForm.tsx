@@ -633,6 +633,25 @@ export default function ContractForm({
               className={inputCls}
             />
           </Field>
+          <Field label={locale === "th" ? "เงินประกัน (บาท)" : "Deposit (THB)"} required>
+            <input
+              type="number"
+              required
+              step="0.01"
+              value={form.securityDeposit}
+              onChange={(e) => {
+                depositTouchedRef.current = true;
+                update("securityDeposit", e.target.value);
+              }}
+              className={inputCls}
+              placeholder={locale === "th" ? "ปกติเท่ากับ 2 เดือนของค่าเช่า" : "Typically 2× monthly rent"}
+            />
+            <p className="text-xs text-stone-500 mt-1">
+              {locale === "th"
+                ? "ระบบ default ค่าเป็น 2 เท่าของค่าเช่ารายเดือน — แก้ไขได้"
+                : "Defaults to 2× monthly rent — editable"}
+            </p>
+          </Field>
           <Field label={locale === "th" ? "ชำระทุกวันที่ (1-31)" : "Due day"}>
             <input
               type="number"
@@ -989,36 +1008,7 @@ export default function ContractForm({
         )}
       </div>
 
-      {/* Section 6: Deposit */}
-      <Card title={locale === "th" ? "เงินประกัน" : "Security Deposit"}>
-        <Grid>
-          <Field
-            label={locale === "th" ? "เงินประกัน (บาท)" : "Deposit (THB)"}
-            required
-            colSpan={2}
-          >
-            <input
-              type="number"
-              required
-              step="0.01"
-              value={form.securityDeposit}
-              onChange={(e) => {
-                depositTouchedRef.current = true;
-                update("securityDeposit", e.target.value);
-              }}
-              className={inputCls}
-              placeholder={locale === "th" ? "ปกติเท่ากับ 2 เดือนของค่าเช่า" : "Typically 2× monthly rent"}
-            />
-            <p className="text-xs text-stone-500 mt-1">
-              {locale === "th"
-                ? "ระบบ default ค่าเป็น 2 เท่าของค่าเช่ารายเดือน — แก้ไขได้"
-                : "Defaults to 2× monthly rent — editable"}
-            </p>
-          </Field>
-        </Grid>
-      </Card>
-
-      {/* Section 7: Furniture */}
+      {/* Section 6: Furniture */}
       <Card title={locale === "th" ? "เฟอร์นิเจอร์" : "Furniture"}>
         <p className="text-xs text-gray-500 mb-3">
           {locale === "th"
