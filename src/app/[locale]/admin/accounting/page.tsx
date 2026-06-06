@@ -19,6 +19,7 @@ import {
   ArrowUp,
   ArrowDown,
   Rows3,
+  RefreshCw,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -122,6 +123,8 @@ export default function AccountingPage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ created: number; updated: number; total: number } | null>(null);
 
   // Check unlock state
   useEffect(() => {
@@ -291,6 +294,20 @@ export default function AccountingPage() {
     } catch {}
   };
 
+  const handleSyncForecasts = async () => {
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await fetch("/api/admin/accounting/sync-forecasts", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setSyncResult(data.data);
+        fetchTransactions();
+      }
+    } catch {}
+    setSyncing(false);
+  };
+
   // Password Lock Screen
   if (!unlocked) {
     return (
@@ -372,7 +389,22 @@ export default function AccountingPage() {
             </select>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex flex-col items-end gap-1">
+              <button
+                onClick={handleSyncForecasts}
+                disabled={syncing}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                Sync Forecast จากสัญญา
+              </button>
+              {syncResult && (
+                <span className="text-xs text-gray-500">
+                  เพิ่ม {syncResult.created} · อัปเดต {syncResult.updated} · ทั้งหมด {syncResult.total} สัญญา
+                </span>
+              )}
+            </div>
             <button
               onClick={() => setShowMultiModal(true)}
               className="flex items-center gap-2 bg-stone-900 hover:bg-stone-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
