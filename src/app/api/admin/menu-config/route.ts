@@ -7,7 +7,7 @@ const SETTING_KEY = "agent_menu_config";
 
 const ALL_KEYS = [
   "dashboard", "properties", "projects", "customer-leads", "users", "messages", "articles",
-  "portfolio", "electricity-calculator", "accounting", "contracts",
+  "portfolio", "electricity-calculator", "accounting", "contracts", "contract-calendar",
   "closed-contracts", "subscriptions", "menu-config", "reviews", "settings", "languages",
   "agent-dashboard",
 ];
