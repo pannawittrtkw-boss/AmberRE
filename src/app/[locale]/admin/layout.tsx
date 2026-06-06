@@ -7,7 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Building2, Users, FileText, Star, Loader2, Settings,
-  Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature, Lock, Crown, LayoutList,
+  Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature, Lock, Crown, LayoutList, UserSearch,
 } from "lucide-react";
 
 // Full list of every menu item a CO_AGENT can ever be given access to.
@@ -17,6 +17,7 @@ const ALL_AGENT_MENU_ITEMS = [
   { key: "agent-dashboard",        href: (l: string) => `/${l}/admin/agent-dashboard`,       icon: LayoutDashboard, labelTh: "ภาพรวม",              labelEn: "Dashboard" },
   { key: "properties",             href: (l: string) => `/${l}/admin/properties`,             icon: Building2,       labelTh: "ทรัพย์ของฉัน",        labelEn: "My Properties" },
   { key: "projects",               href: (l: string) => `/${l}/admin/projects`,               icon: Layers,          labelTh: "โครงการ",              labelEn: "Projects" },
+  { key: "customer-leads",         href: (l: string) => `/${l}/admin/customer-leads`,         icon: UserSearch,      labelTh: "Matching ลูกค้า",      labelEn: "Customer Matching" },
   { key: "contracts",              href: (l: string) => `/${l}/admin/contracts`,              icon: FileSignature,   labelTh: "สัญญาเช่า",            labelEn: "Contracts" },
   { key: "closed-contracts",       href: (l: string) => `/${l}/admin/closed-contracts`,       icon: Lock,            labelTh: "สัญญาที่ปิดแล้ว",      labelEn: "Closed Contracts" },
   { key: "electricity-calculator", href: (l: string) => `/${l}/admin/electricity-calculator`, icon: Zap,             labelTh: "คำนวณค่าไฟ",           labelEn: "Electricity Calc" },
@@ -33,6 +34,7 @@ const ALL_ADMIN_NAV = [
   { key: "dashboard",              icon: LayoutDashboard, hrefSuffix: "",                         labelKey: "dashboard" },
   { key: "properties",             icon: Building2,       hrefSuffix: "/properties",               labelKey: "propertyManagement" },
   { key: "projects",               icon: Layers,          hrefSuffix: "/projects",                 labelKey: "projectManagement" },
+  { key: "customer-leads",         icon: UserSearch,      hrefSuffix: "/customer-leads",           labelKey: null, labelFallback: { th: "Matching ลูกค้า", en: "Customer Matching" } },
   { key: "users",                  icon: Users,           hrefSuffix: "/users",                    labelKey: "userManagement" },
   { key: "messages",               icon: Mail,            hrefSuffix: "/messages",                 labelKey: null, labelFallback: { th: "ข้อความติดต่อ", en: "Messages" }, badge: true },
   { key: "articles",               icon: FileText,        hrefSuffix: "/articles",                 labelKey: "articleManagement" },
@@ -113,6 +115,7 @@ export default function AdminLayout({
     "/admin/agent-dashboard",
     "/admin/properties",
     "/admin/projects",
+    "/admin/customer-leads",
     "/admin/contracts",
     "/admin/closed-contracts",
     "/admin/electricity-calculator",

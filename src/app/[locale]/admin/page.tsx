@@ -30,7 +30,7 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ local
 
   const statCards = [
     { icon: Building2, label: t.totalProperties, value: stats?.totalProperties || 0, color: "bg-blue-500", href: `/${locale}/admin/properties` },
-    { icon: FileSignature, label: locale === "th" ? "สัญญาเช่าที่ใช้งานอยู่" : "Active Contracts", value: stats?.activeContractsCount || 0, color: "bg-emerald-600", href: `/${locale}/admin/contracts` },
+    { icon: FileSignature, label: t.activeContracts, value: stats?.activeContractsCount || 0, color: "bg-emerald-600", href: `/${locale}/admin/contracts` },
     { icon: Users, label: t.totalUsers, value: stats?.totalUsers || 0, color: "bg-green-500", href: `/${locale}/admin/users` },
     { icon: Clock, label: t.pendingApprovals, value: stats?.pendingApprovals || 0, color: "bg-yellow-500", href: `/${locale}/admin/co-agents` },
     { icon: Eye, label: t.totalViews, value: stats?.totalViews || 0, color: "bg-purple-500", href: null },
@@ -69,16 +69,16 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ local
       {/* Recent Properties */}
       {stats?.recentProperties && stats.recentProperties.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border p-6">
-          <h2 className="text-lg font-semibold mb-4">{locale === "th" ? "ทรัพย์สินล่าสุด" : "Recent Properties"}</h2>
+          <h2 className="text-lg font-semibold mb-4">{t.recentProperties}</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
                   <th className="text-left py-3 px-2">ID</th>
-                  <th className="text-left py-3 px-2">{locale === "th" ? "ชื่อ" : "Title"}</th>
-                  <th className="text-left py-3 px-2">{locale === "th" ? "ประเภท" : "Type"}</th>
-                  <th className="text-left py-3 px-2">{locale === "th" ? "ราคา" : "Price"}</th>
-                  <th className="text-left py-3 px-2">{locale === "th" ? "สถานะ" : "Status"}</th>
+                  <th className="text-left py-3 px-2">{messages.property.propertyTypeLabel}</th>
+                  <th className="text-left py-3 px-2">{messages.property.listingTypeLabel}</th>
+                  <th className="text-left py-3 px-2">{messages.property.price}</th>
+                  <th className="text-left py-3 px-2">{t.status}</th>
                 </tr>
               </thead>
               <tbody>
@@ -90,7 +90,7 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ local
                     <td className="py-3 px-2">฿{Number(p.price).toLocaleString()}</td>
                     <td className="py-3 px-2">
                       <span className={`px-2 py-1 rounded text-xs ${p.isSold ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
-                        {p.isSold ? (locale === "th" ? "ขายแล้ว" : "Sold") : (locale === "th" ? "ว่าง" : "Available")}
+                        {p.isSold ? messages.property.sold : messages.property.available}
                       </span>
                     </td>
                   </tr>

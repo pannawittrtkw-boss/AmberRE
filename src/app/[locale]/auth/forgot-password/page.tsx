@@ -10,6 +10,7 @@ export default function ForgotPasswordPage({
   params: Promise<{ locale: string }>;
 }) {
   const [locale, setLocale] = useState("th");
+  const [messages, setMessages] = useState<any>(null);
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [resetUrl, setResetUrl] = useState<string | null>(null);
@@ -17,7 +18,10 @@ export default function ForgotPasswordPage({
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    params.then(({ locale: l }) => setLocale(l));
+    params.then(({ locale: l }) => {
+      setLocale(l);
+      import(`@/messages/${l}.json`).then((m) => setMessages(m.default));
+    });
   }, [params]);
 
   const submit = async (e: React.FormEvent) => {
@@ -43,27 +47,33 @@ export default function ForgotPasswordPage({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  if (!messages)
+    return (
+      <div className="flex justify-center py-32">
+        <Loader2 className="w-8 h-8 animate-spin text-[#C8A951]" />
+      </div>
+    );
+  const t = messages.auth;
+
   return (
     <div className="bg-stone-50 min-h-screen flex items-center justify-center p-6">
       <div className="bg-white rounded-2xl shadow-sm border border-stone-200 max-w-md w-full p-8">
         <div className="flex items-center gap-2 text-[#C8A951] text-xs uppercase tracking-widest font-medium mb-2">
           <span className="w-6 h-px bg-[#C8A951]" />
-          {locale === "th" ? "ลืมรหัสผ่าน" : "Forgot Password"}
+          {t.forgotPasswordTitle}
         </div>
         <h1 className="text-2xl font-bold text-stone-900 mb-2">
-          {locale === "th" ? "รีเซ็ตรหัสผ่าน" : "Reset Password"}
+          {t.resetPassword}
         </h1>
         <p className="text-sm text-stone-500 mb-6">
-          {locale === "th"
-            ? "กรอกอีเมลของคุณเพื่อรับลิงก์รีเซ็ตรหัสผ่าน"
-            : "Enter your email to receive a reset link"}
+          {t.resetPasswordDesc}
         </p>
 
         {!submitted ? (
           <form onSubmit={submit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1.5">
-                {locale === "th" ? "อีเมล" : "Email"}
+                {t.email}
               </label>
               <input
                 type="email"
@@ -79,23 +89,19 @@ export default function ForgotPasswordPage({
               className="w-full inline-flex items-center justify-center gap-2 bg-[#C8A951] hover:bg-[#B8993F] text-white py-3 rounded-full font-semibold text-sm disabled:opacity-50"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
-              {locale === "th" ? "ส่งลิงก์รีเซ็ต" : "Send reset link"}
+              {t.sendResetLink}
             </button>
           </form>
         ) : (
           <div className="space-y-4">
             <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl text-sm">
-              {locale === "th"
-                ? "หากอีเมลนี้มีในระบบ ลิงก์รีเซ็ตได้ถูกสร้างแล้ว"
-                : "If this email exists, a reset link has been generated."}
+              {t.emailExists}
             </div>
 
             {resetUrl && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                 <p className="text-xs text-amber-800 mb-2 font-medium">
-                  {locale === "th"
-                    ? "ลิงก์รีเซ็ตของคุณ (ใช้ภายใน 1 ชั่วโมง):"
-                    : "Your reset link (valid for 1 hour):"}
+                  {t.resetLinkValid}
                 </p>
                 <div className="flex items-center gap-2">
                   <input
@@ -115,7 +121,7 @@ export default function ForgotPasswordPage({
                   href={resetUrl}
                   className="inline-block mt-2 text-xs text-[#C8A951] hover:underline"
                 >
-                  {locale === "th" ? "เปิดลิงก์ →" : "Open link →"}
+                  {t.openLink}
                 </a>
               </div>
             )}
@@ -127,7 +133,7 @@ export default function ForgotPasswordPage({
           className="inline-flex items-center gap-1 text-xs text-stone-500 hover:text-[#C8A951] mt-6"
         >
           <ArrowLeft className="w-3 h-3" />
-          {locale === "th" ? "กลับหน้าเข้าสู่ระบบ" : "Back to login"}
+          {t.backToLogin}
         </Link>
       </div>
     </div>

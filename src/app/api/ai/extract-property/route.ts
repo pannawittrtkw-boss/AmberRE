@@ -1,4 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
+
+type AddressItem = { id: number; nameTh: string; provinceId?: number; amphureId?: number };
+
+const THAI_DATA_DIR = path.join(process.cwd(), "public", "thai-address");
+let _provinces: AddressItem[] | null = null;
+let _amphures: (AddressItem & { provinceId: number })[] | null = null;
+let _tambons: (AddressItem & { amphureId: number })[] | null = null;
+
+function loadThaiAddress() {
+  if (!_provinces) {
+    try {
+      _provinces = JSON.parse(fs.readFileSync(path.join(THAI_DATA_DIR, "provinces.json"), "utf-8"));
+      _amphures = JSON.parse(fs.readFileSync(path.join(THAI_DATA_DIR, "amphures.json"), "utf-8"));
+      _tambons = JSON.parse(fs.readFileSync(path.join(THAI_DATA_DIR, "tambons.json"), "utf-8"));
+    } catch { _provinces = []; _amphures = []; _tambons = []; }
+  }
+  return { provinces: _provinces!, amphures: _amphures!, tambons: _tambons! };
+}
+
+function normalize(s: string) {
+  return s.replace(/^(จังหวัด|เขต|อำเภอ|ตำบล|แขวง)\s*/u, "").toLowerCase().replace(/\s+/g, "");
+}
+
+function fuzzyFind<T extends AddressItem>(items: T[], query: string): T | undefined {
+  if (!query) return undefined;
+  const q = normalize(query);
+  return (
+    items.find((i) => normalize(i.nameTh) === q) ||
+    items.find((i) => normalize(i.nameTh).includes(q) || q.includes(normalize(i.nameTh)))
+  );
+}
+
+function resolveThaiLocation(rawProvince: string | null, rawDistrict: string | null, rawSubdistrict: string | null) {
+  const { provinces, amphures, tambons } = loadThaiAddress();
+  let provinceNameTh = "";
+  let districtNameTh = "";
+  let subdistrictNameTh = "";
+
+  const prov = rawProvince ? fuzzyFind(provinces, rawProvince) : undefined;
+  if (prov) {
+    provinceNameTh = prov.nameTh;
+    const dist = rawDistrict ? fuzzyFind(amphures.filter((a) => a.provinceId === prov.id), rawDistrict) : undefined;
+    if (dist) {
+      districtNameTh = dist.nameTh;
+      const sub = rawSubdistrict ? fuzzyFind(tambons.filter((t) => t.amphureId === dist.id), rawSubdistrict) : undefined;
+      if (sub) subdistrictNameTh = sub.nameTh;
+    }
+  }
+
+  return { province: provinceNameTh, district: districtNameTh, subdistrict: subdistrictNameTh };
+}
 
 // Station list for AI to match nearby stations
 const STATION_LIST = `BTS Sukhumvit: N24-คูคต, N23-แยกคลองหลวง, N22-ม.ธรรมศาสตร์, N21-เมืองเอก, N20-พหลโยธิน59, N19-สายหยุด, N18-สะพานใหม่, N17-พิพิธภัณฑ์กองทัพอากาศ, N16-รพ.ภูมิพล, N15-กรมทหารราบที่11, N14-วัดพระศรีมหาธาตุ, N13-พหลโยธิน24, N12-รัชโยธิน, N11-เสนานิคม, N10-ม.เกษตรศาสตร์, N9-ห้าแยกลาดพร้าว, N8-หมอชิต, N7-สะพานควาย, N6-เสนารวม, N5-อารีย์, N4-สนามเป้า, N3-อนุสาวรีย์ชัยฯ, N2-พญาไท, N1-ราชเทวี, CEN-สยาม, E1-ชิดลม, E2-เพลินจิต, E3-นานา, E4-อโศก, E5-พร้อมพงษ์, E6-ทองหล่อ, E7-เอกมัย, E8-พระโขนง, E9-อ่อนนุช, E10-บางจาก, E11-ปุณณวิถี, E12-อุดมสุข, E13-บางนา, E14-แบริ่ง, E15-สำโรง, E16-ปู่เจ้า, E17-ช้างเอราวัณ, E18-รร.นายเรือ, E19-ปากน้ำ, E20-ศรีนครินทร์, E21-แพรกษา, E22-สายลวด, E23-เคหะฯ
@@ -102,6 +155,9 @@ const AI_PROMPT = `คุณเป็น AI ที่ช่วยดึงข้
   "ownerPhone": "เบอร์โทร (string หรือ null)",
   "ownerLineId": "Line ID (string หรือ null)",
   "nearbyStations": ["รหัสสถานี BTS/MRT ที่ใกล้เคียง เลือกจากรายการด้านล่าง"],
+  "province": "จังหวัดที่ตั้งทรัพย์ (เช่น กรุงเทพมหานคร, ชลบุรี — string หรือ null)",
+  "district": "อำเภอ/เขตที่ตั้งทรัพย์ ไม่ต้องใส่คำว่า 'เขต' หรือ 'อำเภอ' นำหน้า (เช่น บางนา, พระโขนง — string หรือ null)",
+  "subdistrict": "ตำบล/แขวงที่ตั้งทรัพย์ ไม่ต้องใส่คำนำหน้า (string หรือ null)",
   "note": "ข้อมูลเพิ่มเติมที่น่าสนใจ (string หรือ null)"
 }
 
@@ -112,6 +168,8 @@ ${STATION_LIST}
 - ดูจากชื่อโครงการ/ที่ตั้ง แล้วเลือกสถานี BTS/MRT ที่ใกล้ที่สุด 1-3 สถานี (ใช้รหัสสถานี เช่น E4, BL22, E16)
 - furniture และ appliances ให้เลือกเฉพาะ key ที่ตรงกับข้อมูลในโพสต์เท่านั้น
 - ราคาถ้าเป็นค่าเช่ารายเดือนใส่ใน price, ถ้าเป็นราคาขายใส่ใน salePrice
+- province/district/subdistrict ให้ดูจากชื่อโครงการ ที่อยู่ หรือสถานี BTS/MRT ที่ระบุ
+- ถ้าอยู่ใกล้สถานีในกรุงเทพฯ ให้ province = "กรุงเทพมหานคร"
 - ถ้าไม่มีข้อมูลให้ใส่ null`;
 
 export async function POST(req: NextRequest) {
@@ -213,10 +271,20 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Resolve province/district/subdistrict to exact nameTh from Thai address data
+    const location = resolveThaiLocation(
+      extracted.province || null,
+      extracted.district || null,
+      extracted.subdistrict || null,
+    );
+
     return NextResponse.json({
       success: true,
       data: {
         ...extracted,
+        province: location.province || null,
+        district: location.district || null,
+        subdistrict: location.subdistrict || null,
         imageUrls,
         sourceUrl: url || null,
       },

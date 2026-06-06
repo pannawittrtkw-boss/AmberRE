@@ -92,6 +92,8 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
+  const [bulkLocating, setBulkLocating] = useState(false);
+  const [bulkLocationResult, setBulkLocationResult] = useState<{ updated: number; skipped: number } | null>(null);
 
   // Month & Status tabs
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
@@ -158,6 +160,21 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
 
     setImporting(false);
     e.target.value = "";
+  };
+
+  const handleBulkLocation = async () => {
+    if (!confirm("อัปเดตจังหวัด/อำเภอให้ทรัพย์ทั้งหมดที่ยังไม่มีข้อมูล โดยอ้างอิงจากสถานี BTS/MRT ใช่ไหม?")) return;
+    setBulkLocating(true);
+    setBulkLocationResult(null);
+    try {
+      const res = await fetch("/api/admin/properties/bulk-location", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setBulkLocationResult({ updated: data.updated, skipped: data.skipped });
+        fetchProperties();
+      }
+    } catch {}
+    setBulkLocating(false);
   };
 
   // Client-side filtering
@@ -264,6 +281,17 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
             <input type="file" accept=".xlsx,.xls" onChange={handleImport} className="hidden" disabled={importing} />
           </label>
 
+          {/* Bulk fill province/district from BTS stations */}
+          <button
+            onClick={handleBulkLocation}
+            disabled={bulkLocating}
+            className="inline-flex items-center gap-2 px-3 py-2 border border-blue-500 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors text-sm disabled:opacity-50"
+            title="อัปเดตจังหวัด/อำเภอจากสถานี BTS/MRT"
+          >
+            {bulkLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Train className="w-4 h-4" />}
+            {bulkLocating ? "กำลังอัปเดต..." : "อัปเดตที่ตั้ง"}
+          </button>
+
           {/* Add Property */}
           <Link
             href={`/${locale}/admin/properties/add`}
@@ -299,6 +327,22 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
               )}
             </div>
             <button onClick={() => setImportResult(null)} className="p-1 hover:bg-gray-200 rounded">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {bulkLocationResult && (
+        <div className="mb-4 p-4 rounded-lg border bg-blue-50 border-blue-200">
+          <div className="flex items-center justify-between">
+            <p className="text-blue-800 text-sm font-medium">
+              อัปเดตที่ตั้งสำเร็จ {bulkLocationResult.updated} ทรัพย์
+              {bulkLocationResult.skipped > 0 && (
+                <span className="text-gray-500 font-normal ml-2">(ไม่มีข้อมูลสถานี {bulkLocationResult.skipped} ทรัพย์)</span>
+              )}
+            </p>
+            <button onClick={() => setBulkLocationResult(null)} className="p-1 hover:bg-gray-200 rounded">
               <X className="w-4 h-4" />
             </button>
           </div>

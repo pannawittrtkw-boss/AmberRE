@@ -83,7 +83,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       "titleTh", "titleEn", "descriptionTh", "descriptionEn",
       "propertyType", "buildingType", "listingType", "priceUnit",
       "condition",
-      "estCode", "projectName", "address",
+      "estCode", "projectName", "address", "province", "district", "subdistrict",
       "sourceLink", "linkPage", "building", "postFrom",
       "ownerName", "ownerPhone", "ownerLineId", "ownerFacebookUrl",
       "coAgentName", "coAgentPhone", "coAgentLineId", "coAgentFacebookUrl",

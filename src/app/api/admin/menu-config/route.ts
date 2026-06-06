@@ -6,7 +6,7 @@ import prisma from "@/lib/prisma";
 const SETTING_KEY = "agent_menu_config";
 
 const ALL_KEYS = [
-  "dashboard", "properties", "projects", "users", "messages", "articles",
+  "dashboard", "properties", "projects", "customer-leads", "users", "messages", "articles",
   "portfolio", "electricity-calculator", "accounting", "contracts",
   "closed-contracts", "subscriptions", "menu-config", "reviews", "settings", "languages",
   "agent-dashboard",
@@ -14,8 +14,8 @@ const ALL_KEYS = [
 
 export const DEFAULT_MENU_CONFIG: Record<string, string[]> = {
   STANDARD: ["agent-dashboard", "properties"],
-  PRO:      ["agent-dashboard", "properties", "projects", "contracts", "electricity-calculator", "accounting"],
-  ELITE:    ["agent-dashboard", "properties", "projects", "contracts", "closed-contracts", "electricity-calculator", "accounting", "messages", "reviews"],
+  PRO:      ["agent-dashboard", "properties", "projects", "customer-leads", "contracts", "electricity-calculator", "accounting"],
+  ELITE:    ["agent-dashboard", "properties", "projects", "customer-leads", "contracts", "closed-contracts", "electricity-calculator", "accounting", "messages", "reviews"],
   ADMIN:    ALL_KEYS,
 };
 
@@ -26,8 +26,8 @@ export async function GET() {
       return NextResponse.json({ success: true, data: DEFAULT_MENU_CONFIG });
     }
     const stored = JSON.parse(row.valueTh);
-    // Ensure ADMIN key always has full access if not stored yet
-    if (!stored.ADMIN) stored.ADMIN = ALL_KEYS;
+    // ADMIN always gets all keys — merge stored with any newly added keys
+    stored.ADMIN = ALL_KEYS;
     return NextResponse.json({ success: true, data: stored });
   } catch {
     return NextResponse.json({ success: true, data: DEFAULT_MENU_CONFIG });

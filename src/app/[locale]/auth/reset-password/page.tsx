@@ -5,10 +5,11 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, KeyRound, ArrowLeft, CheckCircle2 } from "lucide-react";
 
-function ResetPasswordContent({ locale }: { locale: string }) {
+function ResetPasswordContent({ locale, messages }: { locale: string; messages: any }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+  const t = messages.auth;
 
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
   const [password, setPassword] = useState("");
@@ -33,11 +34,11 @@ function ResetPasswordContent({ locale }: { locale: string }) {
     setError("");
 
     if (password.length < 6) {
-      setError(locale === "th" ? "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร" : "Password must be at least 6 characters");
+      setError(t.passwordMinLength);
       return;
     }
     if (password !== confirm) {
-      setError(locale === "th" ? "รหัสผ่านไม่ตรงกัน" : "Passwords do not match");
+      setError(t.passwordMismatch);
       return;
     }
 
@@ -51,7 +52,7 @@ function ResetPasswordContent({ locale }: { locale: string }) {
     setLoading(false);
 
     if (!data.success) {
-      setError(data.error || (locale === "th" ? "เกิดข้อผิดพลาด" : "Error"));
+      setError(data.error || messages.admin.errorOccurred);
       return;
     }
     setSuccess(true);
@@ -66,15 +67,13 @@ function ResetPasswordContent({ locale }: { locale: string }) {
     return (
       <div className="space-y-4">
         <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl text-sm">
-          {locale === "th"
-            ? "ลิงก์ไม่ถูกต้องหรือหมดอายุแล้ว กรุณาขอลิงก์ใหม่"
-            : "Invalid or expired link. Please request a new one."}
+          {t.invalidLink}
         </div>
         <Link
           href={`/${locale}/auth/forgot-password`}
           className="block w-full text-center bg-[#C8A951] hover:bg-[#B8993F] text-white py-3 rounded-full font-semibold text-sm"
         >
-          {locale === "th" ? "ขอลิงก์ใหม่" : "Request new link"}
+          {t.requestNewLink}
         </Link>
       </div>
     );
@@ -85,9 +84,7 @@ function ResetPasswordContent({ locale }: { locale: string }) {
       <div className="space-y-4 text-center">
         <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto" />
         <p className="text-sm text-stone-700">
-          {locale === "th"
-            ? "เปลี่ยนรหัสผ่านสำเร็จ กำลังนำไปหน้าเข้าสู่ระบบ..."
-            : "Password reset successful. Redirecting to login..."}
+          {t.passwordResetSuccess}
         </p>
       </div>
     );
@@ -103,7 +100,7 @@ function ResetPasswordContent({ locale }: { locale: string }) {
 
       <div>
         <label className="block text-sm font-medium text-stone-700 mb-1.5">
-          {locale === "th" ? "รหัสผ่านใหม่" : "New Password"}
+          {t.newPassword}
         </label>
         <input
           type="password"
@@ -117,7 +114,7 @@ function ResetPasswordContent({ locale }: { locale: string }) {
       </div>
       <div>
         <label className="block text-sm font-medium text-stone-700 mb-1.5">
-          {locale === "th" ? "ยืนยันรหัสผ่าน" : "Confirm Password"}
+          {t.confirmPassword}
         </label>
         <input
           type="password"
@@ -135,7 +132,7 @@ function ResetPasswordContent({ locale }: { locale: string }) {
         className="w-full inline-flex items-center justify-center gap-2 bg-[#C8A951] hover:bg-[#B8993F] text-white py-3 rounded-full font-semibold text-sm disabled:opacity-50"
       >
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
-        {locale === "th" ? "เปลี่ยนรหัสผ่าน" : "Reset Password"}
+        {t.changePassword}
       </button>
     </form>
   );
@@ -147,27 +144,39 @@ export default function ResetPasswordPage({
   params: Promise<{ locale: string }>;
 }) {
   const [locale, setLocale] = useState("th");
+  const [messages, setMessages] = useState<any>(null);
 
   useEffect(() => {
-    params.then(({ locale: l }) => setLocale(l));
+    params.then(({ locale: l }) => {
+      setLocale(l);
+      import(`@/messages/${l}.json`).then((m) => setMessages(m.default));
+    });
   }, [params]);
+
+  if (!messages)
+    return (
+      <div className="flex justify-center py-32">
+        <Loader2 className="w-8 h-8 animate-spin text-[#C8A951]" />
+      </div>
+    );
+  const t = messages.auth;
 
   return (
     <div className="bg-stone-50 min-h-screen flex items-center justify-center p-6">
       <div className="bg-white rounded-2xl shadow-sm border border-stone-200 max-w-md w-full p-8">
         <div className="flex items-center gap-2 text-[#C8A951] text-xs uppercase tracking-widest font-medium mb-2">
           <span className="w-6 h-px bg-[#C8A951]" />
-          {locale === "th" ? "รีเซ็ตรหัสผ่าน" : "Reset Password"}
+          {t.resetPassword}
         </div>
         <h1 className="text-2xl font-bold text-stone-900 mb-2">
-          {locale === "th" ? "ตั้งรหัสผ่านใหม่" : "Set New Password"}
+          {t.setNewPassword}
         </h1>
         <p className="text-sm text-stone-500 mb-6">
-          {locale === "th" ? "กรอกรหัสผ่านใหม่ของคุณ" : "Enter your new password below"}
+          {t.newPasswordDesc}
         </p>
 
         <Suspense fallback={<Loader2 className="w-6 h-6 animate-spin text-[#C8A951] mx-auto" />}>
-          <ResetPasswordContent locale={locale} />
+          <ResetPasswordContent locale={locale} messages={messages} />
         </Suspense>
 
         <Link
@@ -175,7 +184,7 @@ export default function ResetPasswordPage({
           className="inline-flex items-center gap-1 text-xs text-stone-500 hover:text-[#C8A951] mt-6"
         >
           <ArrowLeft className="w-3 h-3" />
-          {locale === "th" ? "กลับหน้าเข้าสู่ระบบ" : "Back to login"}
+          {t.backToLogin}
         </Link>
       </div>
     </div>

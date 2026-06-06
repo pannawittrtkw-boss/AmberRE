@@ -26,6 +26,14 @@ export default function ContractSharePage({
   const fmt = (iso: string) =>
     new Date(iso).toLocaleDateString("th-TH", { day: "numeric", month: "long", year: "numeric" });
 
+  const remainingDays = (endIso: string) => {
+    const end = new Date(endIso);
+    end.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  };
+
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -69,7 +77,7 @@ export default function ContractSharePage({
 
       {/* Contract summary */}
       <div className="max-w-3xl mx-auto px-4 py-4">
-        <div className="bg-white rounded-xl border shadow-sm p-4 mb-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+        <div className="bg-white rounded-xl border shadow-sm p-4 mb-4 grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm">
           <div>
             <p className="text-xs text-gray-400 mb-0.5">ผู้ให้เช่า / Lessor</p>
             <p className="font-medium text-gray-800">{contract.lessorName}</p>
@@ -85,6 +93,21 @@ export default function ContractSharePage({
           <div>
             <p className="text-xs text-gray-400 mb-0.5">ค่าเช่า / Rent</p>
             <p className="font-medium text-amber-700">฿{Number(contract.monthlyRent).toLocaleString()}/เดือน</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400 mb-0.5">วันที่คงเหลือ / Remaining</p>
+            {(() => {
+              const days = remainingDays(contract.endDate);
+              if (days < 0)
+                return <p className="font-medium text-red-600">หมดอายุแล้ว {Math.abs(days)} วัน</p>;
+              if (days === 0)
+                return <p className="font-medium text-red-600">วันนี้เป็นวันสุดท้าย</p>;
+              if (days <= 30)
+                return <p className="font-medium text-orange-500">{days} วัน</p>;
+              if (days <= 90)
+                return <p className="font-medium text-yellow-600">{days} วัน</p>;
+              return <p className="font-medium text-green-600">{days} วัน</p>;
+            })()}
           </div>
         </div>
 

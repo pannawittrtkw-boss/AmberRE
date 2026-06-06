@@ -616,7 +616,7 @@ const D = ({ children }: { children: React.ReactNode }) => (
 
 export function ContractPdf({ data }: { data: ContractPdfData }) {
   return (
-    <Document>
+    <Document hyphenationCallback={(word) => [word]}>
       {/* Main agreement — single Page; react-pdf wraps content automatically */}
       <Page size="A4" style={styles.page} wrap>
         <View style={styles.header}>
@@ -657,18 +657,20 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
             <TText style={styles.value}><D>{data.lessorIdCard}</D></TText>
           </View>
         )}
-        {data.lessorAddress && (
-          <View style={styles.row}>
-            <TText style={styles.label}>ที่อยู่</TText>
-            <TText style={styles.value}>{data.lessorAddress}</TText>
-          </View>
-        )}
-        {(data.lessorAddressEn || data.lessorAddress) && (
-          <View style={styles.row}>
-            <TText style={styles.label}>Address</TText>
-            <TText style={styles.value}>
-              {data.lessorAddressEn || data.lessorAddress}
-            </TText>
+        {(data.lessorAddress || data.lessorAddressEn) && (
+          <View wrap={false}>
+            {data.lessorAddress && (
+              <View style={styles.row}>
+                <TText style={styles.label}>ที่อยู่</TText>
+                <TText style={styles.value}>{data.lessorAddress}</TText>
+              </View>
+            )}
+            <View style={styles.row}>
+              <TText style={styles.label}>Address</TText>
+              <TText style={styles.value}>
+                {data.lessorAddressEn || data.lessorAddress}
+              </TText>
+            </View>
           </View>
         )}
         {data.lessorPhone && (
@@ -701,18 +703,20 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
             <TText style={styles.value}><D>{data.lesseeIdCard}</D></TText>
           </View>
         )}
-        {data.lesseeAddress && (
-          <View style={styles.row}>
-            <TText style={styles.label}>ที่อยู่</TText>
-            <TText style={styles.value}>{data.lesseeAddress}</TText>
-          </View>
-        )}
-        {(data.lesseeAddressEn || data.lesseeAddress) && (
-          <View style={styles.row}>
-            <TText style={styles.label}>Address</TText>
-            <TText style={styles.value}>
-              {data.lesseeAddressEn || data.lesseeAddress}
-            </TText>
+        {(data.lesseeAddress || data.lesseeAddressEn) && (
+          <View wrap={false}>
+            {data.lesseeAddress && (
+              <View style={styles.row}>
+                <TText style={styles.label}>ที่อยู่</TText>
+                <TText style={styles.value}>{data.lesseeAddress}</TText>
+              </View>
+            )}
+            <View style={styles.row}>
+              <TText style={styles.label}>Address</TText>
+              <TText style={styles.value}>
+                {data.lesseeAddressEn || data.lesseeAddress}
+              </TText>
+            </View>
           </View>
         )}
         {data.lesseePhone && (
@@ -761,15 +765,17 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
             <View style={styles.sectionBar} wrap={false}>
               <TText>1. ผู้เช่าร่วม / Joint Lessee</TText>
             </View>
-            <View style={styles.row}>
-              <TText style={styles.label}>ชื่อ</TText>
-              <TText style={styles.value}><D>{data.jointLesseeName}</D></TText>
-            </View>
-            <View style={styles.row}>
-              <TText style={styles.label}>Name</TText>
-              <TText style={styles.value}>
-                <D>{data.jointLesseeNameEn || data.jointLesseeName}</D>
-              </TText>
+            <View wrap={false}>
+              <View style={styles.row}>
+                <TText style={styles.label}>ชื่อ</TText>
+                <TText style={styles.value}><D>{data.jointLesseeName}</D></TText>
+              </View>
+              <View style={styles.row}>
+                <TText style={styles.label}>Name</TText>
+                <TText style={styles.value}>
+                  <D>{data.jointLesseeNameEn || data.jointLesseeName}</D>
+                </TText>
+              </View>
             </View>
             {data.jointLesseeNationality && (
               <View style={styles.row}>
@@ -783,18 +789,20 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
                 <TText style={styles.value}>{data.jointLesseeIdCard}</TText>
               </View>
             )}
-            {data.jointLesseeAddress && (
-              <View style={styles.row}>
-                <TText style={styles.label}>ที่อยู่</TText>
-                <TText style={styles.value}>{data.jointLesseeAddress}</TText>
-              </View>
-            )}
-            {(data.jointLesseeAddressEn || data.jointLesseeAddress) && (
-              <View style={styles.row}>
-                <TText style={styles.label}>Address</TText>
-                <TText style={styles.value}>
-                  {data.jointLesseeAddressEn || data.jointLesseeAddress}
-                </TText>
+            {(data.jointLesseeAddress || data.jointLesseeAddressEn) && (
+              <View wrap={false}>
+                {data.jointLesseeAddress && (
+                  <View style={styles.row}>
+                    <TText style={styles.label}>ที่อยู่</TText>
+                    <TText style={styles.value}>{data.jointLesseeAddress}</TText>
+                  </View>
+                )}
+                <View style={styles.row}>
+                  <TText style={styles.label}>Address</TText>
+                  <TText style={styles.value}>
+                    {data.jointLesseeAddressEn || data.jointLesseeAddress}
+                  </TText>
+                </View>
               </View>
             )}
             {data.jointLesseePhone && (

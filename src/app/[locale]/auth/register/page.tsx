@@ -9,30 +9,9 @@ import {
 } from "lucide-react";
 
 const ROLES = [
-  {
-    value: "BUYER",
-    icon: User,
-    labelTh: "ผู้ซื้อ / ผู้เช่า",
-    labelEn: "Buyer / Renter",
-    descTh: "ค้นหาทรัพย์และบันทึกรายการโปรด",
-    descEn: "Browse listings and save favorites",
-  },
-  {
-    value: "OWNER",
-    icon: Home,
-    labelTh: "เจ้าของทรัพย์",
-    labelEn: "Property Owner",
-    descTh: "ลงประกาศทรัพย์สินของคุณ",
-    descEn: "List your own property",
-  },
-  {
-    value: "AGENT",
-    icon: Briefcase,
-    labelTh: "Agent",
-    labelEn: "Agent",
-    descTh: "นายหน้า / Co-Agent ร่วมขายกับ NPB",
-    descEn: "Broker / Co-Agent partnering with NPB",
-  },
+  { value: "BUYER", icon: User, labelKey: "buyer", descKey: "buyerDesc" },
+  { value: "OWNER", icon: Home, labelKey: "owner", descKey: "ownerDesc" },
+  { value: "AGENT", icon: Briefcase, labelKey: "agent", descKey: "agentDesc" },
 ];
 
 export default function RegisterPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -70,19 +49,19 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
     setError("");
 
     if (!form.role) {
-      setError(locale === "th" ? "กรุณาเลือกประเภทสมาชิก" : "Please select a role");
+      setError(messages?.auth?.roleRequired || "Please select a role");
       return;
     }
     if (form.password !== form.confirmPassword) {
-      setError(locale === "th" ? "รหัสผ่านไม่ตรงกัน" : "Passwords do not match");
+      setError(messages?.auth?.passwordMismatch || "Passwords do not match");
       return;
     }
     if (form.role === "AGENT" && !form.lineId.trim()) {
-      setError(locale === "th" ? "กรุณากรอก Line ID" : "Please enter your Line ID");
+      setError(messages?.auth?.lineIdRequired || "Please enter your Line ID");
       return;
     }
     if (form.role === "AGENT" && !form.phone.trim()) {
-      setError(locale === "th" ? "กรุณากรอกเบอร์โทรติดต่อ" : "Please enter your phone number");
+      setError(messages?.auth?.phoneRequired || "Please enter your phone number");
       return;
     }
 
@@ -143,29 +122,23 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
                 NPB Property
               </div>
               <h1 className="text-4xl xl:text-5xl font-bold leading-tight mb-4">
-                {locale === "th" ? (
-                  <><span className="text-[#E8C97A]">เริ่มต้น</span><br />การค้นหาบ้านในฝัน</>
-                ) : (
-                  <>Start Your<br /><span className="text-[#E8C97A]">Property Journey</span></>
-                )}
+                <span className="text-[#E8C97A]">{messages.home.heroTitle}</span>
               </h1>
               <p className="text-white/70 leading-relaxed">
-                {locale === "th"
-                  ? "สมัครสมาชิกฟรี เพื่อเริ่มค้นหาทรัพย์ บันทึกรายการโปรด และติดต่อตัวแทนได้ทันที"
-                  : "Sign up for free to start exploring listings, save favorites, and connect with agents."}
+                {messages.home.heroSubtitle}
               </p>
             </div>
             <div className="space-y-3 mt-12">
               {[
-                { th: "ใช้งานฟรีไม่มีค่าใช้จ่าย", en: "100% free to use" },
-                { th: "ทรัพย์คุณภาพคัดสรรจากทั่วประเทศ", en: "Curated quality listings" },
-                { th: "ทีมตัวแทนมืออาชีพ", en: "Professional agent team" },
-              ].map((item, i) => (
+                messages.home.wideSelection,
+                messages.home.trustedByMany,
+                messages.home.expertAgents,
+              ].map((label, i) => (
                 <div key={i} className="flex items-center gap-3 text-white/80">
                   <div className="w-8 h-8 rounded-full bg-[#C8A951]/20 border border-[#C8A951]/30 flex items-center justify-center">
                     <Sparkles className="w-3.5 h-3.5 text-[#E8C97A]" />
                   </div>
-                  <span className="text-sm">{locale === "th" ? item.th : item.en}</span>
+                  <span className="text-sm">{label}</span>
                 </div>
               ))}
             </div>
@@ -183,11 +156,11 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
 
             <div className="flex items-center gap-2 text-[#C8A951] text-xs uppercase tracking-widest font-medium mb-2">
               <span className="w-6 h-px bg-[#C8A951]" />
-              {locale === "th" ? "สมัครสมาชิก" : "Create Account"}
+              {t.createAccount}
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-stone-900 mb-2">{t.registerTitle}</h2>
             <p className="text-sm text-stone-500 mb-7">
-              {locale === "th" ? "ใช้เวลาเพียง 1 นาทีเพื่อสร้างบัญชี" : "Takes less than a minute"}
+              {t.registerSubtitle}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -200,7 +173,7 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
               {/* ── Step 1: Role ── */}
               <div>
                 <label className="block text-sm font-semibold text-stone-700 mb-2">
-                  {locale === "th" ? "คุณเป็นใคร?" : "Who are you?"} <span className="text-rose-500">*</span>
+                  {t.whoAreYou} <span className="text-rose-500">*</span>
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {ROLES.map(r => {
@@ -221,7 +194,7 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
                           <Icon className={`w-4 h-4 ${selected ? "text-white" : "text-stone-500"}`} />
                         </div>
                         <span className={`text-xs font-medium leading-tight ${selected ? "text-[#C8A951]" : "text-stone-600"}`}>
-                          {locale === "th" ? r.labelTh : r.labelEn}
+                          {t[r.labelKey as keyof typeof t] || r.labelKey}
                         </span>
                       </button>
                     );
@@ -229,7 +202,7 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
                 </div>
                 {form.role && (
                   <p className="text-xs text-stone-400 mt-1.5 text-center">
-                    {ROLES.find(r => r.value === form.role)?.[locale === "th" ? "descTh" : "descEn"]}
+                    {t[ROLES.find(r => r.value === form.role)?.descKey as keyof typeof t] || ""}
                   </p>
                 )}
               </div>
@@ -258,13 +231,13 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
                   {isAgent && (
                     <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-4">
                       <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">
-                        {locale === "th" ? "ข้อมูล Agent" : "Agent Info"}
+                        {t.agentSection}
                       </p>
 
                       {/* Freelance / Company toggle */}
                       <div>
                         <label className="block text-sm font-medium text-stone-700 mb-2">
-                          {locale === "th" ? "ประเภท Agent" : "Agent Type"} <span className="text-rose-500">*</span>
+                          {t.agentTypeLabel} <span className="text-rose-500">*</span>
                         </label>
                         <div className="grid grid-cols-2 gap-2">
                           {(["FREELANCE", "COMPANY"] as const).map(type => (
@@ -278,9 +251,7 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
                                   : "border-stone-200 bg-white text-stone-600 hover:border-amber-300"
                               }`}
                             >
-                              {type === "FREELANCE"
-                                ? (locale === "th" ? "Freelance" : "Freelance")
-                                : (locale === "th" ? "บริษัท" : "Company")}
+                              {type === "FREELANCE" ? "Freelance" : t.company}
                             </button>
                           ))}
                         </div>
@@ -288,13 +259,13 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
 
                       {/* Company name — only if Company */}
                       {form.agentType === "COMPANY" && (
-                        <Field label={locale === "th" ? "ชื่อบริษัท *" : "Company Name *"}>
+                        <Field label={t.companyName}>
                           <input
                             type="text"
                             required
                             value={form.companyName}
                             onChange={set("companyName")}
-                            placeholder={locale === "th" ? "ชื่อบริษัทอสังหาฯ..." : "Real estate company name..."}
+                            placeholder={t.companyPlaceholder}
                             className={inputCls}
                           />
                         </Field>

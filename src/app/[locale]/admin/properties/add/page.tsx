@@ -15,11 +15,11 @@ import {
   FileText,
   Train,
   Sparkles,
-  ClipboardPaste,
 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import StationMapSelector, { LINES } from "@/components/admin/StationMapSelector";
+import ThaiAddressFields from "@/components/admin/ThaiAddressFields";
 
 const DraggableMapPreview = dynamic(() => import("@/components/admin/DraggableMapPreview"), { ssr: false });
 
@@ -157,6 +157,9 @@ export default function AddPropertyPage({
     priority: "NORMAL",
     note: "",
     availableDate: new Date().toISOString().split("T")[0],
+    province: "",
+    district: "",
+    subdistrict: "",
   });
 
   const [selectedFurniture, setSelectedFurniture] = useState<string[]>([]);
@@ -215,7 +218,6 @@ export default function AddPropertyPage({
 
   // AI extraction state
   const [aiLoading, setAiLoading] = useState(false);
-  const [showPasteModal, setShowPasteModal] = useState(false);
   const [pasteText, setPasteText] = useState("");
   const [aiError, setAiError] = useState("");
 
@@ -266,6 +268,9 @@ export default function AddPropertyPage({
           priority: p.priority || "NORMAL",
           note: p.note || "",
           availableDate: p.availableDate ? new Date(p.availableDate).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+          province: p.province || "",
+          district: p.district || "",
+          subdistrict: p.subdistrict || "",
         });
 
         // Parse furniture & appliances from JSON
@@ -335,12 +340,7 @@ export default function AddPropertyPage({
       const data = await res.json();
 
       if (!data.success) {
-        if (data.needsManualInput || mode === "url") {
-          setShowPasteModal(true);
-          setAiError("");
-        } else {
-          setAiError(data.error || "เกิดข้อผิดพลาด");
-        }
+        setAiError(data.error || "เกิดข้อผิดพลาด");
         setAiLoading(false);
         return;
       }
@@ -364,6 +364,9 @@ export default function AddPropertyPage({
         ownerLineId: d.ownerLineId || prev.ownerLineId,
         note: d.note || prev.note,
         sourceLink: mode === "url" ? prev.sourceLink : prev.sourceLink,
+        province: d.province || prev.province,
+        district: d.province ? (d.district || "") : prev.district,
+        subdistrict: d.province ? (d.subdistrict || "") : prev.subdistrict,
       }));
 
       // Auto-fill furniture
@@ -393,7 +396,6 @@ export default function AddPropertyPage({
         setSelectedStations(parsed);
       }
 
-      setShowPasteModal(false);
       setPasteText("");
     } catch (err) {
       setAiError("เกิดข้อผิดพลาดในการเชื่อมต่อ");
@@ -539,6 +541,9 @@ export default function AddPropertyPage({
         priority: form.priority,
         note: form.note || null,
         availableDate: form.availableDate || null,
+        province: form.province || null,
+        district: form.district || null,
+        subdistrict: form.subdistrict || null,
         imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
         stationIds,
         // Investment fields (only include if purchasePrice is filled)
@@ -584,6 +589,30 @@ export default function AddPropertyPage({
     return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-amber-600" /></div>;
   }
 
+  const INV_LABELS: Record<string, Record<string, string>> = {
+    sectionTitle:    { th: "ข้อมูลการลงทุน", en: "Investment Data", zh: "投资数据", my: "ရင်းနှီးမြုပ်နှံမှုဒေတာ" },
+    forInvestor:     { th: "(สำหรับ Investor)", en: "(For Investors)", zh: "（适合投资者）", my: "(ရင်းနှီးမြှုပ်နှံသူများအတွက်)" },
+    costTitle:       { th: "ต้นทุน", en: "Cost", zh: "成本", my: "ကုန်ကျစရိတ်" },
+    purchasePrice:   { th: "ราคาซื้อ (รวมส่วนลด)", en: "Purchase Price (incl. discount)", zh: "购买价格（含折扣）", my: "ဝယ်ယူစျေးနှုန်း (လျှော့စျေးအပါ)" },
+    renovation:      { th: "ค่าตกแต่ง + ต่อเติม", en: "Renovation / Fit-out", zh: "装修 / 改建", my: "ပြုပြင်မြှင့်တင်ခ" },
+    totalCost:       { th: "ต้นทุนรวม:", en: "Total Cost:", zh: "总成本：", my: "စုစုပေါင်းကုန်ကျစရိတ်:" },
+    incomeTitle:     { th: "รายได้ค่าเช่า", en: "Rental Income", zh: "租金收入", my: "ငှားရမ်းဝင်ငွေ" },
+    monthlyRent:     { th: "ค่าเช่าต่อเดือน (บาท)", en: "Monthly Rent (฿)", zh: "每月租金（泰铢）", my: "လစဉ်ငှားရမ်းခ (฿)" },
+    useListingRent:  { th: "(หรือปล่อยว่างเพื่อใช้จากราคาเช่าของห้อง)", en: "(leave blank to use listing rent)", zh: "（留空则使用房源租金）", my: "(ငှားရမ်းစျေးနှုန်းသုံးရန်ဗလာထားပါ)" },
+    expenseTitle:    { th: "ค่าใช้จ่าย / ปี", en: "Annual Expenses", zh: "年度费用", my: "နှစ်စဉ်ကုန်ကျစရိတ်" },
+    brokerFee:       { th: "ค่านายหน้า (กี่เดือน ต่อสัญญา 1 ปี)", en: "Broker Fee (months / 1-yr lease)", zh: "中介费（每年租约月数）", my: "ပွဲစားကြေး (1နှစ်ချုပ်/လ)" },
+    commonFee:       { th: "ค่าส่วนกลาง / ปี (บาท)", en: "Common Fee / Year (฿)", zh: "管理费 / 年（泰铢）", my: "စီမံကြေး / နှစ် (฿)" },
+    maintenance:     { th: "ค่าบำรุงรักษา / ปี (บาท)", en: "Maintenance / Year (฿)", zh: "维护费 / 年（泰铢）", my: "ထိန်းသိမ်းမှုကြေး / နှစ် (฿)" },
+    maintenanceHint: { th: "(แม่บ้าน, ล้างแอร์ ฯลฯ)", en: "(cleaning, AC service, etc.)", zh: "（保洁、空调清洗等）", my: "(သန့်ရှင်းရေး၊ AC ဆေးကြောမှု)" },
+    landTax:         { th: "ภาษีที่ดิน (% ต่อปี)", en: "Land Tax (% per year)", zh: "土地税（% / 年）", my: "မြေခွန် (% / နှစ်)" },
+    vacancy:         { th: "ห้องว่างเฉลี่ย (เดือน / ปี)", en: "Avg. Vacancy (months / year)", zh: "平均空置月数（月 / 年）", my: "ပျမ်းမျှအလပ်ကျချိန် (လ/နှစ်)" },
+    loanTitle:       { th: "ข้อมูลสินเชื่อ (ไม่บังคับ)", en: "Loan Details (optional)", zh: "贷款信息（可选）", my: "ချေးငွေအချက်အလက် (မဖြစ်မနေမဟုတ်)" },
+    loanAmount:      { th: "วงเงินกู้ (บาท)", en: "Loan Amount (฿)", zh: "贷款金额（泰铢）", my: "ချေးငွေပမာဏ (฿)" },
+    loanTerm:        { th: "ระยะเวลาผ่อน (ปี)", en: "Loan Term (years)", zh: "还款期限（年）", my: "ချေးငွေကာလ (နှစ်)" },
+    interestRate:    { th: "อัตราดอกเบี้ย (% ต่อปี)", en: "Interest Rate (% p.a.)", zh: "利率（% / 年）", my: "အတိုးနှုန်း (% / နှစ်)" },
+  };
+  const tInv = (key: string) => INV_LABELS[key]?.[locale] ?? INV_LABELS[key]?.["en"] ?? key;
+
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header */}
@@ -617,38 +646,39 @@ export default function AddPropertyPage({
               AI Auto-fill / กรอกข้อมูลอัตโนมัติ
             </h2>
           </div>
-          <p className="text-sm text-purple-600 mb-4">
-            กดปุ่ม <strong>"วางข้อความ"</strong> แล้ว copy ข้อความจากโพสต์ Facebook มาวาง AI จะช่วยกรอกข้อมูลทั้งหมดให้อัตโนมัติ
+          <p className="text-sm text-purple-600 mb-3">
+            คัดลอกข้อความจากโพสต์ Facebook แล้ววางที่นี่ AI จะช่วยดึงข้อมูลและกรอกฟอร์มให้อัตโนมัติ
           </p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="text"
-              value={form.sourceLink}
-              onChange={(e) => updateForm("sourceLink", e.target.value)}
-              placeholder="วาง URL โพสต์ Facebook หรือเว็บไซต์..."
-              className="flex-1 border border-purple-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-white"
-            />
+          <textarea
+            value={pasteText}
+            onChange={(e) => setPasteText(e.target.value)}
+            placeholder={"วางข้อความจากโพสต์ที่นี่...\n\nเช่น:\n🏠 ให้เช่า คอนโด Unio Sukhumvit 72\nราคา 9,500 บาท/เดือน\nขนาด 26 ตร.ม. ชั้น 2 ตึก A\nเฟอร์นิเจอร์ครบ แอร์ ทีวี ตู้เย็น..."}
+            rows={6}
+            className="w-full border border-purple-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none resize-y bg-white mb-3"
+          />
+          <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => handleAiExtract("url")}
-              disabled={aiLoading || !form.sourceLink}
-              className="px-5 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center gap-2 disabled:opacity-50 whitespace-nowrap"
+              onClick={() => handleAiExtract("text")}
+              disabled={aiLoading || !pasteText.trim()}
+              className="px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 active:bg-purple-800 transition-colors font-medium flex items-center gap-2 disabled:opacity-50"
             >
               {aiLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Sparkles className="w-4 h-4" />
               )}
-              {aiLoading ? "กำลังวิเคราะห์..." : "AI ดึงข้อมูล"}
+              {aiLoading ? "กำลังวิเคราะห์..." : "AI วิเคราะห์ข้อมูล"}
             </button>
-            <button
-              type="button"
-              onClick={() => setShowPasteModal(true)}
-              className="px-5 py-3 border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 transition-colors font-medium flex items-center gap-2 whitespace-nowrap"
-            >
-              <ClipboardPaste className="w-4 h-4" />
-              วางข้อความ
-            </button>
+            {pasteText && (
+              <button
+                type="button"
+                onClick={() => setPasteText("")}
+                className="text-sm text-stone-400 hover:text-stone-600 transition-colors"
+              >
+                ล้างข้อความ
+              </button>
+            )}
           </div>
           {aiError && (
             <p className="mt-3 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
@@ -756,6 +786,21 @@ export default function AddPropertyPage({
                 placeholder="https://web.facebook.com/share/..."
                 className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
               />
+            </div>
+
+            {/* Province / District / Subdistrict */}
+            <div>
+              <label className="block text-sm font-semibold mb-2">จังหวัด / อำเภอ / ตำบล</label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <ThaiAddressFields
+                  province={form.province}
+                  district={form.district}
+                  subdistrict={form.subdistrict}
+                  onProvinceChange={(v) => updateForm("province", v)}
+                  onDistrictChange={(v) => updateForm("district", v)}
+                  onSubdistrictChange={(v) => updateForm("subdistrict", v)}
+                />
+              </div>
             </div>
 
             {/* Near BTS/MRT */}
@@ -1538,62 +1583,70 @@ export default function AddPropertyPage({
         {(form.listingType === "SALE" || form.listingType === "RENT_AND_SALE") && (
           <div className="bg-white rounded-2xl shadow-sm p-6 space-y-5">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-lg font-bold">ข้อมูลการลงทุน</span>
+              <span className="text-lg font-bold">{tInv("sectionTitle")}</span>
               <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full font-medium">Investment Analysis</span>
-              <span className="text-xs text-stone-400">(สำหรับ Investor)</span>
+              <span className="text-xs text-stone-400">{tInv("forInvestor")}</span>
             </div>
 
             {/* Cost */}
             <div>
-              <p className="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3">ต้นทุน</p>
+              <p className="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3">{tInv("costTitle")}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">ราคาซื้อ (รวมส่วนลด) <span className="text-red-400">*</span></label>
-                  <input type="number" min="0" placeholder="เช่น 3190000" value={invForm.invPurchasePrice} onChange={(e) => updateInv("invPurchasePrice", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
+                  <label className="block text-sm font-medium mb-1">{tInv("purchasePrice")} <span className="text-red-400">*</span></label>
+                  <input type="number" min="0" placeholder="e.g. 3190000" value={invForm.invPurchasePrice} onChange={(e) => updateInv("invPurchasePrice", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">ค่าตกแต่ง + ต่อเติม</label>
-                  <input type="number" min="0" placeholder="เช่น 417000" value={invForm.invRenovationCost} onChange={(e) => updateInv("invRenovationCost", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
+                  <label className="block text-sm font-medium mb-1">{tInv("renovation")}</label>
+                  <input type="number" min="0" placeholder="e.g. 417000" value={invForm.invRenovationCost} onChange={(e) => updateInv("invRenovationCost", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
                 </div>
               </div>
               {invForm.invPurchasePrice && (
                 <p className="mt-2 text-sm text-stone-500">
-                  ต้นทุนรวม: <span className="font-semibold text-stone-700">฿{((parseFloat(invForm.invPurchasePrice) || 0) + (parseFloat(invForm.invRenovationCost) || 0)).toLocaleString()}</span>
+                  {tInv("totalCost")} <span className="font-semibold text-stone-700">฿{((parseFloat(invForm.invPurchasePrice) || 0) + (parseFloat(invForm.invRenovationCost) || 0)).toLocaleString()}</span>
                 </p>
               )}
             </div>
 
             {/* Rental Income */}
             <div>
-              <p className="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3">รายได้ค่าเช่า</p>
+              <p className="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3">{tInv("incomeTitle")}</p>
               <div>
-                <label className="block text-sm font-medium mb-1">ค่าเช่าต่อเดือน (บาท){form.listingType === "RENT_AND_SALE" && <span className="text-stone-400 text-xs ml-1">(หรือปล่อยว่างเพื่อใช้จากราคาเช่าของห้อง)</span>}</label>
-                <input type="number" min="0" placeholder={form.listingType === "RENT_AND_SALE" ? `ใช้ราคาเช่า ${form.price || "—"} บาท/เดือน` : "เช่น 32500"} value={invForm.invExpectedRentPerMonth} onChange={(e) => updateInv("invExpectedRentPerMonth", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
+                <label className="block text-sm font-medium mb-1">
+                  {tInv("monthlyRent")}
+                  {form.listingType === "RENT_AND_SALE" && (
+                    <span className="text-stone-400 text-xs ml-1">{tInv("useListingRent")}</span>
+                  )}
+                </label>
+                <input type="number" min="0" placeholder="e.g. 32500" value={invForm.invExpectedRentPerMonth} onChange={(e) => updateInv("invExpectedRentPerMonth", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
               </div>
             </div>
 
             {/* Expenses */}
             <div>
-              <p className="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3">ค่าใช้จ่าย / ปี</p>
+              <p className="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3">{tInv("expenseTitle")}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">ค่านายหน้า (กี่เดือน ต่อสัญญา 1 ปี)</label>
+                  <label className="block text-sm font-medium mb-1">{tInv("brokerFee")}</label>
                   <input type="number" min="0" step="0.5" placeholder="1" value={invForm.invBrokerFeeMonths} onChange={(e) => updateInv("invBrokerFeeMonths", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">ค่าส่วนกลาง / ปี (บาท)</label>
-                  <input type="number" min="0" placeholder="เช่น 15000" value={invForm.invCommonFeePerYear} onChange={(e) => updateInv("invCommonFeePerYear", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
+                  <label className="block text-sm font-medium mb-1">{tInv("commonFee")}</label>
+                  <input type="number" min="0" placeholder="e.g. 15000" value={invForm.invCommonFeePerYear} onChange={(e) => updateInv("invCommonFeePerYear", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">ค่าบำรุงรักษา / ปี (บาท) <span className="text-stone-400 text-xs">(แม่บ้าน, ล้างแอร์ ฯลฯ)</span></label>
-                  <input type="number" min="0" placeholder="เช่น 5310" value={invForm.invMaintenancePerYear} onChange={(e) => updateInv("invMaintenancePerYear", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
+                  <label className="block text-sm font-medium mb-1">
+                    {tInv("maintenance")}
+                    <span className="text-stone-400 text-xs ml-1">{tInv("maintenanceHint")}</span>
+                  </label>
+                  <input type="number" min="0" placeholder="e.g. 5310" value={invForm.invMaintenancePerYear} onChange={(e) => updateInv("invMaintenancePerYear", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">ภาษีที่ดิน (% ต่อปี)</label>
+                  <label className="block text-sm font-medium mb-1">{tInv("landTax")}</label>
                   <input type="number" min="0" step="0.001" placeholder="0.02" value={invForm.invLandTaxRate} onChange={(e) => updateInv("invLandTaxRate", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">ห้องว่างเฉลี่ย (เดือน / ปี)</label>
+                  <label className="block text-sm font-medium mb-1">{tInv("vacancy")}</label>
                   <input type="number" min="0" step="0.5" max="12" placeholder="1" value={invForm.invVacancyMonths} onChange={(e) => updateInv("invVacancyMonths", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
                 </div>
               </div>
@@ -1601,18 +1654,18 @@ export default function AddPropertyPage({
 
             {/* Loan */}
             <div>
-              <p className="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3">ข้อมูลสินเชื่อ (ไม่บังคับ)</p>
+              <p className="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3">{tInv("loanTitle")}</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">วงเงินกู้ (บาท)</label>
-                  <input type="number" min="0" placeholder="เช่น 2500000" value={invForm.invLoanAmount} onChange={(e) => updateInv("invLoanAmount", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
+                  <label className="block text-sm font-medium mb-1">{tInv("loanAmount")}</label>
+                  <input type="number" min="0" placeholder="e.g. 2500000" value={invForm.invLoanAmount} onChange={(e) => updateInv("invLoanAmount", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">ระยะเวลาผ่อน (ปี)</label>
+                  <label className="block text-sm font-medium mb-1">{tInv("loanTerm")}</label>
                   <input type="number" min="1" max="40" placeholder="30" value={invForm.invLoanTermYears} onChange={(e) => updateInv("invLoanTermYears", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">อัตราดอกเบี้ย (% ต่อปี)</label>
+                  <label className="block text-sm font-medium mb-1">{tInv("interestRate")}</label>
                   <input type="number" min="0" step="0.01" placeholder="2.5" value={invForm.invLoanInterestRate} onChange={(e) => updateInv("invLoanInterestRate", e.target.value)} className="w-full border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm" />
                 </div>
               </div>
@@ -1649,61 +1702,6 @@ export default function AddPropertyPage({
         </div>
       </form>
 
-      {/* Paste Text Modal */}
-      {showPasteModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-purple-600" />
-                <h3 className="font-bold text-lg">วางข้อความจากโพสต์</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowPasteModal(false)}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-sm text-gray-500 mb-3">
-              คัดลอกข้อความจากโพสต์ Facebook แล้ววางที่นี่ AI จะช่วยดึงข้อมูลและกรอกฟอร์มให้อัตโนมัติ
-            </p>
-            <textarea
-              value={pasteText}
-              onChange={(e) => setPasteText(e.target.value)}
-              placeholder={"วางข้อความจากโพสต์ที่นี่...\n\nเช่น:\n🏠 ให้เช่า คอนโด Unio Sukhumvit 72\nราคา 9,500 บาท/เดือน\nขนาด 26 ตร.ม. ชั้น 2 ตึก A\nเฟอร์นิเจอร์ครบ แอร์ ทีวี ตู้เย็น..."}
-              rows={10}
-              className="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none resize-y"
-            />
-            {aiError && (
-              <p className="mt-2 text-sm text-red-600">{aiError}</p>
-            )}
-            <div className="flex justify-end gap-3 mt-4">
-              <button
-                type="button"
-                onClick={() => setShowPasteModal(false)}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
-              >
-                ยกเลิก
-              </button>
-              <button
-                type="button"
-                onClick={() => handleAiExtract("text")}
-                disabled={aiLoading || !pasteText.trim()}
-                className="px-5 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium flex items-center gap-2 disabled:opacity-50"
-              >
-                {aiLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Sparkles className="w-4 h-4" />
-                )}
-                {aiLoading ? "กำลังวิเคราะห์..." : "AI วิเคราะห์ข้อมูล"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Station Selection Modal */}
       {showStationModal && (

@@ -91,7 +91,7 @@ export const STANDARD_CLAUSES: ContractClause[] = [
   {
     key: "3.1",
     type: "paragraph",
-    th: "3.1 ค่าเช่าคิดเป็นจำนวนเงินเดือนละ **{{monthlyRent}}** บาท **({{monthlyRentText}})** และชำระล่วงหน้าหรือไม่เกินวันที่ **{{paymentDay}}** ของทุกเดือน ชำระโดยโอนเงินเข้าบัญชีธนาคารผู้ให้เช่า ตามรายละเอียดดังนี้:",
+    th: "3.1 ค่าเช่าคิดเป็นจำนวนเงินเดือนละ **{{monthlyRent}}** บาท **({{monthlyRentText}})** และชำระล่วงหน้าหรือไม่เกินวันที่ **{{paymentDay}}** ของทุกเดือน ชำระ โดยโอนเงินเข้าบัญชีธนาคารผู้ให้เช่า ตามรายละเอียดดังนี้:",
     en: "3.1 The rent shall be **{{monthlyRent}}** Baht per month and shall be paid in advance or within day **{{paymentDay}}** of each calendar month by wiring such money to the lessor's bank account as follows:",
   },
   {

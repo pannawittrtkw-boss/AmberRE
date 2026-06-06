@@ -71,49 +71,24 @@ export default function LoginPage({
                 NPB Property
               </div>
               <h1 className="text-4xl xl:text-5xl font-bold leading-tight mb-4">
-                {locale === "th" ? (
-                  <>
-                    ค้นหาบ้านในฝัน
-                    <br />
-                    <span className="text-[#E8C97A]">ที่ใช่สำหรับคุณ</span>
-                  </>
-                ) : (
-                  <>
-                    Find Your Perfect
-                    <br />
-                    <span className="text-[#E8C97A]">Property</span>
-                  </>
-                )}
+                <span className="text-[#E8C97A]">{messages.home.heroTitle}</span>
               </h1>
               <p className="text-white/70 leading-relaxed">
-                {locale === "th"
-                  ? "เข้าสู่ระบบเพื่อบันทึกรายการโปรด เปรียบเทียบทรัพย์ และจัดการการค้นหาของคุณ"
-                  : "Sign in to save favorites, compare listings, and manage your search."}
+                {messages.home.heroSubtitle}
               </p>
             </div>
 
             <div className="space-y-3 mt-12">
               {[
-                {
-                  th: "บันทึกรายการโปรด",
-                  en: "Save your favorite listings",
-                },
-                {
-                  th: "เปรียบเทียบหลายทรัพย์",
-                  en: "Compare multiple properties",
-                },
-                {
-                  th: "ติดต่อตัวแทนได้รวดเร็ว",
-                  en: "Quick contact with agents",
-                },
-              ].map((item, i) => (
+                messages.common.favorites,
+                messages.common.compare,
+                messages.property.contactAgent,
+              ].map((label, i) => (
                 <div key={i} className="flex items-center gap-3 text-white/80">
                   <div className="w-8 h-8 rounded-full bg-[#C8A951]/20 border border-[#C8A951]/30 flex items-center justify-center">
                     <Sparkles className="w-3.5 h-3.5 text-[#E8C97A]" />
                   </div>
-                  <span className="text-sm">
-                    {locale === "th" ? item.th : item.en}
-                  </span>
+                  <span className="text-sm">{label}</span>
                 </div>
               ))}
             </div>
@@ -132,24 +107,20 @@ export default function LoginPage({
 
             <div className="flex items-center gap-2 text-[#C8A951] text-xs uppercase tracking-widest font-medium mb-2">
               <span className="w-6 h-px bg-[#C8A951]" />
-              {locale === "th" ? "เข้าสู่ระบบ" : "Welcome Back"}
+              {t.loginTitle}
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-stone-900 mb-2">
               {t.loginTitle}
             </h2>
             <p className="text-sm text-stone-500 mb-8">
-              {locale === "th"
-                ? "กรอกข้อมูลด้านล่างเพื่อเข้าสู่ระบบ"
-                : "Enter your credentials below to sign in"}
+              {t.signinSubtitle}
             </p>
 
             {agentNotice && (
               <div className="mb-4 bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-start gap-2.5">
                 <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-green-700">
-                  {locale === "th"
-                    ? "สมัครสมาชิก Agent เรียบร้อยแล้ว! กรุณา Login เข้าสู่ระบบ — บัญชีของคุณจะถูก Activate หลังจากทีม NPB Property อนุมัติ"
-                    : "Agent account registered! Please log in — your account will be activated after NPB Property team reviews your application."}
+                  {t.agentRegisteredNotice}
                 </p>
               </div>
             )}
@@ -207,7 +178,7 @@ export default function LoginPage({
                   href={`/${locale}/auth/forgot-password`}
                   className="text-xs text-stone-500 hover:text-[#C8A951]"
                 >
-                  {locale === "th" ? "ลืมรหัสผ่าน?" : "Forgot password?"}
+                  {t.forgotPassword}
                 </Link>
               </div>
             </form>

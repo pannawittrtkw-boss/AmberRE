@@ -58,6 +58,7 @@ model User {
   contracts          Contract[]
   contactUnlockLogs  ContactUnlockLog[]
   transactions       Transaction[]
+  customerLeads      CustomerLead[]
 }
 
 model Contract {
@@ -244,6 +245,9 @@ model Property {
   category            String?  @default("NORMAL") @db.VarChar(20)
   priority            String?  @default("NORMAL") @db.VarChar(20)
   note                String?  @db.Text
+  province            String?  @db.VarChar(100)
+  district            String?  @db.VarChar(100)
+  subdistrict         String?  @db.VarChar(100)
   isExclusive         Boolean  @default(false)
   exclusiveStartDate  DateTime?
   exclusiveEndDate    DateTime?
@@ -565,4 +569,34 @@ model Shareholder {
   share     Decimal  @default(25) @db.Decimal(5, 2) // percentage
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
+}
+
+// ==========================================
+// Customer Lead & Matching
+// ==========================================
+
+model CustomerLead {
+  id          Int      @id @default(autoincrement())
+  name        String?  @db.VarChar(200)
+  phone       String?  @db.VarChar(50)
+  lineId      String?  @db.VarChar(100)
+  facebook    String?  @db.VarChar(200)
+  projectName String?  @db.VarChar(300)
+  province    String?  @db.VarChar(100)
+  district    String?  @db.VarChar(100)
+  subdistrict String?  @db.VarChar(100)
+  btsStation  String?  @db.VarChar(200)
+  budgetMin   Decimal? @db.Decimal(18, 2)
+  budgetMax   Decimal? @db.Decimal(18, 2)
+  bedrooms    Int?
+  note        String?  @db.Text
+  status      String   @default("ACTIVE") @db.VarChar(20)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdById Int?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([createdById])
+  @@index([status])
 }
