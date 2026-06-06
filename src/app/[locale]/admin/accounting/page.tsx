@@ -19,7 +19,7 @@ import {
   ArrowUp,
   ArrowDown,
   Rows3,
-  RefreshCw,
+  Settings2,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -125,8 +125,13 @@ export default function AccountingPage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-  const [syncing, setSyncing] = useState(false);
-  const [syncResult, setSyncResult] = useState<{ created: number; updated: number; total: number } | null>(null);
+
+  // Recurring expenses
+  type RecurringTemplate = { id: string; category: string; amount: number; description: string; payee: string | null };
+  const [showRecurringModal, setShowRecurringModal] = useState(false);
+  const [recurringTemplates, setRecurringTemplates] = useState<RecurringTemplate[]>([]);
+  const [savingRecurring, setSavingRecurring] = useState(false);
+  const [newRecurring, setNewRecurring] = useState<Omit<RecurringTemplate, "id">>({ category: EXPENSE_CATEGORIES[0], amount: 0, description: "", payee: null });
 
   // Check unlock state
   useEffect(() => {
@@ -296,18 +301,49 @@ export default function AccountingPage() {
     } catch {}
   };
 
-  const handleSyncForecasts = async () => {
-    setSyncing(true);
-    setSyncResult(null);
-    try {
-      const res = await fetch("/api/admin/accounting/sync-forecasts", { method: "POST" });
-      const data = await res.json();
-      if (data.success) {
-        setSyncResult(data.data);
-        fetchTransactions();
-      }
-    } catch {}
-    setSyncing(false);
+  // Auto-sync forecasts + apply recurring whenever unlocked or month/year changes
+  useEffect(() => {
+    if (!unlocked) return;
+    // Sync forecasts silently
+    fetch("/api/admin/accounting/sync-forecasts", { method: "POST" }).catch(() => {});
+    // Apply recurring expenses for current month (no-op if already applied)
+    fetch("/api/admin/accounting/recurring", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ year, month }),
+    }).then(r => r.json()).then(d => {
+      if (d.success && d.data?.created > 0) fetchTransactions();
+    }).catch(() => {});
+  }, [unlocked, year, month]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fetchRecurringTemplates = useCallback(async () => {
+    const res = await fetch("/api/admin/accounting/recurring");
+    const data = await res.json();
+    if (data.success) setRecurringTemplates(data.data);
+  }, []);
+
+  useEffect(() => { if (unlocked) fetchRecurringTemplates(); }, [unlocked, fetchRecurringTemplates]);
+
+  const saveRecurringTemplates = async (templates: RecurringTemplate[]) => {
+    setSavingRecurring(true);
+    await fetch("/api/admin/accounting/recurring", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(templates),
+    });
+    setRecurringTemplates(templates);
+    setSavingRecurring(false);
+  };
+
+  const addRecurringTemplate = () => {
+    if (!newRecurring.description || !newRecurring.amount) return;
+    const t: RecurringTemplate = { ...newRecurring, id: Date.now().toString() };
+    saveRecurringTemplates([...recurringTemplates, t]);
+    setNewRecurring({ category: EXPENSE_CATEGORIES[0], amount: 0, description: "", payee: null });
+  };
+
+  const removeRecurringTemplate = (id: string) => {
+    saveRecurringTemplates(recurringTemplates.filter(t => t.id !== id));
   };
 
   // Password Lock Screen
@@ -392,21 +428,13 @@ export default function AccountingPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex flex-col items-end gap-1">
-              <button
-                onClick={handleSyncForecasts}
-                disabled={syncing}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              >
-                {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                Sync Forecast จากสัญญา
-              </button>
-              {syncResult && (
-                <span className="text-xs text-gray-500">
-                  เพิ่ม {syncResult.created} · อัปเดต {syncResult.updated} · ทั้งหมด {syncResult.total} สัญญา
-                </span>
-              )}
-            </div>
+            <button
+              onClick={() => { fetchRecurringTemplates(); setShowRecurringModal(true); }}
+              className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              <Settings2 className="w-4 h-4" />
+              Recurring Expenses
+            </button>
             <button
               onClick={() => setShowMultiModal(true)}
               className="flex items-center gap-2 bg-stone-900 hover:bg-stone-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
@@ -468,16 +496,12 @@ export default function AccountingPage() {
               Income (Actual)
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm bg-emerald-200 border border-emerald-400 border-dashed" />
+              <span className="w-3 h-3 rounded-sm bg-yellow-200 border border-yellow-400" />
               Income (Forecast)
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-sm bg-rose-500" />
-              Expense (Actual)
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm bg-rose-200 border border-rose-400 border-dashed" />
-              Expense (Forecast)
+              Expense
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-0.5 bg-blue-500" />
@@ -543,27 +567,27 @@ export default function AccountingPage() {
                   style={{ fill: "#059669", fontSize: 11, fontWeight: 600 }}
                 />
               </Bar>
-              {/* Forecast income — stacked on top, lighter color */}
+              {/* Forecast income — stacked on top, yellow */}
               <Bar
                 dataKey="forecastIncome"
                 name="Income (Forecast)"
                 stackId="inc"
-                fill="#6ee7b7"
+                fill="#fde68a"
                 radius={[4, 4, 0, 0]}
               >
                 <LabelList
                   dataKey="forecastIncome"
                   position="top"
                   formatter={chartLabelFormatter}
-                  style={{ fill: "#059669", fontSize: 10, fontWeight: 500 }}
+                  style={{ fill: "#b45309", fontSize: 10, fontWeight: 600 }}
                 />
               </Bar>
-              {/* Actual expense — stack group "exp" */}
+              {/* Expense (no stacking, single bar) */}
               <Bar
                 dataKey="expense"
-                name="Expense (Actual)"
-                stackId="exp"
+                name="Expense"
                 fill="#f43f5e"
+                radius={[4, 4, 0, 0]}
                 cursor="pointer"
                 onClick={(d: any) => {
                   if (d?.month) {
@@ -577,21 +601,6 @@ export default function AccountingPage() {
                   position="top"
                   formatter={chartLabelFormatter}
                   style={{ fill: "#e11d48", fontSize: 11, fontWeight: 600 }}
-                />
-              </Bar>
-              {/* Forecast expense — stacked on top */}
-              <Bar
-                dataKey="forecastExpense"
-                name="Expense (Forecast)"
-                stackId="exp"
-                fill="#fda4af"
-                radius={[4, 4, 0, 0]}
-              >
-                <LabelList
-                  dataKey="forecastExpense"
-                  position="top"
-                  formatter={chartLabelFormatter}
-                  style={{ fill: "#e11d48", fontSize: 10, fontWeight: 500 }}
                 />
               </Bar>
               <Line
@@ -830,6 +839,78 @@ export default function AccountingPage() {
             fetchTransactions();
           }}
         />
+      )}
+
+      {/* Recurring Expenses Modal */}
+      {showRecurringModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowRecurringModal(false)}>
+          <div className="bg-white rounded-xl max-w-lg w-full shadow-xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b">
+              <div>
+                <h3 className="font-semibold text-gray-900">Recurring Expenses</h3>
+                <p className="text-xs text-gray-500 mt-0.5">รายการค่าใช้จ่ายประจำที่เพิ่มอัตโนมัติทุกเดือน</p>
+              </div>
+              <button onClick={() => setShowRecurringModal(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-4 h-4" /></button>
+            </div>
+
+            {/* Existing templates */}
+            <div className="flex-1 overflow-y-auto divide-y">
+              {recurringTemplates.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-8">ยังไม่มีรายการ</p>
+              ) : recurringTemplates.map(t => (
+                <div key={t.id} className="flex items-center gap-3 px-5 py-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-gray-800 truncate">{t.description}</div>
+                    <div className="text-xs text-gray-500">{t.category}{t.payee ? ` · ${t.payee}` : ""}</div>
+                  </div>
+                  <div className="text-sm font-semibold text-rose-600 shrink-0">฿{t.amount.toLocaleString()}</div>
+                  <button onClick={() => removeRecurringTemplate(t.id)} className="p-1 text-gray-400 hover:text-red-500 shrink-0"><Trash2 className="w-4 h-4" /></button>
+                </div>
+              ))}
+            </div>
+
+            {/* Add new template */}
+            <div className="border-t px-5 py-4 space-y-3 bg-gray-50 rounded-b-xl">
+              <p className="text-xs font-medium text-gray-600">เพิ่มรายการใหม่</p>
+              <div className="grid grid-cols-2 gap-2">
+                <select
+                  value={newRecurring.category}
+                  onChange={e => setNewRecurring(p => ({ ...p, category: e.target.value }))}
+                  className="text-sm border rounded-lg px-2 py-1.5 col-span-2 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                >
+                  {EXPENSE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <input
+                  placeholder="คำอธิบาย *"
+                  value={newRecurring.description}
+                  onChange={e => setNewRecurring(p => ({ ...p, description: e.target.value }))}
+                  className="text-sm border rounded-lg px-2 py-1.5 col-span-2 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                />
+                <input
+                  type="number"
+                  placeholder="จำนวนเงิน *"
+                  value={newRecurring.amount || ""}
+                  onChange={e => setNewRecurring(p => ({ ...p, amount: parseFloat(e.target.value) || 0 }))}
+                  className="text-sm border rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                />
+                <input
+                  placeholder="ผู้รับเงิน (ถ้ามี)"
+                  value={newRecurring.payee || ""}
+                  onChange={e => setNewRecurring(p => ({ ...p, payee: e.target.value || null }))}
+                  className="text-sm border rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                />
+              </div>
+              <button
+                onClick={addRecurringTemplate}
+                disabled={savingRecurring || !newRecurring.description || !newRecurring.amount}
+                className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white py-2 rounded-lg text-sm font-medium"
+              >
+                {savingRecurring ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                เพิ่มรายการ
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Pie Chart Drilldown Modal */}
