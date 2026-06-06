@@ -246,8 +246,8 @@ export default function AdminContractsPage({
   const [signedModal, setSignedModal] = useState<Contract | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [stats, setStats] = useState<{ draft: number; active: number; expiringSoon: number; expired: number } | null>(null);
-  const [filterYear, setFilterYear] = useState<string>("all");
-  const [filterMonth, setFilterMonth] = useState<string>("all");
+  const [filterYear, setFilterYear] = useState<string>(String(new Date().getFullYear()));
+  const [filterMonth, setFilterMonth] = useState<string>(String(new Date().getMonth() + 1));
 
   useEffect(() => {
     params.then(({ locale: l }) => setLocale(l));
