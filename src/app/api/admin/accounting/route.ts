@@ -46,19 +46,20 @@ export async function GET(req: NextRequest) {
       }),
       prisma.transaction.findMany({
         where: { date: { gte: yearStart, lt: yearEnd }, recordType: "FORECAST", ...scopeFilter },
-        select: { date: true, amount: true, type: true },
+        select: { id: true, date: true, amount: true, type: true, description: true, category: true },
       }),
     ]);
 
     type MonthStats = {
       income: number; expense: number;
       forecastIncome: number; forecastExpense: number;
+      forecastItems: { id: number; description: string; amount: number; category: string }[];
       incomeByCategory: Record<string, number>;
       expenseByCategory: Record<string, number>;
     };
     const monthlyStats: Record<number, MonthStats> = {};
     for (let i = 1; i <= 12; i++) {
-      monthlyStats[i] = { income: 0, expense: 0, forecastIncome: 0, forecastExpense: 0, incomeByCategory: {}, expenseByCategory: {} };
+      monthlyStats[i] = { income: 0, expense: 0, forecastIncome: 0, forecastExpense: 0, forecastItems: [], incomeByCategory: {}, expenseByCategory: {} };
     }
     for (const t of yearTxns) {
       const m = t.date.getMonth() + 1;
@@ -74,13 +75,18 @@ export async function GET(req: NextRequest) {
     for (const t of yearForecastTxns) {
       const m = t.date.getMonth() + 1;
       const amt = Number(t.amount);
-      if (t.type === "INCOME") monthlyStats[m].forecastIncome += amt;
-      else if (t.type === "EXPENSE") monthlyStats[m].forecastExpense += amt;
+      if (t.type === "INCOME") {
+        monthlyStats[m].forecastIncome += amt;
+        monthlyStats[m].forecastItems.push({ id: t.id, description: t.description, amount: amt, category: t.category });
+      } else if (t.type === "EXPENSE") {
+        monthlyStats[m].forecastExpense += amt;
+      }
     }
     const chartData = Object.entries(monthlyStats).map(([m, v]) => ({
       month: parseInt(m),
       income: v.income, expense: v.expense,
       forecastIncome: v.forecastIncome, forecastExpense: v.forecastExpense,
+      forecastItems: v.forecastItems,
       net: v.income - v.expense,
       incomeByCategory: v.incomeByCategory, expenseByCategory: v.expenseByCategory,
     }));

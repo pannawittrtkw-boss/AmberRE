@@ -107,11 +107,13 @@ export default function AccountingPage() {
       expense: number;
       forecastIncome: number;
       forecastExpense: number;
+      forecastItems: { id: number; description: string; amount: number; category: string }[];
       net: number;
       incomeByCategory: Record<string, number>;
       expenseByCategory: Record<string, number>;
     }[]
   >([]);
+  const [forecastDrillDown, setForecastDrillDown] = useState<number | null>(null); // month number
   const [pieDrillDown, setPieDrillDown] = useState<
     { month: number; type: "INCOME" | "EXPENSE" } | null
   >(null);
@@ -567,13 +569,15 @@ export default function AccountingPage() {
                   style={{ fill: "#059669", fontSize: 11, fontWeight: 600 }}
                 />
               </Bar>
-              {/* Forecast income — stacked on top, orange */}
+              {/* Forecast income — stacked on top, orange — clickable */}
               <Bar
                 dataKey="forecastIncome"
                 name="Income (Forecast)"
                 stackId="inc"
                 fill="#f97316"
                 radius={[4, 4, 0, 0]}
+                cursor="pointer"
+                onClick={(d: any) => { if (d?.month && d.forecastIncome > 0) setForecastDrillDown(d.month); }}
               >
                 <LabelList
                   dataKey="forecastIncome"
@@ -912,6 +916,68 @@ export default function AccountingPage() {
           </div>
         </div>
       )}
+
+      {/* Forecast Income Drilldown Modal */}
+      {forecastDrillDown !== null && (() => {
+        const monthData = yearlyChart.find(d => d.month === forecastDrillDown);
+        const items = monthData?.forecastItems ?? [];
+        const total = items.reduce((s, i) => s + i.amount, 0);
+        const monthName = MONTHS[forecastDrillDown - 1];
+        return (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setForecastDrillDown(null)}>
+            <div className="bg-white rounded-xl max-w-lg w-full shadow-xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-5 py-4 border-b">
+                <div>
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-sm bg-orange-400 inline-block" />
+                    Income Forecast — {monthName} {year}
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    รวม {items.length} รายการ · ฿{total.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <button onClick={() => setForecastDrillDown(null)} className="p-1 hover:bg-gray-100 rounded-full">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto divide-y">
+                {items.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-8">ไม่มีรายการ</p>
+                ) : items.map((item, idx) => {
+                  // Clean display: strip [FC:CON-XXXX-XXXX] prefix if present
+                  const label = item.description.replace(/^\[FC:[^\]]+\]\s*/, "");
+                  const contractMatch = item.description.match(/\[FC:(CON-\d{4}-\d{4})\]/);
+                  return (
+                    <div key={item.id ?? idx} className="flex items-start gap-3 px-5 py-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-gray-800 truncate">{label || item.description}</div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs text-gray-500">{item.category}</span>
+                          {contractMatch && (
+                            <span className="text-[10px] font-mono bg-orange-50 text-orange-600 px-1.5 py-0.5 rounded">
+                              {contractMatch[1]}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-sm font-semibold text-orange-600 shrink-0">
+                        ฿{item.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Total footer */}
+              <div className="border-t px-5 py-3 bg-orange-50 rounded-b-xl flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">ยอดรวม Forecast</span>
+                <span className="text-base font-bold text-orange-600">
+                  ฿{total.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Pie Chart Drilldown Modal */}
       {pieDrillDown &&
