@@ -20,8 +20,9 @@ export async function POST() {
   }
   const userId = Number((session.user as any).id);
 
-  // Fetch all contracts that haven't expired yet
+  // Use start of today so contracts ending today are still included
   const now = new Date();
+  now.setHours(0, 0, 0, 0);
   const contracts = await prisma.contract.findMany({
     where: { endDate: { gte: now } },
     select: {

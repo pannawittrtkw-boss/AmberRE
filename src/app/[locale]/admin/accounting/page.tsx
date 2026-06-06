@@ -496,7 +496,7 @@ export default function AccountingPage() {
               Income (Actual)
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm bg-yellow-200 border border-yellow-400" />
+              <span className="w-3 h-3 rounded-sm bg-orange-400" />
               Income (Forecast)
             </span>
             <span className="flex items-center gap-1.5">
@@ -567,19 +567,19 @@ export default function AccountingPage() {
                   style={{ fill: "#059669", fontSize: 11, fontWeight: 600 }}
                 />
               </Bar>
-              {/* Forecast income — stacked on top, yellow */}
+              {/* Forecast income — stacked on top, orange */}
               <Bar
                 dataKey="forecastIncome"
                 name="Income (Forecast)"
                 stackId="inc"
-                fill="#fde68a"
+                fill="#f97316"
                 radius={[4, 4, 0, 0]}
               >
                 <LabelList
                   dataKey="forecastIncome"
                   position="top"
                   formatter={chartLabelFormatter}
-                  style={{ fill: "#b45309", fontSize: 10, fontWeight: 600 }}
+                  style={{ fill: "#ea580c", fontSize: 10, fontWeight: 600 }}
                 />
               </Bar>
               {/* Expense (no stacking, single bar) */}
