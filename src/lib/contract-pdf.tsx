@@ -616,7 +616,7 @@ const D = ({ children }: { children: React.ReactNode }) => (
 
 export function ContractPdf({ data }: { data: ContractPdfData }) {
   return (
-    <Document hyphenationCallback={(word) => [word]}>
+    <Document>
       {/* Main agreement — single Page; react-pdf wraps content automatically */}
       <Page size="A4" style={styles.page} wrap>
         <View style={styles.header}>
