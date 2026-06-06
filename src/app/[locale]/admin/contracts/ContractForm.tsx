@@ -433,7 +433,75 @@ export default function ContractForm({
         </Grid>
       </Card>
 
-      {/* Section 2: Lessor */}
+      {/* Section 2: Property */}
+      <Card title={locale === "th" ? "ทรัพย์สิน" : "Property"}>
+        <Grid>
+          <Field label={locale === "th" ? "ชื่อโครงการ" : "Project Name"} required>
+            <input
+              required
+              value={form.projectName}
+              onChange={(e) => update("projectName", e.target.value)}
+              className={inputCls}
+            />
+          </Field>
+          <Field label={locale === "th" ? "เลขห้องชุด" : "Unit Number"} required>
+            <input
+              required
+              value={form.unitNumber}
+              onChange={(e) => update("unitNumber", e.target.value)}
+              className={inputCls}
+            />
+          </Field>
+          <Field label={locale === "th" ? "อาคาร" : "Building"}>
+            <input
+              value={form.buildingName}
+              onChange={(e) => update("buildingName", e.target.value)}
+              className={inputCls}
+            />
+          </Field>
+          <Field label={locale === "th" ? "ชั้น" : "Floor"}>
+            <input
+              value={form.floorNumber}
+              onChange={(e) => update("floorNumber", e.target.value)}
+              className={inputCls}
+            />
+          </Field>
+          <Field label={locale === "th" ? "ขนาด (ตร.ม.)" : "Size (sqm)"}>
+            <input
+              type="number"
+              step="0.01"
+              value={form.sizeSqm}
+              onChange={(e) => update("sizeSqm", e.target.value)}
+              className={inputCls}
+            />
+          </Field>
+          <Field label={locale === "th" ? "ที่อยู่ทรัพย์สิน" : "Address"} colSpan={2} required>
+            <textarea
+              required
+              rows={2}
+              value={form.propertyAddress}
+              onChange={(e) => update("propertyAddress", e.target.value)}
+              className={inputCls}
+            />
+          </Field>
+          <Field
+            label={
+              locale === "th" ? "ที่อยู่ทรัพย์สิน (EN)" : "Address (EN)"
+            }
+            colSpan={2}
+          >
+            <textarea
+              rows={2}
+              value={form.propertyAddressEn}
+              onChange={(e) => update("propertyAddressEn", e.target.value)}
+              className={inputCls}
+              placeholder={locale === "th" ? "ใช้ในสัญญาส่วนภาษาอังกฤษ" : "Used in the English part of the contract"}
+            />
+          </Field>
+        </Grid>
+      </Card>
+
+      {/* Section 3: Lessor */}
       <Card title={locale === "th" ? "ผู้ให้เช่า (Lessor)" : "Lessor"}>
         <Grid>
           <Field label={locale === "th" ? "ชื่อ-นามสกุล" : "Name"} required>
@@ -552,7 +620,137 @@ export default function ContractForm({
         </Grid>
       </Card>
 
-      {/* Section 3: Lessee */}
+      {/* Section 4: Rent */}
+      <Card title={locale === "th" ? "ค่าเช่า" : "Rent & Payment"}>
+        <Grid>
+          <Field label={locale === "th" ? "ค่าเช่ารายเดือน (บาท)" : "Monthly Rent (THB)"} required>
+            <input
+              type="number"
+              required
+              step="0.01"
+              value={form.monthlyRent}
+              onChange={(e) => update("monthlyRent", e.target.value)}
+              className={inputCls}
+            />
+          </Field>
+          <Field label={locale === "th" ? "ชำระทุกวันที่ (1-31)" : "Due day"}>
+            <input
+              type="number"
+              min={1}
+              max={31}
+              value={form.paymentDay}
+              onChange={(e) => update("paymentDay", Number(e.target.value))}
+              className={inputCls}
+            />
+          </Field>
+          <Field label={locale === "th" ? "ค่าปรับชำระล่าช้า (บาท/วัน)" : "Late fee/day"}>
+            <input
+              type="number"
+              value={form.latePaymentFee}
+              onChange={(e) => update("latePaymentFee", Number(e.target.value))}
+              className={inputCls}
+            />
+          </Field>
+          <Field
+            label={
+              locale === "th"
+                ? "อัพโหลดรูปสมุดบัญชี / หน้าจอแอปธนาคาร (ตัวเลือก)"
+                : "Upload bank book or app screenshot (optional)"
+            }
+            colSpan={2}
+          >
+            <IdCardUpload
+              label=""
+              value={form.bankBookImage}
+              onChange={(url) => update("bankBookImage", url)}
+              onOcrText={(text) => {
+                const b = parseBankBookOcr(text);
+                setForm((prev) => ({
+                  ...prev,
+                  bankName: b.bankName || "",
+                  bankBranch: b.bankBranch || "",
+                  bankAccountName: b.accountName || "",
+                  bankAccountNumber: b.accountNumber || "",
+                }));
+              }}
+              buildOcrPreview={(text) => {
+                const b = parseBankBookOcr(text);
+                const out: Array<{ label: string; value: string }> = [];
+                if (b.bankName)
+                  out.push({ label: locale === "th" ? "ธนาคาร" : "Bank", value: b.bankName });
+                if (b.bankBranch)
+                  out.push({ label: locale === "th" ? "สาขา" : "Branch", value: b.bankBranch });
+                if (b.accountName)
+                  out.push({ label: locale === "th" ? "ชื่อบัญชี" : "Account Name", value: b.accountName });
+                if (b.accountNumber)
+                  out.push({ label: locale === "th" ? "เลขบัญชี" : "Account No.", value: b.accountNumber });
+                return out;
+              }}
+              ocrHint={
+                locale === "th"
+                  ? "ระบบจะอ่าน ธนาคาร / สาขา / ชื่อบัญชี / เลขบัญชี (โปรดตรวจทาน)"
+                  : "Will auto-fill bank / branch / account name / number (please review)"
+              }
+              locale={locale}
+            />
+          </Field>
+          <Field label={locale === "th" ? "ธนาคาร" : "Bank"}>
+            <select
+              value={form.bankName}
+              onChange={(e) => update("bankName", e.target.value)}
+              className={inputCls}
+            >
+              <option value="">
+                {locale === "th" ? "— เลือกธนาคาร —" : "— Select bank —"}
+              </option>
+              {THAI_BANKS.map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={locale === "th" ? "สาขา" : "Branch"}>
+            <input
+              value={form.bankBranch}
+              onChange={(e) => update("bankBranch", e.target.value)}
+              className={inputCls}
+            />
+          </Field>
+          <Field label={locale === "th" ? "สาขา (EN)" : "Branch (EN)"}>
+            <input
+              value={form.bankBranchEn}
+              onChange={(e) => update("bankBranchEn", e.target.value)}
+              className={inputCls}
+              placeholder={locale === "th" ? "ใช้ในสัญญาส่วนภาษาอังกฤษ" : "Used in the English part of the contract"}
+            />
+          </Field>
+          <Field label={locale === "th" ? "ชื่อบัญชี" : "Account Name"}>
+            <input
+              value={form.bankAccountName}
+              onChange={(e) => update("bankAccountName", e.target.value)}
+              className={inputCls}
+            />
+          </Field>
+          <Field label={locale === "th" ? "ชื่อบัญชี (EN)" : "Account Name (EN)"}>
+            <input
+              value={form.bankAccountNameEn}
+              onChange={(e) => update("bankAccountNameEn", e.target.value)}
+              className={inputCls}
+              placeholder={locale === "th" ? "ใช้ในสัญญาส่วนภาษาอังกฤษ" : "Used in the English part of the contract"}
+            />
+          </Field>
+          <Field label={locale === "th" ? "เลขที่บัญชี" : "Account Number"}>
+            <input
+              value={form.bankAccountNumber}
+              onChange={(e) => update("bankAccountNumber", e.target.value)}
+              className={inputCls}
+            />
+          </Field>
+        </Grid>
+      </Card>
+
+      {/* Section 5: Lessee */}
       <Card title={locale === "th" ? "ผู้เช่า (Lessee)" : "Lessee"}>
         <Grid>
           <Field label={locale === "th" ? "ชื่อ-นามสกุล" : "Name"} required>
@@ -790,204 +988,6 @@ export default function ContractForm({
           </div>
         )}
       </div>
-
-      {/* Section 4: Property */}
-      <Card title={locale === "th" ? "ทรัพย์สิน" : "Property"}>
-        <Grid>
-          <Field label={locale === "th" ? "ชื่อโครงการ" : "Project Name"} required>
-            <input
-              required
-              value={form.projectName}
-              onChange={(e) => update("projectName", e.target.value)}
-              className={inputCls}
-            />
-          </Field>
-          <Field label={locale === "th" ? "เลขห้องชุด" : "Unit Number"} required>
-            <input
-              required
-              value={form.unitNumber}
-              onChange={(e) => update("unitNumber", e.target.value)}
-              className={inputCls}
-            />
-          </Field>
-          <Field label={locale === "th" ? "อาคาร" : "Building"}>
-            <input
-              value={form.buildingName}
-              onChange={(e) => update("buildingName", e.target.value)}
-              className={inputCls}
-            />
-          </Field>
-          <Field label={locale === "th" ? "ชั้น" : "Floor"}>
-            <input
-              value={form.floorNumber}
-              onChange={(e) => update("floorNumber", e.target.value)}
-              className={inputCls}
-            />
-          </Field>
-          <Field label={locale === "th" ? "ขนาด (ตร.ม.)" : "Size (sqm)"}>
-            <input
-              type="number"
-              step="0.01"
-              value={form.sizeSqm}
-              onChange={(e) => update("sizeSqm", e.target.value)}
-              className={inputCls}
-            />
-          </Field>
-          <Field label={locale === "th" ? "ที่อยู่ทรัพย์สิน" : "Address"} colSpan={2} required>
-            <textarea
-              required
-              rows={2}
-              value={form.propertyAddress}
-              onChange={(e) => update("propertyAddress", e.target.value)}
-              className={inputCls}
-            />
-          </Field>
-          <Field
-            label={
-              locale === "th" ? "ที่อยู่ทรัพย์สิน (EN)" : "Address (EN)"
-            }
-            colSpan={2}
-          >
-            <textarea
-              rows={2}
-              value={form.propertyAddressEn}
-              onChange={(e) => update("propertyAddressEn", e.target.value)}
-              className={inputCls}
-              placeholder={locale === "th" ? "ใช้ในสัญญาส่วนภาษาอังกฤษ" : "Used in the English part of the contract"}
-            />
-          </Field>
-        </Grid>
-      </Card>
-
-      {/* Section 5: Rent */}
-      <Card title={locale === "th" ? "ค่าเช่า" : "Rent & Payment"}>
-        <Grid>
-          <Field label={locale === "th" ? "ค่าเช่ารายเดือน (บาท)" : "Monthly Rent (THB)"} required>
-            <input
-              type="number"
-              required
-              step="0.01"
-              value={form.monthlyRent}
-              onChange={(e) => update("monthlyRent", e.target.value)}
-              className={inputCls}
-            />
-          </Field>
-          <Field label={locale === "th" ? "ชำระทุกวันที่ (1-31)" : "Due day"}>
-            <input
-              type="number"
-              min={1}
-              max={31}
-              value={form.paymentDay}
-              onChange={(e) => update("paymentDay", Number(e.target.value))}
-              className={inputCls}
-            />
-          </Field>
-          <Field label={locale === "th" ? "ค่าปรับชำระล่าช้า (บาท/วัน)" : "Late fee/day"}>
-            <input
-              type="number"
-              value={form.latePaymentFee}
-              onChange={(e) => update("latePaymentFee", Number(e.target.value))}
-              className={inputCls}
-            />
-          </Field>
-          <Field
-            label={
-              locale === "th"
-                ? "อัพโหลดรูปสมุดบัญชี / หน้าจอแอปธนาคาร (ตัวเลือก)"
-                : "Upload bank book or app screenshot (optional)"
-            }
-            colSpan={2}
-          >
-            <IdCardUpload
-              label=""
-              value={form.bankBookImage}
-              onChange={(url) => update("bankBookImage", url)}
-              onOcrText={(text) => {
-                const b = parseBankBookOcr(text);
-                setForm((prev) => ({
-                  ...prev,
-                  bankName: b.bankName || "",
-                  bankBranch: b.bankBranch || "",
-                  bankAccountName: b.accountName || "",
-                  bankAccountNumber: b.accountNumber || "",
-                }));
-              }}
-              buildOcrPreview={(text) => {
-                const b = parseBankBookOcr(text);
-                const out: Array<{ label: string; value: string }> = [];
-                if (b.bankName)
-                  out.push({ label: locale === "th" ? "ธนาคาร" : "Bank", value: b.bankName });
-                if (b.bankBranch)
-                  out.push({ label: locale === "th" ? "สาขา" : "Branch", value: b.bankBranch });
-                if (b.accountName)
-                  out.push({ label: locale === "th" ? "ชื่อบัญชี" : "Account Name", value: b.accountName });
-                if (b.accountNumber)
-                  out.push({ label: locale === "th" ? "เลขบัญชี" : "Account No.", value: b.accountNumber });
-                return out;
-              }}
-              ocrHint={
-                locale === "th"
-                  ? "ระบบจะอ่าน ธนาคาร / สาขา / ชื่อบัญชี / เลขบัญชี (โปรดตรวจทาน)"
-                  : "Will auto-fill bank / branch / account name / number (please review)"
-              }
-              locale={locale}
-            />
-          </Field>
-          <Field label={locale === "th" ? "ธนาคาร" : "Bank"}>
-            <select
-              value={form.bankName}
-              onChange={(e) => update("bankName", e.target.value)}
-              className={inputCls}
-            >
-              <option value="">
-                {locale === "th" ? "— เลือกธนาคาร —" : "— Select bank —"}
-              </option>
-              {THAI_BANKS.map((b) => (
-                <option key={b} value={b}>
-                  {b}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label={locale === "th" ? "สาขา" : "Branch"}>
-            <input
-              value={form.bankBranch}
-              onChange={(e) => update("bankBranch", e.target.value)}
-              className={inputCls}
-            />
-          </Field>
-          <Field label={locale === "th" ? "สาขา (EN)" : "Branch (EN)"}>
-            <input
-              value={form.bankBranchEn}
-              onChange={(e) => update("bankBranchEn", e.target.value)}
-              className={inputCls}
-              placeholder={locale === "th" ? "ใช้ในสัญญาส่วนภาษาอังกฤษ" : "Used in the English part of the contract"}
-            />
-          </Field>
-          <Field label={locale === "th" ? "ชื่อบัญชี" : "Account Name"}>
-            <input
-              value={form.bankAccountName}
-              onChange={(e) => update("bankAccountName", e.target.value)}
-              className={inputCls}
-            />
-          </Field>
-          <Field label={locale === "th" ? "ชื่อบัญชี (EN)" : "Account Name (EN)"}>
-            <input
-              value={form.bankAccountNameEn}
-              onChange={(e) => update("bankAccountNameEn", e.target.value)}
-              className={inputCls}
-              placeholder={locale === "th" ? "ใช้ในสัญญาส่วนภาษาอังกฤษ" : "Used in the English part of the contract"}
-            />
-          </Field>
-          <Field label={locale === "th" ? "เลขที่บัญชี" : "Account Number"}>
-            <input
-              value={form.bankAccountNumber}
-              onChange={(e) => update("bankAccountNumber", e.target.value)}
-              className={inputCls}
-            />
-          </Field>
-        </Grid>
-      </Card>
 
       {/* Section 6: Deposit */}
       <Card title={locale === "th" ? "เงินประกัน" : "Security Deposit"}>
