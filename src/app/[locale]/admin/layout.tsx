@@ -7,7 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Building2, Users, FileText, Star, Loader2, Settings,
-  Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature, Lock, Crown, LayoutList, UserSearch,
+  Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature, Lock, Crown, LayoutList, UserSearch, CalendarDays,
 } from "lucide-react";
 
 // Full list of every menu item a CO_AGENT can ever be given access to.
@@ -19,6 +19,7 @@ const ALL_AGENT_MENU_ITEMS = [
   { key: "projects",               href: (l: string) => `/${l}/admin/projects`,               icon: Layers,          labelTh: "โครงการ",              labelEn: "Projects" },
   { key: "customer-leads",         href: (l: string) => `/${l}/admin/customer-leads`,         icon: UserSearch,      labelTh: "Matching ลูกค้า",      labelEn: "Customer Matching" },
   { key: "contracts",              href: (l: string) => `/${l}/admin/contracts`,              icon: FileSignature,   labelTh: "สัญญาเช่า",            labelEn: "Contracts" },
+  { key: "contract-calendar",     href: (l: string) => `/${l}/admin/calendar`,               icon: CalendarDays,    labelTh: "ปฏิทินสัญญา",          labelEn: "Contract Calendar" },
   { key: "closed-contracts",       href: (l: string) => `/${l}/admin/closed-contracts`,       icon: Lock,            labelTh: "สัญญาที่ปิดแล้ว",      labelEn: "Closed Contracts" },
   { key: "electricity-calculator", href: (l: string) => `/${l}/admin/electricity-calculator`, icon: Zap,             labelTh: "คำนวณค่าไฟ",           labelEn: "Electricity Calc" },
   { key: "accounting",             href: (l: string) => `/${l}/admin/accounting`,             icon: Wallet,          labelTh: "งบการเงิน / บัญชี",    labelEn: "Accounting" },
@@ -42,6 +43,7 @@ const ALL_ADMIN_NAV = [
   { key: "electricity-calculator", icon: Zap,             hrefSuffix: "/electricity-calculator",   labelKey: null, labelMsg: "electricityCalculator.navLabel", fallback: "Electricity Calc" },
   { key: "accounting",             icon: Wallet,          hrefSuffix: "/accounting",               labelKey: "accounting", fallback: "Accounting" },
   { key: "contracts",              icon: FileSignature,   hrefSuffix: "/contracts",                labelKey: null, labelFallback: { th: "สัญญาเช่า", en: "Contracts" } },
+  { key: "contract-calendar",     icon: CalendarDays,    hrefSuffix: "/calendar",                 labelKey: null, labelFallback: { th: "ปฏิทินสัญญา", en: "Contract Calendar" } },
   { key: "closed-contracts",       icon: Lock,            hrefSuffix: "/closed-contracts",         labelKey: null, labelFallback: { th: "Closed Contracts", en: "Closed Contracts" } },
   { key: "subscriptions",          icon: Crown,           hrefSuffix: "/subscriptions",            labelKey: null, labelFallback: { th: "จัดการ Package", en: "Subscriptions" } },
   { key: "menu-config",            icon: LayoutList,      hrefSuffix: "/menu-config",              labelKey: null, labelFallback: { th: "เมนูตาม Package", en: "Menu Config" } },
@@ -117,6 +119,7 @@ export default function AdminLayout({
     "/admin/projects",
     "/admin/customer-leads",
     "/admin/contracts",
+    "/admin/calendar",
     "/admin/closed-contracts",
     "/admin/electricity-calculator",
     "/admin/accounting",
