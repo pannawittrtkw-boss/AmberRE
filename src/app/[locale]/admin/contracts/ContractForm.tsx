@@ -244,6 +244,9 @@ export default function ContractForm({
   // have, stop auto-syncing it to monthlyRent × 2.
   const depositTouchedRef = useRef(!!initialData?.securityDeposit);
 
+  // Track whether paymentDay has been manually edited.
+  const paymentDayTouchedRef = useRef(!!initialData?.paymentDay);
+
   // Auto-calc end date when startDate or termMonths changes (end date is read-only)
   useEffect(() => {
     if (form.startDate && form.termMonths) {
@@ -254,6 +257,17 @@ export default function ContractForm({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.startDate, form.termMonths]);
+
+  // Auto-set paymentDay from startDate day-of-month unless user has overridden it
+  useEffect(() => {
+    if (paymentDayTouchedRef.current) return;
+    if (!form.startDate) return;
+    const day = new Date(form.startDate).getDate();
+    if (!isNaN(day) && day !== form.paymentDay) {
+      setForm((prev) => ({ ...prev, paymentDay: day }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.startDate]);
 
   // Default security deposit to monthlyRent × 2 unless user has overridden it
   useEffect(() => {
@@ -658,7 +672,7 @@ export default function ContractForm({
               min={1}
               max={31}
               value={form.paymentDay}
-              onChange={(e) => update("paymentDay", Number(e.target.value))}
+              onChange={(e) => { paymentDayTouchedRef.current = true; update("paymentDay", Number(e.target.value)); }}
               className={inputCls}
             />
           </Field>
