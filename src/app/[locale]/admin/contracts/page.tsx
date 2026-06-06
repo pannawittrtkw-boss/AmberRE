@@ -40,6 +40,12 @@ type Contract = {
   property?: { id: number; titleTh: string; projectName: string | null } | null;
 };
 
+function daysRemaining(endDate: string): number {
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+  return Math.ceil((end.getTime() - Date.now()) / 86400000);
+}
+
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-700",
   ACTIVE: "bg-green-100 text-green-700",
@@ -434,6 +440,7 @@ export default function AdminContractsPage({
                 <th className="text-left py-3 px-4">{locale === "th" ? "ผู้เช่า" : "Lessee"}</th>
                 <th className="text-left py-3 px-4">{locale === "th" ? "ระยะเวลา" : "Period"}</th>
                 <th className="text-right py-3 px-4">{locale === "th" ? "ค่าเช่า/เดือน" : "Rent"}</th>
+                <th className="text-center py-3 px-4">{locale === "th" ? "คงเหลือ" : "Remaining"}</th>
                 <th className="text-center py-3 px-4">{locale === "th" ? "สถานะ" : "Status"}</th>
                 <th className="text-right py-3 px-4">{locale === "th" ? "จัดการ" : "Actions"}</th>
               </tr>
@@ -441,7 +448,7 @@ export default function AdminContractsPage({
             <tbody>
               {filteredContracts.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-gray-400">
+                  <td colSpan={8} className="text-center py-12 text-gray-400">
                     {locale === "th" ? "ไม่พบสัญญาในช่วงเวลาที่เลือก" : "No contracts found"}
                   </td>
                 </tr>
@@ -480,6 +487,19 @@ export default function AdminContractsPage({
                     </td>
                     <td className="py-3 px-4 text-right">
                       ฿{Number(c.monthlyRent).toLocaleString()}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {(() => {
+                        if (c.status === "TERMINATED") return <span className="text-xs text-gray-400">—</span>;
+                        const days = daysRemaining(c.endDate);
+                        if (days < 0) return <span className="text-xs text-stone-400">{locale === "th" ? "หมดแล้ว" : "Expired"}</span>;
+                        const color = days <= 30 ? "text-red-600 bg-red-50" : days <= 60 ? "text-amber-600 bg-amber-50" : "text-green-700 bg-green-50";
+                        return (
+                          <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${color}`}>
+                            {days} {locale === "th" ? "วัน" : "d"}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="py-3 px-4 text-center">
                       <select
