@@ -447,11 +447,21 @@ export default function AdminCalendarPage({ params }: { params: Promise<{ locale
                                   {new Date(p.paidAt).toLocaleDateString(locale === "th" ? "th-TH" : "en-GB", { day: "numeric", month: "short" })}
                                 </span>
                               )}
-                              {!p.isPaid && overdueDays === 0 && (
-                                <span className="text-purple-600 font-medium">
-                                  {locale === "th" ? "ถึงกำหนดวันนี้" : "Due today"}
-                                </span>
-                              )}
+                              {!p.isPaid && overdueDays === 0 && (() => {
+                                const dueD = new Date(p.dueDate);
+                                const todayD = new Date(); todayD.setHours(0,0,0,0); dueD.setHours(0,0,0,0);
+                                const isTodayDue = dueD.getTime() === todayD.getTime();
+                                return isTodayDue ? (
+                                  <span className="text-purple-600 font-medium">
+                                    {locale === "th" ? "ถึงกำหนดวันนี้" : "Due today"}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-500 text-[10px]">
+                                    {locale === "th" ? "กำหนด " : "Due "}
+                                    {new Date(p.dueDate).toLocaleDateString(locale === "th" ? "th-TH" : "en-GB", { day: "numeric", month: "short", year: "2-digit" })}
+                                  </span>
+                                );
+                              })()}
                             </div>
 
                             {/* Late fee */}
