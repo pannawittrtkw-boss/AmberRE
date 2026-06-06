@@ -246,6 +246,8 @@ export default function AdminContractsPage({
   const [signedModal, setSignedModal] = useState<Contract | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [stats, setStats] = useState<{ draft: number; active: number; expiringSoon: number; expired: number } | null>(null);
+  const [filterYear, setFilterYear] = useState<string>("all");
+  const [filterMonth, setFilterMonth] = useState<string>("all");
 
   useEffect(() => {
     params.then(({ locale: l }) => setLocale(l));
@@ -295,6 +297,18 @@ export default function AdminContractsPage({
     // Reopen modal with updated data
     setSignedModal((prev) => prev ? { ...prev, ...updated } : null);
   };
+
+  // Derive available years from contracts
+  const availableYears = Array.from(
+    new Set(contracts.map((c) => new Date(c.startDate).getFullYear()))
+  ).sort((a, b) => b - a);
+
+  const filteredContracts = contracts.filter((c) => {
+    const d = new Date(c.startDate);
+    if (filterYear !== "all" && d.getFullYear() !== parseInt(filterYear)) return false;
+    if (filterMonth !== "all" && d.getMonth() + 1 !== parseInt(filterMonth)) return false;
+    return true;
+  });
 
   const copyShareLink = (c: Contract) => {
     if (!c.shareToken) return;
@@ -365,6 +379,51 @@ export default function AdminContractsPage({
         </div>
       )}
 
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-500">{locale === "th" ? "ปี" : "Year"}</label>
+          <select
+            value={filterYear}
+            onChange={(e) => { setFilterYear(e.target.value); setFilterMonth("all"); }}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+          >
+            <option value="all">{locale === "th" ? "ทั้งหมด" : "All"}</option>
+            {availableYears.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-500">{locale === "th" ? "เดือน" : "Month"}</label>
+          <select
+            value={filterMonth}
+            onChange={(e) => setFilterMonth(e.target.value)}
+            disabled={filterYear === "all"}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <option value="all">{locale === "th" ? "ทั้งหมด" : "All"}</option>
+            {(locale === "th"
+              ? ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"]
+              : ["January","February","March","April","May","June","July","August","September","October","November","December"]
+            ).map((name, i) => (
+              <option key={i + 1} value={i + 1}>{name}</option>
+            ))}
+          </select>
+        </div>
+        {(filterYear !== "all" || filterMonth !== "all") && (
+          <button
+            onClick={() => { setFilterYear("all"); setFilterMonth("all"); }}
+            className="text-xs text-gray-400 hover:text-gray-600 underline"
+          >
+            {locale === "th" ? "ล้างตัวกรอง" : "Clear"}
+          </button>
+        )}
+        <span className="text-xs text-gray-400 ml-auto">
+          {filteredContracts.length} {locale === "th" ? "รายการ" : "contracts"}
+        </span>
+      </div>
+
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1100px] text-sm">
@@ -380,14 +439,14 @@ export default function AdminContractsPage({
               </tr>
             </thead>
             <tbody>
-              {contracts.length === 0 ? (
+              {filteredContracts.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-12 text-gray-400">
-                    {locale === "th" ? "ยังไม่มีสัญญา" : "No contracts yet"}
+                    {locale === "th" ? "ไม่พบสัญญาในช่วงเวลาที่เลือก" : "No contracts found"}
                   </td>
                 </tr>
               ) : (
-                contracts.map((c) => (
+                filteredContracts.map((c) => (
                   <tr key={c.id} className="border-t hover:bg-gray-50">
                     <td className="py-3 px-4">
                       <div className="font-mono text-xs">{c.contractNumber}</div>
