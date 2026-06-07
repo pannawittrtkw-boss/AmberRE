@@ -82,9 +82,14 @@ export async function POST() {
     amount: number;
   }[] = [];
 
+  // Only create records from today onward — backdated contracts should not
+  // generate historical payment records for dates that have already passed.
+  const todayUTC = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00.000Z");
+
   for (const c of contracts) {
     const dues = generateDueDates(c.startDate, c.endDate, c.paymentDay);
     for (const due of dues) {
+      if (due < todayUTC) continue; // skip past dates
       const key = `${c.id}|${due.toISOString().slice(0, 10)}`;
       if (!existingSet.has(key)) {
         toCreate.push({
