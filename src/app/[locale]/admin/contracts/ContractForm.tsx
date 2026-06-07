@@ -248,6 +248,10 @@ export default function ContractForm({
   // Track whether paymentDay has been manually edited.
   const paymentDayTouchedRef = useRef(!!initialData?.paymentDay);
 
+  // Track whether bank account name fields have been manually edited.
+  const bankAccountNameTouchedRef = useRef(!!initialData?.bankAccountName);
+  const bankAccountNameEnTouchedRef = useRef(!!initialData?.bankAccountNameEn);
+
   // Auto-calc end date when startDate or termMonths changes (end date is read-only)
   useEffect(() => {
     if (form.startDate && form.termMonths) {
@@ -269,6 +273,23 @@ export default function ContractForm({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.startDate]);
+
+  // Auto-fill bank account name from lessor name unless user has overridden it
+  useEffect(() => {
+    if (bankAccountNameTouchedRef.current) return;
+    if (form.lessorName && form.lessorName !== form.bankAccountName) {
+      setForm((prev) => ({ ...prev, bankAccountName: form.lessorName }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.lessorName]);
+
+  useEffect(() => {
+    if (bankAccountNameEnTouchedRef.current) return;
+    if (form.lessorNameEn && form.lessorNameEn !== form.bankAccountNameEn) {
+      setForm((prev) => ({ ...prev, bankAccountNameEn: form.lessorNameEn }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.lessorNameEn]);
 
   // Default security deposit to monthlyRent × 2 unless user has overridden it
   useEffect(() => {
@@ -762,14 +783,14 @@ export default function ContractForm({
           <Field label={locale === "th" ? "ชื่อบัญชี" : "Account Name"}>
             <input
               value={form.bankAccountName}
-              onChange={(e) => update("bankAccountName", e.target.value)}
+              onChange={(e) => { bankAccountNameTouchedRef.current = true; update("bankAccountName", e.target.value); }}
               className={inputCls}
             />
           </Field>
           <Field label={locale === "th" ? "ชื่อบัญชี (EN)" : "Account Name (EN)"}>
             <input
               value={form.bankAccountNameEn}
-              onChange={(e) => update("bankAccountNameEn", e.target.value)}
+              onChange={(e) => { bankAccountNameEnTouchedRef.current = true; update("bankAccountNameEn", e.target.value); }}
               className={inputCls}
               placeholder={locale === "th" ? "ใช้ในสัญญาส่วนภาษาอังกฤษ" : "Used in the English part of the contract"}
             />
