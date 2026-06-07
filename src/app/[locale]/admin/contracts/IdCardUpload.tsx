@@ -139,7 +139,13 @@ export default function IdCardUpload({
     }
     setStage("capturing");
     try {
-      const stream = await (navigator.mediaDevices as any).getDisplayMedia({ video: true });
+      const stream = await (navigator.mediaDevices as any).getDisplayMedia({
+        video: {
+          displaySurface: "monitor",
+          width:  { ideal: screen.width  },
+          height: { ideal: screen.height },
+        },
+      });
       const video = document.createElement("video");
       video.srcObject = stream;
       video.muted = true;
