@@ -53,7 +53,7 @@ function calcDaysLeft(endDate: string): number {
 }
 
 function toDateKey(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function addDays(dateStr: string, n: number): Date {
@@ -136,7 +136,7 @@ export default function AdminCalendarPage({ params }: { params: Promise<{ locale
         setSelected(sel => {
           if (!sel) return sel;
           const key = toDateKey(sel.date);
-          const updatedPayments = d.data.filter((p: RentPayment) => p.dueDate.slice(0, 10) === key);
+          const updatedPayments = d.data.filter((p: RentPayment) => toDateKey(new Date(p.dueDate)) === key);
           return { ...sel, payments: updatedPayments };
         });
       }
@@ -161,7 +161,7 @@ export default function AdminCalendarPage({ params }: { params: Promise<{ locale
   const eventsByDate = contracts.reduce<Record<string, DayEvent[]>>((acc, c) => {
     const days = calcDaysLeft(c.endDate);
     const expiryKind: EventKind = days < 0 ? "expired" : days <= 45 ? "expiring" : "active";
-    const expiryKey = c.endDate.slice(0, 10);
+    const expiryKey = toDateKey(new Date(c.endDate));
     (acc[expiryKey] ??= []).push({ contract: c, daysLeft: days, kind: expiryKind });
 
     if (days >= -45) {
@@ -172,9 +172,10 @@ export default function AdminCalendarPage({ params }: { params: Promise<{ locale
     return acc;
   }, {});
 
-  // Build rent payment map by date
+  // Build rent payment map by date (use local date parsing so UTC-midnight due dates
+  // map to the correct local calendar day, e.g. "2026-06-07T00:00Z" → June 7 in UTC+7)
   const paymentsByDate = rentPayments.reduce<Record<string, RentPayment[]>>((acc, p) => {
-    const key = p.dueDate.slice(0, 10);
+    const key = toDateKey(new Date(p.dueDate));
     (acc[key] ??= []).push(p);
     return acc;
   }, {});

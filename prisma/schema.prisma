@@ -158,6 +158,9 @@ model Contract {
   // Status
   status String @default("DRAFT") @db.VarChar(20) // DRAFT | ACTIVE | EXPIRED | TERMINATED
 
+  // LINE notification group
+  lineGroupId  String? @db.VarChar(100) // LINE Group ID for rent-due notifications
+
   // Signed contract upload & share
   signedPdfUrl String? @db.VarChar(500)
   shareToken   String? @unique @db.VarChar(100)

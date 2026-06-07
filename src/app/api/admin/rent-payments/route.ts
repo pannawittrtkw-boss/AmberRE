@@ -20,8 +20,8 @@ export async function GET(req: NextRequest) {
     const year  = parseInt(yearParam);
     const month = parseInt(monthParam);
     where.dueDate = {
-      gte: new Date(year, month - 1, 1),
-      lt:  new Date(year, month, 1),
+      gte: new Date(Date.UTC(year, month - 1, 1)),
+      lt:  new Date(Date.UTC(year, month, 1)),
     };
   }
 

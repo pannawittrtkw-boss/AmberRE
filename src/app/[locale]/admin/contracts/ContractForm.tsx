@@ -95,6 +95,7 @@ export default function ContractForm({
     lesseeAddress: initialData?.lesseeAddress || "",
     lesseeAddressEn: initialData?.lesseeAddressEn || "",
     lesseePhone: initialData?.lesseePhone || "",
+    lineGroupId: initialData?.lineGroupId || "",
     lesseeIdImage: initialData?.lesseeIdImage || "",
 
     jointLesseeName: initialData?.jointLesseeName || "",
@@ -849,6 +850,14 @@ export default function ContractForm({
               className={inputCls}
             />
           </Field>
+          <Field label="LINE Group ID" hint={locale === "th" ? "สำหรับส่งแจ้งเตือนค่าเช่าอัตโนมัติ" : "For automatic rent notifications"}>
+            <input
+              value={form.lineGroupId}
+              onChange={(e) => update("lineGroupId", e.target.value)}
+              className={inputCls}
+              placeholder="C xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            />
+          </Field>
           <Field label={locale === "th" ? "ที่อยู่" : "Address"} colSpan={2}>
             <textarea
               rows={2}
@@ -1229,11 +1238,13 @@ function Field({
   label,
   required,
   colSpan,
+  hint,
   children,
 }: {
   label: string;
   required?: boolean;
   colSpan?: number;
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -1241,6 +1252,7 @@ function Field({
       <label className="block text-sm font-medium mb-1.5">
         {label}
         {required && <span className="text-rose-500 ml-1">*</span>}
+        {hint && <span className="ml-1.5 text-xs font-normal text-gray-400">({hint})</span>}
       </label>
       {children}
     </div>

@@ -18,12 +18,13 @@ function generateDueDates(
   let month = start.getMonth(); // 0-indexed
 
   while (true) {
-    const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+    const lastDayOfMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
     const day = Math.min(paymentDay, lastDayOfMonth);
-    const due = new Date(year, month, day, 0, 0, 0, 0);
+    const due = new Date(Date.UTC(year, month, day));
 
     if (due > end) break;
-    if (due >= start) dates.push(due);
+    // compare calendar dates, not raw timestamps
+    if (due.toISOString().slice(0, 10) >= start.toISOString().slice(0, 10)) dates.push(due);
 
     month++;
     if (month > 11) { month = 0; year++; }
@@ -36,6 +37,22 @@ export async function POST() {
   const session = await getServerSession(authOptions);
   if (!session?.user || (session.user as any).role !== "ADMIN") {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+  }
+
+  // Remove any unpaid records stored with a non-UTC-midnight timestamp
+  // (these were created by the local dev server running in UTC+7, causing duplicate entries)
+  const allForCleanup = await prisma.rentPayment.findMany({
+    where: { isPaid: false },
+    select: { id: true, dueDate: true },
+  });
+  const nonMidnightIds = allForCleanup
+    .filter((p) => {
+      const d = new Date(p.dueDate);
+      return d.getUTCHours() !== 0 || d.getUTCMinutes() !== 0 || d.getUTCSeconds() !== 0;
+    })
+    .map((p) => p.id);
+  if (nonMidnightIds.length > 0) {
+    await prisma.rentPayment.deleteMany({ where: { id: { in: nonMidnightIds } } });
   }
 
   // Fetch all non-terminated contracts

@@ -74,6 +74,7 @@ export async function PUT(
         lesseeAddress: body.lesseeAddress || null,
         lesseeAddressEn: body.lesseeAddressEn || null,
         lesseePhone: body.lesseePhone || null,
+        lineGroupId: body.lineGroupId || null,
         lesseeIdImage: body.lesseeIdImage || null,
 
         jointLesseeName: body.jointLesseeName || null,

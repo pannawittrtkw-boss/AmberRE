@@ -128,6 +128,7 @@ export async function POST(req: NextRequest) {
         lesseeAddress: body.lesseeAddress || null,
         lesseeAddressEn: body.lesseeAddressEn || null,
         lesseePhone: body.lesseePhone || null,
+        lineGroupId: body.lineGroupId || null,
         lesseeIdImage: body.lesseeIdImage || null,
 
         jointLesseeName: body.jointLesseeName || null,
