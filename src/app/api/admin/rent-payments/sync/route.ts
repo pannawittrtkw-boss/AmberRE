@@ -126,9 +126,14 @@ export async function POST() {
     .filter((p) => {
       // Always remove records for terminated contracts
       if (!activeContractIds.has(p.contractId)) return true;
-      // Remove unpaid records that no longer match the contract's current schedule
-      const key = `${p.contractId}|${p.dueDate.toISOString().slice(0, 10)}`;
-      return !p.isPaid && !validKeys.has(key);
+      if (!p.isPaid) {
+        // Remove past unpaid records — treat as already notified/paid
+        if (new Date(p.dueDate) < todayUTC) return true;
+        // Remove unpaid records that no longer match the contract's current schedule
+        const key = `${p.contractId}|${p.dueDate.toISOString().slice(0, 10)}`;
+        if (!validKeys.has(key)) return true;
+      }
+      return false;
     })
     .map((p) => p.id);
 

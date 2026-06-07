@@ -512,6 +512,14 @@ export default function ContractForm({
               className={inputCls}
             />
           </Field>
+          <Field label="LINE Group ID" hint={locale === "th" ? "สำหรับส่งแจ้งเตือนค่าเช่าอัตโนมัติ" : "For automatic rent notifications"}>
+            <input
+              value={form.lineGroupId}
+              onChange={(e) => update("lineGroupId", e.target.value)}
+              className={inputCls}
+              placeholder="C xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            />
+          </Field>
           <Field label={locale === "th" ? "ที่อยู่ทรัพย์สิน" : "Address"} colSpan={2} required>
             <textarea
               required
@@ -848,14 +856,6 @@ export default function ContractForm({
               value={form.lesseePhone}
               onChange={(e) => update("lesseePhone", e.target.value)}
               className={inputCls}
-            />
-          </Field>
-          <Field label="LINE Group ID" hint={locale === "th" ? "สำหรับส่งแจ้งเตือนค่าเช่าอัตโนมัติ" : "For automatic rent notifications"}>
-            <input
-              value={form.lineGroupId}
-              onChange={(e) => update("lineGroupId", e.target.value)}
-              className={inputCls}
-              placeholder="C xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
             />
           </Field>
           <Field label={locale === "th" ? "ที่อยู่" : "Address"} colSpan={2}>
