@@ -101,17 +101,29 @@ export async function POST() {
     created = toCreate.length;
   }
 
-  // Delete payments for terminated contracts or dates beyond endDate
-  const activeContractIds = new Set(contracts.map((c) => c.id));
-  const contractEndMap: Record<number, Date> = {};
-  for (const c of contracts) contractEndMap[c.id] = c.endDate;
+  // Build the complete set of valid due-date keys from current contract settings.
+  // Any unpaid record whose key is missing from this set is stale (e.g. old
+  // paymentDay or startDate) and should be removed.
+  const validKeys = new Set<string>();
+  for (const c of contracts) {
+    const dues = generateDueDates(c.startDate, c.endDate, c.paymentDay);
+    for (const due of dues) {
+      validKeys.add(`${c.id}|${due.toISOString().slice(0, 10)}`);
+    }
+  }
 
-  const all = await prisma.rentPayment.findMany({ select: { id: true, contractId: true, dueDate: true } });
+  const activeContractIds = new Set(contracts.map((c) => c.id));
+
+  const all = await prisma.rentPayment.findMany({
+    select: { id: true, contractId: true, dueDate: true, isPaid: true },
+  });
   const toDelete = all
     .filter((p) => {
+      // Always remove records for terminated contracts
       if (!activeContractIds.has(p.contractId)) return true;
-      const end = contractEndMap[p.contractId];
-      return end && p.dueDate > end;
+      // Remove unpaid records that no longer match the contract's current schedule
+      const key = `${p.contractId}|${p.dueDate.toISOString().slice(0, 10)}`;
+      return !p.isPaid && !validKeys.has(key);
     })
     .map((p) => p.id);
 
