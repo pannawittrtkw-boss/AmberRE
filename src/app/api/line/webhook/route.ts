@@ -19,25 +19,21 @@ async function replyMessage(replyToken: string, text: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const events = body.events ?? [];
+  try {
+    const body = await req.json();
+    const events = body.events ?? [];
 
-  for (const event of events) {
-    // Only handle messages sent in a group or room
-    const source = event.source;
-    if (!source) continue;
+    for (const event of events) {
+      if (event.type !== "join") continue;
+      const groupId = event.source?.groupId || event.source?.roomId;
+      if (!groupId || !event.replyToken) continue;
 
-    const groupId = source.groupId || source.roomId;
-    if (!groupId) continue;
-
-    // Reply with Group ID when someone sends any message in the group
-    if (event.type === "message" && event.replyToken) {
       await replyMessage(
         event.replyToken,
-        `🤖 AmberBot\n\nGroup ID ของกลุ่มนี้คือ:\n${groupId}\n\nคัดลอกไปใส่ในฟอร์มสัญญา ช่อง "LINE Group ID" ได้เลยครับ`
+        `🤖 AmberBot Welcome\n\nGroup ID is : ${groupId}\n\nยินดีต้อนรับ ขอให้คุณพักอาศัยที่ห้องนี้อย่างมีความสุข\nเพื่อให้คุณไร้กังวลเรื่องวันชำระค่าเช่า ฉันจะทำหน้าที่แจ้งเตือนการชำระให้กับคุณในทุกๆ เดือน\n\nWelcome to your new home! Wish you a happy stay here.\nTo make things worry-free for you, I'll be happy to send you a monthly rent reminder.`
       );
     }
-  }
+  } catch { /* ignore */ }
 
   return NextResponse.json({ ok: true });
 }
