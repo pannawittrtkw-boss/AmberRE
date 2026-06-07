@@ -5,7 +5,23 @@ const LINE_REPLY_API = "https://api.line.me/v2/bot/message/reply";
 export const LINE_PUSH_API = "https://api.line.me/v2/bot/message/push";
 export const TOKEN = () => process.env.LINE_URL_CHECKER_TOKEN ?? "";
 
-// ── LINE helpers ─────────────────────────────────────────────────────────────
+// ── Status constants ──────────────────────────────────────────────────────────
+export const STATUS = {
+  PENDING:                    "PENDING",
+  NOT_ACCEPT_AGENT:           "NOT_ACCEPT_AGENT",
+  ACCEPT_AGENT_NOT_FOREIGNER: "ACCEPT_AGENT_NOT_FOREIGNER",
+  ACCEPT_ALL:                 "ACCEPT_ALL",
+  UNABLE_TO_CONTACT:          "UNABLE_TO_CONTACT",
+} as const;
+
+export const STATUS_LABEL: Record<string, string> = {
+  NOT_ACCEPT_AGENT:           "❌ Not Accept Agent",
+  ACCEPT_AGENT_NOT_FOREIGNER: "✅ Accept Agent & Not Foreigner",
+  ACCEPT_ALL:                 "✅ Accept Agent & Foreigner",
+  UNABLE_TO_CONTACT:          "📞 Unable to contact",
+};
+
+// ── LINE helpers ──────────────────────────────────────────────────────────────
 
 async function reply(replyToken: string, messages: object[]) {
   if (!TOKEN()) return;
@@ -16,12 +32,12 @@ async function reply(replyToken: string, messages: object[]) {
   });
 }
 
-export async function pushMessage(groupId: string, text: string) {
+export async function pushMessage(groupId: string, messages: object[]) {
   if (!TOKEN()) return;
   await fetch(LINE_PUSH_API, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${TOKEN()}` },
-    body: JSON.stringify({ to: groupId, messages: [{ type: "text", text }] }),
+    body: JSON.stringify({ to: groupId, messages }),
   });
 }
 
@@ -57,12 +73,14 @@ function normalizeUrl(url: string): string {
   }
 }
 
-function todayKey(): string {
+export function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function daysDiff(from: Date): number {
-  return Math.floor((Date.now() - from.getTime()) / 86400000);
+export function yesterdayKey(): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
 }
 
 function shortUrl(url: string, max = 120): string {
@@ -77,60 +95,65 @@ function buildButtonsMessage(id: number, url: string) {
     altText: `🔗 URL ใหม่ #${id} — กรุณาตรวจสอบ`,
     template: {
       type: "buttons",
-      text: `#${id} กรุณาตรวจสอบ\n${shortUrl(url, 130)}`,
+      text: `#${id}\n${shortUrl(url, 130)}`,
       actions: [
         {
           type: "postback",
-          label: "✅ ตรวจสอบแล้ว",
-          data: `action=CHECKED&id=${id}`,
-          displayText: `✅ ตรวจสอบแล้ว #${id}`,
+          label: "❌ Not Accept Agent",
+          data: `s=NOT_ACCEPT_AGENT&id=${id}`,
+          displayText: `❌ Not Accept Agent [#${id}]`,
         },
         {
           type: "postback",
-          label: "🔄 รอติดต่อซ้ำ",
-          data: `action=FOLLOW_UP&id=${id}`,
-          displayText: `🔄 รอติดต่อซ้ำ #${id}`,
+          label: "✅ Agent,Not Foreign",
+          data: `s=ACCEPT_AGENT_NOT_FOREIGNER&id=${id}`,
+          displayText: `✅ Accept Agent & Not Foreigner [#${id}]`,
+        },
+        {
+          type: "postback",
+          label: "✅ Agent & Foreigner",
+          data: `s=ACCEPT_ALL&id=${id}`,
+          displayText: `✅ Accept Agent & Foreigner [#${id}]`,
+        },
+        {
+          type: "postback",
+          label: "📞 Unable to contact",
+          data: `s=UNABLE_TO_CONTACT&id=${id}`,
+          displayText: `📞 Unable to contact [#${id}]`,
         },
       ],
     },
   };
 }
 
-export async function buildSummary(groupId: string): Promise<string> {
-  const today = todayKey();
+export async function buildSummaryText(groupId: string, dateKey?: string): Promise<string> {
+  const dk = dateKey ?? todayKey();
 
-  const [todayAll, pending, followUp] = await Promise.all([
-    prisma.lineUrlHistory.findMany({ where: { groupId, dateKey: today }, select: { status: true } }),
-    prisma.lineUrlHistory.findMany({ where: { groupId, status: "PENDING" }, orderBy: { id: "asc" }, take: 20 }),
-    prisma.lineUrlHistory.findMany({ where: { groupId, status: "FOLLOW_UP" }, orderBy: { id: "asc" }, take: 10 }),
-  ]);
+  const records = await prisma.lineUrlHistory.findMany({
+    where: { groupId, dateKey: dk },
+    select: { status: true },
+  });
 
-  const todayTotal   = todayAll.length;
-  const todayChecked = todayAll.filter(u => u.status === "CHECKED").length;
+  const total    = records.length;
+  const pending  = records.filter(r => r.status === STATUS.PENDING).length;
+  const verified = total - pending;
+  const byStatus = Object.keys(STATUS_LABEL).map(s => ({
+    label: STATUS_LABEL[s],
+    count: records.filter(r => r.status === s).length,
+  }));
 
-  let msg = `📊 สรุป URL (${today})\n━━━━━━━━━━━━━━━━━━━━\n`;
-  msg += `📥 รับวันนี้: ${todayTotal} รายการ\n`;
-  msg += `✅ ตรวจสอบแล้ว: ${todayChecked} รายการ\n`;
-  msg += `🔄 รอติดต่อซ้ำ: ${followUp.length} รายการ\n`;
-  msg += `⏳ รอตรวจสอบ: ${pending.length} รายการ`;
-
-  if (pending.length > 0) {
-    msg += `\n\n⏳ รายการที่ยังไม่ตรวจสอบ:\n`;
-    pending.forEach((u, i) => { msg += `${i + 1}. [#${u.id}] ${shortUrl(u.url, 60)}\n`; });
-  }
-
-  if (followUp.length > 0) {
-    msg += `\n🔄 รอติดต่อซ้ำ:\n`;
-    followUp.forEach((u, i) => {
-      msg += `${i + 1}. [#${u.id}] ${shortUrl(u.url, 50)}\n`;
-      if (u.note) msg += `   📝 ${u.note}\n`;
-    });
-  }
+  let msg = `📊 Summary (${dk})\n━━━━━━━━━━━━━━━━━━━━\n`;
+  msg += `📥 Total Link: ${total}\n`;
+  msg += `✅ Verified: ${verified}\n`;
+  byStatus.forEach(({ label, count }) => {
+    if (count > 0) msg += `   ${label}: ${count}\n`;
+  });
+  msg += `⏳ Not Verify: ${pending}`;
 
   return msg;
 }
 
-// ── Main handler ──────────────────────────────────────────────────────────────
+// ── Main webhook handler ──────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
   try {
@@ -144,94 +167,67 @@ export async function POST(req: NextRequest) {
 
       const userId = source?.userId as string | undefined;
 
-      // ── Postback: admin pressed a button ────────────────────────────────
+      // ── Postback: admin pressed a status button ──────────────────────────
       if (event.type === "postback" && event.postback?.data) {
         const params = new URLSearchParams(event.postback.data as string);
-        const action = params.get("action");
+        const status = params.get("s");
         const urlId  = parseInt(params.get("id") ?? "");
 
-        if (!action || isNaN(urlId)) continue;
+        if (!status || isNaN(urlId) || !(status in STATUS_LABEL)) continue;
 
-        // Verify URL belongs to this group
-        const urlRecord = await prisma.lineUrlHistory.findFirst({
-          where: { id: urlId, groupId },
-        });
+        const urlRecord = await prisma.lineUrlHistory.findFirst({ where: { id: urlId, groupId } });
         if (!urlRecord) continue;
 
-        // Save pending action (waiting for description)
-        await prisma.lineUrlPendingAction.upsert({
-          where:  { groupId_userId: { groupId, userId: userId ?? "unknown" } },
-          create: { groupId, userId: userId ?? "unknown", urlId, action },
-          update: { urlId, action, createdAt: new Date() },
+        const reviewerName = userId ? await getMemberName(groupId, userId) : null;
+
+        await prisma.lineUrlHistory.update({
+          where: { id: urlId },
+          data:  { status, reviewedAt: new Date(), reviewedBy: reviewerName },
         });
 
-        const label = action === "CHECKED" ? "ตรวจสอบแล้ว ✅" : "รอติดต่อซ้ำ 🔄";
         if (event.replyToken) {
           await reply(event.replyToken, [{
             type: "text",
-            text: `${label} [#${urlId}]\n\nกรุณาพิมพ์คำอธิบายหรือหมายเหตุสั้นๆ\n(เช่น ราคา ตำแหน่ง ความน่าสนใจ ผลการติดต่อ)`,
+            text: `${STATUS_LABEL[status]} [#${urlId}] — บันทึกแล้ว${reviewerName ? `\nโดย ${reviewerName}` : ""}`,
           }]);
         }
         continue;
       }
 
-      // ── Text message ──────────────────────────────────────────────────────
+      // ── Text messages ────────────────────────────────────────────────────
       if (event.type !== "message" || event.message?.type !== "text") continue;
       if (!event.replyToken) continue;
 
       const text = (event.message.text ?? "").trim();
 
-      // Check for pending action first (description for a button press)
-      if (userId) {
-        const pending = await prisma.lineUrlPendingAction.findUnique({
-          where: { groupId_userId: { groupId, userId } },
-        });
-
-        if (pending && !text.startsWith("/")) {
-          const reviewerName = await getMemberName(groupId, userId);
-          await prisma.lineUrlHistory.update({
-            where: { id: pending.urlId },
-            data: {
-              status:     pending.action,
-              note:       text,
-              reviewedAt: new Date(),
-              reviewedBy: reviewerName,
-            },
-          });
-          await prisma.lineUrlPendingAction.delete({
-            where: { groupId_userId: { groupId, userId } },
-          });
-
-          const label = pending.action === "CHECKED" ? "✅ ตรวจสอบแล้ว" : "🔄 รอติดต่อซ้ำ";
-          await reply(event.replyToken, [{
-            type: "text",
-            text: `${label} บันทึกแล้ว [#${pending.urlId}]\n📝 ${text}`,
-          }]);
-          continue;
-        }
-      }
-
-      // Commands
-      if (text === "/สรุป" || text === "/summary") {
-        await reply(event.replyToken, [{ type: "text", text: await buildSummary(groupId) }]);
+      // /Summary command
+      if (/^\/summary$/i.test(text) || text === "/สรุป") {
+        await reply(event.replyToken, [{ type: "text", text: await buildSummaryText(groupId) }]);
         continue;
       }
 
-      if (text === "/รายการ" || text === "/list") {
-        const [pending, followUp] = await Promise.all([
-          prisma.lineUrlHistory.findMany({ where: { groupId, status: "PENDING" }, orderBy: { id: "asc" }, take: 20 }),
-          prisma.lineUrlHistory.findMany({ where: { groupId, status: "FOLLOW_UP" }, orderBy: { id: "asc" }, take: 10 }),
-        ]);
-        const all = [...pending, ...followUp];
-        if (all.length === 0) {
-          await reply(event.replyToken, [{ type: "text", text: "✅ ไม่มีรายการที่รอตรวจสอบ" }]);
+      // /NotVerify command — today's pending links with URLs
+      if (/^\/notverify$/i.test(text)) {
+        const today   = todayKey();
+        const pending = await prisma.lineUrlHistory.findMany({
+          where: { groupId, status: "PENDING", dateKey: today },
+          orderBy: { sentAt: "asc" },
+        });
+
+        if (pending.length === 0) {
+          await reply(event.replyToken, [{ type: "text", text: "✅ ไม่มีรายการ Not Verify วันนี้" }]);
         } else {
-          let msg = `📋 รายการรอตรวจสอบ (${all.length} รายการ):\n\n`;
-          pending.forEach((u, i) => { msg += `${i + 1}. [#${u.id}] ⏳ ${shortUrl(u.url, 55)}\n`; });
-          followUp.forEach((u, i) => {
-            msg += `${pending.length + i + 1}. [#${u.id}] 🔄 ${shortUrl(u.url, 55)}\n`;
-            if (u.note) msg += `   📝 ${u.note}\n`;
+          let msg = `📋 Not Verify วันนี้ (${today})\n`;
+          msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+          msg += `⏳ รอตรวจสอบ: ${pending.length} รายการ\n\n`;
+          pending.forEach((p, i) => {
+            const by = p.sentBy ? `ส่งโดย ${p.sentBy} · ` : "";
+            const t  = new Date(p.sentAt);
+            const hh = String(t.getUTCHours() + 7).padStart(2, "0");
+            const mm = String(t.getUTCMinutes()).padStart(2, "0");
+            msg += `${i + 1}. #${p.id} (${by}${hh}:${mm} น.)\n${p.url}\n\n`;
           });
+          msg += `💡 Tap link เพื่อตรวจสอบ`;
           await reply(event.replyToken, [{ type: "text", text: msg }]);
         }
         continue;
@@ -250,15 +246,18 @@ export async function POST(req: NextRequest) {
         });
 
         if (existing) {
-          // Duplicate — skip silently or notify
-          const days   = daysDiff(existing.sentAt);
-          const when   = days === 0 ? "วันนี้" : days === 1 ? "เมื่อวาน" : `${days} วันที่แล้ว`;
-          const by     = existing.sentBy ? ` โดย ${existing.sentBy}` : "";
-          const status = existing.status === "CHECKED" ? "✅ ตรวจสอบแล้ว" :
-                         existing.status === "FOLLOW_UP" ? "🔄 รอติดต่อซ้ำ" : "⏳ รอตรวจสอบ";
+          // Duplicate — log it and notify
+          await prisma.lineUrlDuplicate.create({
+            data: { groupId, url, sentBy: displayName, dateKey: today },
+          });
+
+          const statusLabel = existing.status in STATUS_LABEL
+            ? STATUS_LABEL[existing.status]
+            : "⏳ Not Verified";
+
           await reply(event.replyToken, [{
             type: "text",
-            text: `⚠️ URL ซ้ำ — ตัดออก [#${existing.id}] ${status}\nเคยส่งเมื่อ${when}${by}`,
+            text: `⚠️ Link ซ้ำ — ไม่นับ [#${existing.id}]\nสถานะเดิม: ${statusLabel}\n\nLink นี้ถูกตัดออกจากรายการตรวจสอบ`,
           }]);
         } else {
           // New URL — save and show buttons
