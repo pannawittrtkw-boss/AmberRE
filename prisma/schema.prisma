@@ -635,6 +635,7 @@ model LineUrlHistory {
   status     String    @default("PENDING") @db.VarChar(40)
   reviewedAt DateTime?
   reviewedBy String?   @db.VarChar(100)
+  quoteToken String?   @db.VarChar(300)
 
   @@unique([groupId, url])
   @@index([groupId])

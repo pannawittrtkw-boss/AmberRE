@@ -186,10 +186,12 @@ export async function POST(req: NextRequest) {
         });
 
         if (event.replyToken) {
-          await reply(event.replyToken, [{
+          const replyMsg: Record<string, unknown> = {
             type: "text",
             text: `${STATUS_LABEL[status]} [#${urlId}] — บันทึกแล้ว${reviewerName ? `\nโดย ${reviewerName}` : ""}`,
-          }]);
+          };
+          if (urlRecord.quoteToken) replyMsg.quoteToken = urlRecord.quoteToken;
+          await reply(event.replyToken, [replyMsg]);
         }
         continue;
       }
@@ -239,6 +241,7 @@ export async function POST(req: NextRequest) {
 
       const today       = todayKey();
       const displayName = userId ? await getMemberName(groupId, userId) : null;
+      const quoteToken  = (event.message as { quoteToken?: string }).quoteToken ?? null;
 
       for (const url of urls) {
         const existing = await prisma.lineUrlHistory.findUnique({
@@ -262,7 +265,7 @@ export async function POST(req: NextRequest) {
         } else {
           // New URL — save and show buttons
           const record = await prisma.lineUrlHistory.create({
-            data: { groupId, url, userId: userId ?? null, sentBy: displayName, dateKey: today },
+            data: { groupId, url, userId: userId ?? null, sentBy: displayName, dateKey: today, quoteToken },
           });
           await reply(event.replyToken, [buildButtonsMessage(record.id, url)]);
         }
