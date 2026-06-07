@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   let sent = 0;
   for (const { groupId } of groups) {
     const text = await buildSummaryText(groupId);
-    await pushMessage(groupId, [{ type: "text", text: `🌙 สรุปประจำวัน\n\n${text}` }]);
+    await pushMessage(groupId, [{ type: "text", text: `🌙 Daily Summary\n\n${text}` }]);
     sent++;
   }
 

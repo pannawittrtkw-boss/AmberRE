@@ -30,17 +30,17 @@ export async function GET(req: NextRequest) {
 
     if (pending.length === 0) continue;
 
-    let msg = `☀️ รายการ Not Verify (ยังไม่ตรวจสอบ)\n`;
+    let msg = `☀️ Not Verified Links (Pending Review)\n`;
     msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-    msg += `⏳ รอตรวจสอบ: ${pending.length} รายการ\n\n`;
+    msg += `⏳ Pending: ${pending.length} link(s)\n\n`;
 
     pending.forEach((p, i) => {
-      const by   = p.sentBy ? `ส่งโดย ${p.sentBy} · ` : "";
+      const by   = p.sentBy ? `by ${p.sentBy} · ` : "";
       const date = fmtDate(p.sentAt);
       msg += `${i + 1}. #${p.id} (${by}${date})\n${p.url}\n\n`;
     });
 
-    msg += `💡 Tap link เพื่อตรวจสอบ`;
+    msg += `💡 Tap a link to review`;
 
     await pushMessage(groupId, [{ type: "text", text: msg }]);
     sent++;

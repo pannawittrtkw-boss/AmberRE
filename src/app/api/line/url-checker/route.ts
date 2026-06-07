@@ -92,7 +92,7 @@ function shortUrl(url: string, max = 120): string {
 function buildButtonsMessage(id: number, url: string) {
   return {
     type: "template",
-    altText: `🔗 URL ใหม่ #${id} — กรุณาตรวจสอบ`,
+    altText: `🔗 New URL #${id} — Please review`,
     template: {
       type: "buttons",
       text: `#${id}\n${shortUrl(url, 130)}`,
@@ -148,7 +148,7 @@ export async function buildSummaryText(groupId: string, dateKey?: string): Promi
   byStatus.forEach(({ label, count }) => {
     if (count > 0) msg += `   ${label}: ${count}\n`;
   });
-  msg += `⏳ Not Verify: ${pending}`;
+  msg += `⏳ Pending: ${pending}`;
 
   return msg;
 }
@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
         if (event.replyToken) {
           const replyMsg: Record<string, unknown> = {
             type: "text",
-            text: `${STATUS_LABEL[status]} [#${urlId}] — บันทึกแล้ว${reviewerName ? `\nโดย ${reviewerName}` : ""}`,
+            text: `${STATUS_LABEL[status]} [#${urlId}] — Saved${reviewerName ? `\nBy ${reviewerName}` : ""}`,
           };
           if (urlRecord.quoteToken) replyMsg.quoteToken = urlRecord.quoteToken;
           await reply(event.replyToken, [replyMsg]);
@@ -203,7 +203,7 @@ export async function POST(req: NextRequest) {
       const text = (event.message.text ?? "").trim();
 
       // /Summary command
-      if (/^\/summary$/i.test(text) || text === "/สรุป") {
+      if (/^\/summary$/i.test(text)) {
         await reply(event.replyToken, [{ type: "text", text: await buildSummaryText(groupId) }]);
         continue;
       }
@@ -217,19 +217,19 @@ export async function POST(req: NextRequest) {
         });
 
         if (pending.length === 0) {
-          await reply(event.replyToken, [{ type: "text", text: "✅ ไม่มีรายการ Not Verify วันนี้" }]);
+          await reply(event.replyToken, [{ type: "text", text: "✅ No pending links today" }]);
         } else {
-          let msg = `📋 Not Verify วันนี้ (${today})\n`;
+          let msg = `📋 Not Verified Today (${today})\n`;
           msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-          msg += `⏳ รอตรวจสอบ: ${pending.length} รายการ\n\n`;
+          msg += `⏳ Pending: ${pending.length} link(s)\n\n`;
           pending.forEach((p, i) => {
-            const by = p.sentBy ? `ส่งโดย ${p.sentBy} · ` : "";
+            const by = p.sentBy ? `by ${p.sentBy} · ` : "";
             const t  = new Date(p.sentAt);
             const hh = String(t.getUTCHours() + 7).padStart(2, "0");
             const mm = String(t.getUTCMinutes()).padStart(2, "0");
-            msg += `${i + 1}. #${p.id} (${by}${hh}:${mm} น.)\n${p.url}\n\n`;
+            msg += `${i + 1}. #${p.id} (${by}${hh}:${mm})\n${p.url}\n\n`;
           });
-          msg += `💡 Tap link เพื่อตรวจสอบ`;
+          msg += `💡 Tap a link to review`;
           await reply(event.replyToken, [{ type: "text", text: msg }]);
         }
         continue;
@@ -260,7 +260,7 @@ export async function POST(req: NextRequest) {
 
           await reply(event.replyToken, [{
             type: "text",
-            text: `⚠️ Link ซ้ำ — ไม่นับ [#${existing.id}]\nสถานะเดิม: ${statusLabel}\n\nLink นี้ถูกตัดออกจากรายการตรวจสอบ`,
+            text: `⚠️ Duplicate link — not counted [#${existing.id}]\nPrevious status: ${statusLabel}\n\nThis link has been excluded from the review list`,
           }]);
         } else {
           // New URL — save and show buttons
