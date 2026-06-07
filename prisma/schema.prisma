@@ -622,3 +622,15 @@ model CustomerLead {
   @@index([createdById])
   @@index([status])
 }
+
+model LineUrlHistory {
+  id        Int      @id @default(autoincrement())
+  groupId   String   @db.VarChar(100)
+  url       String   @db.Text
+  sentBy    String?  @db.VarChar(100)
+  userId    String?  @db.VarChar(100)
+  sentAt    DateTime @default(now())
+
+  @@unique([groupId, url])
+  @@index([groupId])
+}
