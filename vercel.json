@@ -5,6 +5,14 @@
     {
       "path": "/api/cron/notify-rent",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/url-checker-summary",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/url-checker-morning",
+      "schedule": "0 1 * * *"
     }
   ]
 }

@@ -631,8 +631,8 @@ model LineUrlHistory {
   userId     String?   @db.VarChar(100)
   sentAt     DateTime  @default(now())
   dateKey    String    @default("") @db.VarChar(10)
-  status     String    @default("PENDING") @db.VarChar(20) // PENDING | CHECKED | FOLLOW_UP
-  note       String?   @db.Text
+  // PENDING | NOT_ACCEPT_AGENT | ACCEPT_AGENT_NOT_FOREIGNER | ACCEPT_ALL | UNABLE_TO_CONTACT
+  status     String    @default("PENDING") @db.VarChar(40)
   reviewedAt DateTime?
   reviewedBy String?   @db.VarChar(100)
 
@@ -642,14 +642,13 @@ model LineUrlHistory {
   @@index([groupId, dateKey])
 }
 
-model LineUrlPendingAction {
-  id        Int      @id @default(autoincrement())
-  groupId   String   @db.VarChar(100)
-  userId    String   @db.VarChar(100)
-  urlId     Int
-  action    String   @db.VarChar(20)
-  createdAt DateTime @default(now())
+model LineUrlDuplicate {
+  id          Int      @id @default(autoincrement())
+  groupId     String   @db.VarChar(100)
+  url         String   @db.Text
+  sentBy      String?  @db.VarChar(100)
+  attemptedAt DateTime @default(now())
+  dateKey     String   @db.VarChar(10)
 
-  @@unique([groupId, userId])
-  @@index([groupId, userId])
+  @@index([groupId, dateKey])
 }

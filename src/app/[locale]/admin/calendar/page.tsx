@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, X, Bell, CheckCircle2, Clock, AlertCircle, Banknote } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, X, Bell, CheckCircle2, Clock, AlertCircle, Banknote, BellRing, Loader2 } from "lucide-react";
 
 type Contract = {
   id: number;
@@ -69,6 +69,120 @@ function calcDaysOverdue(dueDate: string): number {
   return Math.max(0, diff);
 }
 
+type ScheduleModalData = {
+  id: number;
+  projectName: string;
+  unitNumber: string;
+  lesseeName: string;
+  contractNumber: string;
+};
+
+type ScheduleRentPayment = {
+  id: number;
+  dueDate: string;
+  amount: number;
+  isPaid: boolean;
+  paidAt: string | null;
+};
+
+const MONTHS_EN_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fmtDate(d: string) {
+  const dt = new Date(d);
+  return `${String(dt.getUTCDate()).padStart(2,"0")} ${MONTHS_EN_SHORT[dt.getUTCMonth()]} ${dt.getUTCFullYear()}`;
+}
+
+function PaymentScheduleModal({ contract, locale, onClose }: { contract: ScheduleModalData; locale: string; onClose: () => void }) {
+  const [payments, setPayments] = useState<ScheduleRentPayment[]>([]);
+  const [loading, setLoading]   = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/admin/rent-payments?contractId=${contract.id}`)
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setPayments(d.data); })
+      .finally(() => setLoading(false));
+  }, [contract.id]);
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const paid    = payments.filter((p) => p.isPaid).length;
+  const pending = payments.filter((p) => !p.isPaid).length;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl w-full max-w-md shadow-xl flex flex-col max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
+          <div className="flex items-center gap-2">
+            <BellRing className="w-4 h-4 text-amber-600" />
+            <h3 className="font-semibold text-gray-900 text-sm">
+              {locale === "th" ? "ตารางแจ้งเตือนค่าเช่า" : "Rent Payment Schedule"}
+            </h3>
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-4 h-4" /></button>
+        </div>
+        <div className="px-5 py-3 border-b bg-gray-50 shrink-0">
+          <p className="text-xs font-medium text-gray-800">{contract.projectName} #{contract.unitNumber}</p>
+          <p className="text-xs text-gray-500 mt-0.5">{contract.lesseeName} · {contract.contractNumber}</p>
+          {!loading && (
+            <div className="flex gap-2 mt-2">
+              <span className="text-[11px] bg-white border border-gray-200 rounded-full px-2 py-0.5 text-gray-600">
+                {payments.length} {locale === "th" ? "รายการ" : "records"}
+              </span>
+              <span className="text-[11px] bg-green-50 border border-green-200 rounded-full px-2 py-0.5 text-green-700">
+                {paid} {locale === "th" ? "ชำระแล้ว" : "paid"}
+              </span>
+              <span className="text-[11px] bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 text-amber-700">
+                {pending} {locale === "th" ? "รอชำระ" : "pending"}
+              </span>
+            </div>
+          )}
+        </div>
+        <div className="overflow-y-auto flex-1 py-2">
+          {loading ? (
+            <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-amber-600" /></div>
+          ) : payments.length === 0 ? (
+            <p className="text-center text-sm text-gray-400 py-10">{locale === "th" ? "ไม่มีรายการ" : "No records"}</p>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {payments.map((p, i) => {
+                const dueDateStr = new Date(p.dueDate).toISOString().slice(0, 10);
+                const isOverdue  = !p.isPaid && dueDateStr < todayStr;
+                const isToday    = !p.isPaid && dueDateStr === todayStr;
+
+                let statusEl: React.ReactNode;
+                if (p.isPaid) {
+                  statusEl = <span className="flex items-center gap-1 text-[11px] text-green-600"><CheckCircle2 className="w-3 h-3" />{locale === "th" ? "ชำระแล้ว" : "Paid"}</span>;
+                } else if (isToday) {
+                  statusEl = <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">{locale === "th" ? "วันนี้" : "Today"}</span>;
+                } else if (isOverdue) {
+                  const days = Math.ceil((Date.now() - new Date(p.dueDate).getTime()) / 86400000);
+                  statusEl = <span className="text-[11px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded">{locale === "th" ? `เกิน ${days} วัน` : `${days}d overdue`}</span>;
+                } else {
+                  statusEl = <span className="text-[11px] text-gray-400">{locale === "th" ? "รออยู่" : "Upcoming"}</span>;
+                }
+
+                return (
+                  <li key={p.id} className={`flex items-center gap-3 px-5 py-2.5 ${p.isPaid ? "opacity-40" : ""}`}>
+                    <span className="text-[11px] text-gray-400 w-5 text-right shrink-0">{i + 1}</span>
+                    <span className={`text-xs font-medium w-24 shrink-0 ${isOverdue ? "text-red-600" : isToday ? "text-amber-600" : "text-gray-700"}`}>
+                      {fmtDate(p.dueDate)}
+                    </span>
+                    <span className="text-xs text-gray-700 flex-1">฿{p.amount.toLocaleString()}</span>
+                    <div className="shrink-0">{statusEl}</div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+        <div className="px-5 py-3 border-t bg-gray-50 rounded-b-xl shrink-0">
+          <button onClick={onClose} className="w-full py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
+            {locale === "th" ? "ปิด" : "Close"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const KIND_STYLE: Record<EventKind, { chip: string; dot: string }> = {
   expired:  { chip: "bg-red-100 text-red-700 border-red-200",       dot: "bg-red-500" },
   expiring: { chip: "bg-amber-50 text-amber-700 border-amber-200",  dot: "bg-amber-500" },
@@ -89,6 +203,7 @@ export default function AdminCalendarPage({ params }: { params: Promise<{ locale
   const [toggling, setToggling] = useState<number | null>(null);
   const [viewDate, setViewDate] = useState(new Date());
   const [selected, setSelected] = useState<{ date: Date; events: DayEvent[]; payments: RentPayment[] } | null>(null);
+  const [scheduleModal, setScheduleModal] = useState<ScheduleModalData | null>(null);
 
   useEffect(() => { params.then(({ locale: l }) => setLocale(l)); }, [params]);
 
@@ -413,7 +528,12 @@ export default function AdminCalendarPage({ params }: { params: Promise<{ locale
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="font-medium text-sm truncate">{p.contract.projectName}</span>
-                                  <span className="shrink-0 bg-gray-800 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">#{p.contract.unitNumber}</span>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setScheduleModal({ id: p.contract.id, projectName: p.contract.projectName, unitNumber: p.contract.unitNumber, lesseeName: p.contract.lesseeName, contractNumber: p.contract.contractNumber }); }}
+                                    className="shrink-0 bg-gray-800 text-white text-[10px] font-bold px-1.5 py-0.5 rounded hover:bg-amber-600 transition-colors cursor-pointer"
+                                  >
+                                    #{p.contract.unitNumber}
+                                  </button>
                                 </div>
                                 <div className="text-xs text-gray-600 truncate">{p.contract.lesseeName}</div>
                                 <div className="text-xs text-gray-400 font-mono">{p.contract.contractNumber}</div>
@@ -539,6 +659,14 @@ export default function AdminCalendarPage({ params }: { params: Promise<{ locale
           )}
         </div>
       </div>
+
+      {scheduleModal && (
+        <PaymentScheduleModal
+          contract={scheduleModal}
+          locale={locale}
+          onClose={() => setScheduleModal(null)}
+        />
+      )}
     </div>
   );
 }
