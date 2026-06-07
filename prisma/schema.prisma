@@ -624,13 +624,32 @@ model CustomerLead {
 }
 
 model LineUrlHistory {
-  id        Int      @id @default(autoincrement())
-  groupId   String   @db.VarChar(100)
-  url       String   @db.Text
-  sentBy    String?  @db.VarChar(100)
-  userId    String?  @db.VarChar(100)
-  sentAt    DateTime @default(now())
+  id         Int       @id @default(autoincrement())
+  groupId    String    @db.VarChar(100)
+  url        String    @db.Text
+  sentBy     String?   @db.VarChar(100)
+  userId     String?   @db.VarChar(100)
+  sentAt     DateTime  @default(now())
+  dateKey    String    @default("") @db.VarChar(10)
+  status     String    @default("PENDING") @db.VarChar(20) // PENDING | CHECKED | FOLLOW_UP
+  note       String?   @db.Text
+  reviewedAt DateTime?
+  reviewedBy String?   @db.VarChar(100)
 
   @@unique([groupId, url])
   @@index([groupId])
+  @@index([groupId, status])
+  @@index([groupId, dateKey])
+}
+
+model LineUrlPendingAction {
+  id        Int      @id @default(autoincrement())
+  groupId   String   @db.VarChar(100)
+  userId    String   @db.VarChar(100)
+  urlId     Int
+  action    String   @db.VarChar(20)
+  createdAt DateTime @default(now())
+
+  @@unique([groupId, userId])
+  @@index([groupId, userId])
 }
