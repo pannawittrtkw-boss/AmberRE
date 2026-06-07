@@ -3,7 +3,11 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
-// Generate payment due dates for a contract between startDate and endDate
+// Generate payment due dates for a contract between startDate and endDate.
+// Termination is by year-month (not exact date) so that contracts where
+// endDate = startDate + N months - 1 day still generate exactly N entries.
+// The final entry is then popped — the advance payment made before move-in
+// covers the last month of the contract.
 function generateDueDates(
   startDate: Date,
   endDate: Date,
@@ -13,7 +17,10 @@ function generateDueDates(
   const start = new Date(startDate);
   const end   = new Date(endDate);
 
-  // Begin from the month of startDate
+  // Compare by year-month so paymentDay within the endDate month is included
+  // even when paymentDay > endDate's day (e.g. endDate Jun 6, paymentDay 7).
+  const endYM = end.getUTCFullYear() * 12 + end.getUTCMonth();
+
   let year  = start.getFullYear();
   let month = start.getMonth(); // 0-indexed
 
@@ -22,7 +29,7 @@ function generateDueDates(
     const day = Math.min(paymentDay, lastDayOfMonth);
     const due = new Date(Date.UTC(year, month, day));
 
-    if (due > end) break;
+    if (due.getUTCFullYear() * 12 + due.getUTCMonth() > endYM) break;
     // compare calendar dates, not raw timestamps
     if (due.toISOString().slice(0, 10) >= start.toISOString().slice(0, 10)) dates.push(due);
 
