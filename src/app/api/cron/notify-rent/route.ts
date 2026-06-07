@@ -23,18 +23,15 @@ function fmtMoney(n: number) {
   return n.toLocaleString("th-TH", { minimumFractionDigits: 0 });
 }
 
-const MONTHS_TH = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const MONTHS_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-function fmtDateTH(d: Date) {
-  return `${d.getUTCDate()} ${MONTHS_TH[d.getUTCMonth()]} ${d.getUTCFullYear() + 543}`;
-}
 function fmtDateEN(d: Date) {
   return `${d.getUTCDate()} ${MONTHS_EN[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 
 const CLOSING =
-  "\nขอบคุณที่ไว้วางใจให้ทีมงาน Amber Real Estate ได้ดูแลคุณ\n" +
+  "\n━━━━━━━━━━━━━━━━━━━━\n" +
+  "ขอบคุณที่ไว้วางใจให้ทีมงาน Amber Real Estate ได้ดูแลคุณ\n" +
   "Thank you for trusting Amber Real Estate to take care of you.";
 
 function buildPaymentMessage(
@@ -49,65 +46,50 @@ function buildPaymentMessage(
   bankAccountName: string,
   bankAccountNameEn: string,
 ): string {
-  const lateFee  = overdueDays * latePaymentFee;
-  const total    = amount + lateFee;
+  const lateFee = overdueDays * latePaymentFee;
+  const total   = amount + lateFee;
   const bankLine = [
     `🏦 ${bankName}`,
-    `📋 เลขที่บัญชี / Acct No.: ${bankAccountNumber}`,
+    `📋 เลขที่บัญชี (Acct No.): ${bankAccountNumber}`,
     `👤 ${bankAccountName}${bankAccountNameEn ? ` / ${bankAccountNameEn}` : ""}`,
   ].join("\n");
 
+  const header =
+    `เรียนคุณ / Dear : ${lesseeName}\n` +
+    `ผู้เช่าห้อง / Tenant of : ${projectName} Room ${unitNumber}`;
+
   if (overdueDays === 0) {
     return (
-      `เรียนคุณ ${lesseeName}\n` +
-      `ผู้เช่าห้อง ${projectName} ห้อง ${unitNumber}\n\n` +
-      `📅 แจ้งเตือนกำหนดชำระค่าเช่าประจำเดือน\n` +
+      `${header}\n\n` +
+      `📅 แจ้งเตือนกำหนดชำระค่าเช่าประจำเดือน (Monthly Rent Due Reminder)\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
-      `💰 ยอดค่าเช่า: ฿${fmtMoney(amount)}\n` +
-      `📆 ครบกำหนดชำระ: วันนี้\n\n` +
-      `ช่องทางการชำระเงิน:\n` +
+      `💰 ยอดค่าเช่า (Rent Amount): ฿${fmtMoney(amount)}\n` +
+      `📆 ครบกำหนดชำระ (Due Date): Today\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `ช่องทางการชำระเงิน (Payment Details):\n` +
       `${bankLine}\n\n` +
       `กรุณาชำระภายในวันนี้ และส่งหลักฐานการโอนมาที่นายหน้า/เจ้าของ\n` +
-      `*ขออภัยหากท่านได้ชำระเงินแล้ว*\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n` +
-      `Dear ${lesseeName}\n` +
-      `Tenant of ${projectName}, Room ${unitNumber}\n\n` +
-      `📅 Monthly Rent Due Reminder\n` +
-      `💰 Rent Amount: ฿${fmtMoney(amount)} | Due: Today\n\n` +
-      `Payment Details:\n` +
-      `${bankLine}\n\n` +
-      `Please make payment today and send proof of transfer to your agent/landlord.\n` +
-      `*We apologize if payment has already been made.*` +
+      `(Please make payment today and send proof of transfer to your agent/landlord.)\n` +
+      `*ขออภัยหากท่านได้ชำระเงินแล้ว (We apologize if payment has already been made.)*` +
       CLOSING
     );
   }
 
   return (
-    `เรียนคุณ ${lesseeName}\n` +
-    `ผู้เช่าห้อง ${projectName} ห้อง ${unitNumber}\n\n` +
-    `⚠️ แจ้งเตือนค่าเช่าค้างชำระ\n` +
+    `${header}\n\n` +
+    `⚠️ แจ้งเตือนค่าเช่าค้างชำระ (Overdue Rent Notice)\n` +
     `━━━━━━━━━━━━━━━━━━━━\n` +
-    `💰 ยอดค่าเช่า: ฿${fmtMoney(amount)}\n` +
-    `📌 เกินกำหนด: ${overdueDays} วัน\n` +
-    `🔴 ค่าปรับล่าช้า: ฿${fmtMoney(lateFee)} (฿${fmtMoney(latePaymentFee)}/วัน × ${overdueDays} วัน)\n` +
+    `💰 ยอดค่าเช่า (Rent Amount): ฿${fmtMoney(amount)}\n` +
+    `📌 เกินกำหนด (Overdue): ${overdueDays} days\n` +
+    `🔴 ค่าปรับล่าช้า (Late Fee): ฿${fmtMoney(lateFee)} (฿${fmtMoney(latePaymentFee)}/day × ${overdueDays} days)\n` +
     `━━━━━━━━━━━━━━━━━━━━\n` +
-    `💳 ยอดรวมที่ต้องชำระ: ฿${fmtMoney(total)}\n\n` +
-    `ช่องทางการชำระเงิน:\n` +
+    `💳 ยอดรวมที่ต้องชำระ (Total Amount Due): ฿${fmtMoney(total)}\n\n` +
+    `ช่องทางการชำระเงิน (Payment Details):\n` +
     `${bankLine}\n\n` +
     `กรุณาชำระโดยเร็วที่สุดเพื่อหลีกเลี่ยงค่าปรับที่เพิ่มขึ้นทุกวัน\n` +
-    `*ขออภัยหากท่านได้ชำระเงินแล้ว กรุณาแจ้งนายหน้า/เจ้าของเพื่อยืนยันการชำระ*\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n` +
-    `Dear ${lesseeName}\n` +
-    `Tenant of ${projectName}, Room ${unitNumber}\n\n` +
-    `⚠️ Overdue Rent Notice\n` +
-    `💰 Rent: ฿${fmtMoney(amount)} | Overdue: ${overdueDays} days\n` +
-    `🔴 Late Fee: ฿${fmtMoney(lateFee)} (฿${fmtMoney(latePaymentFee)}/day × ${overdueDays} days)\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n` +
-    `💳 Total Amount Due: ฿${fmtMoney(total)}\n\n` +
-    `Payment Details:\n` +
-    `${bankLine}\n\n` +
-    `Please settle the outstanding balance immediately to stop further penalties.\n` +
-    `*We apologize if payment has already been made. Please notify your agent/landlord to confirm.*` +
+    `(Please settle immediately to avoid further daily penalties.)\n` +
+    `*ขออภัยหากท่านได้ชำระเงินแล้ว กรุณาแจ้งนายหน้า/เจ้าของเพื่อยืนยันการชำระ\n` +
+    `(We apologize if payment has already been made. Please notify your agent/landlord to confirm.)*` +
     CLOSING
   );
 }
@@ -120,32 +102,28 @@ function buildRenewalMessage(
   daysLeft: number,
 ): string {
   const deadlineDate = new Date(endDate.getTime() - 30 * 86400000);
-  const endTH      = fmtDateTH(endDate);
   const endEN      = fmtDateEN(endDate);
-  const deadlineTH = fmtDateTH(deadlineDate);
   const deadlineEN = fmtDateEN(deadlineDate);
 
+  const header =
+    `เรียนคุณ / Dear : ${lesseeName}\n` +
+    `ผู้เช่าห้อง / Tenant of : ${projectName} Room ${unitNumber}`;
+
   return (
-    `เรียนคุณ ${lesseeName}\n` +
-    `ผู้เช่าห้อง ${projectName} ห้อง ${unitNumber}\n\n` +
-    `🔔 แจ้งเตือนสัญญาเช่าใกล้ครบกำหนด\n` +
+    `${header}\n\n` +
+    `🔔 แจ้งเตือนสัญญาเช่าใกล้ครบกำหนด (Lease Expiry Notice)\n` +
     `━━━━━━━━━━━━━━━━━━━━\n` +
-    `📅 วันหมดสัญญา: ${endTH}\n` +
-    `⏳ เหลือเวลาอีก: ${daysLeft} วัน\n\n` +
+    `📅 วันหมดสัญญา (Expiry Date): ${endEN}\n` +
+    `⏳ เหลือเวลาอีก (Days Remaining): ${daysLeft} days\n\n` +
     `ขณะนี้สัญญาเช่าของท่านกำลังจะครบกำหนดในอีก ${daysLeft} วัน\n` +
+    `(Your lease agreement is expiring in ${daysLeft} days.)\n` +
     `โปรดแจ้งความประสงค์ว่าท่านต้องการ ต่อสัญญา หรือ ย้ายออก\n` +
+    `(Please inform whether you wish to renew or vacate.)\n` +
     `ให้นายหน้า/เจ้าของทราบ ก่อนครบสัญญาอย่างน้อย 30 วัน\n` +
-    `(ภายในวันที่ ${deadlineTH})\n\n` +
+    `(Please notify your agent/landlord at least 30 days before expiry.)\n` +
+    `(ภายในวันที่ / by ${deadlineEN})\n\n` +
     `⚠️ หากไม่แจ้งภายในระยะเวลาดังกล่าว จะถือว่าท่านประสงค์ต่อสัญญาโดยอัตโนมัติ\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n` +
-    `Dear ${lesseeName}\n` +
-    `Tenant of ${projectName}, Room ${unitNumber}\n\n` +
-    `🔔 Lease Expiry Notice\n` +
-    `📅 Expiry Date: ${endEN} | ⏳ ${daysLeft} days remaining\n\n` +
-    `Your lease agreement is expiring in ${daysLeft} days.\n` +
-    `Please inform your agent or landlord whether you wish to renew or vacate\n` +
-    `at least 30 days before expiry (by ${deadlineEN}).\n\n` +
-    `⚠️ Failure to notify within the specified timeframe will be treated as an automatic renewal for the following year.` +
+    `(Failure to notify within the specified timeframe will be treated as an automatic renewal.)` +
     CLOSING
   );
 }
@@ -199,7 +177,7 @@ export async function GET(req: NextRequest) {
       Number(p.amount),
       Number(c.latePaymentFee),
       overdueDays,
-      c.bankName        || "-",
+      c.bankName          || "-",
       c.bankAccountNumber || "-",
       c.bankAccountName   || "-",
       c.bankAccountNameEn || "",
@@ -209,7 +187,7 @@ export async function GET(req: NextRequest) {
     sent++;
   }
 
-  // ── 2. Contract renewal notifications (45 / 30 / 14 / 7 days before expiry) ──
+  // ── 2. Contract renewal notifications (45 days before expiry) ─────────────
   const contracts = await prisma.contract.findMany({
     where: { status: { in: ["ACTIVE", "DRAFT"] }, lineGroupId: { not: null } },
     select: {
@@ -221,7 +199,7 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  const RENEWAL_TRIGGERS = [45, 30, 14, 7];
+  const RENEWAL_TRIGGERS = [45];
   for (const c of contracts) {
     if (!c.lineGroupId) continue;
     const daysLeft = Math.ceil(
