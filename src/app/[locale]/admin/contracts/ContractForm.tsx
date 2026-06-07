@@ -54,6 +54,7 @@ const THAI_BANKS = [
   "ธนาคารอาคารสงเคราะห์ (GHB)",
   "ธนาคารเพื่อการเกษตรและสหกรณ์การเกษตร (BAAC)",
   "ธนาคารอิสลามแห่งประเทศไทย (IBank)",
+  "PromptPay (พร้อมเพย์)",
 ];
 
 const today = () => new Date().toISOString().slice(0, 10);

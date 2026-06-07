@@ -8,6 +8,7 @@ import {
   Image as ImageIcon,
   ScanLine,
   Camera,
+  Monitor,
 } from "lucide-react";
 interface Props {
   label: string;
@@ -25,7 +26,7 @@ interface Props {
   buildOcrPreview?: (rawText: string) => Array<{ label: string; value: string }>;
 }
 
-type Stage = "idle" | "uploading" | "ocr" | "done";
+type Stage = "idle" | "uploading" | "ocr" | "done" | "capturing";
 
 export default function IdCardUpload({
   label,
@@ -150,7 +151,47 @@ export default function IdCardUpload({
     }
   };
 
-  const isBusy = stage === "uploading" || stage === "ocr";
+  const handleScreenCapture = async () => {
+    setError("");
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      setError(locale === "th" ? "เบราว์เซอร์นี้ไม่รองรับ Screen Capture" : "Screen capture not supported in this browser");
+      return;
+    }
+    setStage("capturing");
+    try {
+      const stream = await (navigator.mediaDevices as any).getDisplayMedia({ video: true });
+      const video = document.createElement("video");
+      video.srcObject = stream;
+      video.muted = true;
+      await new Promise<void>((resolve) => { video.onloadedmetadata = () => resolve(); });
+      await video.play();
+      // Wait one frame to ensure content renders
+      await new Promise((r) => setTimeout(r, 150));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext("2d")!.drawImage(video, 0, 0);
+      stream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+
+      await new Promise<void>((resolve) => {
+        canvas.toBlob(async (blob) => {
+          if (blob) {
+            const file = new File([blob], "screenshot.png", { type: "image/png" });
+            await handleFile(file);
+          }
+          resolve();
+        }, "image/png");
+      });
+    } catch (err: any) {
+      setStage("idle");
+      if (err?.name !== "NotAllowedError") {
+        setError(locale === "th" ? "ไม่สามารถจับภาพหน้าจอได้" : "Screen capture failed");
+      }
+    }
+  };
+
+  const isBusy = stage === "uploading" || stage === "ocr" || stage === "capturing";
 
   return (
     <div className="space-y-2">
@@ -237,21 +278,21 @@ export default function IdCardUpload({
       ) : (
         <div className="space-y-2 w-full sm:w-80">
           <div className="flex flex-col items-center justify-center gap-1 px-6 py-5 border-2 border-dashed border-stone-300 rounded-lg text-stone-500 text-sm">
-            {stage === "uploading" ? (
+            {stage === "uploading" || stage === "capturing" ? (
               <Loader2 className="w-6 h-6 animate-spin" />
             ) : (
               <ImageIcon className="w-6 h-6 text-stone-400" />
             )}
             <span className="text-center">
               {stage === "uploading"
-                ? locale === "th"
-                  ? "กำลังอัพโหลด..."
-                  : "Uploading..."
+                ? locale === "th" ? "กำลังอัพโหลด..." : "Uploading..."
+                : stage === "capturing"
+                ? locale === "th" ? "กำลังจับภาพหน้าจอ..." : "Capturing screen..."
                 : locale === "th"
                 ? "อัพโหลดรูปบัตรหรือถ่ายรูปได้เลย"
                 : "Upload an image or take a photo"}
             </span>
-            {onOcrText && stage !== "uploading" && (
+            {onOcrText && stage !== "uploading" && stage !== "capturing" && (
               <span className="text-[11px] text-stone-400 text-center">
                 {ocrHint ||
                   (locale === "th"
@@ -260,15 +301,15 @@ export default function IdCardUpload({
               </span>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <label
-              className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+              className={`inline-flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
                 isBusy
                   ? "border-stone-200 bg-stone-100 text-stone-400 cursor-not-allowed"
                   : "border-stone-300 bg-white hover:border-[#C8A951] hover:bg-amber-50 text-stone-700"
               }`}
             >
-              <Upload className="w-3.5 h-3.5" />
+              <Upload className="w-3.5 h-3.5 shrink-0" />
               {locale === "th" ? "เลือกไฟล์" : "Choose file"}
               <input
                 type="file"
@@ -283,13 +324,13 @@ export default function IdCardUpload({
               />
             </label>
             <label
-              className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+              className={`inline-flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
                 isBusy
                   ? "border-stone-200 bg-stone-100 text-stone-400 cursor-not-allowed"
                   : "border-[#C8A951] bg-amber-50 hover:bg-amber-100 text-amber-900"
               }`}
             >
-              <Camera className="w-3.5 h-3.5" />
+              <Camera className="w-3.5 h-3.5 shrink-0" />
               {locale === "th" ? "ถ่ายรูป" : "Take photo"}
               <input
                 type="file"
@@ -304,6 +345,19 @@ export default function IdCardUpload({
                 }}
               />
             </label>
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={handleScreenCapture}
+              className={`inline-flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-medium border transition-colors ${
+                isBusy
+                  ? "border-stone-200 bg-stone-100 text-stone-400 cursor-not-allowed"
+                  : "border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-800"
+              }`}
+            >
+              <Monitor className="w-3.5 h-3.5 shrink-0" />
+              {locale === "th" ? "จับหน้าจอ" : "Capture"}
+            </button>
           </div>
         </div>
       )}
