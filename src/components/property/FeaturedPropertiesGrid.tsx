@@ -91,7 +91,7 @@ export default function FeaturedPropertiesGrid({ locale, messages }: FeaturedPro
   const goToPage = (p: number) => {
     if (p >= 1 && p <= totalPages) {
       setPage(p);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      document.getElementById("featured-results")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
 
