@@ -11,12 +11,15 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const yearParam  = searchParams.get("year");
-  const monthParam = searchParams.get("month");
+  const yearParam       = searchParams.get("year");
+  const monthParam      = searchParams.get("month");
+  const contractIdParam = searchParams.get("contractId");
 
   let where: any = {};
 
-  if (yearParam && monthParam) {
+  if (contractIdParam) {
+    where.contractId = parseInt(contractIdParam);
+  } else if (yearParam && monthParam) {
     const year  = parseInt(yearParam);
     const month = parseInt(monthParam);
     where.dueDate = {

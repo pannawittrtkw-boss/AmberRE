@@ -19,6 +19,7 @@ import {
   Upload,
   Clock,
   XCircle,
+  BellRing,
 } from "lucide-react";
 import { getIntlLocale } from "@/lib/utils";
 
@@ -240,6 +241,160 @@ function SignedPdfModal({
   );
 }
 
+type RentPayment = {
+  id: number;
+  dueDate: string;
+  amount: number;
+  isPaid: boolean;
+  paidAt: string | null;
+  note: string | null;
+};
+
+const MONTHS_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fmtDate(d: string) {
+  const dt = new Date(d);
+  return `${String(dt.getUTCDate()).padStart(2,"0")} ${MONTHS_EN[dt.getUTCMonth()]} ${dt.getUTCFullYear()}`;
+}
+
+// ── Payment schedule modal ───────────────────────────────────────────────────
+function PaymentScheduleModal({
+  contract,
+  locale,
+  onClose,
+}: {
+  contract: Contract;
+  locale: string;
+  onClose: () => void;
+}) {
+  const [payments, setPayments] = useState<RentPayment[]>([]);
+  const [loading, setLoading]   = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/admin/rent-payments?contractId=${contract.id}`)
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setPayments(d.data); })
+      .finally(() => setLoading(false));
+  }, [contract.id]);
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const paid     = payments.filter((p) => p.isPaid).length;
+  const pending  = payments.filter((p) => !p.isPaid).length;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-white rounded-xl w-full max-w-md shadow-xl flex flex-col max-h-[85vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
+          <div className="flex items-center gap-2">
+            <BellRing className="w-4 h-4 text-amber-600" />
+            <h3 className="font-semibold text-gray-900 text-sm">
+              {locale === "th" ? "ตารางแจ้งเตือนค่าเช่า" : "Rent Payment Schedule"}
+            </h3>
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Sub-header */}
+        <div className="px-5 py-3 border-b bg-gray-50 shrink-0">
+          <p className="text-xs font-medium text-gray-800">{contract.projectName} #{contract.unitNumber}</p>
+          <p className="text-xs text-gray-500 mt-0.5">{contract.lesseeName} · {contract.contractNumber}</p>
+          {!loading && (
+            <div className="flex gap-2 mt-2">
+              <span className="text-[11px] bg-white border border-gray-200 rounded-full px-2 py-0.5 text-gray-600">
+                {payments.length} {locale === "th" ? "รายการ" : "records"}
+              </span>
+              <span className="text-[11px] bg-green-50 border border-green-200 rounded-full px-2 py-0.5 text-green-700">
+                {paid} {locale === "th" ? "ชำระแล้ว" : "paid"}
+              </span>
+              <span className="text-[11px] bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 text-amber-700">
+                {pending} {locale === "th" ? "รอชำระ" : "pending"}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Body */}
+        <div className="overflow-y-auto flex-1 py-2">
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="w-5 h-5 animate-spin text-amber-600" />
+            </div>
+          ) : payments.length === 0 ? (
+            <p className="text-center text-sm text-gray-400 py-10">
+              {locale === "th" ? "ไม่มีรายการ" : "No records"}
+            </p>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {payments.map((p, i) => {
+                const dueDateStr = new Date(p.dueDate).toISOString().slice(0, 10);
+                const isOverdue  = !p.isPaid && dueDateStr < todayStr;
+                const isToday    = !p.isPaid && dueDateStr === todayStr;
+
+                let statusEl: React.ReactNode;
+                if (p.isPaid) {
+                  statusEl = (
+                    <span className="flex items-center gap-1 text-[11px] text-green-600">
+                      <CheckCircle2 className="w-3 h-3" />
+                      {locale === "th" ? "ชำระแล้ว" : "Paid"}
+                    </span>
+                  );
+                } else if (isToday) {
+                  statusEl = (
+                    <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                      {locale === "th" ? "วันนี้" : "Today"}
+                    </span>
+                  );
+                } else if (isOverdue) {
+                  const days = Math.ceil((Date.now() - new Date(p.dueDate).getTime()) / 86400000);
+                  statusEl = (
+                    <span className="text-[11px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
+                      {locale === "th" ? `เกิน ${days} วัน` : `${days}d overdue`}
+                    </span>
+                  );
+                } else {
+                  statusEl = (
+                    <span className="text-[11px] text-gray-400">
+                      {locale === "th" ? "รออยู่" : "Upcoming"}
+                    </span>
+                  );
+                }
+
+                return (
+                  <li
+                    key={p.id}
+                    className={`flex items-center gap-3 px-5 py-2.5 ${p.isPaid ? "opacity-40" : ""}`}
+                  >
+                    <span className="text-[11px] text-gray-400 w-5 text-right shrink-0">{i + 1}</span>
+                    <span className={`text-xs font-medium w-24 shrink-0 ${isOverdue ? "text-red-600" : isToday ? "text-amber-600" : "text-gray-700"}`}>
+                      {fmtDate(p.dueDate)}
+                    </span>
+                    <span className="text-xs text-gray-700 flex-1">
+                      ฿{p.amount.toLocaleString()}
+                    </span>
+                    <div className="shrink-0">{statusEl}</div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-3 border-t bg-gray-50 rounded-b-xl shrink-0">
+          <button onClick={onClose} className="w-full py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
+            {locale === "th" ? "ปิด" : "Close"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main page ───────────────────────────────────────────────────────────────
 export default function AdminContractsPage({
   params,
@@ -250,6 +405,7 @@ export default function AdminContractsPage({
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [signedModal, setSignedModal] = useState<Contract | null>(null);
+  const [scheduleModal, setScheduleModal] = useState<Contract | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [stats, setStats] = useState<{ draft: number; active: number; expiringSoon: number; expired: number } | null>(null);
   const [filterYear, setFilterYear] = useState<string>(String(new Date().getFullYear()));
@@ -514,6 +670,14 @@ export default function AdminContractsPage({
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center justify-end gap-1">
+                        {/* Payment schedule */}
+                        <button
+                          onClick={() => setScheduleModal(c)}
+                          title={locale === "th" ? "ตารางแจ้งเตือนค่าเช่า" : "Payment schedule"}
+                          className="p-1.5 text-amber-500 hover:bg-amber-50 rounded"
+                        >
+                          <BellRing className="w-4 h-4" />
+                        </button>
                         {/* Download generated PDF */}
                         <a
                           href={`/api/admin/contracts/${c.id}/pdf`}
@@ -591,6 +755,15 @@ export default function AdminContractsPage({
           locale={locale}
           onClose={() => setSignedModal(null)}
           onSaved={handleSignedSaved}
+        />
+      )}
+
+      {/* Payment schedule modal */}
+      {scheduleModal && (
+        <PaymentScheduleModal
+          contract={scheduleModal}
+          locale={locale}
+          onClose={() => setScheduleModal(null)}
         />
       )}
     </div>
