@@ -52,13 +52,13 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
   ];
 
   return (
-    <header className="bg-[#0D1B2A] sticky top-0 z-50 shadow-md border-b-2 border-[#C8A951]">
+    <header className="bg-[#112240] sticky top-0 z-50 shadow-md border-b-2 border-[#C8A951]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-18 py-2">
+        <div className="flex justify-between items-center py-1.5">
           {/* Logo */}
           <Link href={`/${locale}`} className="flex items-center gap-2">
             {logoUrl ? (
-              <img src={logoUrl} alt="NPB Property" className="h-14 max-w-[200px] object-contain" />
+              <img src={logoUrl} alt="NPB Property" className="h-16 w-auto object-contain" />
             ) : (
               <>
                 <span className="text-2xl font-bold text-[#C8A951]">NPB</span>
@@ -226,7 +226,7 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-[#0D1B2A] border-t border-[#C8A951]/30">
+        <div className="lg:hidden bg-[#112240] border-t border-[#C8A951]/30">
           <div className="px-4 py-3 space-y-2">
             {navLinks.map((link) => (
               <Link
