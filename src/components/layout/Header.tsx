@@ -52,17 +52,17 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
   ];
 
   return (
-    <header className="bg-white sticky top-0 z-50 shadow-sm border-b-2 border-[#C8A951]">
+    <header className="bg-[#0D1B2A] sticky top-0 z-50 shadow-md border-b-2 border-[#C8A951]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-18 py-2">
           {/* Logo */}
           <Link href={`/${locale}`} className="flex items-center gap-2">
             {logoUrl ? (
-              <img src={logoUrl} alt="NPB Property" className="h-10 max-w-[160px] object-contain" />
+              <img src={logoUrl} alt="NPB Property" className="h-14 max-w-[200px] object-contain" />
             ) : (
               <>
                 <span className="text-2xl font-bold text-[#C8A951]">NPB</span>
-                <span className="text-sm text-gray-600 hidden sm:block">Property</span>
+                <span className="text-sm text-gray-300 hidden sm:block">Property</span>
               </>
             )}
           </Link>
@@ -74,7 +74,7 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
                 key={link.href}
                 href={link.href}
                 className={`text-sm font-medium transition-colors hover:text-[#C8A951] ${
-                  pathname === link.href ? "text-gray-900 font-semibold" : "text-gray-700"
+                  pathname === link.href ? "text-[#C8A951] font-semibold" : "text-gray-300"
                 }`}
               >
                 {link.label}
@@ -87,10 +87,10 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
             {/* Favorites */}
             <Link
               href={`/${locale}/favorites`}
-              className="relative p-2 text-gray-600 hover:text-red-500 transition-colors"
+              className="relative p-2 text-gray-300 hover:text-red-400 transition-colors"
               title={t.favorites || "Favorites"}
             >
-              <Heart className={`w-5 h-5 ${favCount > 0 ? "fill-red-500 text-red-500" : ""}`} />
+              <Heart className={`w-5 h-5 ${favCount > 0 ? "fill-red-400 text-red-400" : ""}`} />
               {favCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full w-4.5 h-4.5 min-w-[18px] min-h-[18px] flex items-center justify-center">
                   {favCount}
@@ -101,10 +101,10 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
             {/* Compare */}
             <Link
               href={`/${locale}/compare`}
-              className="relative p-2 text-gray-600 hover:text-blue-500 transition-colors"
+              className="relative p-2 text-gray-300 hover:text-blue-400 transition-colors"
               title={t.compare || "Compare"}
             >
-              <Layers className={`w-5 h-5 ${compareCount > 0 ? "text-blue-500" : ""}`} />
+              <Layers className={`w-5 h-5 ${compareCount > 0 ? "text-blue-400" : ""}`} />
               {compareCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] min-h-[18px] flex items-center justify-center">
                   {compareCount}
@@ -116,7 +116,7 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
             <div className="relative">
               <button
                 onClick={() => setLangMenuOpen(!langMenuOpen)}
-                className="flex items-center gap-1 px-2 py-1 rounded text-sm text-gray-600 hover:text-[#C8A951] hover:bg-gray-50"
+                className="flex items-center gap-1 px-2 py-1 rounded text-sm text-gray-300 hover:text-[#C8A951] hover:bg-white/10"
               >
                 <Globe className="w-4 h-4" />
                 {localeShort[locale]}
@@ -145,7 +145,7 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-gray-700 hover:text-[#C8A951] hover:bg-gray-50"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-gray-300 hover:text-[#C8A951] hover:bg-white/10"
                 >
                   <User className="w-4 h-4" />
                   <span className="hidden sm:inline">{session.user?.name}</span>
@@ -200,7 +200,7 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
               <div className="flex items-center gap-2">
                 <Link
                   href={`/${locale}/auth/login`}
-                  className="text-sm text-gray-700 hover:text-[#C8A951]"
+                  className="text-sm text-gray-300 hover:text-[#C8A951]"
                 >
                   {t.login}
                 </Link>
@@ -215,7 +215,7 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
 
             {/* Mobile Menu Button */}
             <button
-              className="lg:hidden p-2"
+              className="lg:hidden p-2 text-gray-300"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -226,7 +226,7 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-white border-t border-[#C8A951]/30">
+        <div className="lg:hidden bg-[#0D1B2A] border-t border-[#C8A951]/30">
           <div className="px-4 py-3 space-y-2">
             {navLinks.map((link) => (
               <Link
@@ -234,8 +234,8 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
                 href={link.href}
                 className={`block px-3 py-2 rounded text-sm ${
                   pathname === link.href
-                    ? "bg-yellow-50 text-[#C8A951]"
-                    : "text-gray-700 hover:bg-yellow-50 hover:text-[#C8A951]"
+                    ? "bg-white/10 text-[#C8A951]"
+                    : "text-gray-300 hover:bg-white/10 hover:text-[#C8A951]"
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -246,8 +246,8 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
               href={`/${locale}/favorites`}
               className={`flex items-center gap-2 px-3 py-2 rounded text-sm ${
                 pathname === `/${locale}/favorites`
-                  ? "bg-yellow-50 text-[#C8A951]"
-                  : "text-gray-700 hover:bg-yellow-50 hover:text-[#C8A951]"
+                  ? "bg-white/10 text-[#C8A951]"
+                  : "text-gray-300 hover:bg-white/10 hover:text-[#C8A951]"
               }`}
               onClick={() => setMobileMenuOpen(false)}
             >
@@ -263,8 +263,8 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
               href={`/${locale}/compare`}
               className={`flex items-center gap-2 px-3 py-2 rounded text-sm ${
                 pathname === `/${locale}/compare`
-                  ? "bg-yellow-50 text-[#C8A951]"
-                  : "text-gray-700 hover:bg-yellow-50 hover:text-[#C8A951]"
+                  ? "bg-white/10 text-[#C8A951]"
+                  : "text-gray-300 hover:bg-white/10 hover:text-[#C8A951]"
               }`}
               onClick={() => setMobileMenuOpen(false)}
             >
