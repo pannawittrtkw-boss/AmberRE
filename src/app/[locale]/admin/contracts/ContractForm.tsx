@@ -438,7 +438,7 @@ export default function ContractForm({
                 onClick={() => update("dealType", "DIRECT_OWNER")}
                 className={`px-4 py-2 text-sm font-medium transition-colors ${
                   form.dealType === "DIRECT_OWNER"
-                    ? "bg-[#112240] text-white"
+                    ? "bg-[#C8A951] text-white"
                     : "bg-white text-stone-600 hover:bg-stone-50"
                 }`}
               >
@@ -449,7 +449,7 @@ export default function ContractForm({
                 onClick={() => update("dealType", "CO_AGENT")}
                 className={`px-4 py-2 text-sm font-medium transition-colors border-l border-stone-200 ${
                   form.dealType === "CO_AGENT"
-                    ? "bg-purple-600 text-white"
+                    ? "bg-[#C8A951] text-white"
                     : "bg-white text-stone-600 hover:bg-stone-50"
                 }`}
               >
