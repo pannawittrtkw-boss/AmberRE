@@ -213,6 +213,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: 260,
   },
+  signatureImage: {
+    width: "80%",
+    height: 28,
+    objectFit: "contain",
+    objectPositionX: "50%",
+    objectPositionY: "100%",
+    marginBottom: 2,
+  },
   // Items table (sections 10.1 / 10.2 / 10.3) — Listing | Qty.
   itemTable: {
     marginTop: 4,
@@ -266,6 +274,7 @@ interface IdAppendixProps {
   projectName: string;
   unitNumber: string;
   isLessor: boolean;
+  signatureImage?: string | null;
 }
 
 function IdAppendix({
@@ -276,6 +285,7 @@ function IdAppendix({
   projectName,
   unitNumber,
   isLessor,
+  signatureImage,
 }: IdAppendixProps) {
   return (
     <Page size="A4" style={styles.page}>
@@ -290,10 +300,13 @@ function IdAppendix({
           {projectName} ห้อง {unitNumber} เท่านั้น
         </TText>
 
-        {/* Signature for THIS party only — centered below the caption with
-            breathing room above the line so it can actually be signed. */}
         <View style={styles.appendixSignature}>
-          <View style={styles.signatureLine} />
+          {signatureImage ? (
+            // eslint-disable-next-line jsx-a11y/alt-text
+            <Image src={signatureImage} style={{ width: 200, height: 40, objectFit: "contain", marginBottom: 2 }} />
+          ) : (
+            <View style={styles.signatureLine} />
+          )}
           <TText style={styles.small}>
             {roleTh} / {roleEn}
           </TText>
@@ -316,19 +329,33 @@ function IdAppendix({
 function PageFooter({
   lessorName,
   lesseeName,
+  lessorSignature,
+  lesseeSignature,
 }: {
   lessorName: string;
   lesseeName: string;
+  lessorSignature?: string | null;
+  lesseeSignature?: string | null;
 }) {
   return (
     <View style={styles.pageFooter} fixed>
       <View style={styles.pageFooterBlock}>
-        <View style={styles.pageFooterLine} />
+        {lessorSignature ? (
+          // eslint-disable-next-line jsx-a11y/alt-text
+          <Image src={lessorSignature} style={{ width: "85%", height: 18, objectFit: "contain", marginBottom: 2 }} />
+        ) : (
+          <View style={styles.pageFooterLine} />
+        )}
         <TText style={styles.pageFooterLabel}>ผู้ให้เช่า / Lessor</TText>
         <TText style={styles.pageFooterName}>({lessorName})</TText>
       </View>
       <View style={styles.pageFooterBlock}>
-        <View style={styles.pageFooterLine} />
+        {lesseeSignature ? (
+          // eslint-disable-next-line jsx-a11y/alt-text
+          <Image src={lesseeSignature} style={{ width: "85%", height: 18, objectFit: "contain", marginBottom: 2 }} />
+        ) : (
+          <View style={styles.pageFooterLine} />
+        )}
         <TText style={styles.pageFooterLabel}>ผู้เช่า / Lessee</TText>
         <TText style={styles.pageFooterName}>({lesseeName})</TText>
       </View>
@@ -605,6 +632,11 @@ export interface ContractPdfData {
   lessorIdImage?: string | null;
   lesseeIdImage?: string | null;
   jointLesseeIdImage?: string | null;
+
+  // E-Sign — base64 PNG data URLs. When present, rendered in place of the
+  // blank signature line at every signature spot (footer, formal block, appendix).
+  lessorSignature?: string | null;
+  lesseeSignature?: string | null;
 }
 
 const formatNum = (n: number) =>
@@ -1006,12 +1038,22 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
 
           <View style={styles.twoCol}>
             <View style={styles.signatureBlock}>
-              <View style={styles.signatureLine} />
+              {data.lessorSignature ? (
+                // eslint-disable-next-line jsx-a11y/alt-text
+                <Image src={data.lessorSignature} style={styles.signatureImage} />
+              ) : (
+                <View style={styles.signatureLine} />
+              )}
               <TText style={styles.small}>ผู้ให้เช่า / Lessor</TText>
               <TText style={styles.boldHL}>({data.lessorName})</TText>
             </View>
             <View style={styles.signatureBlock}>
-              <View style={styles.signatureLine} />
+              {data.lesseeSignature ? (
+                // eslint-disable-next-line jsx-a11y/alt-text
+                <Image src={data.lesseeSignature} style={styles.signatureImage} />
+              ) : (
+                <View style={styles.signatureLine} />
+              )}
               <TText style={styles.small}>ผู้เช่า / Lessee</TText>
               <TText style={styles.boldHL}>({data.lesseeName})</TText>
             </View>
@@ -1032,6 +1074,8 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
         <PageFooter
           lessorName={data.lessorName}
           lesseeName={data.lesseeName}
+          lessorSignature={data.lessorSignature}
+          lesseeSignature={data.lesseeSignature}
         />
         {/* Hides the footer on the formal-signature sub-page only. */}
         <FooterCover />
@@ -1049,6 +1093,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           projectName={data.projectName}
           unitNumber={data.unitNumber}
           isLessor
+          signatureImage={data.lessorSignature}
         />
       )}
       {data.lesseeIdImage && (
@@ -1060,6 +1105,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           projectName={data.projectName}
           unitNumber={data.unitNumber}
           isLessor={false}
+          signatureImage={data.lesseeSignature}
         />
       )}
       {data.jointLesseeName && data.jointLesseeIdImage && (

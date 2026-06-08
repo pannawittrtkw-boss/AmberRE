@@ -229,6 +229,9 @@ export async function GET(
     lessorIdImage: toAbs(contract.lessorIdImage),
     lesseeIdImage: toAbs(contract.lesseeIdImage),
     jointLesseeIdImage: toAbs(contract.jointLesseeIdImage),
+
+    lessorSignature: contract.lessorSignature,
+    lesseeSignature: contract.lesseeSignature,
   };
 
   try {

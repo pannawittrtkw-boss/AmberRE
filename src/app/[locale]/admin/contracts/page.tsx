@@ -20,6 +20,8 @@ import {
   Clock,
   XCircle,
   BellRing,
+  PenLine,
+  RotateCcw,
 } from "lucide-react";
 import { getIntlLocale } from "@/lib/utils";
 
@@ -39,6 +41,16 @@ type Contract = {
   signedPdfUrl?: string | null;
   shareToken?: string | null;
   property?: { id: number; titleTh: string; projectName: string | null } | null;
+};
+
+type ESignInfo = {
+  id: number;
+  lessorName: string;
+  lesseeName: string;
+  lessorSignToken?: string | null;
+  lesseeSignToken?: string | null;
+  lessorSignedAt?: string | null;
+  lesseeSignedAt?: string | null;
 };
 
 function daysRemaining(endDate: string): number {
@@ -395,6 +407,216 @@ function PaymentScheduleModal({
   );
 }
 
+// ── E-Sign modal ─────────────────────────────────────────────────────────────
+function ESignModal({
+  contract,
+  locale,
+  onClose,
+}: {
+  contract: Contract;
+  locale: string;
+  onClose: () => void;
+}) {
+  const [info, setInfo] = useState<ESignInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [error, setError] = useState("");
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/contracts/${contract.id}/esign`);
+      const d = await res.json();
+      if (d.success) setInfo(d.data);
+    } catch { /* ignore */ }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [contract.id]);
+
+  const generate = async (regenerate?: "lessor" | "lessee" | "both") => {
+    setGenerating(true);
+    setError("");
+    try {
+      const body = regenerate ? { regenerate } : {};
+      const res = await fetch(`/api/admin/contracts/${contract.id}/esign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const d = await res.json();
+      if (!d.success) throw new Error(d.error || "Failed");
+      setInfo(d.data);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "เกิดข้อผิดพลาด");
+    }
+    setGenerating(false);
+  };
+
+  const buildSignUrl = (token: string) =>
+    `${window.location.origin}/${locale}/sign/${token}`;
+
+  const copyLink = (key: string, token: string) => {
+    navigator.clipboard.writeText(buildSignUrl(token));
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  const fmtSignedAt = (iso?: string | null) =>
+    iso ? new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" }) : null;
+
+  const hasTokens = info?.lessorSignToken && info?.lesseeSignToken;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl max-w-lg w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b">
+          <div className="flex items-center gap-2">
+            <PenLine className="w-4 h-4 text-amber-600" />
+            <h3 className="font-semibold text-gray-900">E-Sign</h3>
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-4">
+          <p className="text-sm text-gray-500">
+            {contract.contractNumber} · {contract.projectName} #{contract.unitNumber}
+          </p>
+
+          {loading ? (
+            <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-amber-600" /></div>
+          ) : (
+            <>
+              {/* Generate button when no tokens yet */}
+              {!hasTokens && (
+                <div className="text-center py-4">
+                  <p className="text-sm text-gray-500 mb-4">
+                    {locale === "th"
+                      ? "สร้างลิงก์สำหรับผู้ให้เช่าและผู้เช่าเพื่อลงลายมือชื่อออนไลน์"
+                      : "Generate signing links for lessor and lessee to sign online"}
+                  </p>
+                  <button
+                    onClick={() => generate()}
+                    disabled={generating}
+                    className="flex items-center gap-2 mx-auto px-5 py-2.5 bg-[#C8A951] text-white text-sm font-medium rounded-lg hover:bg-amber-600 disabled:opacity-60"
+                  >
+                    {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <PenLine className="w-4 h-4" />}
+                    {locale === "th" ? "สร้างลิงก์ E-Sign" : "Generate E-Sign Links"}
+                  </button>
+                </div>
+              )}
+
+              {/* Lessor */}
+              {info?.lessorSignToken && (
+                <div className={`rounded-xl border p-4 ${info.lessorSignedAt ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"}`}>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700">ผู้ให้เช่า / Lessor</p>
+                      <p className="text-sm font-medium text-gray-900">{info.lessorName}</p>
+                    </div>
+                    {info.lessorSignedAt ? (
+                      <span className="flex items-center gap-1 text-xs text-green-700 bg-green-100 px-2 py-1 rounded-full shrink-0">
+                        <CheckCircle2 className="w-3 h-3" /> เซ็นแล้ว
+                      </span>
+                    ) : (
+                      <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full shrink-0">
+                        รอเซ็น
+                      </span>
+                    )}
+                  </div>
+                  {info.lessorSignedAt && (
+                    <p className="text-xs text-green-600 mb-2">เซ็นเมื่อ {fmtSignedAt(info.lessorSignedAt)}</p>
+                  )}
+                  <div className="flex gap-2 items-center">
+                    <input
+                      readOnly
+                      value={buildSignUrl(info.lessorSignToken)}
+                      className="flex-1 text-xs bg-white border border-gray-200 rounded px-2 py-1.5 text-gray-600 select-all min-w-0"
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                    />
+                    <button
+                      onClick={() => copyLink("lessor", info.lessorSignToken!)}
+                      className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded transition-colors ${copiedKey === "lessor" ? "bg-green-500 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                    >
+                      {copiedKey === "lessor" ? "✓" : locale === "th" ? "คัดลอก" : "Copy"}
+                    </button>
+                    <button
+                      onClick={() => { if (confirm("สร้างลิงก์ใหม่? ลิงก์เดิมและลายเซ็นจะถูกลบ")) generate("lessor"); }}
+                      disabled={generating}
+                      title="สร้างลิงก์ใหม่"
+                      className="shrink-0 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Lessee */}
+              {info?.lesseeSignToken && (
+                <div className={`rounded-xl border p-4 ${info.lesseeSignedAt ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"}`}>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700">ผู้เช่า / Lessee</p>
+                      <p className="text-sm font-medium text-gray-900">{info.lesseeName}</p>
+                    </div>
+                    {info.lesseeSignedAt ? (
+                      <span className="flex items-center gap-1 text-xs text-green-700 bg-green-100 px-2 py-1 rounded-full shrink-0">
+                        <CheckCircle2 className="w-3 h-3" /> เซ็นแล้ว
+                      </span>
+                    ) : (
+                      <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full shrink-0">
+                        รอเซ็น
+                      </span>
+                    )}
+                  </div>
+                  {info.lesseeSignedAt && (
+                    <p className="text-xs text-green-600 mb-2">เซ็นเมื่อ {fmtSignedAt(info.lesseeSignedAt)}</p>
+                  )}
+                  <div className="flex gap-2 items-center">
+                    <input
+                      readOnly
+                      value={buildSignUrl(info.lesseeSignToken)}
+                      className="flex-1 text-xs bg-white border border-gray-200 rounded px-2 py-1.5 text-gray-600 select-all min-w-0"
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                    />
+                    <button
+                      onClick={() => copyLink("lessee", info.lesseeSignToken!)}
+                      className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded transition-colors ${copiedKey === "lessee" ? "bg-green-500 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                    >
+                      {copiedKey === "lessee" ? "✓" : locale === "th" ? "คัดลอก" : "Copy"}
+                    </button>
+                    <button
+                      onClick={() => { if (confirm("สร้างลิงก์ใหม่? ลิงก์เดิมและลายเซ็นจะถูกลบ")) generate("lessee"); }}
+                      disabled={generating}
+                      title="สร้างลิงก์ใหม่"
+                      className="shrink-0 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {error && <p className="text-xs text-red-600">{error}</p>}
+            </>
+          )}
+        </div>
+
+        <div className="flex justify-end px-5 py-4 border-t bg-gray-50 rounded-b-xl">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
+            {locale === "th" ? "ปิด" : "Close"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main page ───────────────────────────────────────────────────────────────
 export default function AdminContractsPage({
   params,
@@ -406,6 +628,7 @@ export default function AdminContractsPage({
   const [loading, setLoading] = useState(true);
   const [signedModal, setSignedModal] = useState<Contract | null>(null);
   const [scheduleModal, setScheduleModal] = useState<Contract | null>(null);
+  const [esignModal, setEsignModal] = useState<Contract | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [stats, setStats] = useState<{ draft: number; active: number; expiringSoon: number; expired: number } | null>(null);
   const [filterYear, setFilterYear] = useState<string>(String(new Date().getFullYear()));
@@ -688,6 +911,14 @@ export default function AdminContractsPage({
                         >
                           <Download className="w-4 h-4" />
                         </a>
+                        {/* E-Sign */}
+                        <button
+                          onClick={() => setEsignModal(c)}
+                          title="E-Sign"
+                          className="p-1.5 text-amber-600 hover:bg-amber-50 rounded"
+                        >
+                          <PenLine className="w-4 h-4" />
+                        </button>
                         {/* Attach signed PDF */}
                         <button
                           onClick={() => setSignedModal(c)}
@@ -764,6 +995,15 @@ export default function AdminContractsPage({
           contract={scheduleModal}
           locale={locale}
           onClose={() => setScheduleModal(null)}
+        />
+      )}
+
+      {/* E-Sign modal */}
+      {esignModal && (
+        <ESignModal
+          contract={esignModal}
+          locale={locale}
+          onClose={() => setEsignModal(null)}
         />
       )}
     </div>

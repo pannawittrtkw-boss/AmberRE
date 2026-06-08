@@ -171,6 +171,15 @@ model Contract {
   signedPdfUrl String? @db.VarChar(500)
   shareToken   String? @unique @db.VarChar(100)
 
+  // E-Sign — unique tokens sent to each party so they can sign online.
+  // Signatures are stored as base64 data-URL PNGs drawn on a canvas.
+  lessorSignToken String?   @unique @db.VarChar(100)
+  lesseeSignToken String?   @unique @db.VarChar(100)
+  lessorSignature String?   @db.Text
+  lesseeSignature String?   @db.Text
+  lessorSignedAt  DateTime?
+  lesseeSignedAt  DateTime?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   createdById Int?
