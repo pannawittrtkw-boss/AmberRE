@@ -45,6 +45,8 @@ function buildPaymentMessage(
   bankAccountNumber: string,
   bankAccountName: string,
   bankAccountNameEn: string,
+  paymentNo: number,
+  totalPayments: number,
 ): string {
   const lateFee = overdueDays * latePaymentFee;
   const total   = amount + lateFee;
@@ -58,11 +60,14 @@ function buildPaymentMessage(
     `เรียนคุณ / Dear : ${lesseeName}\n` +
     `ผู้เช่าห้อง / Tenant of : ${projectName} Room ${unitNumber}`;
 
+  const installmentLine = `🔢 งวดที่ (Installment): ${paymentNo} / ${totalPayments}\n`;
+
   if (overdueDays === 0) {
     return (
       `${header}\n\n` +
       `📅 แจ้งเตือนกำหนดชำระค่าเช่าประจำเดือน (Monthly Rent Due Reminder)\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
+      `${installmentLine}` +
       `💰 ยอดค่าเช่า (Rent Amount): ฿${fmtMoney(amount)}\n` +
       `📆 ครบกำหนดชำระ (Due Date): Today\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
@@ -79,6 +84,7 @@ function buildPaymentMessage(
     `${header}\n\n` +
     `⚠️ แจ้งเตือนค่าเช่าค้างชำระ (Overdue Rent Notice)\n` +
     `━━━━━━━━━━━━━━━━━━━━\n` +
+    `${installmentLine}` +
     `💰 ยอดค่าเช่า (Rent Amount): ฿${fmtMoney(amount)}\n` +
     `📌 เกินกำหนด (Overdue): ${overdueDays} days\n` +
     `🔴 ค่าปรับล่าช้า (Late Fee): ฿${fmtMoney(lateFee)} (฿${fmtMoney(latePaymentFee)}/day × ${overdueDays} days)\n` +
@@ -156,6 +162,7 @@ export async function GET(req: NextRequest) {
           bankAccountNumber: true,
           bankAccountName: true,
           bankAccountNameEn: true,
+          rentPayments: { select: { dueDate: true }, orderBy: { dueDate: "asc" } },
         },
       },
     },
@@ -170,6 +177,10 @@ export async function GET(req: NextRequest) {
       ? Math.ceil((Date.now() - new Date(p.dueDate).getTime()) / 86400000)
       : 0;
 
+    const allDates     = c.rentPayments.map(r => r.dueDate.toISOString());
+    const totalPayments = allDates.length;
+    const paymentNo    = allDates.indexOf(p.dueDate.toISOString()) + 1;
+
     const message = buildPaymentMessage(
       c.lesseeName,
       c.projectName,
@@ -181,6 +192,8 @@ export async function GET(req: NextRequest) {
       c.bankAccountNumber || "-",
       c.bankAccountName   || "-",
       c.bankAccountNameEn || "",
+      paymentNo   || 1,
+      totalPayments || 1,
     );
 
     await sendLineMessage(c.lineGroupId, message);
