@@ -16,11 +16,11 @@ export const STATUS = {
 } as const;
 
 export const STATUS_LABEL: Record<string, string> = {
+  ACCEPT_ALL:                 "✅ Accept Agent & Foreigner",
   NOT_ACCEPT_AGENT:           "❌ Not Accept Agent",
   ACCEPT_AGENT_NOT_FOREIGNER: "✅ Accept Agent & Not Foreigner",
-  ACCEPT_ALL:                 "✅ Accept Agent & Foreigner",
-  UNABLE_TO_CONTACT:          "📞 Unable to contact",
   NOT_AVAILABLE:              "🚫 Not Available",
+  UNABLE_TO_CONTACT:          "📞 Unable to contact",
 };
 
 // ── LINE helpers ──────────────────────────────────────────────────────────────
@@ -157,7 +157,7 @@ export async function buildSummaryText(groupId: string, dateKey?: string): Promi
   msg += `📥 Total Link: ${total}\n`;
   msg += `✅ Verified: ${verified}\n`;
   byStatus.forEach(({ label, count }) => {
-    if (count > 0) msg += `   ${label}: ${count}\n`;
+    msg += `   ${label}: ${count}\n`;
   });
   msg += `⏳ Pending: ${pending}`;
 
