@@ -133,6 +133,9 @@ export default function ContractForm({
 
     contractType: initialData?.contractType || "NEW",
     dealType: initialData?.dealType || "DIRECT_OWNER",
+    coAgentName: initialData?.coAgentName || "",
+    coAgentPhone: initialData?.coAgentPhone || "",
+    coAgentLineId: initialData?.coAgentLineId || "",
     status: initialData?.status || "DRAFT",
   });
 
@@ -458,6 +461,40 @@ export default function ContractForm({
             </div>
           </div>
         </div>
+
+        {/* Co-Agent fields — shown only when dealType = CO_AGENT */}
+        {form.dealType === "CO_AGENT" && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+            <Field label="Co-Agent Name">
+              <input
+                type="text"
+                value={form.coAgentName}
+                onChange={(e) => update("coAgentName", e.target.value)}
+                placeholder="ชื่อ Co-Agent"
+                className={inputCls}
+              />
+            </Field>
+            <Field label="Co-Agent Phone">
+              <input
+                type="text"
+                value={form.coAgentPhone}
+                onChange={(e) => update("coAgentPhone", e.target.value)}
+                placeholder="เบอร์โทรศัพท์"
+                className={inputCls}
+              />
+            </Field>
+            <Field label="Co-Agent Line ID">
+              <input
+                type="text"
+                value={form.coAgentLineId}
+                onChange={(e) => update("coAgentLineId", e.target.value)}
+                placeholder="Line ID"
+                className={inputCls}
+              />
+            </Field>
+          </div>
+        )}
+
         <Grid>
           <Field label={locale === "th" ? "วันที่ทำสัญญา" : "Contract Date"} required>
             <input

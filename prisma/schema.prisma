@@ -156,7 +156,10 @@ model Contract {
   contractType String @default("NEW") @db.VarChar(10) // NEW | RENEW
 
   // Deal type
-  dealType String @default("DIRECT_OWNER") @db.VarChar(20) // DIRECT_OWNER | CO_AGENT
+  dealType      String  @default("DIRECT_OWNER") @db.VarChar(20) // DIRECT_OWNER | CO_AGENT
+  coAgentName   String? @db.VarChar(200)
+  coAgentPhone  String? @db.VarChar(50)
+  coAgentLineId String? @db.VarChar(100)
 
   // Status
   status String @default("DRAFT") @db.VarChar(20) // DRAFT | ACTIVE | EXPIRED | TERMINATED

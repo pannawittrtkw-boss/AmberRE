@@ -178,6 +178,9 @@ export async function POST(req: NextRequest) {
 
         contractType: body.contractType || "NEW",
         dealType: body.dealType || "DIRECT_OWNER",
+        coAgentName: body.dealType === "CO_AGENT" ? (body.coAgentName || null) : null,
+        coAgentPhone: body.dealType === "CO_AGENT" ? (body.coAgentPhone || null) : null,
+        coAgentLineId: body.dealType === "CO_AGENT" ? (body.coAgentLineId || null) : null,
         status: body.status || "DRAFT",
         // Same nested-write requirement applies to `createdBy` — Prisma 6
         // refuses the raw `createdById` scalar at create time.

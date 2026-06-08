@@ -121,6 +121,9 @@ export async function PUT(
 
         contractType: body.contractType || undefined,
         dealType: body.dealType || undefined,
+        coAgentName: body.dealType === "CO_AGENT" ? (body.coAgentName || null) : null,
+        coAgentPhone: body.dealType === "CO_AGENT" ? (body.coAgentPhone || null) : null,
+        coAgentLineId: body.dealType === "CO_AGENT" ? (body.coAgentLineId || null) : null,
         status: body.status || undefined,
       },
     });
