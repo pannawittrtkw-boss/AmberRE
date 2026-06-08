@@ -12,6 +12,7 @@ export const STATUS = {
   ACCEPT_AGENT_NOT_FOREIGNER: "ACCEPT_AGENT_NOT_FOREIGNER",
   ACCEPT_ALL:                 "ACCEPT_ALL",
   UNABLE_TO_CONTACT:          "UNABLE_TO_CONTACT",
+  NOT_AVAILABLE:              "NOT_AVAILABLE",
 } as const;
 
 export const STATUS_LABEL: Record<string, string> = {
@@ -19,6 +20,7 @@ export const STATUS_LABEL: Record<string, string> = {
   ACCEPT_AGENT_NOT_FOREIGNER: "✅ Accept Agent & Not Foreigner",
   ACCEPT_ALL:                 "✅ Accept Agent & Foreigner",
   UNABLE_TO_CONTACT:          "📞 Unable to contact",
+  NOT_AVAILABLE:              "🚫 Not Available",
 };
 
 // ── LINE helpers ──────────────────────────────────────────────────────────────
@@ -90,38 +92,47 @@ function shortUrl(url: string, max = 120): string {
 // ── Message builders ──────────────────────────────────────────────────────────
 
 function buildButtonsMessage(id: number, seq: number, url: string) {
+  const btn = (label: string, status: string, display: string) => ({
+    type: "button",
+    style: "secondary",
+    height: "sm",
+    action: {
+      type: "postback",
+      label,
+      data: `s=${status}&id=${id}`,
+      displayText: `${display} [#${seq}]`,
+    },
+  });
+
   return {
-    type: "template",
+    type: "flex",
     altText: `🔗 New URL #${seq} — Please review`,
-    template: {
-      type: "buttons",
-      text: `#${seq}\n${shortUrl(url, 130)}`,
-      actions: [
-        {
-          type: "postback",
-          label: "❌ Not Accept Agent",
-          data: `s=NOT_ACCEPT_AGENT&id=${id}`,
-          displayText: `❌ Not Accept Agent [#${seq}]`,
-        },
-        {
-          type: "postback",
-          label: "✅ Agent,Not Foreign",
-          data: `s=ACCEPT_AGENT_NOT_FOREIGNER&id=${id}`,
-          displayText: `✅ Accept Agent & Not Foreigner [#${seq}]`,
-        },
-        {
-          type: "postback",
-          label: "✅ Agent & Foreigner",
-          data: `s=ACCEPT_ALL&id=${id}`,
-          displayText: `✅ Accept Agent & Foreigner [#${seq}]`,
-        },
-        {
-          type: "postback",
-          label: "📞 Unable to contact",
-          data: `s=UNABLE_TO_CONTACT&id=${id}`,
-          displayText: `📞 Unable to contact [#${seq}]`,
-        },
-      ],
+    contents: {
+      type: "bubble",
+      size: "kilo",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#112240",
+        paddingAll: "12px",
+        contents: [
+          { type: "text", text: `🔗 #${seq}`, color: "#C8A951", weight: "bold", size: "sm" },
+          { type: "text", text: shortUrl(url, 100), color: "#FFFFFF", size: "xs", wrap: true, margin: "sm" },
+        ],
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        spacing: "xs",
+        paddingAll: "10px",
+        contents: [
+          btn("❌ Not Accept Agent",           "NOT_ACCEPT_AGENT",           "❌ Not Accept Agent"),
+          btn("✅ Agent & Not Foreigner",       "ACCEPT_AGENT_NOT_FOREIGNER", "✅ Accept Agent & Not Foreigner"),
+          btn("✅ Agent & Foreigner",           "ACCEPT_ALL",                 "✅ Accept Agent & Foreigner"),
+          btn("📞 Unable to contact",          "UNABLE_TO_CONTACT",          "📞 Unable to contact"),
+          btn("🚫 Not Available",              "NOT_AVAILABLE",              "🚫 Not Available"),
+        ],
+      },
     },
   };
 }
