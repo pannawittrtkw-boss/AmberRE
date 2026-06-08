@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { use } from "react";
-import { Loader2, RotateCcw, CheckCircle2, PenLine, AlertCircle } from "lucide-react";
+import { Loader2, RotateCcw, CheckCircle2, PenLine, AlertCircle, FileText } from "lucide-react";
 
 interface ContractInfo {
   contractNumber: string;
@@ -16,7 +16,7 @@ interface ContractInfo {
 
 function formatDate(iso?: string | null) {
   if (!iso) return "";
-  return new Date(iso).toLocaleString("th-TH", {
+  return new Date(iso).toLocaleString("en-GB", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -46,11 +46,11 @@ export default function SignPage({
     fetch(`/api/sign/${token}`)
       .then((r) => r.json())
       .then((d) => {
-        if (!d.success) { setError(d.error || "ลิงก์ไม่ถูกต้องหรือหมดอายุแล้ว"); return; }
+        if (!d.success) { setError(d.error || "Invalid or expired link."); return; }
         setInfo(d.data);
         if (d.data.alreadySigned) setDone(true);
       })
-      .catch(() => setError("เกิดข้อผิดพลาด กรุณาลองใหม่"))
+      .catch(() => setError("An error occurred. Please try again."))
       .finally(() => setLoading(false));
   }, [token]);
 
@@ -130,13 +130,15 @@ export default function SignPage({
         body: JSON.stringify({ signature }),
       });
       const d = await res.json();
-      if (!d.success) throw new Error(d.error || "เกิดข้อผิดพลาด");
+      if (!d.success) throw new Error(d.error || "An error occurred.");
       setDone(true);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "เกิดข้อผิดพลาด");
+      setError(e instanceof Error ? e.message : "An error occurred.");
     }
     setSubmitting(false);
   };
+
+  const pdfUrl = `/api/sign/${token}/pdf`;
 
   if (loading) {
     return (
@@ -151,7 +153,7 @@ export default function SignPage({
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full text-center space-y-4">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
-          <h1 className="text-lg font-bold text-gray-900">ลิงก์ไม่ถูกต้อง</h1>
+          <h1 className="text-lg font-bold text-gray-900">Invalid Link</h1>
           <p className="text-sm text-gray-500">{error}</p>
         </div>
       </div>
@@ -163,19 +165,28 @@ export default function SignPage({
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full text-center space-y-4">
           <CheckCircle2 className="w-14 h-14 text-green-500 mx-auto" />
-          <h1 className="text-xl font-bold text-gray-900">ลงลายมือชื่อสำเร็จ</h1>
+          <h1 className="text-xl font-bold text-gray-900">Signature Submitted</h1>
           <p className="text-sm text-gray-600">
-            {info?.role === "lessor" ? "ผู้ให้เช่า" : "ผู้เช่า"} · {info?.signerName}
+            {info?.role === "lessor" ? "Lessor" : "Lessee"} · {info?.signerName}
           </p>
           <p className="text-sm text-gray-500">
             {info?.contractNumber} · {info?.projectName} #{info?.unitNumber}
           </p>
           {info?.signedAt && (
-            <p className="text-xs text-gray-400">เซ็นเมื่อ {formatDate(info.signedAt)}</p>
+            <p className="text-xs text-gray-400">Signed on {formatDate(info.signedAt)}</p>
           )}
           <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
-            ขอบคุณ ลายมือชื่อของท่านได้รับการบันทึกแล้ว
+            Thank you — your signature has been recorded.
           </p>
+          <a
+            href={pdfUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full py-2.5 border border-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"
+          >
+            <FileText className="w-4 h-4" />
+            View Contract PDF
+          </a>
         </div>
       </div>
     );
@@ -186,18 +197,31 @@ export default function SignPage({
       <div className="bg-white rounded-2xl shadow-lg w-full max-w-md">
         {/* Header */}
         <div className="bg-[#112240] text-white rounded-t-2xl px-6 py-5">
-          <div className="flex items-center gap-2 mb-1">
-            <PenLine className="w-5 h-5 text-amber-400" />
-            <span className="font-bold text-lg">ลงลายมือชื่อ E-Sign</span>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <PenLine className="w-5 h-5 text-amber-400" />
+                <span className="font-bold text-lg">E-Sign Contract</span>
+              </div>
+              <p className="text-sm text-gray-300">{info?.contractNumber} · {info?.projectName} #{info?.unitNumber}</p>
+            </div>
+            <a
+              href={pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded-lg transition-colors"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              View Contract
+            </a>
           </div>
-          <p className="text-sm text-gray-300">{info?.contractNumber} · {info?.projectName} #{info?.unitNumber}</p>
         </div>
 
         <div className="px-6 py-5 space-y-5">
           {/* Signer info */}
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
             <p className="text-xs text-amber-700 font-medium mb-0.5">
-              {info?.role === "lessor" ? "ผู้ให้เช่า / Lessor" : "ผู้เช่า / Lessee"}
+              {info?.role === "lessor" ? "Lessor (ผู้ให้เช่า)" : "Lessee (ผู้เช่า)"}
             </p>
             <p className="font-semibold text-gray-900">{info?.signerName}</p>
           </div>
@@ -205,12 +229,12 @@ export default function SignPage({
           {/* Canvas */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-gray-700">วาดลายมือชื่อในกรอบด้านล่าง</p>
+              <p className="text-sm font-medium text-gray-700">Draw your signature below</p>
               <button
                 onClick={clearCanvas}
                 className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100"
               >
-                <RotateCcw className="w-3 h-3" /> ล้าง
+                <RotateCcw className="w-3 h-3" /> Clear
               </button>
             </div>
             <div className="border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50 touch-none">
@@ -227,7 +251,7 @@ export default function SignPage({
                 onTouchEnd={stopDraw}
               />
             </div>
-            <p className="text-xs text-gray-400 mt-1">ใช้นิ้วหรือเมาส์วาดลายเซ็นของท่าน</p>
+            <p className="text-xs text-gray-400 mt-1">Use your finger or mouse to draw your signature.</p>
           </div>
 
           {error && (
@@ -241,14 +265,14 @@ export default function SignPage({
             className="w-full flex items-center justify-center gap-2 py-3 bg-[#C8A951] text-white font-semibold rounded-xl hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             {submitting ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> กำลังบันทึก...</>
+              <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
             ) : (
-              <><CheckCircle2 className="w-4 h-4" /> ยืนยันลายมือชื่อ</>
+              <><CheckCircle2 className="w-4 h-4" /> Confirm Signature</>
             )}
           </button>
 
           <p className="text-xs text-center text-gray-400">
-            ลายมือชื่อนี้มีผลทางกฎหมายเทียบเท่าลายเซ็นจริง
+            This signature is legally equivalent to a handwritten signature.
           </p>
         </div>
       </div>
