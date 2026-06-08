@@ -202,7 +202,7 @@ export default function AdminLayout({
             key={item.href}
             href={item.href}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-              isActive ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"
+              isActive ? "bg-[#C8A951] text-white" : "text-gray-300 hover:bg-white/10 hover:text-white"
             }`}
           >
             <item.icon className="w-4 h-4" />
@@ -229,7 +229,7 @@ export default function AdminLayout({
 
   return (
     <div className="flex" style={{ minHeight: "calc(100vh - 64px)" }}>
-      <div className="lg:hidden fixed top-16 left-0 right-0 z-40 bg-gray-900 text-white px-4 py-2 flex items-center gap-3">
+      <div className="lg:hidden fixed top-16 left-0 right-0 z-40 bg-[#112240] text-white px-4 py-2 flex items-center gap-3">
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1">
           {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
@@ -248,7 +248,7 @@ export default function AdminLayout({
         `}
         style={{ minHeight: "calc(100vh - 64px)" }}
       >
-        <div className="h-full bg-gray-900 text-white">
+        <div className="h-full bg-[#112240] text-white">
           <div className="p-4 pt-20 lg:pt-4">
             <SidebarContent />
           </div>
