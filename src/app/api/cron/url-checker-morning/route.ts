@@ -37,7 +37,8 @@ export async function GET(req: NextRequest) {
     pending.forEach((p, i) => {
       const by   = p.sentBy ? `by ${p.sentBy} · ` : "";
       const date = fmtDate(p.sentAt);
-      msg += `${i + 1}. #${p.id} (${by}${date})\n${p.url}\n\n`;
+      const seq  = (p as any).dailySeq > 0 ? (p as any).dailySeq : i + 1;
+      msg += `${i + 1}. #${seq} (${by}${date})\n${p.url}\n\n`;
     });
 
     msg += `💡 Tap a link to review`;

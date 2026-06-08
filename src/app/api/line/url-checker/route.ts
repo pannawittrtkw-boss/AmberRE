@@ -89,37 +89,37 @@ function shortUrl(url: string, max = 120): string {
 
 // ── Message builders ──────────────────────────────────────────────────────────
 
-function buildButtonsMessage(id: number, url: string) {
+function buildButtonsMessage(id: number, seq: number, url: string) {
   return {
     type: "template",
-    altText: `🔗 New URL #${id} — Please review`,
+    altText: `🔗 New URL #${seq} — Please review`,
     template: {
       type: "buttons",
-      text: `#${id}\n${shortUrl(url, 130)}`,
+      text: `#${seq}\n${shortUrl(url, 130)}`,
       actions: [
         {
           type: "postback",
           label: "❌ Not Accept Agent",
           data: `s=NOT_ACCEPT_AGENT&id=${id}`,
-          displayText: `❌ Not Accept Agent [#${id}]`,
+          displayText: `❌ Not Accept Agent [#${seq}]`,
         },
         {
           type: "postback",
           label: "✅ Agent,Not Foreign",
           data: `s=ACCEPT_AGENT_NOT_FOREIGNER&id=${id}`,
-          displayText: `✅ Accept Agent & Not Foreigner [#${id}]`,
+          displayText: `✅ Accept Agent & Not Foreigner [#${seq}]`,
         },
         {
           type: "postback",
           label: "✅ Agent & Foreigner",
           data: `s=ACCEPT_ALL&id=${id}`,
-          displayText: `✅ Accept Agent & Foreigner [#${id}]`,
+          displayText: `✅ Accept Agent & Foreigner [#${seq}]`,
         },
         {
           type: "postback",
           label: "📞 Unable to contact",
           data: `s=UNABLE_TO_CONTACT&id=${id}`,
-          displayText: `📞 Unable to contact [#${id}]`,
+          displayText: `📞 Unable to contact [#${seq}]`,
         },
       ],
     },
@@ -186,9 +186,10 @@ export async function POST(req: NextRequest) {
         });
 
         if (event.replyToken) {
+          const displayNum = urlRecord.dailySeq > 0 ? urlRecord.dailySeq : urlId;
           const replyMsg: Record<string, unknown> = {
             type: "text",
-            text: `${STATUS_LABEL[status]} [#${urlId}] — Saved${reviewerName ? `\nBy ${reviewerName}` : ""}`,
+            text: `${STATUS_LABEL[status]} [#${displayNum}] — Saved${reviewerName ? `\nBy ${reviewerName}` : ""}`,
           };
           if (urlRecord.quoteToken) replyMsg.quoteToken = urlRecord.quoteToken;
           await reply(event.replyToken, [replyMsg]);
@@ -223,11 +224,12 @@ export async function POST(req: NextRequest) {
           msg += `━━━━━━━━━━━━━━━━━━━━\n`;
           msg += `⏳ Pending: ${pending.length} link(s)\n\n`;
           pending.forEach((p, i) => {
-            const by = p.sentBy ? `by ${p.sentBy} · ` : "";
-            const t  = new Date(p.sentAt);
-            const hh = String(t.getUTCHours() + 7).padStart(2, "0");
-            const mm = String(t.getUTCMinutes()).padStart(2, "0");
-            msg += `${i + 1}. #${p.id} (${by}${hh}:${mm})\n${p.url}\n\n`;
+            const by  = p.sentBy ? `by ${p.sentBy} · ` : "";
+            const t   = new Date(p.sentAt);
+            const hh  = String(t.getUTCHours() + 7).padStart(2, "0");
+            const mm  = String(t.getUTCMinutes()).padStart(2, "0");
+            const seq = p.dailySeq > 0 ? p.dailySeq : i + 1;
+            msg += `${i + 1}. #${seq} (${by}${hh}:${mm})\n${p.url}\n\n`;
           });
           msg += `💡 Tap a link to review`;
           await reply(event.replyToken, [{ type: "text", text: msg }]);
@@ -263,11 +265,15 @@ export async function POST(req: NextRequest) {
             text: `⚠️ Duplicate link — not counted [#${existing.id}]\nPrevious status: ${statusLabel}\n\nThis link has been excluded from the review list`,
           }]);
         } else {
-          // New URL — save and show buttons
-          const record = await prisma.lineUrlHistory.create({
-            data: { groupId, url, userId: userId ?? null, sentBy: displayName, dateKey: today, quoteToken },
+          // New URL — calculate daily sequence then save
+          const countToday = await prisma.lineUrlHistory.count({
+            where: { groupId, dateKey: today },
           });
-          await reply(event.replyToken, [buildButtonsMessage(record.id, url)]);
+          const dailySeq = countToday + 1;
+          const record = await prisma.lineUrlHistory.create({
+            data: { groupId, url, userId: userId ?? null, sentBy: displayName, dateKey: today, quoteToken, dailySeq },
+          });
+          await reply(event.replyToken, [buildButtonsMessage(record.id, dailySeq, url)]);
         }
       }
     }
