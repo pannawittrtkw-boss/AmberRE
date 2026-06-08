@@ -57,7 +57,7 @@ export async function POST() {
   let updated = 0;
 
   for (const c of contracts) {
-    const amount = Number(c.monthlyRent); // 1 month commission
+    const amount = Number(c.monthlyRent) / 2; // half-month commission
     const date   = new Date(c.endDate);
     const desc   = forecastDescription(c);
     const existing = existingMap[c.contractNumber];
