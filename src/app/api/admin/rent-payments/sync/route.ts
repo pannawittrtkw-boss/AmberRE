@@ -37,10 +37,6 @@ function generateDueDates(
     if (month > 11) { month = 0; year++; }
   }
 
-  // The first month's rent is paid in advance before move-in, so it covers
-  // the last month of the contract — drop the final due date.
-  if (dates.length > 0) dates.pop();
-
   return dates;
 }
 
