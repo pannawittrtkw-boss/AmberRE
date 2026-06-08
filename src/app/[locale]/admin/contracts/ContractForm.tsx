@@ -132,6 +132,7 @@ export default function ContractForm({
     securityDeposit: initialData?.securityDeposit || "",
 
     contractType: initialData?.contractType || "NEW",
+    dealType: initialData?.dealType || "DIRECT_OWNER",
     status: initialData?.status || "DRAFT",
   });
 
@@ -395,34 +396,66 @@ export default function ContractForm({
 
       {/* Section 1: Contract Info */}
       <Card title={locale === "th" ? "ข้อมูลสัญญา" : "Contract Info"}>
-        {/* Contract Type toggle */}
-        <div className="flex items-center gap-3 mb-5">
-          <span className="text-sm font-medium text-stone-700">
-            {locale === "th" ? "ประเภทสัญญา" : "Contract Type"}
-          </span>
-          <div className="flex rounded-lg border border-stone-200 overflow-hidden">
-            <button
-              type="button"
-              onClick={() => update("contractType", "NEW")}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                form.contractType === "NEW"
-                  ? "bg-[#C8A951] text-white"
-                  : "bg-white text-stone-600 hover:bg-stone-50"
-              }`}
-            >
-              {locale === "th" ? "สัญญาใหม่" : "New Contract"}
-            </button>
-            <button
-              type="button"
-              onClick={() => update("contractType", "RENEW")}
-              className={`px-4 py-2 text-sm font-medium transition-colors border-l border-stone-200 ${
-                form.contractType === "RENEW"
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-stone-600 hover:bg-stone-50"
-              }`}
-            >
-              {locale === "th" ? "ต่อสัญญา" : "Renewal"}
-            </button>
+        {/* Contract Type + Deal Type toggles */}
+        <div className="flex flex-wrap items-center gap-6 mb-5">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-stone-700">
+              {locale === "th" ? "ประเภทสัญญา" : "Contract Type"}
+            </span>
+            <div className="flex rounded-lg border border-stone-200 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => update("contractType", "NEW")}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  form.contractType === "NEW"
+                    ? "bg-[#C8A951] text-white"
+                    : "bg-white text-stone-600 hover:bg-stone-50"
+                }`}
+              >
+                {locale === "th" ? "สัญญาใหม่" : "New Contract"}
+              </button>
+              <button
+                type="button"
+                onClick={() => update("contractType", "RENEW")}
+                className={`px-4 py-2 text-sm font-medium transition-colors border-l border-stone-200 ${
+                  form.contractType === "RENEW"
+                    ? "bg-blue-600 text-white"
+                    : "bg-white text-stone-600 hover:bg-stone-50"
+                }`}
+              >
+                {locale === "th" ? "ต่อสัญญา" : "Renewal"}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-stone-700">
+              {locale === "th" ? "ประเภทดีล" : "Deal Type"}
+            </span>
+            <div className="flex rounded-lg border border-stone-200 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => update("dealType", "DIRECT_OWNER")}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  form.dealType === "DIRECT_OWNER"
+                    ? "bg-[#112240] text-white"
+                    : "bg-white text-stone-600 hover:bg-stone-50"
+                }`}
+              >
+                {locale === "th" ? "เจ้าของโดยตรง" : "Direct Owner"}
+              </button>
+              <button
+                type="button"
+                onClick={() => update("dealType", "CO_AGENT")}
+                className={`px-4 py-2 text-sm font-medium transition-colors border-l border-stone-200 ${
+                  form.dealType === "CO_AGENT"
+                    ? "bg-purple-600 text-white"
+                    : "bg-white text-stone-600 hover:bg-stone-50"
+                }`}
+              >
+                Co-Agent
+              </button>
+            </div>
           </div>
         </div>
         <Grid>
