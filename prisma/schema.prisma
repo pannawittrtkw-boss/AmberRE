@@ -659,6 +659,19 @@ model LineUrlHistory {
   @@index([groupId, dateKey])
 }
 
+// Maps original user message IDs to bot-sent translation message IDs so
+// the bot can delete its translation when the original is unsent.
+model LineBotTranslation {
+  id            Int      @id @default(autoincrement())
+  originalMsgId String   @unique @db.VarChar(100)
+  botMsgId      String   @db.VarChar(100)
+  groupId       String   @db.VarChar(100)
+  createdAt     DateTime @default(now())
+
+  @@index([groupId])
+  @@index([createdAt])
+}
+
 model LineUrlDuplicate {
   id          Int      @id @default(autoincrement())
   groupId     String   @db.VarChar(100)

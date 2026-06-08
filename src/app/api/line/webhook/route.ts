@@ -1,20 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 
 const LINE_REPLY_API = "https://api.line.me/v2/bot/message/reply";
 
-async function replyMessage(replyToken: string, text: string) {
+// Reply to a LINE event. Optionally quote the original message (quoteToken).
+// Returns the bot's sent message ID so it can be stored for unsend tracking.
+async function replyMessage(
+  replyToken: string,
+  text: string,
+  quoteToken?: string | null
+): Promise<string | null> {
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
-  if (!token) return;
-  await fetch(LINE_REPLY_API, {
+  if (!token) return null;
+
+  const message: Record<string, unknown> = { type: "text", text };
+  if (quoteToken) message.quoteToken = quoteToken;
+
+  const res = await fetch(LINE_REPLY_API, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({
-      replyToken,
-      messages: [{ type: "text", text }],
-    }),
+    body: JSON.stringify({ replyToken, messages: [message] }),
+  });
+
+  if (!res.ok) return null;
+  const data = await res.json();
+  return (data.sentMessages?.[0]?.id as string) ?? null;
+}
+
+// Delete a message the bot sent (only works in group/multi-person chats).
+async function deleteBotMessage(messageId: string): Promise<void> {
+  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+  if (!token) return;
+  await fetch(`https://api.line.me/v2/bot/message/${messageId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
   });
 }
 
@@ -76,10 +98,47 @@ export async function POST(req: NextRequest) {
 
         const targetLang = isThai(text) ? "en" : "th";
         const translated = await translate(text, targetLang);
-        if (translated) {
-          const flag = targetLang === "en" ? "🇬🇧" : "🇹🇭";
-          await replyMessage(event.replyToken, `${flag} ${translated}`);
+        if (!translated) continue;
+
+        const flag = targetLang === "en" ? "🇬🇧" : "🇹🇭";
+        const botMsgId = await replyMessage(
+          event.replyToken,
+          `${flag} ${translated}`,
+          event.message.quoteToken // quote the original message so it's clear what was translated
+        );
+
+        // Store mapping so we can delete the translation if the original is unsent
+        if (botMsgId && event.message.id) {
+          const groupId = source.groupId || source.roomId;
+          await prisma.lineBotTranslation.create({
+            data: {
+              originalMsgId: event.message.id,
+              botMsgId,
+              groupId,
+            },
+          }).catch(() => {});
         }
+
+        continue;
+      }
+
+      // When a user unsends a message, delete the bot's translation reply
+      if (event.type === "unsend") {
+        const originalMsgId: string | undefined = event.unsend?.messageId;
+        if (!originalMsgId) continue;
+
+        const mapping = await prisma.lineBotTranslation
+          .findUnique({ where: { originalMsgId } })
+          .catch(() => null);
+
+        if (mapping) {
+          await deleteBotMessage(mapping.botMsgId);
+          await prisma.lineBotTranslation
+            .delete({ where: { originalMsgId } })
+            .catch(() => {});
+        }
+
+        continue;
       }
     }
   } catch { /* ignore */ }
