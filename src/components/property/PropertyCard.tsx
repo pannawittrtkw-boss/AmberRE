@@ -73,16 +73,6 @@ export default function PropertyCard({
                 {messages.common.sale}
               </span>
             )}
-            {property.condition === "FIRST_HAND" && (
-              <span className="bg-blue-500 text-white text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full shadow-sm">
-                {t.firstHand || "Brand New"}
-              </span>
-            )}
-            {property.condition === "SECOND_HAND" && (
-              <span className="bg-stone-700 text-white text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full shadow-sm">
-                {t.secondHand || "Pre-owned"}
-              </span>
-            )}
           </div>
 
           {/* Type pill - top right */}

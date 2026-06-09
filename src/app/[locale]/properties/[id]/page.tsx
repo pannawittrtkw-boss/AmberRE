@@ -396,16 +396,6 @@ export default async function PropertyDetailPage({
                     Rented
                   </span>
                 )}
-                {property.condition === "FIRST_HAND" && (
-                  <span className="bg-blue-500 text-white text-[11px] font-semibold uppercase tracking-widest px-3 py-1 rounded-full">
-                    {locale === "th" ? "มือ 1" : "Brand New"}
-                  </span>
-                )}
-                {property.condition === "SECOND_HAND" && (
-                  <span className="bg-stone-700 text-white text-[11px] font-semibold uppercase tracking-widest px-3 py-1 rounded-full">
-                    {locale === "th" ? "มือ 2" : "Pre-owned"}
-                  </span>
-                )}
                 {property.propertyType === "LAND" && (
                   <span className="bg-amber-700 text-white text-[11px] font-semibold uppercase tracking-widest px-3 py-1 rounded-full">
                     {locale === "th" ? "ที่ดิน" : "Land"}
