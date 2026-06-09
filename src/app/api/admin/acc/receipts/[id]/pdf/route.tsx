@@ -1,0 +1,77 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+import { renderToBuffer } from "@react-pdf/renderer";
+import { AccPdf, AccPdfData } from "@/lib/acc-pdf";
+import React from "react";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+function fmtDate(d: Date): string {
+  const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`;
+}
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user || (session.user as any).role !== "ADMIN") {
+    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+  }
+  const { id } = await params;
+  const [receipt, company] = await Promise.all([
+    prisma.accReceipt.findUnique({
+      where: { id: parseInt(id, 10) },
+      include: { customer: true, billingNote: true, invoice: true },
+    }),
+    prisma.accountingCompany.findFirst(),
+  ]);
+  if (!receipt) return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
+
+  const items = Array.isArray(receipt.items) ? (receipt.items as any[]) : [];
+  const refDoc = receipt.billingNote?.docNumber ?? receipt.invoice?.docNumber ?? undefined;
+
+  const data: AccPdfData = {
+    docType: "RECEIPT",
+    docNumber: receipt.docNumber,
+    date: fmtDate(receipt.date),
+    refDocNumber: refDoc,
+    companyName: company?.name ?? "",
+    companyAddress: company?.address ?? undefined,
+    companyTaxId: company?.taxId ?? undefined,
+    companyPhone: company?.phone ?? undefined,
+    companyLogoUrl: company?.logoUrl ?? null,
+    companySignatureUrl: company?.signatureUrl ?? null,
+    companyAuthorizedName: company?.authorizedName ?? undefined,
+    customerName: receipt.customer.name,
+    customerAddress: receipt.customer.address ?? undefined,
+    customerTaxId: receipt.customer.taxId ?? undefined,
+    customerPhone: receipt.customer.phone ?? undefined,
+    customerEmail: receipt.customer.email ?? undefined,
+    customerContactName: receipt.customer.contactName ?? undefined,
+    items,
+    subtotal: Number(receipt.subtotal),
+    vatRate: Number(receipt.vatRate),
+    vatAmount: Number(receipt.vatAmount),
+    totalAmount: Number(receipt.totalAmount),
+    paymentMethod: receipt.paymentMethod,
+    note: receipt.note ?? undefined,
+  };
+
+  try {
+    const buffer = await renderToBuffer(<AccPdf data={data} />);
+    return new NextResponse(new Uint8Array(buffer), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `inline; filename="${receipt.docNumber}.pdf"`,
+      },
+    });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err?.message || "PDF render failed" }, { status: 500 });
+  }
+}

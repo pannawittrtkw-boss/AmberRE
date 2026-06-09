@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Building2, Users, FileText, Star, Loader2, Settings,
   Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature, Lock, Crown, LayoutList, UserSearch, CalendarDays,
+  Receipt, ClipboardList, Building,
 } from "lucide-react";
 
 // Full list of every menu item a CO_AGENT can ever be given access to.
@@ -192,27 +193,54 @@ export default function AdminLayout({
       badge: (item as any).badge ? unreadMessages : undefined,
     }));
 
-  const renderNavList = (items: { href: string; icon: any; label: string; badge?: number }[]) => (
+  const accSubItems = [
+    { href: `/${locale}/admin/accounting/invoices`, icon: FileText, label: "ใบแจ้งหนี้" },
+    { href: `/${locale}/admin/accounting/billing-notes`, icon: ClipboardList, label: "ใบวางบิล" },
+    { href: `/${locale}/admin/accounting/receipts`, icon: Receipt, label: "ใบเสร็จรับเงิน" },
+    { href: `/${locale}/admin/accounting/company`, icon: Building, label: "ตั้งค่าบริษัท" },
+  ];
+  const renderNavList = (items: { key?: string; href: string; icon: any; label: string; badge?: number }[]) => (
     <nav className="space-y-1">
       {items.map((item) => {
         const isActive = pathname === item.href || pathname.startsWith(item.href + "/") ||
           (item.href.endsWith("/admin") && pathname === item.href);
+        const isAccItem = item.key === "accounting";
         return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-              isActive ? "bg-[#C8A951] text-white" : "text-gray-300 hover:bg-white/10 hover:text-white"
-            }`}
-          >
-            <item.icon className="w-4 h-4" />
-            <span className="flex-1">{item.label}</span>
-            {item.badge && item.badge > 0 ? (
-              <span className="bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                {item.badge > 99 ? "99+" : item.badge}
-              </span>
-            ) : null}
-          </Link>
+          <React.Fragment key={item.href}>
+            <Link
+              href={item.href}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                isActive ? "bg-[#C8A951] text-white" : "text-gray-300 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              <item.icon className="w-4 h-4" />
+              <span className="flex-1">{item.label}</span>
+              {item.badge && item.badge > 0 ? (
+                <span className="bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {item.badge > 99 ? "99+" : item.badge}
+                </span>
+              ) : null}
+            </Link>
+            {isAccItem && (
+              <div className="pl-3 space-y-0.5">
+                {accSubItems.map((sub) => {
+                  const subActive = pathname === sub.href || pathname.startsWith(sub.href + "/");
+                  return (
+                    <Link
+                      key={sub.href}
+                      href={sub.href}
+                      className={`flex items-center gap-2 pl-4 pr-3 py-1.5 rounded-lg text-xs transition-colors ${
+                        subActive ? "bg-[#C8A951]/80 text-white" : "text-gray-400 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      <sub.icon className="w-3 h-3" />
+                      <span>{sub.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </React.Fragment>
         );
       })}
     </nav>
