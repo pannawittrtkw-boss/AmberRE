@@ -169,6 +169,7 @@ export async function GET(
     jointLesseeIdImage: toAbs(contract.jointLesseeIdImage),
     lessorSignature: contract.lessorSignature,
     lesseeSignature: contract.lesseeSignature,
+    jointLesseeSignature: contract.jointLesseeSignature,
   };
 
   try {

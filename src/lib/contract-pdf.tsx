@@ -633,10 +633,13 @@ export interface ContractPdfData {
   lesseeIdImage?: string | null;
   jointLesseeIdImage?: string | null;
 
-  // E-Sign — base64 PNG data URLs. When present, rendered in place of the
-  // blank signature line at every signature spot (footer, formal block, appendix).
+  // E-Sign — base64 PNG data URLs rendered in place of blank signature lines.
+  // lessor/lesseeSignature appear at the footer (every page), the formal
+  // closing block, and their ID appendix.
+  // jointLesseeSignature appears ONLY on the joint lessee ID appendix page.
   lessorSignature?: string | null;
   lesseeSignature?: string | null;
+  jointLesseeSignature?: string | null;
 }
 
 const formatNum = (n: number) =>
@@ -1117,6 +1120,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           projectName={data.projectName}
           unitNumber={data.unitNumber}
           isLessor={false}
+          signatureImage={data.jointLesseeSignature}
         />
       )}
     </Document>

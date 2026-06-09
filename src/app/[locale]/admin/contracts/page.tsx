@@ -47,10 +47,13 @@ type ESignInfo = {
   id: number;
   lessorName: string;
   lesseeName: string;
+  jointLesseeName?: string | null;
   lessorSignToken?: string | null;
   lesseeSignToken?: string | null;
+  jointLesseeSignToken?: string | null;
   lessorSignedAt?: string | null;
   lesseeSignedAt?: string | null;
+  jointLesseeSignedAt?: string | null;
 };
 
 function daysRemaining(endDate: string): number {
@@ -435,7 +438,7 @@ function ESignModal({
 
   useEffect(() => { load(); }, [contract.id]);
 
-  const generate = async (regenerate?: "lessor" | "lessee" | "both") => {
+  const generate = async (regenerate?: "lessor" | "lessee" | "joint_lessee" | "both") => {
     setGenerating(true);
     setError("");
     try {
@@ -592,6 +595,52 @@ function ESignModal({
                     </button>
                     <button
                       onClick={() => { if (confirm("สร้างลิงก์ใหม่? ลิงก์เดิมและลายเซ็นจะถูกลบ")) generate("lessee"); }}
+                      disabled={generating}
+                      title="สร้างลิงก์ใหม่"
+                      className="shrink-0 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Joint Lessee — only shown when the contract has a joint lessee */}
+              {info?.jointLesseeName && info?.jointLesseeSignToken && (
+                <div className={`rounded-xl border p-4 ${info.jointLesseeSignedAt ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"}`}>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700">ผู้เช่าร่วม / Joint Lessee</p>
+                      <p className="text-sm font-medium text-gray-900">{info.jointLesseeName}</p>
+                    </div>
+                    {info.jointLesseeSignedAt ? (
+                      <span className="flex items-center gap-1 text-xs text-green-700 bg-green-100 px-2 py-1 rounded-full shrink-0">
+                        <CheckCircle2 className="w-3 h-3" /> เซ็นแล้ว
+                      </span>
+                    ) : (
+                      <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full shrink-0">
+                        รอเซ็น
+                      </span>
+                    )}
+                  </div>
+                  {info.jointLesseeSignedAt && (
+                    <p className="text-xs text-green-600 mb-2">เซ็นเมื่อ {fmtSignedAt(info.jointLesseeSignedAt)}</p>
+                  )}
+                  <div className="flex gap-2 items-center">
+                    <input
+                      readOnly
+                      value={buildSignUrl(info.jointLesseeSignToken)}
+                      className="flex-1 text-xs bg-white border border-gray-200 rounded px-2 py-1.5 text-gray-600 select-all min-w-0"
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                    />
+                    <button
+                      onClick={() => copyLink("joint_lessee", info.jointLesseeSignToken!)}
+                      className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded transition-colors ${copiedKey === "joint_lessee" ? "bg-green-500 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                    >
+                      {copiedKey === "joint_lessee" ? "✓" : locale === "th" ? "คัดลอก" : "Copy"}
+                    </button>
+                    <button
+                      onClick={() => { if (confirm("สร้างลิงก์ใหม่? ลิงก์เดิมและลายเซ็นจะถูกลบ")) generate("joint_lessee"); }}
                       disabled={generating}
                       title="สร้างลิงก์ใหม่"
                       className="shrink-0 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"

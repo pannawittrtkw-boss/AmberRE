@@ -9,7 +9,7 @@ interface ContractInfo {
   projectName: string;
   unitNumber: string;
   signerName: string;
-  role: "lessor" | "lessee";
+  role: "lessor" | "lessee" | "joint_lessee";
   alreadySigned: boolean;
   signedAt?: string | null;
 }
@@ -167,7 +167,7 @@ export default function SignPage({
           <CheckCircle2 className="w-14 h-14 text-green-500 mx-auto" />
           <h1 className="text-xl font-bold text-gray-900">Signature Submitted</h1>
           <p className="text-sm text-gray-600">
-            {info?.role === "lessor" ? "Lessor" : "Lessee"} · {info?.signerName}
+            {info?.role === "lessor" ? "Lessor" : info?.role === "joint_lessee" ? "Joint Lessee" : "Lessee"} · {info?.signerName}
           </p>
           <p className="text-sm text-gray-500">
             {info?.contractNumber} · {info?.projectName} #{info?.unitNumber}
@@ -221,7 +221,7 @@ export default function SignPage({
           {/* Signer info */}
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
             <p className="text-xs text-amber-700 font-medium mb-0.5">
-              {info?.role === "lessor" ? "Lessor (ผู้ให้เช่า)" : "Lessee (ผู้เช่า)"}
+              {info?.role === "lessor" ? "Lessor (ผู้ให้เช่า)" : info?.role === "joint_lessee" ? "Joint Lessee (ผู้เช่าร่วม)" : "Lessee (ผู้เช่า)"}
             </p>
             <p className="font-semibold text-gray-900">{info?.signerName}</p>
           </div>

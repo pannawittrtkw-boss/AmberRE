@@ -29,10 +29,13 @@ export async function GET(
         id: true,
         lessorName: true,
         lesseeName: true,
+        jointLesseeName: true,
         lessorSignToken: true,
         lesseeSignToken: true,
+        jointLesseeSignToken: true,
         lessorSignedAt: true,
         lesseeSignedAt: true,
+        jointLesseeSignedAt: true,
       },
     });
 
@@ -49,7 +52,7 @@ export async function GET(
 }
 
 // POST — generate (or regenerate) sign tokens for a contract.
-// Body: { regenerate?: "lessor" | "lessee" | "both" }
+// Body: { regenerate?: "lessor" | "lessee" | "joint_lessee" | "both" }
 // Regenerating invalidates the old link — any previous signature is also cleared.
 export async function POST(
   req: NextRequest,
@@ -70,6 +73,8 @@ export async function POST(
       select: {
         lessorSignToken: true,
         lesseeSignToken: true,
+        jointLesseeSignToken: true,
+        jointLesseeName: true,
       },
     });
 
@@ -78,10 +83,14 @@ export async function POST(
     }
 
     const body = await req.json().catch(() => ({}));
-    const regen: "lessor" | "lessee" | "both" | undefined = body.regenerate;
+    const regen: "lessor" | "lessee" | "joint_lessee" | "both" | undefined = body.regenerate;
 
     const needsLessor = !existing.lessorSignToken || regen === "lessor" || regen === "both";
     const needsLessee = !existing.lesseeSignToken || regen === "lessee" || regen === "both";
+    // Only generate joint lessee token if the contract has a joint lessee
+    const needsJointLessee =
+      !!existing.jointLesseeName &&
+      (!existing.jointLesseeSignToken || regen === "joint_lessee" || regen === "both");
 
     const updateData: Record<string, unknown> = {};
     if (needsLessor) {
@@ -94,6 +103,11 @@ export async function POST(
       updateData.lesseeSignature = null;
       updateData.lesseeSignedAt = null;
     }
+    if (needsJointLessee) {
+      updateData.jointLesseeSignToken = generateToken();
+      updateData.jointLesseeSignature = null;
+      updateData.jointLesseeSignedAt = null;
+    }
 
     const updated = await prisma.contract.update({
       where: { id: contractId },
@@ -102,10 +116,13 @@ export async function POST(
         id: true,
         lessorName: true,
         lesseeName: true,
+        jointLesseeName: true,
         lessorSignToken: true,
         lesseeSignToken: true,
+        jointLesseeSignToken: true,
         lessorSignedAt: true,
         lesseeSignedAt: true,
+        jointLesseeSignedAt: true,
       },
     });
 

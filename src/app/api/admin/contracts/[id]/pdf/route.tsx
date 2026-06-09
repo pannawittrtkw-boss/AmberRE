@@ -232,6 +232,7 @@ export async function GET(
 
     lessorSignature: contract.lessorSignature,
     lesseeSignature: contract.lesseeSignature,
+    jointLesseeSignature: contract.jointLesseeSignature,
   };
 
   try {

@@ -11,7 +11,11 @@ export async function GET(
 
   const contract = await prisma.contract.findFirst({
     where: {
-      OR: [{ lessorSignToken: token }, { lesseeSignToken: token }],
+      OR: [
+        { lessorSignToken: token },
+        { lesseeSignToken: token },
+        { jointLesseeSignToken: token },
+      ],
     },
     select: {
       id: true,
@@ -20,10 +24,13 @@ export async function GET(
       unitNumber: true,
       lessorName: true,
       lesseeName: true,
+      jointLesseeName: true,
       lessorSignToken: true,
       lesseeSignToken: true,
+      jointLesseeSignToken: true,
       lessorSignedAt: true,
       lesseeSignedAt: true,
+      jointLesseeSignedAt: true,
     },
   });
 
@@ -32,7 +39,32 @@ export async function GET(
   }
 
   const isLessor = contract.lessorSignToken === token;
-  const alreadySigned = isLessor ? !!contract.lessorSignedAt : !!contract.lesseeSignedAt;
+  const isJointLessee = contract.jointLesseeSignToken === token;
+  // else it's the primary lessee
+
+  const role: "lessor" | "lessee" | "joint_lessee" = isLessor
+    ? "lessor"
+    : isJointLessee
+    ? "joint_lessee"
+    : "lessee";
+
+  const signerName = isLessor
+    ? contract.lessorName
+    : isJointLessee
+    ? (contract.jointLesseeName ?? "Joint Lessee")
+    : contract.lesseeName;
+
+  const alreadySigned = isLessor
+    ? !!contract.lessorSignedAt
+    : isJointLessee
+    ? !!contract.jointLesseeSignedAt
+    : !!contract.lesseeSignedAt;
+
+  const signedAt = isLessor
+    ? contract.lessorSignedAt
+    : isJointLessee
+    ? contract.jointLesseeSignedAt
+    : contract.lesseeSignedAt;
 
   return NextResponse.json({
     success: true,
@@ -40,10 +72,10 @@ export async function GET(
       contractNumber: contract.contractNumber,
       projectName: contract.projectName,
       unitNumber: contract.unitNumber,
-      signerName: isLessor ? contract.lessorName : contract.lesseeName,
-      role: isLessor ? "lessor" : "lessee",
+      signerName,
+      role,
       alreadySigned,
-      signedAt: isLessor ? contract.lessorSignedAt : contract.lesseeSignedAt,
+      signedAt,
     },
   });
 }
@@ -56,14 +88,20 @@ export async function POST(
 
   const contract = await prisma.contract.findFirst({
     where: {
-      OR: [{ lessorSignToken: token }, { lesseeSignToken: token }],
+      OR: [
+        { lessorSignToken: token },
+        { lesseeSignToken: token },
+        { jointLesseeSignToken: token },
+      ],
     },
     select: {
       id: true,
       lessorSignToken: true,
       lesseeSignToken: true,
+      jointLesseeSignToken: true,
       lessorSignedAt: true,
       lesseeSignedAt: true,
+      jointLesseeSignedAt: true,
     },
   });
 
@@ -72,7 +110,14 @@ export async function POST(
   }
 
   const isLessor = contract.lessorSignToken === token;
-  const alreadySigned = isLessor ? !!contract.lessorSignedAt : !!contract.lesseeSignedAt;
+  const isJointLessee = contract.jointLesseeSignToken === token;
+
+  const alreadySigned = isLessor
+    ? !!contract.lessorSignedAt
+    : isJointLessee
+    ? !!contract.jointLesseeSignedAt
+    : !!contract.lesseeSignedAt;
+
   if (alreadySigned) {
     return NextResponse.json({ success: false, error: "Already signed" }, { status: 400 });
   }
@@ -82,8 +127,6 @@ export async function POST(
   if (!signature || typeof signature !== "string" || !signature.startsWith("data:image/")) {
     return NextResponse.json({ success: false, error: "Invalid signature data" }, { status: 400 });
   }
-
-  // Limit signature size (~500KB base64 ≈ 375KB binary)
   if (signature.length > 700_000) {
     return NextResponse.json({ success: false, error: "Signature too large" }, { status: 400 });
   }
@@ -93,6 +136,8 @@ export async function POST(
     where: { id: contract.id },
     data: isLessor
       ? { lessorSignature: signature, lessorSignedAt: now }
+      : isJointLessee
+      ? { jointLesseeSignature: signature, jointLesseeSignedAt: now }
       : { lesseeSignature: signature, lesseeSignedAt: now },
   });
 
