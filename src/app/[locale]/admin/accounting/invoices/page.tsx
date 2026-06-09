@@ -2,16 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Loader2, Plus, FileText, Trash2, Pencil, X, ExternalLink } from "lucide-react";
-
-interface Customer {
-  id: number;
-  name: string;
-  address?: string;
-  taxId?: string;
-  phone?: string;
-  email?: string;
-  contactName?: string;
-}
+import { CustomerSection, type Customer } from "../CustomerSection";
 
 interface AccItem {
   description: string;
@@ -219,9 +210,6 @@ function InvoiceModal({
     editing?.items?.length ? editing.items : [{ ...EMPTY_ITEM }]
   );
   const [saving, setSaving] = useState(false);
-  const [showNewCustomer, setShowNewCustomer] = useState(false);
-  const [newCustName, setNewCustName] = useState("");
-  const [creatingCust, setCreatingCust] = useState(false);
 
   const { subtotal, vatAmount, totalAmount } = calcTotals(items, vatRate);
 
@@ -239,24 +227,6 @@ function InvoiceModal({
 
   const addItem = () => setItems((prev) => [...prev, { ...EMPTY_ITEM }]);
   const removeItem = (idx: number) => setItems((prev) => prev.filter((_, i) => i !== idx));
-
-  const createCustomer = async () => {
-    if (!newCustName.trim()) return;
-    setCreatingCust(true);
-    const res = await fetch("/api/admin/acc/customers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newCustName.trim() }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      onCustomerCreated(data.data);
-      setCustomerId(String(data.data.id));
-      setShowNewCustomer(false);
-      setNewCustName("");
-    }
-    setCreatingCust(false);
-  };
 
   const handleSave = async () => {
     if (!date || !customerId || items.length === 0) return;
@@ -306,40 +276,12 @@ function InvoiceModal({
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">ลูกค้า *</label>
-            {showNewCustomer ? (
-              <div className="flex gap-2">
-                <input
-                  value={newCustName} onChange={(e) => setNewCustName(e.target.value)}
-                  placeholder="ชื่อลูกค้าใหม่"
-                  className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
-                />
-                <button onClick={createCustomer} disabled={creatingCust || !newCustName}
-                  className="px-4 py-2 bg-[#C8A951] text-white rounded-lg text-sm disabled:opacity-50">
-                  {creatingCust ? <Loader2 className="w-4 h-4 animate-spin" /> : "เพิ่ม"}
-                </button>
-                <button onClick={() => setShowNewCustomer(false)}
-                  className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">
-                  ยกเลิก
-                </button>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <select value={customerId} onChange={(e) => setCustomerId(e.target.value)}
-                  className="flex-1 px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-200">
-                  <option value="">-- เลือกลูกค้า --</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-                <button onClick={() => setShowNewCustomer(true)}
-                  className="px-3 py-2 border rounded-lg text-sm hover:bg-gray-50 whitespace-nowrap">
-                  + ลูกค้าใหม่
-                </button>
-              </div>
-            )}
-          </div>
+          <CustomerSection
+            customers={customers}
+            customerId={customerId}
+            onCustomerIdChange={setCustomerId}
+            onCustomerCreated={(c) => { onCustomerCreated(c); setCustomerId(String(c.id)); }}
+          />
 
           {/* Items */}
           <div>
