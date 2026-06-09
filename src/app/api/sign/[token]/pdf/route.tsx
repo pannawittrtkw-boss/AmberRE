@@ -88,7 +88,11 @@ export async function GET(
 
   const contract = await prisma.contract.findFirst({
     where: {
-      OR: [{ lessorSignToken: token }, { lesseeSignToken: token }],
+      OR: [
+        { lessorSignToken: token },
+        { lesseeSignToken: token },
+        { jointLesseeSignToken: token },
+      ],
     },
   });
 
