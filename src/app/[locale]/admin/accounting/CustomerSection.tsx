@@ -11,6 +11,7 @@ export interface Customer {
   phone?: string;
   email?: string;
   contactName?: string;
+  isActive?: boolean;
 }
 
 const EMPTY_CUST = { name: "", address: "", taxId: "", phone: "", email: "", contactName: "" };
@@ -74,7 +75,7 @@ export function CustomerSection({ customers, customerId, onCustomerIdChange, onC
               className="flex-1 px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-200"
             >
               <option value="">-- เลือกลูกค้า --</option>
-              {customers.map((c) => (
+              {customers.filter((c) => c.isActive !== false).map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>

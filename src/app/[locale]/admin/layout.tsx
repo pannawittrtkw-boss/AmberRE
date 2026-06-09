@@ -197,6 +197,7 @@ export default function AdminLayout({
     { href: `/${locale}/admin/accounting/invoices`, icon: FileText, label: "ใบแจ้งหนี้" },
     { href: `/${locale}/admin/accounting/billing-notes`, icon: ClipboardList, label: "ใบวางบิล" },
     { href: `/${locale}/admin/accounting/receipts`, icon: Receipt, label: "ใบเสร็จรับเงิน" },
+    { href: `/${locale}/admin/accounting/customers`, icon: Users, label: "จัดการลูกค้า" },
     { href: `/${locale}/admin/accounting/company`, icon: Building, label: "ตั้งค่าบริษัท" },
   ];
   const renderNavList = (items: { key?: string; href: string; icon: any; label: string; badge?: number }[]) => (

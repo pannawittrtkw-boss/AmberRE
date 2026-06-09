@@ -9,11 +9,19 @@ async function requireAdmin() {
   return session;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   if (!(await requireAdmin())) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
-  const customers = await prisma.accCustomer.findMany({ orderBy: { name: "asc" } });
+  const { searchParams } = new URL(req.url);
+  const includeInactive = searchParams.get("all") === "1";
+  const customers = await prisma.accCustomer.findMany({
+    where: includeInactive ? undefined : { isActive: true },
+    orderBy: { name: "asc" },
+    include: {
+      _count: { select: { invoices: true, billingNotes: true, receipts: true } },
+    },
+  });
   return NextResponse.json({ success: true, data: customers });
 }
 

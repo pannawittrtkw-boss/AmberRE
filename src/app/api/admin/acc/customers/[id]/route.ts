@@ -18,10 +18,18 @@ export async function PUT(
   }
   const { id } = await params;
   const body = await req.json();
-  const { name, address, taxId, phone, email, contactName } = body;
+  const { name, address, taxId, phone, email, contactName, isActive } = body;
   const customer = await prisma.accCustomer.update({
     where: { id: parseInt(id, 10) },
-    data: { name, address, taxId, phone, email, contactName },
+    data: {
+      ...(name !== undefined && { name }),
+      ...(address !== undefined && { address }),
+      ...(taxId !== undefined && { taxId }),
+      ...(phone !== undefined && { phone }),
+      ...(email !== undefined && { email }),
+      ...(contactName !== undefined && { contactName }),
+      ...(isActive !== undefined && { isActive }),
+    },
   });
   return NextResponse.json({ success: true, data: customer });
 }

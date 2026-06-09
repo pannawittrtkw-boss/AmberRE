@@ -710,6 +710,7 @@ model AccCustomer {
   phone       String?  @db.VarChar(50)
   email       String?  @db.VarChar(200)
   contactName String?  @db.VarChar(200)
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   invoices     AccInvoice[]
