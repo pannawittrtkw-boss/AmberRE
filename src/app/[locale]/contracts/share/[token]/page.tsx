@@ -26,6 +26,15 @@ export default function ContractSharePage({
   const fmt = (iso: string) =>
     new Date(iso).toLocaleDateString("th-TH", { day: "numeric", month: "long", year: "numeric" });
 
+  const fmtRemaining = (days: number) => {
+    if (days <= 0) return null;
+    const months = Math.floor(days / 30);
+    const remainDays = days % 30;
+    if (months === 0) return `${days} วัน`;
+    if (remainDays === 0) return `${months} เดือน`;
+    return `${months} เดือน ${remainDays} วัน`;
+  };
+
   const remainingDays = (endIso: string) => {
     const end = new Date(endIso);
     end.setHours(0, 0, 0, 0);
@@ -99,14 +108,14 @@ export default function ContractSharePage({
             {(() => {
               const days = remainingDays(contract.endDate);
               if (days < 0)
-                return <p className="font-medium text-red-600">หมดอายุแล้ว {Math.abs(days)} วัน</p>;
+                return <p className="font-medium text-red-600">หมดอายุแล้ว {fmtRemaining(Math.abs(days))}</p>;
               if (days === 0)
                 return <p className="font-medium text-red-600">วันนี้เป็นวันสุดท้าย</p>;
               if (days <= 30)
-                return <p className="font-medium text-orange-500">{days} วัน</p>;
+                return <p className="font-medium text-orange-500">{fmtRemaining(days)}</p>;
               if (days <= 90)
-                return <p className="font-medium text-yellow-600">{days} วัน</p>;
-              return <p className="font-medium text-green-600">{days} วัน</p>;
+                return <p className="font-medium text-yellow-600">{fmtRemaining(days)}</p>;
+              return <p className="font-medium text-green-600">{fmtRemaining(days)}</p>;
             })()}
           </div>
         </div>

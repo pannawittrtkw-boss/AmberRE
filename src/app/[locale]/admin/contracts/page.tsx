@@ -62,6 +62,15 @@ function daysRemaining(endDate: string): number {
   return Math.ceil((end.getTime() - Date.now()) / 86400000);
 }
 
+function fmtRemaining(days: number): string {
+  if (days <= 0) return "0";
+  const months = Math.floor(days / 30);
+  const remainDays = days % 30;
+  if (months === 0) return `${days}ว`;
+  if (remainDays === 0) return `${months}ด`;
+  return `${months}ด ${remainDays}ว`;
+}
+
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-700",
   ACTIVE: "bg-green-100 text-green-700",
@@ -941,7 +950,7 @@ export default function AdminContractsPage({
                         const color = days <= 30 ? "text-red-600 bg-red-50" : days <= 60 ? "text-amber-600 bg-amber-50" : "text-green-700 bg-green-50";
                         return (
                           <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${color}`}>
-                            {days} {locale === "th" ? "วัน" : "d"}
+                            {fmtRemaining(days)}
                           </span>
                         );
                       })()}
