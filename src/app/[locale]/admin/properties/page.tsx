@@ -135,7 +135,7 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
   const fetchProperties = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/properties?limit=100");
+      const res = await fetch("/api/properties?limit=0");
       const data = await res.json();
       if (data.success) setProperties(data.data);
     } catch {}

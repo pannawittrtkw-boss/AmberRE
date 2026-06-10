@@ -26,8 +26,9 @@ export async function GET(req: NextRequest) {
     const popular = searchParams.get("popular") === "true";
     const status = searchParams.get("status") || "";
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "12");
-    const skip = (page - 1) * limit;
+    const limitParam = parseInt(searchParams.get("limit") || "12");
+    const limit = limitParam === 0 ? undefined : limitParam;
+    const skip = limit ? (page - 1) * limit : 0;
 
     // Support fetching by specific IDs (for favorites)
     const idsParam = searchParams.get("ids");
