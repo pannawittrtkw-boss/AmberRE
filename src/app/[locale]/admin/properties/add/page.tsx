@@ -15,6 +15,7 @@ import {
   FileText,
   Train,
   Sparkles,
+  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -693,13 +694,26 @@ export default function AddPropertyPage({
             {/* Source Link */}
             <div>
               <label className="block text-sm font-semibold mb-2">Source Link</label>
-              <input
-                type="text"
-                value={form.sourceLink}
-                onChange={(e) => updateForm("sourceLink", e.target.value)}
-                placeholder="https://www.facebook.com/share/..."
-                className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={form.sourceLink}
+                  onChange={(e) => updateForm("sourceLink", e.target.value)}
+                  placeholder="https://www.facebook.com/share/..."
+                  className="flex-1 border rounded-lg px-4 py-3 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                />
+                {form.sourceLink && (
+                  <a
+                    href={form.sourceLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-4 py-3 bg-amber-50 border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors text-sm font-medium whitespace-nowrap"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    เปิดลิงค์
+                  </a>
+                )}
+              </div>
             </div>
 
             {/* Image */}
