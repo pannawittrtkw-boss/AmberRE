@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 
 const LINE_REPLY_API = "https://api.line.me/v2/bot/message/reply";
@@ -202,19 +203,27 @@ export async function POST(req: NextRequest) {
         // Auto-create property stub when accepted for all (agent + foreigner)
         if (status === STATUS.ACCEPT_ALL) {
           try {
-            await prisma.$executeRawUnsafe(
-              `INSERT INTO "Property" ("titleTh","propertyType","listingType","price","sourceLink","status","postFrom","createdAt","updatedAt")
-               VALUES ($1,$2,$3,$4,$5,$6,$7,NOW(),NOW())`,
-              "รายการใหม่ (จาก ScanLink)",
-              "CONDO",
-              "RENT",
-              0,
-              urlRecord.url,
-              "VERIFIED",
-              "OWNER"
-            );
-          } catch (propErr) {
+            const adminUser = await prisma.user.findFirst({
+              where: { role: "ADMIN" },
+              select: { id: true },
+            });
+            if (!adminUser) throw new Error("No ADMIN user found");
+            const propData: Prisma.PropertyUncheckedCreateInput = {
+              titleTh:      "รายการใหม่ (จาก ScanLink)",
+              propertyType: "CONDO",
+              listingType:  "RENT",
+              price:        new Prisma.Decimal(0),
+              sourceLink:   urlRecord.url,
+              status:       "VERIFIED",
+              ownerId:      adminUser.id,
+            };
+            await prisma.property.create({ data: propData });
+          } catch (propErr: any) {
             console.error("[ScanLink] property create failed:", propErr);
+            await pushMessage(groupId, [{
+              type: "text",
+              text: `⚠️ สร้างรายการทรัพย์ไม่สำเร็จ\n${propErr?.message ?? String(propErr)}`,
+            }]);
           }
         }
 
