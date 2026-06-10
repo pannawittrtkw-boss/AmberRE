@@ -251,7 +251,7 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      // /NotVerify command — today's pending links with URLs
+      // /NotVerify command — today's pending links as Flex bubbles
       if (/^\/notverify$/i.test(text)) {
         const today   = todayKey();
         const pending = await prisma.lineUrlHistory.findMany({
@@ -262,19 +262,53 @@ export async function POST(req: NextRequest) {
         if (pending.length === 0) {
           await reply(event.replyToken, [{ type: "text", text: "✅ No pending links today" }]);
         } else {
-          let msg = `📋 Not Verified Today (${today})\n`;
-          msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-          msg += `⏳ Pending: ${pending.length} link(s)\n\n`;
-          pending.forEach((p, i) => {
-            const by  = p.sentBy ? `by ${p.sentBy} · ` : "";
-            const t   = new Date(p.sentAt);
+          const MAX_BUBBLES = 10;
+          const display = pending.slice(0, MAX_BUBBLES);
+          const bubbles = display.map((rec, i) => {
+            const by  = rec.sentBy || "Unknown";
+            const t   = new Date(rec.sentAt);
             const hh  = String(t.getUTCHours() + 7).padStart(2, "0");
             const mm  = String(t.getUTCMinutes()).padStart(2, "0");
-            const seq = p.dailySeq > 0 ? p.dailySeq : i + 1;
-            msg += `${i + 1}. #${seq} (${by}${hh}:${mm})\n${p.url}\n\n`;
+            const seq = rec.dailySeq > 0 ? rec.dailySeq : i + 1;
+            return {
+              type: "bubble",
+              size: "kilo",
+              header: {
+                type: "box", layout: "vertical", backgroundColor: "#112240", paddingAll: "10px",
+                action: { type: "uri", label: `Open #${seq}`, uri: rec.url },
+                contents: [
+                  { type: "text", text: `🔗 #${seq}`, color: "#C8A951", weight: "bold", size: "sm" },
+                  { type: "text", text: `${by} · ${hh}:${mm}`, color: "#AAAAAA", size: "xxs", margin: "xs" },
+                ],
+              },
+              body: {
+                type: "box", layout: "vertical", paddingAll: "10px",
+                action: { type: "uri", label: `Open #${seq}`, uri: rec.url },
+                contents: [
+                  { type: "text", text: shortUrl(rec.url, 80), size: "xxs", color: "#555555", wrap: true },
+                ],
+              },
+              footer: {
+                type: "box", layout: "vertical", paddingAll: "8px",
+                contents: [{
+                  type: "button", style: "primary", height: "sm", color: "#1565C0",
+                  action: { type: "uri", label: "🔗 เปิดลิงค์", uri: rec.url },
+                }],
+              },
+            };
           });
-          msg += `💡 Tap a link to review`;
-          await reply(event.replyToken, [{ type: "text", text: msg }]);
+
+          const headerText = `📋 Not Verified Today (${today})\n━━━━━━━━━━━━━━━━━━━━\n⏳ Pending: ${pending.length} link(s)` +
+            (pending.length > MAX_BUBBLES ? `\n⚠️ แสดงแค่ ${MAX_BUBBLES} รายการ` : "");
+
+          await reply(event.replyToken, [
+            { type: "text", text: headerText },
+            {
+              type: "flex",
+              altText: `⏳ Pending ${pending.length} link(s)`,
+              contents: bubbles.length === 1 ? bubbles[0] : { type: "carousel", contents: bubbles },
+            },
+          ]);
         }
         continue;
       }
