@@ -201,17 +201,21 @@ export async function POST(req: NextRequest) {
 
         // Auto-create property stub when accepted for all (agent + foreigner)
         if (status === STATUS.ACCEPT_ALL) {
-          await (prisma as any).property.create({
-            data: {
-              titleTh:      "รายการใหม่ (จาก ScanLink)",
-              propertyType: "CONDO",
-              listingType:  "RENT",
-              price:        0,
-              sourceLink:   urlRecord.url,
-              status:       "VERIFIED",
-              postFrom:     "OWNER",
-            },
-          });
+          try {
+            await prisma.$executeRawUnsafe(
+              `INSERT INTO "Property" ("titleTh","propertyType","listingType","price","sourceLink","status","postFrom","createdAt","updatedAt")
+               VALUES ($1,$2,$3,$4,$5,$6,$7,NOW(),NOW())`,
+              "รายการใหม่ (จาก ScanLink)",
+              "CONDO",
+              "RENT",
+              0,
+              urlRecord.url,
+              "VERIFIED",
+              "OWNER"
+            );
+          } catch (propErr) {
+            console.error("[ScanLink] property create failed:", propErr);
+          }
         }
 
         if (event.replyToken) {
