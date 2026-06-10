@@ -22,11 +22,14 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
   const body = await req.json();
-  const { name, address, taxId, phone, logoUrl, signatureUrl, authorizedName } = body;
+  const { name, address, taxId, phone, logoUrl, signatureUrl, authorizedName,
+          bankName, bankNameEn, bankAccountNumber, bankAccountName, bankAccountNameEn } = body;
   const company = await prisma.accountingCompany.upsert({
     where: { id: 1 },
-    update: { name, address, taxId, phone, logoUrl, signatureUrl, authorizedName },
-    create: { id: 1, name: name || "", address, taxId, phone, logoUrl, signatureUrl, authorizedName },
+    update: { name, address, taxId, phone, logoUrl, signatureUrl, authorizedName,
+              bankName, bankNameEn, bankAccountNumber, bankAccountName, bankAccountNameEn },
+    create: { id: 1, name: name || "", address, taxId, phone, logoUrl, signatureUrl, authorizedName,
+              bankName, bankNameEn, bankAccountNumber, bankAccountName, bankAccountNameEn },
   });
   return NextResponse.json({ success: true, data: company });
 }

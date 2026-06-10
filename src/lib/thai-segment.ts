@@ -44,8 +44,9 @@ export function insertThaiBreaks(text: string): string {
     for (const seg of thaiSegmenter.segment(text)) {
       if (seg.segment) fragments.push(seg.segment);
     }
-    if (fragments.length <= 1) return text;
-    return fragments.join(ZWSP);
+    const joined = fragments.length > 1 ? fragments.join(ZWSP) : text;
+    // @react-pdf/renderer clips the last glyph of a Thai string — append ZWSP guard
+    return THAI_RANGE.test(joined[joined.length - 1]) ? joined + ZWSP : joined;
   } catch {
     return text;
   }

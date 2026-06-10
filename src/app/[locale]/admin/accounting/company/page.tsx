@@ -11,11 +11,17 @@ interface CompanyForm {
   logoUrl: string;
   signatureUrl: string;
   authorizedName: string;
+  bankName: string;
+  bankNameEn: string;
+  bankAccountNumber: string;
+  bankAccountName: string;
+  bankAccountNameEn: string;
 }
 
 const EMPTY: CompanyForm = {
   name: "", address: "", taxId: "", phone: "",
   logoUrl: "", signatureUrl: "", authorizedName: "",
+  bankName: "", bankNameEn: "", bankAccountNumber: "", bankAccountName: "", bankAccountNameEn: "",
 };
 
 // ── Simple image uploader ─────────────────────────────────────────────────────
@@ -295,6 +301,11 @@ export default function AccountingCompanyPage() {
             logoUrl: d.data.logoUrl ?? "",
             signatureUrl: d.data.signatureUrl ?? "",
             authorizedName: d.data.authorizedName ?? "",
+            bankName: d.data.bankName ?? "",
+            bankNameEn: d.data.bankNameEn ?? "",
+            bankAccountNumber: d.data.bankAccountNumber ?? "",
+            bankAccountName: d.data.bankAccountName ?? "",
+            bankAccountNameEn: d.data.bankAccountNameEn ?? "",
           });
         }
       })
@@ -397,6 +408,64 @@ export default function AccountingCompanyPage() {
             className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
             placeholder="ชื่อ-นามสกุล"
           />
+        </div>
+
+        <hr className="border-gray-100" />
+
+        {/* Bank info */}
+        <div>
+          <h2 className="text-sm font-semibold text-gray-700 mb-4">บัญชีธนาคาร</h2>
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">ธนาคาร (ภาษาไทย)</label>
+                <input
+                  value={form.bankName}
+                  onChange={set("bankName")}
+                  className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
+                  placeholder="เช่น ธนาคารกสิกรไทย"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Bank Name (English)</label>
+                <input
+                  value={form.bankNameEn}
+                  onChange={set("bankNameEn")}
+                  className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
+                  placeholder="e.g. Kasikorn Bank"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">เลขที่บัญชี</label>
+                <input
+                  value={form.bankAccountNumber}
+                  onChange={set("bankAccountNumber")}
+                  className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
+                  placeholder="xxx-x-xxxxx-x"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">ชื่อบัญชี (ภาษาไทย)</label>
+                <input
+                  value={form.bankAccountName}
+                  onChange={set("bankAccountName")}
+                  className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
+                  placeholder="ชื่อบัญชีภาษาไทย"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">ชื่อบัญชี (ภาษาอังกฤษ)</label>
+                <input
+                  value={form.bankAccountNameEn}
+                  onChange={set("bankAccountNameEn")}
+                  className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
+                  placeholder="Account name in English"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         <hr className="border-gray-100" />

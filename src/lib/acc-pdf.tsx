@@ -10,7 +10,7 @@ import {
   Font,
 } from "@react-pdf/renderer";
 import type { Style } from "@react-pdf/stylesheet";
-import { splitThai } from "./thai-segment";
+import { insertThaiBreaks } from "./thai-segment";
 
 Font.register({
   family: "Sarabun",
@@ -27,9 +27,7 @@ Font.registerHyphenationCallback((word) => [word]);
 
 function thaify(node: React.ReactNode): React.ReactNode {
   if (typeof node === "string") {
-    const fragments = splitThai(node);
-    if (fragments.length <= 1) return node;
-    return fragments.map((frag, i) => <Text key={`t${i}`}>{frag}</Text>);
+    return insertThaiBreaks(node);
   }
   if (typeof node === "number" || node == null || typeof node === "boolean") return node;
   if (Array.isArray(node)) return node.map(thaify);
@@ -44,23 +42,7 @@ function thaify(node: React.ReactNode): React.ReactNode {
 
 type TTextProps = { children?: React.ReactNode; style?: Style | Style[]; wrap?: boolean };
 function TText({ children, style, wrap }: TTextProps) {
-  return (
-    <Text style={style} wrap={wrap}>
-      {thaify(children)}
-    </Text>
-  );
-}
-
-// Bilingual label: Thai main + English sub
-function BiLabel({
-  th, en, styleMain, styleSub,
-}: { th: string; en: string; styleMain?: Style | Style[]; styleSub?: Style | Style[] }) {
-  return (
-    <View>
-      <TText style={styleMain}>{th}</TText>
-      <Text style={styleSub}>{en}</Text>
-    </View>
-  );
+  return <Text style={style} wrap={wrap}>{thaify(children)}</Text>;
 }
 
 export type AccDocType = "INVOICE" | "BILLING_NOTE" | "RECEIPT";
@@ -79,7 +61,6 @@ export interface AccPdfData {
   date: string;
   dueDate?: string;
   refDocNumber?: string;
-
   companyName: string;
   companyAddress?: string;
   companyTaxId?: string;
@@ -87,31 +68,33 @@ export interface AccPdfData {
   companyLogoUrl?: string | null;
   companySignatureUrl?: string | null;
   companyAuthorizedName?: string;
-
+  companyBankName?: string;
+  companyBankNameEn?: string;
+  companyBankAccountNumber?: string;
+  companyBankAccountName?: string;
+  companyBankAccountNameEn?: string;
   customerName: string;
   customerAddress?: string;
   customerTaxId?: string;
   customerPhone?: string;
   customerEmail?: string;
   customerContactName?: string;
-
   items: AccItem[];
   subtotal: number;
   vatRate: number;
   vatAmount: number;
   totalAmount: number;
   note?: string;
-
   paymentMethod?: string;
 }
 
-const GOLD = "#C8A951";
-const TEAL = "#0D9488";
-const BLACK = "#1A1A1A";
-const GRAY = "#666666";
-const GRAY2 = "#999999";
-const LIGHT = "#F8F8F8";
-const BORDER = "#E2E2E2";
+const GOLD   = "#C8A951";
+const TEAL   = "#0D9488";
+const PURPLE = "#7C3AED";
+const BLACK  = "#1C1C1C";
+const GRAY   = "#4A4A4A";
+const GRAY2  = "#8A8A8A";
+const RULE   = "#D8D8D8";   // thin separator lines
 
 const TH_DIGITS: Record<number, string> = {
   0: "ศูนย์", 1: "หนึ่ง", 2: "สอง", 3: "สาม", 4: "สี่",
@@ -125,18 +108,18 @@ export function bahtText(num: number): string {
   const len = intStr.length;
   const places = ["", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน", "ล้าน"];
   const readChunk = (chunk: string): string => {
-    let result = "";
-    const cLen = chunk.length;
-    for (let i = 0; i < cLen; i++) {
-      const digit = parseInt(chunk[i], 10);
-      const placeIdx = cLen - i - 1;
-      if (digit === 0) continue;
-      if (placeIdx === 1 && digit === 1) result += "สิบ";
-      else if (placeIdx === 1 && digit === 2) result += "ยี่สิบ";
-      else if (placeIdx === 0 && digit === 1 && cLen > 1) result += "เอ็ด";
-      else result += TH_DIGITS[digit] + (places[placeIdx] || "");
+    let r = "";
+    const cl = chunk.length;
+    for (let i = 0; i < cl; i++) {
+      const d = parseInt(chunk[i], 10);
+      const p = cl - i - 1;
+      if (d === 0) continue;
+      if (p === 1 && d === 1) r += "สิบ";
+      else if (p === 1 && d === 2) r += "ยี่สิบ";
+      else if (p === 0 && d === 1 && cl > 1) r += "เอ็ด";
+      else r += TH_DIGITS[d] + (places[p] || "");
     }
-    return result;
+    return r;
   };
   let result = "";
   if (len > 6) {
@@ -149,219 +132,266 @@ export function bahtText(num: number): string {
   return (num < 0 ? "ลบ" : "") + result + "บาทถ้วน";
 }
 
-function docLabels(docType: AccDocType): { th: string; en: string; color: string } {
-  if (docType === "INVOICE") return { th: "ใบแจ้งหนี้", en: "INVOICE", color: GOLD };
-  if (docType === "BILLING_NOTE") return { th: "ใบวางบิล", en: "BILLING NOTE", color: TEAL };
-  return { th: "ใบเสร็จรับเงิน", en: "RECEIPT", color: GOLD };
+function docLabels(t: AccDocType): { th: string; en: string; color: string } {
+  if (t === "INVOICE")      return { th: "ใบแจ้งหนี้",      en: "Invoice",      color: GOLD };
+  if (t === "BILLING_NOTE") return { th: "ใบวางบิล",        en: "Billing Note", color: GOLD };
+  return                           { th: "ใบเสร็จรับเงิน", en: "Receipt",      color: GOLD };
 }
 
-function sigRoles(docType: AccDocType): { companyTh: string; companyEn: string; customerTh: string; customerEn: string } {
-  if (docType === "RECEIPT") return { companyTh: "ผู้รับเงิน", companyEn: "Receiver", customerTh: "ผู้จ่ายเงิน", customerEn: "Payer" };
-  if (docType === "BILLING_NOTE") return { companyTh: "ผู้ออกใบวางบิล", companyEn: "Issuer", customerTh: "ผู้รับบิล", customerEn: "Recipient" };
-  return { companyTh: "ผู้ออกใบแจ้งหนี้", companyEn: "Issuer", customerTh: "ผู้รับเอกสาร", customerEn: "Recipient" };
+function sigRoles(t: AccDocType) {
+  if (t === "RECEIPT")      return { companyTh: "ผู้รับเงิน",        companyEn: "Receiver",  customerTh: "ผู้จ่ายเงิน",   customerEn: "Payer" };
+  if (t === "BILLING_NOTE") return { companyTh: "ผู้ออกใบวางบิล",   companyEn: "Issuer",    customerTh: "ผู้รับบิล",     customerEn: "Recipient" };
+  return                           { companyTh: "ผู้ออกใบแจ้งหนี้", companyEn: "Issuer",    customerTh: "ผู้รับเอกสาร", customerEn: "Recipient" };
 }
 
 const PAYMENT_OPTIONS = [
-  { key: "CASH",     th: "เงินสด",       en: "Cash" },
-  { key: "CHEQUE",   th: "เช็ค",         en: "Cheque" },
-  { key: "TRANSFER", th: "โอนเงิน",      en: "Transfer" },
-  { key: "CREDIT",   th: "บัตรเครดิต",   en: "Credit" },
+  { key: "CASH",     th: "เงินสด",      en: "Cash" },
+  { key: "CHEQUE",   th: "เช็ค",        en: "Cheque" },
+  { key: "TRANSFER", th: "โอนเงิน",     en: "Transfer" },
+  { key: "CREDIT",   th: "บัตรเครดิต", en: "Credit Card" },
 ];
 
 const s = StyleSheet.create({
   page: {
     fontFamily: "Sarabun",
     fontSize: 9,
-    paddingTop: 32,
-    paddingBottom: 90,
-    paddingHorizontal: 38,
-    lineHeight: 1.4,
+    paddingTop: 28,
+    paddingBottom: 155,
+    paddingHorizontal: 24,
+    lineHeight: 1.5,
     color: BLACK,
   },
 
-  // ── Header ──────────────────────────────────────────────
+  // ── Header ─────────────────────────────────────────────────
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
     marginBottom: 14,
     paddingBottom: 10,
     borderBottomWidth: 2,
     borderBottomColor: GOLD,
   },
-  logoImg: { width: 80, height: 48, objectFit: "contain" },
-  logoPlaceholder: { width: 80 },
-  docTitleBlock: { alignItems: "flex-end" },
-  docTitleTh: { fontSize: 20, fontWeight: "bold", textAlign: "right" },
-  docTitleEn: { fontSize: 11, fontWeight: "bold", textAlign: "right", letterSpacing: 1 },
-  docOriginal: { fontSize: 8, color: GRAY2, textAlign: "right", marginTop: 2 },
+  logoImg: { width: 66, height: 80, objectFit: "contain" },
+  logoPlaceholder: { width: 66 },
 
-  // ── Two-column info ───────────────────────────────────────
-  twoCol: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12 },
-  companyBlock: { flex: 1, paddingRight: 10 },
-  companyName: { fontSize: 10.5, fontWeight: "bold", marginBottom: 1 },
-  companyDetailTh: { fontSize: 8, color: GRAY, lineHeight: 1.5 },
-  companyDetailEn: { fontSize: 7, color: GRAY2, lineHeight: 1.4 },
-  docInfoBlock: { width: 185 },
-  docInfoRow: { flexDirection: "row", marginBottom: 4 },
-  docInfoLabelBlock: { width: 80 },
-  docInfoLabelTh: { fontSize: 8, color: GRAY },
-  docInfoLabelEn: { fontSize: 7, color: GRAY2 },
+  // Company info sits between logo and title inside the header
+  companyMeta: { flex: 1, paddingLeft: 8, paddingRight: 12, alignSelf: "center" },
+  companyName: { fontSize: 10, fontWeight: "bold", marginBottom: 3 },
+  companyText: { fontSize: 8, color: GRAY, lineHeight: 1.55 },
+
+  titleBlock: { alignItems: "flex-end" },
+  titleThWrap: { minHeight: 30, justifyContent: "flex-end", marginBottom: 8 },
+  titleTh: { fontSize: 18, fontWeight: "bold", textAlign: "right" },
+  titleEn: {
+    fontSize: 13,
+    fontWeight: "bold",
+    textAlign: "right",
+    letterSpacing: 0.8,
+    marginBottom: 2,
+  },
+  titleSub: { fontSize: 7.5, color: GRAY2, textAlign: "right", marginTop: 4 },
+
+  // ── Customer + Doc info strip ───────────────────────────────
+  customerStrip: { marginBottom: 10 },
+  customerLabel: {
+    fontSize: 7.5,
+    fontWeight: "bold",
+    letterSpacing: 0.4,
+    marginBottom: 6,
+    paddingBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: RULE,
+  },
+  infoStrip: { flexDirection: "row" },
+  customerBlock: { flex: 1, paddingRight: 16 },
+  customerName: { fontSize: 10, fontWeight: "bold", marginBottom: 2 },
+  customerText: { fontSize: 8, color: GRAY, lineHeight: 1.55 },
+  contactRow: { flexDirection: "row", marginBottom: 2.5, marginTop: 1 },
+  contactKey: { fontSize: 7.5, color: GRAY2, width: 64 },
+  contactVal: { flex: 1, fontSize: 8 },
+
+  // Doc info — rows with thin rules
+  docInfoWrap: { width: 188, paddingVertical: 2 },
+  docInfoRow: {
+    flexDirection: "row",
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    borderBottomWidth: 0.5,
+    borderBottomColor: RULE,
+  },
+  docInfoRowLast: { flexDirection: "row", paddingVertical: 5, paddingHorizontal: 8 },
+  docInfoKey: { width: 60 },
+  docInfoKeyTh: { fontSize: 8, fontWeight: "bold" },
+  docInfoKeyEn: { fontSize: 6.5, color: GRAY2 },
   docInfoVal: { flex: 1, fontSize: 8.5, fontWeight: "bold" },
 
-  // ── Customer box ─────────────────────────────────────────
-  customerBox: {
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 4,
-    backgroundColor: LIGHT,
-    padding: 10,
-    marginBottom: 12,
-  },
-  customerSectionLabel: { fontSize: 7.5, color: GRAY, fontWeight: "bold", marginBottom: 4, letterSpacing: 0.5 },
-  customerName: { fontSize: 10, fontWeight: "bold", marginBottom: 1 },
-  customerDetailTh: { fontSize: 8, color: GRAY },
-  customerDetailEn: { fontSize: 7, color: GRAY2 },
-
-  // ── Items table ───────────────────────────────────────────
-  tableHeader: {
+  // ── Items table ─────────────────────────────────────────────
+  // Header row: bold text on thin top/bottom rules — no filled background
+  tableHead: {
     flexDirection: "row",
-    backgroundColor: BLACK,
     paddingVertical: 5,
-    paddingHorizontal: 4,
+    paddingHorizontal: 3,
+    borderTopWidth: 0.8,
+    borderTopColor: BLACK,
+    borderBottomWidth: 0.8,
+    borderBottomColor: BLACK,
+    marginBottom: 1,
   },
-  thCell: { fontSize: 7.5, color: "#FFFFFF", fontWeight: "bold" },
-  thCellSub: { fontSize: 6, color: "#CCCCCC" },
+  thTh: { fontSize: 7.5, fontWeight: "bold" },
+  thEn: { fontSize: 6, color: GRAY2 },
+
   tableRow: {
     flexDirection: "row",
     paddingVertical: 5,
-    paddingHorizontal: 4,
-    borderBottomWidth: 0.5,
-    borderBottomColor: BORDER,
+    paddingHorizontal: 3,
+    borderBottomWidth: 0.3,
+    borderBottomColor: RULE,
   },
   tableRowAlt: { backgroundColor: "#FAFAFA" },
-  tableCell: { fontSize: 8.5 },
-  colNo: { width: 20 },
-  colDesc: { flex: 1, paddingRight: 4 },
-  colQty: { width: 38, textAlign: "right" },
-  colPrice: { width: 68, textAlign: "right" },
-  colDisc: { width: 48, textAlign: "right" },
-  colAmount: { width: 70, textAlign: "right" },
+  td: { fontSize: 8.5 },
 
-  // ── Totals ────────────────────────────────────────────────
-  totalsBlock: {
-    alignItems: "flex-end",
-    marginTop: 8,
+  colNo:     { width: 18 },
+  colDesc:   { flex: 1, paddingRight: 4 },
+  colQty:    { width: 36, textAlign: "right" },
+  colPrice:  { width: 66, textAlign: "right" },
+  colDisc:   { width: 44, textAlign: "right" },
+  colAmt:    { width: 70, textAlign: "right" },
+
+  // ── Totals ──────────────────────────────────────────────────
+  totalsSection: {
+    flexDirection: "row",
+    marginTop: 10,
     marginBottom: 10,
+    gap: 12,
+    alignItems: "flex-start",
   },
+  bahtBox: { flex: 1, paddingTop: 2 },
+  bahtLabel: { fontSize: 7.5, color: GRAY2, marginBottom: 3 },
+  bahtVal: { fontSize: 8.5, fontWeight: "bold" },
+
+  totalsWrap: { width: 224 },
   totalsRow: {
     flexDirection: "row",
-    width: 240,
-    paddingVertical: 3,
-    paddingHorizontal: 6,
+    paddingVertical: 4,
     borderBottomWidth: 0.3,
-    borderBottomColor: BORDER,
+    borderBottomColor: RULE,
   },
-  totalsLabelBlock: { flex: 1 },
-  totalsLabelTh: { fontSize: 8, color: GRAY },
-  totalsLabelEn: { fontSize: 6.5, color: GRAY2 },
-  totalsVal: { width: 80, textAlign: "right", fontSize: 8.5 },
-  totalsFinalRow: {
-    flexDirection: "row",
-    width: 240,
-    paddingVertical: 6,
-    paddingHorizontal: 6,
-    backgroundColor: BLACK,
-    borderRadius: 3,
-    marginTop: 3,
-  },
-  totalsFinalLabelBlock: { flex: 1 },
-  totalsFinalLabelTh: { fontSize: 9, color: "#FFFFFF", fontWeight: "bold" },
-  totalsFinalLabelEn: { fontSize: 7, color: "#CCCCCC" },
-  totalsFinalVal: { width: 80, textAlign: "right", fontSize: 9.5, color: GOLD, fontWeight: "bold", alignSelf: "center" },
-  bahtTextRow: {
-    flexDirection: "row",
-    width: 240,
-    paddingHorizontal: 6,
-    marginTop: 3,
-  },
-  bahtTextVal: { fontSize: 7, color: GRAY2, flex: 1, textAlign: "right" },
+  totalsKey: { flex: 1 },
+  totalsKeyTh: { fontSize: 8, color: GRAY },
+  totalsKeyEn: { fontSize: 6.5, color: GRAY2 },
+  totalsVal: { width: 70, textAlign: "right", fontSize: 8.5 },
 
-  // ── Note ─────────────────────────────────────────────────
-  noteBox: {
+  // Grand total — simple bold row, colored total
+  grandRow: {
+    flexDirection: "row",
+    paddingVertical: 5,
+    marginTop: 2,
+    borderTopWidth: 1,
+    borderTopColor: BLACK,
+  },
+  grandKey: { flex: 1 },
+  grandKeyTh: { fontSize: 9, fontWeight: "bold" },
+  grandKeyEn: { fontSize: 6.5, color: GRAY2 },
+  grandVal: { width: 70, textAlign: "right", fontSize: 10, fontWeight: "bold" },
+
+  // ── Note ───────────────────────────────────────────────────
+  noteWrap: {
     marginBottom: 10,
-    padding: 8,
-    backgroundColor: LIGHT,
-    borderLeftWidth: 2,
+    paddingLeft: 8,
+    borderLeftWidth: 2.5,
     borderLeftColor: GOLD,
   },
-  noteLabelTh: { fontSize: 7.5, color: GRAY, fontWeight: "bold" },
-  noteLabelEn: { fontSize: 6.5, color: GRAY2, marginBottom: 3 },
-  noteText: { fontSize: 8.5, color: BLACK },
+  noteKey: { fontSize: 7.5, color: GRAY, fontWeight: "bold", marginBottom: 2 },
+  noteVal: { fontSize: 8.5 },
 
-  // ── Payment method ────────────────────────────────────────
-  paymentSection: { marginBottom: 12 },
-  paymentLabelTh: { fontSize: 8, color: GRAY, fontWeight: "bold" },
-  paymentLabelEn: { fontSize: 6.5, color: GRAY2, marginBottom: 6 },
-  paymentRow: { flexDirection: "row", gap: 12 },
-  paymentItem: { flexDirection: "row", alignItems: "center", gap: 4 },
+  // ── Bank Info ───────────────────────────────────────────────
+  bankWrap: { width: "58%", marginBottom: 8 },
+  bankTitle: { fontSize: 7.5, fontWeight: "bold", color: GRAY, marginBottom: 4 },
+  bankRow: { flexDirection: "row", gap: 10 },
+  bankItem: { flex: 1 },
+  bankKey: { fontSize: 6.5, color: GRAY2, marginBottom: 1.5 },
+  bankVal: { fontSize: 8, fontWeight: "bold" },
+
+  // ── Payment ─────────────────────────────────────────────────
+  paymentWrap: { marginBottom: 14 },
+  paymentKey: { fontSize: 8, fontWeight: "bold", color: GRAY, marginBottom: 5 },
+  paymentRow: { flexDirection: "row", gap: 18 },
+  paymentItem: { flexDirection: "row", alignItems: "center", gap: 3.5 },
   paymentBox: {
-    width: 12,
-    height: 12,
-    borderWidth: 0.8,
-    borderColor: BLACK,
-    borderRadius: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    width: 11, height: 11,
+    borderWidth: 0.8, borderColor: BLACK, borderRadius: 1,
+    alignItems: "center", justifyContent: "center",
   },
-  paymentBoxChecked: { backgroundColor: GOLD, borderColor: GOLD },
-  paymentCheckMark: { fontSize: 7, color: "#FFFFFF", fontWeight: "bold" },
-  paymentTextTh: { fontSize: 8 },
-  paymentTextEn: { fontSize: 6.5, color: GRAY2 },
+  paymentBoxOn: { backgroundColor: GOLD, borderColor: GOLD },
+  paymentCheck: { fontSize: 7, color: "#FFF", fontWeight: "bold" },
+  paymentTh: { fontSize: 8 },
+  paymentEn: { fontSize: 6.5, color: GRAY2 },
 
-  // ── Signature block ───────────────────────────────────────
+  // ── Signature ───────────────────────────────────────────────
   sigBlock: {
     position: "absolute",
-    bottom: 20,
+    bottom: 18,
     left: 38,
     right: 38,
-    flexDirection: "row",
-    gap: 16,
-    borderTopWidth: 0.5,
-    borderTopColor: BORDER,
-    paddingTop: 8,
   },
+  sigSeparator: {
+    borderTopWidth: 0.5,
+    borderTopColor: RULE,
+    marginBottom: 8,
+  },
+  sigRow: { flexDirection: "row", gap: 6 },
   sigCol: { flex: 1, alignItems: "center" },
-  sigInNameTh: { fontSize: 7.5, color: GRAY, textAlign: "center" },
-  sigInNameEn: { fontSize: 6.5, color: GRAY2, textAlign: "center", marginBottom: 3 },
-  sigImg: { width: 80, height: 32, objectFit: "contain", marginBottom: 2 },
-  sigImgPlaceholder: { height: 32 },
-  sigLine: { borderBottomWidth: 0.8, borderBottomColor: BLACK, width: "90%", marginBottom: 3 },
+  sigMid: { width: 90, alignItems: "center" },
+  sigInName: { fontSize: 6.5, color: GRAY2, textAlign: "center", marginBottom: 1 },
+  sigEntity: { fontSize: 7.5, fontWeight: "bold", textAlign: "center", marginBottom: 5 },
+  sigImg: { width: 76, height: 30, objectFit: "contain", marginBottom: 2 },
+  sigSpace: { height: 36 },
+  sigLine: { borderBottomWidth: 0.8, borderBottomColor: BLACK, width: "88%", marginBottom: 3 },
   sigName: { fontSize: 7.5, textAlign: "center", color: GRAY },
-  sigRoleTh: { fontSize: 8.5, textAlign: "center", fontWeight: "bold" },
-  sigRoleEn: { fontSize: 7, textAlign: "center", color: GRAY2 },
-  sigDateTh: { fontSize: 7.5, textAlign: "center", color: GRAY2, marginTop: 2 },
-  sigDateEn: { fontSize: 6.5, textAlign: "center", color: GRAY2 },
+  sigRole: { fontSize: 8, textAlign: "center", fontWeight: "bold" },
+  sigRoleEn: { fontSize: 6.5, textAlign: "center", color: GRAY2 },
+  sigDate: { fontSize: 7, textAlign: "center", color: GRAY2, marginTop: 2 },
+  stampCircle: {
+    width: 64, height: 64, borderRadius: 32,
+    borderWidth: 1, borderColor: RULE,
+    borderStyle: "dashed",
+    alignItems: "center", justifyContent: "center",
+    marginBottom: 3,
+  },
+  stampImg: { width: 48, height: 48, objectFit: "contain" },
+  stampText: { fontSize: 6.5, color: GRAY2, textAlign: "center" },
 });
 
 function fmt(n: number) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// Bilingual table header cell
-function ThCell({
-  th, en, style,
-}: { th: string; en: string; style: Style | Style[] }) {
+function TH({ th, en, style }: { th: string; en: string; style: Style | Style[] }) {
   return (
     <View style={style}>
-      <TText style={s.thCell}>{th}</TText>
-      <Text style={s.thCellSub}>{en}</Text>
+      <TText style={s.thTh}>{th}</TText>
+      <Text style={s.thEn}>{en}</Text>
+    </View>
+  );
+}
+
+function DocRow({
+  labelTh, labelEn, value, isLast, color,
+}: { labelTh: string; labelEn: string; value: string; isLast?: boolean; color: string }) {
+  return (
+    <View style={isLast ? s.docInfoRowLast : s.docInfoRow}>
+      <View style={s.docInfoKey}>
+        <TText style={[s.docInfoKeyTh, { color }]}>{labelTh}</TText>
+        <Text style={s.docInfoKeyEn}>{labelEn}</Text>
+      </View>
+      <TText style={s.docInfoVal}>{value}</TText>
     </View>
   );
 }
 
 export function AccPdf({ data }: { data: AccPdfData }) {
-  const { th: titleTh, en: titleEn, color: titleColor } = docLabels(data.docType);
+  const { th: titleTh, en: titleEn, color: C } = docLabels(data.docType);
   const roles = sigRoles(data.docType);
   const hasDiscount = data.items.some((it) => (it.discountPct ?? 0) > 0);
 
@@ -369,169 +399,142 @@ export function AccPdf({ data }: { data: AccPdfData }) {
     <Document>
       <Page size="A4" style={s.page}>
 
-        {/* ── Header ── */}
+        {/* ── Header: Logo | Company info | Title ── */}
         <View style={s.headerRow}>
-          <View>
-            {data.companyLogoUrl ? (
-              <Image src={data.companyLogoUrl} style={s.logoImg} />
-            ) : (
-              <View style={s.logoPlaceholder} />
-            )}
-          </View>
-          <View style={s.docTitleBlock}>
-            <TText style={[s.docTitleTh, { color: titleColor }]}>{titleTh}</TText>
-            <Text style={[s.docTitleEn, { color: titleColor }]}>{titleEn}</Text>
-            <TText style={s.docOriginal}>ต้นฉบับ / Original</TText>
-          </View>
-        </View>
+          {data.companyLogoUrl
+            ? <Image src={data.companyLogoUrl} style={s.logoImg} />
+            : <View style={s.logoPlaceholder} />}
 
-        {/* ── Company + Doc Info ── */}
-        <View style={s.twoCol}>
-          <View style={s.companyBlock}>
-            <TText style={s.companyName}>{data.companyName}</TText>
-            {data.companyAddress && (
-              <TText style={s.companyDetailTh}>{data.companyAddress}</TText>
-            )}
+          <View style={s.companyMeta}>
+            <Text style={s.companyName}>{data.companyName + "​"}</Text>
+            {data.companyAddress && <TText style={s.companyText}>{data.companyAddress}</TText>}
             {data.companyTaxId && (
-              <>
-                <TText style={s.companyDetailTh}>{"เลขประจำตัวผู้เสียภาษี: " + data.companyTaxId}</TText>
-                <Text style={s.companyDetailEn}>{"Tax ID: " + data.companyTaxId}</Text>
-              </>
+              <TText style={s.companyText}>{"เลขประจำตัวผู้เสียภาษี / Tax ID: " + data.companyTaxId}</TText>
             )}
             {data.companyPhone && (
-              <TText style={s.companyDetailTh}>{"โทร / Tel: " + data.companyPhone}</TText>
+              <TText style={s.companyText}>{"โทร / Tel: " + data.companyPhone}</TText>
             )}
           </View>
-          <View style={s.docInfoBlock}>
-            <View style={s.docInfoRow}>
-              <View style={s.docInfoLabelBlock}>
-                <TText style={s.docInfoLabelTh}>เลขที่</TText>
-                <Text style={s.docInfoLabelEn}>No.</Text>
-              </View>
-              <TText style={s.docInfoVal}>{data.docNumber}</TText>
+
+          <View style={s.titleBlock}>
+            <View style={s.titleThWrap}>
+              <TText style={[s.titleTh, { color: C }]}>{titleTh}</TText>
             </View>
-            <View style={s.docInfoRow}>
-              <View style={s.docInfoLabelBlock}>
-                <TText style={s.docInfoLabelTh}>วันที่</TText>
-                <Text style={s.docInfoLabelEn}>Date</Text>
-              </View>
-              <TText style={s.docInfoVal}>{data.date}</TText>
-            </View>
-            {data.dueDate && (
-              <View style={s.docInfoRow}>
-                <View style={s.docInfoLabelBlock}>
-                  <TText style={s.docInfoLabelTh}>ครบกำหนด</TText>
-                  <Text style={s.docInfoLabelEn}>Due Date</Text>
-                </View>
-                <TText style={s.docInfoVal}>{data.dueDate}</TText>
-              </View>
-            )}
-            {data.refDocNumber && (
-              <View style={s.docInfoRow}>
-                <View style={s.docInfoLabelBlock}>
-                  <TText style={s.docInfoLabelTh}>อ้างถึง</TText>
-                  <Text style={s.docInfoLabelEn}>Reference</Text>
-                </View>
-                <TText style={s.docInfoVal}>{data.refDocNumber}</TText>
-              </View>
-            )}
+            <Text style={[s.titleEn, { color: C }]}>{titleEn}</Text>
+            <TText style={s.titleSub}>ต้นฉบับ / Original</TText>
           </View>
         </View>
 
-        {/* ── Customer ── */}
-        <View style={s.customerBox}>
-          <TText style={s.customerSectionLabel}>ลูกค้า / CUSTOMER</TText>
-          <TText style={s.customerName}>{data.customerName}</TText>
-          {data.customerContactName && (
-            <TText style={s.customerDetailTh}>{"ผู้ติดต่อ / Contact: " + data.customerContactName}</TText>
-          )}
-          {data.customerAddress && (
-            <TText style={s.customerDetailTh}>{data.customerAddress}</TText>
-          )}
-          {data.customerTaxId && (
-            <>
-              <TText style={s.customerDetailTh}>{"เลขผู้เสียภาษี: " + data.customerTaxId}</TText>
-              <Text style={s.customerDetailEn}>{"Tax ID: " + data.customerTaxId}</Text>
-            </>
-          )}
-          {data.customerPhone && (
-            <TText style={s.customerDetailTh}>{"โทร / Tel: " + data.customerPhone}</TText>
-          )}
-          {data.customerEmail && (
-            <Text style={s.customerDetailEn}>{"Email: " + data.customerEmail}</Text>
-          )}
+        {/* ── Customer info + Doc info ── */}
+        <View style={s.customerStrip}>
+          <TText style={[s.customerLabel, { color: C }]}>ลูกค้า / CUSTOMER</TText>
+          <View style={s.infoStrip}>
+            <View style={s.customerBlock}>
+              <Text style={s.customerName}>{data.customerName + "​"}</Text>
+              {data.customerAddress && <TText style={s.customerText}>{data.customerAddress}</TText>}
+              {data.customerTaxId && (
+                <TText style={s.customerText}>{"เลขประจำตัวผู้เสียภาษี / Tax ID: " + data.customerTaxId}</TText>
+              )}
+              {data.customerContactName && (
+                <View style={s.contactRow}>
+                  <Text style={s.contactKey}>ผู้ติดต่อ</Text>
+                  <TText style={s.contactVal}>{data.customerContactName}</TText>
+                </View>
+              )}
+              {data.customerPhone && (
+                <View style={s.contactRow}>
+                  <Text style={s.contactKey}>{"โทร / Tel"}</Text>
+                  <Text style={s.contactVal}>{data.customerPhone}</Text>
+                </View>
+              )}
+              {data.customerEmail && (
+                <View style={s.contactRow}>
+                  <Text style={s.contactKey}>{"อีเมล / Email"}</Text>
+                  <Text style={s.contactVal}>{data.customerEmail}</Text>
+                </View>
+              )}
+            </View>
+
+            <View style={s.docInfoWrap}>
+              <DocRow labelTh="เลขที่"     labelEn="No."       value={data.docNumber} color={C} />
+              <DocRow labelTh="วันที่"     labelEn="Date"      value={data.date}      color={C} />
+              {data.dueDate && (
+                <DocRow labelTh="ครบกำหนด" labelEn="Due Date"  value={data.dueDate}   color={C} />
+              )}
+              {data.refDocNumber
+                ? <DocRow labelTh="อ้างถึง" labelEn="Reference" value={data.refDocNumber} color={C} isLast />
+                : <DocRow labelTh="ผู้รับ"  labelEn="Attention" value={data.customerContactName || data.customerName} color={C} isLast />
+              }
+            </View>
+          </View>
         </View>
 
         {/* ── Items Table ── */}
-        <View style={s.tableHeader}>
-          <ThCell th="#" en="#" style={s.colNo} />
-          <ThCell th="รายละเอียด" en="Description" style={s.colDesc} />
-          <ThCell th="จำนวน" en="Qty" style={[s.colQty, { textAlign: "right" }]} />
-          <ThCell th="ราคาต่อหน่วย" en="Unit Price" style={[s.colPrice, { textAlign: "right" }]} />
-          {hasDiscount && (
-            <ThCell th="ส่วนลด%" en="Disc%" style={[s.colDisc, { textAlign: "right" }]} />
-          )}
-          <ThCell th="มูลค่า" en="Amount" style={[s.colAmount, { textAlign: "right" }]} />
+        <View style={s.tableHead}>
+          <TH th="#" en="" style={s.colNo} />
+          <TH th="รายละเอียด" en="Description" style={s.colDesc} />
+          <TH th="จำนวน" en="Qty" style={[s.colQty, { textAlign: "right" }]} />
+          <TH th="ราคาต่อหน่วย" en="Unit Price" style={[s.colPrice, { textAlign: "right" }]} />
+          {hasDiscount && <TH th="ส่วนลด%" en="Disc%" style={[s.colDisc, { textAlign: "right" }]} />}
+          <TH th="มูลค่า" en="Amount" style={[s.colAmt, { textAlign: "right" }]} />
         </View>
         {data.items.map((item, idx) => (
           <View key={idx} style={[s.tableRow, idx % 2 === 1 ? s.tableRowAlt : {}]}>
-            <TText style={[s.tableCell, s.colNo]}>{(idx + 1).toString()}</TText>
-            <TText style={[s.tableCell, s.colDesc]}>{item.description}</TText>
-            <TText style={[s.tableCell, s.colQty]}>{item.qty.toString()}</TText>
-            <TText style={[s.tableCell, s.colPrice]}>{fmt(item.unitPrice)}</TText>
+            <TText style={[s.td, s.colNo]}>{(idx + 1).toString()}</TText>
+            <TText style={[s.td, s.colDesc]}>{item.description}</TText>
+            <TText style={[s.td, s.colQty]}>{item.qty.toString()}</TText>
+            <TText style={[s.td, s.colPrice]}>{fmt(item.unitPrice)}</TText>
             {hasDiscount && (
-              <TText style={[s.tableCell, s.colDisc]}>
-                {item.discountPct ? item.discountPct + "%" : "—"}
-              </TText>
+              <TText style={[s.td, s.colDisc]}>{item.discountPct ? item.discountPct + "%" : "—"}</TText>
             )}
-            <TText style={[s.tableCell, s.colAmount]}>{fmt(item.amount)}</TText>
+            <TText style={[s.td, s.colAmt]}>{fmt(item.amount)}</TText>
           </View>
         ))}
 
         {/* ── Totals ── */}
-        <View style={s.totalsBlock}>
-          <View style={s.totalsRow}>
-            <View style={s.totalsLabelBlock}>
-              <TText style={s.totalsLabelTh}>รวมเป็นเงิน</TText>
-              <Text style={s.totalsLabelEn}>Subtotal</Text>
-            </View>
-            <Text style={s.totalsVal}>{fmt(data.subtotal)}</Text>
+        <View style={s.totalsSection}>
+          <View style={s.bahtBox}>
+            <TText style={s.bahtLabel}>จำนวนเงิน (ตัวอักษร) / Amount in Words</TText>
+            <TText style={s.bahtVal}>{"(" + bahtText(data.totalAmount) + ")"}</TText>
           </View>
-          <View style={s.totalsRow}>
-            <View style={s.totalsLabelBlock}>
-              <TText style={s.totalsLabelTh}>{"ภาษีมูลค่าเพิ่ม " + data.vatRate + "%"}</TText>
-              <Text style={s.totalsLabelEn}>{"VAT " + data.vatRate + "%"}</Text>
+          <View style={s.totalsWrap}>
+            <View style={s.totalsRow}>
+              <View style={s.totalsKey}>
+                <TText style={s.totalsKeyTh}>รวมเป็นเงิน</TText>
+                <Text style={s.totalsKeyEn}>Subtotal</Text>
+              </View>
+              <Text style={s.totalsVal}>{fmt(data.subtotal)}</Text>
             </View>
-            <Text style={s.totalsVal}>{fmt(data.vatAmount)}</Text>
-          </View>
-          <View style={s.totalsFinalRow}>
-            <View style={s.totalsFinalLabelBlock}>
-              <TText style={s.totalsFinalLabelTh}>รวมทั้งสิ้น</TText>
-              <Text style={s.totalsFinalLabelEn}>Grand Total (THB)</Text>
+            <View style={s.totalsRow}>
+              <View style={s.totalsKey}>
+                <TText style={s.totalsKeyTh}>{"ภาษีมูลค่าเพิ่ม " + data.vatRate + "%"}</TText>
+                <Text style={s.totalsKeyEn}>{"VAT " + data.vatRate + "%"}</Text>
+              </View>
+              <Text style={s.totalsVal}>{fmt(data.vatAmount)}</Text>
             </View>
-            <Text style={s.totalsFinalVal}>{fmt(data.totalAmount)}</Text>
-          </View>
-          <View style={s.bahtTextRow}>
-            <TText style={s.bahtTextVal}>{"(" + bahtText(data.totalAmount) + ")"}</TText>
+            <View style={s.grandRow}>
+              <View style={s.grandKey}>
+                <TText style={s.grandKeyTh}>จำนวนเงินรวมทั้งสิ้น</TText>
+                <Text style={s.grandKeyEn}>Grand Total (THB)</Text>
+              </View>
+              <Text style={[s.grandVal, { color: C }]}>{fmt(data.totalAmount)}</Text>
+            </View>
           </View>
         </View>
 
-        {/* ── Payment Method (Receipt only) ── */}
+        {/* ── Payment (Receipt) ── */}
         {data.docType === "RECEIPT" && (
-          <View style={s.paymentSection}>
-            <TText style={s.paymentLabelTh}>วิธีชำระเงิน</TText>
-            <Text style={s.paymentLabelEn}>Payment Method</Text>
+          <View style={s.paymentWrap}>
+            <TText style={s.paymentKey}>วิธีชำระเงิน / Payment Method</TText>
             <View style={s.paymentRow}>
               {PAYMENT_OPTIONS.map((m) => (
                 <View key={m.key} style={s.paymentItem}>
-                  <View style={[s.paymentBox, data.paymentMethod === m.key ? s.paymentBoxChecked : {}]}>
-                    {data.paymentMethod === m.key && (
-                      <Text style={s.paymentCheckMark}>✓</Text>
-                    )}
+                  <View style={[s.paymentBox, data.paymentMethod === m.key ? s.paymentBoxOn : {}]}>
+                    {data.paymentMethod === m.key && <Text style={s.paymentCheck}>✓</Text>}
                   </View>
                   <View>
-                    <TText style={s.paymentTextTh}>{m.th}</TText>
-                    <Text style={s.paymentTextEn}>{m.en}</Text>
+                    <TText style={s.paymentTh}>{m.th}</TText>
+                    <Text style={s.paymentEn}>{m.en}</Text>
                   </View>
                 </View>
               ))}
@@ -541,41 +544,75 @@ export function AccPdf({ data }: { data: AccPdfData }) {
 
         {/* ── Note ── */}
         {data.note && (
-          <View style={s.noteBox}>
-            <TText style={s.noteLabelTh}>หมายเหตุ</TText>
-            <Text style={s.noteLabelEn}>Remark</Text>
-            <TText style={s.noteText}>{data.note}</TText>
+          <View style={s.noteWrap}>
+            <TText style={s.noteKey}>หมายเหตุ / Remark</TText>
+            <TText style={s.noteVal}>{data.note}</TText>
           </View>
         )}
 
-        {/* ── Signature Block ── */}
+        {/* ── Signature ── */}
         <View fixed style={s.sigBlock}>
-          {/* Company side */}
-          <View style={s.sigCol}>
-            <TText style={s.sigInNameTh}>{"ในนาม " + data.companyName}</TText>
-            <Text style={s.sigInNameEn}>{"On behalf of " + data.companyName}</Text>
-            {data.companySignatureUrl ? (
-              <Image src={data.companySignatureUrl} style={s.sigImg} />
-            ) : (
-              <View style={s.sigImgPlaceholder} />
-            )}
-            <View style={s.sigLine} />
-            {data.companyAuthorizedName && (
-              <TText style={s.sigName}>{"(" + data.companyAuthorizedName + ")"}</TText>
-            )}
-            <TText style={s.sigRoleTh}>{roles.companyTh}</TText>
-            <Text style={s.sigRoleEn}>{roles.companyEn}</Text>
-            <TText style={s.sigDateTh}>วันที่ / Date .................................</TText>
-          </View>
-          {/* Customer side */}
-          <View style={s.sigCol}>
-            <TText style={s.sigInNameTh}>{"ในนาม " + data.customerName}</TText>
-            <Text style={s.sigInNameEn}>{"On behalf of " + data.customerName}</Text>
-            <View style={s.sigImgPlaceholder} />
-            <View style={s.sigLine} />
-            <TText style={s.sigRoleTh}>{roles.customerTh}</TText>
-            <Text style={s.sigRoleEn}>{roles.customerEn}</Text>
-            <TText style={s.sigDateTh}>วันที่ / Date .................................</TText>
+          {(data.docType === "INVOICE" || data.docType === "BILLING_NOTE") &&
+           (data.companyBankName || data.companyBankAccountNumber) && (
+            <View style={s.bankWrap}>
+              <TText style={s.bankTitle}>ช่องทางการชำระเงิน / Payment Details</TText>
+              <View style={s.bankRow}>
+                <View style={s.bankItem}>
+                  <Text style={s.bankKey}>ธนาคาร / Bank</Text>
+                  <TText style={s.bankVal}>
+                    {[data.companyBankName, data.companyBankNameEn].filter(Boolean).join(" / ")}
+                  </TText>
+                </View>
+                <View style={s.bankItem}>
+                  <Text style={s.bankKey}>ชื่อบัญชี / Account Name</Text>
+                  <TText style={s.bankVal}>
+                    {[data.companyBankAccountName, data.companyBankAccountNameEn].filter(Boolean).join(" / ")}
+                  </TText>
+                </View>
+                <View style={s.bankItem}>
+                  <Text style={s.bankKey}>เลขที่บัญชี / Account No.</Text>
+                  <Text style={s.bankVal}>{data.companyBankAccountNumber ?? "-"}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+          <View style={s.sigSeparator} />
+          <View style={s.sigRow}>
+            {/* Company */}
+            <View style={s.sigCol}>
+              <Text style={s.sigInName}>ในนาม / On behalf of</Text>
+              <Text style={s.sigEntity}>{data.companyName + "​"}</Text>
+              {data.companySignatureUrl
+                ? <Image src={data.companySignatureUrl} style={s.sigImg} />
+                : <View style={s.sigSpace} />}
+              <View style={s.sigLine} />
+              {data.companyAuthorizedName && (
+                <TText style={s.sigName}>{"(" + data.companyAuthorizedName + ")"}</TText>
+              )}
+              <TText style={s.sigRole}>{roles.companyTh}</TText>
+              <Text style={s.sigRoleEn}>{roles.companyEn}</Text>
+              <TText style={s.sigDate}>วันที่ / Date ___________</TText>
+            </View>
+
+            {/* Stamp */}
+            <View style={s.sigMid}>
+              <View style={s.stampCircle}>
+                {data.companyLogoUrl
+                  ? <Image src={data.companyLogoUrl} style={s.stampImg} />
+                  : <Text style={s.stampText}>{"ตราประทับ\nCompany Seal"}</Text>}
+              </View>
+            </View>
+
+            {/* Customer */}
+            <View style={s.sigCol}>
+              <Text style={s.sigInName}>ในนาม / On behalf of</Text>
+              <Text style={s.sigEntity}>{data.customerName + "​"}</Text>
+              <View style={s.sigSpace} />
+              <View style={s.sigLine} />
+              <TText style={s.sigRole}>{roles.customerTh}</TText>
+              <Text style={s.sigRoleEn}>{roles.customerEn}</Text>
+              <TText style={s.sigDate}>วันที่ / Date ___________</TText>
+            </View>
           </View>
         </View>
 

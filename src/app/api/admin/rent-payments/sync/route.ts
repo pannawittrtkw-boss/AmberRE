@@ -14,24 +14,20 @@ function generateDueDates(
   paymentDay: number
 ): Date[] {
   const dates: Date[] = [];
-  const start = new Date(startDate);
-  const end   = new Date(endDate);
+  const startStr = startDate.toISOString().slice(0, 10);
+  const endStr   = endDate.toISOString().slice(0, 10);
 
-  // Compare by year-month so paymentDay within the endDate month is included
-  // even when paymentDay > endDate's day (e.g. endDate Jun 6, paymentDay 7).
-  const endYM = end.getUTCFullYear() * 12 + end.getUTCMonth();
-
-  let year  = start.getFullYear();
-  let month = start.getMonth(); // 0-indexed
+  let year  = startDate.getUTCFullYear();
+  let month = startDate.getUTCMonth();
 
   while (true) {
     const lastDayOfMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
     const day = Math.min(paymentDay, lastDayOfMonth);
     const due = new Date(Date.UTC(year, month, day));
+    const dueStr = due.toISOString().slice(0, 10);
 
-    if (due.getUTCFullYear() * 12 + due.getUTCMonth() > endYM) break;
-    // compare calendar dates, not raw timestamps
-    if (due.toISOString().slice(0, 10) >= start.toISOString().slice(0, 10)) dates.push(due);
+    if (dueStr > endStr) break;
+    if (dueStr >= startStr) dates.push(due);
 
     month++;
     if (month > 11) { month = 0; year++; }
@@ -134,9 +130,9 @@ export async function POST() {
       // Always remove records for terminated contracts
       if (!activeContractIds.has(p.contractId)) return true;
       if (!p.isPaid) {
-        // Remove past unpaid records — treat as already notified/paid
-        if (new Date(p.dueDate) < todayUTC) return true;
-        // Remove unpaid records that no longer match the contract's current schedule
+        // Keep past unpaid records — admin must explicitly mark as paid.
+        // Only remove unpaid records that no longer match the contract's schedule
+        // (e.g. paymentDay was changed).
         const key = `${p.contractId}|${p.dueDate.toISOString().slice(0, 10)}`;
         if (!validKeys.has(key)) return true;
       }

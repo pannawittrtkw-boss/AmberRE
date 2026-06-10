@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     // Bottom padding leaves room for the per-page signature footer (see
     // styles.pageFooter) which is positioned absolutely at the bottom of
     // every page so both parties can initial each page individually.
-    paddingBottom: 80,
+    paddingBottom: 105,
     paddingHorizontal: 50,
     // Thai script stacks tone marks and vowels above and below the
     // baseline; cramped line-height makes adjacent lines collide. 1.6
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: "#000",
     width: "85%",
-    height: 18,
+    height: 36,
     marginBottom: 2,
   },
   pageFooterLabel: { fontSize: 8, color: "#555" },
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   },
   signatureImage: {
     width: "80%",
-    height: 28,
+    height: 80,
     objectFit: "contain",
     objectPositionX: "50%",
     objectPositionY: "100%",
@@ -342,7 +342,7 @@ function PageFooter({
       <View style={styles.pageFooterBlock}>
         {lessorSignature ? (
           // eslint-disable-next-line jsx-a11y/alt-text
-          <Image src={lessorSignature} style={{ width: "85%", height: 18, objectFit: "contain", marginBottom: 2 }} />
+          <Image src={lessorSignature} style={{ width: "85%", height: 36, objectFit: "contain", marginBottom: 2 }} />
         ) : (
           <View style={styles.pageFooterLine} />
         )}
@@ -352,7 +352,7 @@ function PageFooter({
       <View style={styles.pageFooterBlock}>
         {lesseeSignature ? (
           // eslint-disable-next-line jsx-a11y/alt-text
-          <Image src={lesseeSignature} style={{ width: "85%", height: 18, objectFit: "contain", marginBottom: 2 }} />
+          <Image src={lesseeSignature} style={{ width: "85%", height: 36, objectFit: "contain", marginBottom: 2 }} />
         ) : (
           <View style={styles.pageFooterLine} />
         )}
@@ -386,7 +386,7 @@ function FooterCover() {
         bottom: 0,
         left: 0,
         right: 0,
-        height: 80,
+        height: 110,
       }}
       render={(p) => (
         <View

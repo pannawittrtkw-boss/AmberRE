@@ -146,6 +146,8 @@ export async function GET(req: NextRequest) {
   let sent = 0;
   let skipped = 0;
 
+  // Only notify on the due date itself — no overdue reminders
+
   // ── 1. Rent payment notifications ────────────────────────────────────────
   const payments = await prisma.rentPayment.findMany({
     where: { isPaid: false, dueDate: { lte: todayMidnight } },
@@ -176,6 +178,9 @@ export async function GET(req: NextRequest) {
     const overdueDays = dueDateStr < todayUTC
       ? Math.ceil((Date.now() - new Date(p.dueDate).getTime()) / 86400000)
       : 0;
+
+    // Only notify on the due date — skip overdue days
+    if (overdueDays > 0) { skipped++; continue; }
 
     const allDates     = c.rentPayments.map(r => r.dueDate.toISOString());
     const totalPayments = allDates.length;
