@@ -69,9 +69,12 @@ function normalizeUrl(url: string): string {
       u.searchParams.delete(p)
     );
     u.pathname = u.pathname.replace(/\/+$/, "") || "/";
-    return u.toString().toLowerCase();
+    // Lowercase only scheme+host — path is case-sensitive (e.g. Facebook share IDs)
+    const host = (u.protocol + "//" + u.host).toLowerCase();
+    const rest = u.pathname + u.search + u.hash;
+    return host + rest;
   } catch {
-    return url.replace(/\/+$/, "").toLowerCase();
+    return url.replace(/\/+$/, "");
   }
 }
 
