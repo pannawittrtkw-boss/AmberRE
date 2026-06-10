@@ -164,6 +164,7 @@ export default function ReceiptsPage() {
           onClose={() => { setShowModal(false); setEditing(null); }}
           onSaved={() => { setShowModal(false); setEditing(null); fetchReceipts(); }}
           onCustomerCreated={(c) => setCustomers((prev) => [...prev, c])}
+          onCustomerUpdated={(c) => setCustomers((prev) => prev.map((x) => x.id === c.id ? c : x))}
         />
       )}
     </div>
@@ -176,12 +177,14 @@ function ReceiptModal({
   onClose,
   onSaved,
   onCustomerCreated,
+  onCustomerUpdated,
 }: {
   editing: AccReceipt | null;
   customers: Customer[];
   onClose: () => void;
   onSaved: () => void;
   onCustomerCreated: (c: Customer) => void;
+  onCustomerUpdated: (c: Customer) => void;
 }) {
   const today = new Date().toISOString().split("T")[0];
   const [date, setDate] = useState(editing ? editing.date.split("T")[0] : today);
@@ -272,6 +275,7 @@ function ReceiptModal({
             customerId={customerId}
             onCustomerIdChange={(id) => { setCustomerId(id); setBillingNoteId(""); setInvoiceId(""); }}
             onCustomerCreated={(c) => { onCustomerCreated(c); setCustomerId(String(c.id)); setBillingNoteId(""); setInvoiceId(""); }}
+            onCustomerUpdated={onCustomerUpdated}
           />
 
           {customerId && billingNotes.length > 0 && (

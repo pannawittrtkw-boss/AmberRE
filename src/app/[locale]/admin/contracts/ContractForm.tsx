@@ -182,6 +182,10 @@ export default function ContractForm({
   const [showJoint, setShowJoint] = useState(!!initialData?.jointLesseeName);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [customTerm, setCustomTerm] = useState(
+    !TERM_OPTIONS.includes(initialData?.termMonths) && initialData?.termMonths
+      ? true : false
+  );
 
   // On NEW contracts: pull the template (custom 11.7+ clauses, baseline,
   // and any working overrides on top) and seat it as the editor's
@@ -515,18 +519,49 @@ export default function ContractForm({
             />
           </Field>
           <Field label={locale === "th" ? "ระยะเวลา (เดือน)" : "Term (months)"} required>
-            <select
-              required
-              value={form.termMonths}
-              onChange={(e) => update("termMonths", Number(e.target.value))}
-              className={inputCls}
-            >
-              {TERM_OPTIONS.map((m) => (
-                <option key={m} value={m}>
-                  {m} {locale === "th" ? "เดือน" : "months"}
-                </option>
-              ))}
-            </select>
+            {customTerm ? (
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  max={120}
+                  required
+                  value={form.termMonths}
+                  onChange={(e) => update("termMonths", Number(e.target.value))}
+                  className={`${inputCls} flex-1`}
+                  placeholder={locale === "th" ? "จำนวนเดือน" : "Number of months"}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => { setCustomTerm(false); update("termMonths", TERM_OPTIONS[1]); }}
+                  className="px-3 py-2 text-xs text-gray-500 border rounded-lg hover:bg-gray-50 whitespace-nowrap"
+                >
+                  {locale === "th" ? "รายการ" : "List"}
+                </button>
+              </div>
+            ) : (
+              <select
+                required
+                value={TERM_OPTIONS.includes(form.termMonths) ? form.termMonths : "custom"}
+                onChange={(e) => {
+                  if (e.target.value === "custom") {
+                    setCustomTerm(true);
+                    update("termMonths", 1);
+                  } else {
+                    update("termMonths", Number(e.target.value));
+                  }
+                }}
+                className={inputCls}
+              >
+                {TERM_OPTIONS.map((m) => (
+                  <option key={m} value={m}>
+                    {m} {locale === "th" ? "เดือน" : "months"}
+                  </option>
+                ))}
+                <option value="custom">{locale === "th" ? "ระบุเอง..." : "Custom..."}</option>
+              </select>
+            )}
           </Field>
           <Field label={locale === "th" ? "วันสิ้นสุด (คำนวณอัตโนมัติ)" : "End Date (auto)"}>
             <input

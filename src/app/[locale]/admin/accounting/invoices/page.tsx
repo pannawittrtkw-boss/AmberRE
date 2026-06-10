@@ -181,6 +181,7 @@ export default function InvoicesPage() {
           onClose={() => { setShowModal(false); setEditing(null); }}
           onSaved={() => { setShowModal(false); setEditing(null); fetchInvoices(); }}
           onCustomerCreated={(c) => setCustomers((prev) => [...prev, c])}
+          onCustomerUpdated={(c) => setCustomers((prev) => prev.map((x) => x.id === c.id ? c : x))}
         />
       )}
     </div>
@@ -193,12 +194,14 @@ function InvoiceModal({
   onClose,
   onSaved,
   onCustomerCreated,
+  onCustomerUpdated,
 }: {
   editing: Invoice | null;
   customers: Customer[];
   onClose: () => void;
   onSaved: () => void;
   onCustomerCreated: (c: Customer) => void;
+  onCustomerUpdated: (c: Customer) => void;
 }) {
   const today = new Date().toISOString().split("T")[0];
   const [date, setDate] = useState(editing ? editing.date.split("T")[0] : today);
@@ -281,6 +284,7 @@ function InvoiceModal({
             customerId={customerId}
             onCustomerIdChange={setCustomerId}
             onCustomerCreated={(c) => { onCustomerCreated(c); setCustomerId(String(c.id)); }}
+            onCustomerUpdated={onCustomerUpdated}
           />
 
           {/* Items */}

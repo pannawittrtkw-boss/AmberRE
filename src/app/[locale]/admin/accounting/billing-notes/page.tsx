@@ -176,6 +176,7 @@ export default function BillingNotesPage() {
           onClose={() => { setShowModal(false); setEditing(null); }}
           onSaved={() => { setShowModal(false); setEditing(null); fetchNotes(); }}
           onCustomerCreated={(c) => setCustomers((prev) => [...prev, c])}
+          onCustomerUpdated={(c) => setCustomers((prev) => prev.map((x) => x.id === c.id ? c : x))}
         />
       )}
     </div>
@@ -188,12 +189,14 @@ function BillingNoteModal({
   onClose,
   onSaved,
   onCustomerCreated,
+  onCustomerUpdated,
 }: {
   editing: BillingNote | null;
   customers: Customer[];
   onClose: () => void;
   onSaved: () => void;
   onCustomerCreated: (c: Customer) => void;
+  onCustomerUpdated: (c: Customer) => void;
 }) {
   const today = new Date().toISOString().split("T")[0];
   const [date, setDate] = useState(editing ? editing.date.split("T")[0] : today);
@@ -276,6 +279,7 @@ function BillingNoteModal({
             customerId={customerId}
             onCustomerIdChange={(id) => { setCustomerId(id); setInvoiceId(""); }}
             onCustomerCreated={(c) => { onCustomerCreated(c); setCustomerId(String(c.id)); setInvoiceId(""); }}
+            onCustomerUpdated={onCustomerUpdated}
           />
 
           {customerId && invoices.length > 0 && (
