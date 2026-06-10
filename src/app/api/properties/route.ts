@@ -128,7 +128,7 @@ export async function GET(req: NextRequest) {
       data: properties,
       total,
       page,
-      totalPages: Math.ceil(total / limit),
+      totalPages: limit ? Math.ceil(total / limit) : 1,
     });
   } catch (error) {
     console.error("Properties GET error:", error);
