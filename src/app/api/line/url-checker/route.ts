@@ -199,6 +199,21 @@ export async function POST(req: NextRequest) {
           data:  { status, reviewedAt: new Date(), reviewedBy: reviewerName },
         });
 
+        // Auto-create property stub when accepted for all (agent + foreigner)
+        if (status === STATUS.ACCEPT_ALL) {
+          await (prisma as any).property.create({
+            data: {
+              titleTh:      "รายการใหม่ (จาก ScanLink)",
+              propertyType: "CONDO",
+              listingType:  "RENT",
+              price:        0,
+              sourceLink:   urlRecord.url,
+              status:       "VERIFIED",
+              postFrom:     "OWNER",
+            },
+          });
+        }
+
         if (event.replyToken) {
           const displayNum = urlRecord.dailySeq > 0 ? urlRecord.dailySeq : urlId;
           const replyMsg: Record<string, unknown> = {
