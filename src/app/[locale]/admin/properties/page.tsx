@@ -81,6 +81,18 @@ function getStationName(code: string): string {
   return code;
 }
 
+function renderAvailableDate(availableDate: any, size: "sm" | "xs" = "sm") {
+  if (!availableDate) return null;
+  const availStr = String(availableDate).slice(0, 10);
+  const t = new Date();
+  const todayStr = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
+  if (availStr <= todayStr) {
+    const px = size === "sm" ? "px-2 py-0.5" : "px-1.5 py-0.5";
+    return <span className={`text-[10px] ${px} rounded-full bg-green-100 text-green-700 font-medium`}>Ready to movein</span>;
+  }
+  return <span className="text-blue-600">พร้อมเข้าอยู่ {new Date(availableDate).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>;
+}
+
 export default function AdminPropertiesPage({ params }: { params: Promise<{ locale: string }> }) {
   const [locale, setLocale] = useState("th");
   const [messages, setMessages] = useState<any>(null);
@@ -110,6 +122,8 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
   const [filterMaxPrice, setFilterMaxPrice] = useState("");
   const [filterStation, setFilterStation] = useState("");
   const [filterExclusive, setFilterExclusive] = useState(false);
+  const [filterPostDateFrom, setFilterPostDateFrom] = useState("");
+  const [filterPostDateTo, setFilterPostDateTo] = useState("");
 
   useEffect(() => {
     params.then(({ locale: l }) => {
@@ -215,16 +229,24 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
     }
     // Exclusive contract
     if (filterExclusive && !p.isExclusive) return false;
+    // Post date range
+    if (filterPostDateFrom && p.addedAt) {
+      if (String(p.addedAt).slice(0, 10) < filterPostDateFrom) return false;
+    }
+    if (filterPostDateTo && p.addedAt) {
+      if (String(p.addedAt).slice(0, 10) > filterPostDateTo) return false;
+    }
+    if (filterPostDateFrom && !p.addedAt) return false;
     return true;
   });
 
-  const hasActiveFilters = filterStatus || filterListing || filterPriority || filterCategory || filterMinPrice || filterMaxPrice || filterStation || filterExclusive;
+  const hasActiveFilters = filterStatus || filterListing || filterPriority || filterCategory || filterMinPrice || filterMaxPrice || filterStation || filterExclusive || filterPostDateFrom || filterPostDateTo;
 
   const clearFilters = () => {
     setSearchText(""); setFilterStatus(""); setFilterListing("");
     setFilterPriority(""); setFilterCategory("");
     setFilterMinPrice(""); setFilterMaxPrice(""); setFilterStation("");
-    setFilterExclusive(false);
+    setFilterExclusive(false); setFilterPostDateFrom(""); setFilterPostDateTo("");
   };
 
   // Generate month tabs from properties
@@ -426,6 +448,14 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                 <label className="block text-xs font-medium text-gray-500 mb-1">สถานี BTS/MRT</label>
                 <input type="text" value={filterStation} onChange={(e) => setFilterStation(e.target.value)} placeholder="E16, ปู่เจ้า" className="w-full border rounded-lg px-3 py-2 text-sm" />
               </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Post date ตั้งแต่</label>
+                <input type="date" value={filterPostDateFrom} onChange={(e) => setFilterPostDateFrom(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Post date ถึง</label>
+                <input type="date" value={filterPostDateTo} onChange={(e) => setFilterPostDateTo(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
+              </div>
               <div className="flex items-end gap-2">
                 <label className="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 hover:bg-amber-100 transition-colors">
                   <input
@@ -538,7 +568,7 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
               {/* Main Row - Desktop */}
               <div className="hidden sm:flex items-center gap-3 px-4 py-3">
                 <div className="w-8 text-center text-sm font-bold text-gray-400">{idx + 1}</div>
-                <div className="flex-1 min-w-0">
+                <Link href={`/${locale}/admin/properties/add?edit=${p.id}`} className="flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-semibold text-gray-900 truncate">
                       {p.projectName || p.titleTh || "-"}
@@ -607,26 +637,25 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                         {p.listingType === "RENT" ? "เช่า" : p.listingType === "SALE" ? "ขาย" : "เช่า&ขาย"}
                       </span>
                     )}
-                    {p.availableDate && (
-                      <span className="text-blue-600">
-                        พร้อมเข้าอยู่ {new Date(p.availableDate).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}
-                      </span>
+                    {renderAvailableDate(p.availableDate, "sm")}
+                    {p.addedAt && (
+                      <span className="text-gray-400">Post date: {new Date(p.addedAt).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>
                     )}
                   </div>
                   {(() => {
                     const stations = parseJson(p.nearbyStations);
                     return stations.length > 0 ? (
                       <div className="flex items-center gap-1 mt-1 flex-wrap">
-                        <Train className="w-3 h-3 text-green-600 flex-shrink-0" />
+                        <Train className="w-3 h-3 text-blue-600 flex-shrink-0" />
                         {stations.map((code: string) => (
-                          <span key={code} className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-[10px] font-medium">
+                          <span key={code} className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded text-[10px] font-medium">
                             {getStationName(code)}
                           </span>
                         ))}
                       </div>
                     ) : null;
                   })()}
-                </div>
+                </Link>
                 <div className="text-right min-w-[100px]">
                   {price > 0 && (
                     <div className="text-sm font-bold text-gray-800">฿{price.toLocaleString()}<span className="text-[10px] text-gray-400 font-normal">/เดือน</span></div>
@@ -683,11 +712,11 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
               <div className="sm:hidden px-4 py-3 space-y-2">
                 {/* Title + Status */}
                 <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-gray-900 text-sm leading-tight">
+                  <Link href={`/${locale}/admin/properties/add?edit=${p.id}`} className="min-w-0 flex-1">
+                    <h3 className="font-semibold text-gray-900 text-sm leading-tight hover:text-amber-700 transition-colors">
                       {p.projectName || p.titleTh || "-"}
                     </h3>
-                  </div>
+                  </Link>
                   <select
                     value={p.status || "PENDING"}
                     onChange={async (e) => {
@@ -728,10 +757,9 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                       {p.listingType === "RENT" ? "เช่า" : p.listingType === "SALE" ? "ขาย" : "เช่า&ขาย"}
                     </span>
                   )}
-                  {p.availableDate && (
-                    <span className="text-blue-600">
-                      พร้อมเข้าอยู่ {new Date(p.availableDate).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}
-                    </span>
+                  {renderAvailableDate(p.availableDate, "xs")}
+                  {p.addedAt && (
+                    <span className="text-gray-400 text-[10px]">Post: {new Date(p.addedAt).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>
                   )}
                   {p.category === "LUXURY" && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">Luxury</span>}
                   {p.priority === "URGENT" && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">Urgent</span>}
@@ -751,7 +779,7 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                   const stations = parseJson(p.nearbyStations);
                   return stations.length > 0 ? (
                     <div className="flex items-center gap-1 flex-wrap">
-                      <Train className="w-3 h-3 text-green-600 flex-shrink-0" />
+                      <Train className="w-3 h-3 text-blue-600 flex-shrink-0" />
                       {stations.map((code: string) => (
                         <span key={code} className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-[10px] font-medium">
                           {getStationName(code)}

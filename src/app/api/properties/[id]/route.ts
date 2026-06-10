@@ -112,6 +112,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (rawData.latitude !== undefined) updateData.latitude = rawData.latitude !== null ? Number(rawData.latitude) : null;
     if (rawData.longitude !== undefined) updateData.longitude = rawData.longitude !== null ? Number(rawData.longitude) : null;
     if (rawData.availableDate !== undefined) updateData.availableDate = rawData.availableDate ? new Date(rawData.availableDate) : null;
+    if (rawData.status === "ADDED_PROPERTIES" && existing.status !== "ADDED_PROPERTIES" && !existing.addedAt) {
+      updateData.addedAt = new Date();
+    }
     if (rawData.exclusiveStartDate !== undefined) updateData.exclusiveStartDate = rawData.exclusiveStartDate ? new Date(rawData.exclusiveStartDate) : null;
     if (rawData.exclusiveEndDate !== undefined) updateData.exclusiveEndDate = rawData.exclusiveEndDate ? new Date(rawData.exclusiveEndDate) : null;
 

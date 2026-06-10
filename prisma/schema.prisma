@@ -255,6 +255,7 @@ model Property {
   isSold            Boolean  @default(false)
   estCode           String?  @db.VarChar(50)
   availableDate     DateTime?
+  addedAt           DateTime?
   salePrice         Decimal? @db.Decimal(18, 2)
   projectName       String?  @db.VarChar(300)
   address           String?  @db.VarChar(500)
