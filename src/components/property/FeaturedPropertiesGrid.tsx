@@ -52,14 +52,10 @@ export default function FeaturedPropertiesGrid({ locale, messages }: FeaturedPro
         params.set("page", pageNum.toString());
         params.set("limit", limit.toString());
 
-        // If filtering, drop the default "ADDED_PROPERTIES" status to widen results
-        if (!isFiltering) {
-          params.set("status", "ADDED_PROPERTIES");
-        }
-
         for (const [k, v] of activeFilterEntries) {
           params.set(k, v);
         }
+        params.set("status", "ADDED_PROPERTIES");
 
         const res = await fetch(`/api/properties?${params}`);
         const data = await res.json();

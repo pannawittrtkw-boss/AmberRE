@@ -68,6 +68,7 @@ export default function PropertiesPage({
       if (urlListing && !filterParams.listingType)
         query.set("listingType", urlListing);
       if (urlStations) query.set("stations", urlStations);
+      query.set("status", "ADDED_PROPERTIES");
 
       try {
         const res = await fetch(`/api/properties?${query.toString()}`);

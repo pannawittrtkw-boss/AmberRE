@@ -57,6 +57,7 @@ export default function MapSearchPage({
       }
     });
 
+    query.set("status", "ADDED_PROPERTIES");
     try {
       const res = await fetch(`/api/properties?${query.toString()}`);
       const data = await res.json();
