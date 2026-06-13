@@ -14,6 +14,7 @@ export const STATUS = {
   ACCEPT_ALL:                 "ACCEPT_ALL",
   UNABLE_TO_CONTACT:          "UNABLE_TO_CONTACT",
   NOT_AVAILABLE:              "NOT_AVAILABLE",
+  WAIT_FOR_REPLY:             "WAIT_FOR_REPLY",
 } as const;
 
 export const STATUS_LABEL: Record<string, string> = {
@@ -22,6 +23,7 @@ export const STATUS_LABEL: Record<string, string> = {
   ACCEPT_AGENT_NOT_FOREIGNER: "✅ Accept Agent & Not Foreigner",
   NOT_AVAILABLE:              "🚫 Not Available",
   UNABLE_TO_CONTACT:          "📞 Unable to contact",
+  WAIT_FOR_REPLY:             "⏳ Wait For Reply",
 };
 
 // ── LINE helpers ──────────────────────────────────────────────────────────────
@@ -155,6 +157,7 @@ export function buildButtonsMessage(id: number, seq: number, url: string, sentBy
           uriBtn("✅ Agent & Not Foreigner", "ACCEPT_AGENT_NOT_FOREIGNER"),
           uriBtn("✅ Agent & Foreigner",     "ACCEPT_ALL"),
           postbackBtn("📞 Unable to contact",    "UNABLE_TO_CONTACT"),
+          postbackBtn("⏳ Wait For Reply",       "WAIT_FOR_REPLY"),
           postbackBtn("🚫 Not Available",        "NOT_AVAILABLE"),
         ],
       },

@@ -654,7 +654,7 @@ model LineUrlHistory {
   sentAt     DateTime  @default(now())
   dateKey    String    @default("") @db.VarChar(10)
   dailySeq   Int       @default(0)
-  // PENDING | NOT_ACCEPT_AGENT | ACCEPT_AGENT_NOT_FOREIGNER | ACCEPT_ALL | UNABLE_TO_CONTACT
+  // PENDING | NOT_ACCEPT_AGENT | ACCEPT_AGENT_NOT_FOREIGNER | ACCEPT_ALL | UNABLE_TO_CONTACT | WAIT_FOR_REPLY | NOT_AVAILABLE
   status     String    @default("PENDING") @db.VarChar(40)
   reviewedAt DateTime?
   reviewedBy String?   @db.VarChar(100)

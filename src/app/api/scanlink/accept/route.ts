@@ -5,7 +5,7 @@ import { pushMessage, STATUS_LABEL } from "@/app/api/line/url-checker/route";
 
 export async function POST(req: NextRequest) {
   try {
-    const { urlId, status, fullyFurnished, fullyElectric, readyToMoveIn, remark, seq, by } = await req.json();
+    const { urlId, status, fullyFurnished, fullyElectric, readyToMoveIn, remark, seq, by, condoName, price } = await req.json();
 
     if (!urlId || !status) {
       return NextResponse.json({ success: false, error: "Missing params" }, { status: 400 });
@@ -29,10 +29,10 @@ export async function POST(req: NextRequest) {
     }
 
     const propData: Prisma.PropertyUncheckedCreateInput = {
-      titleTh:         "รายการใหม่ (จาก ScanLink)",
+      titleTh:         condoName || "รายการใหม่ (จาก ScanLink)",
       propertyType:    "CONDO",
       listingType:     "RENT",
-      price:           new Prisma.Decimal(0),
+      price:           new Prisma.Decimal(price ?? 0),
       sourceLink:      urlRecord.url,
       status:          "VERIFIED",
       foreignerAccept: status === "ACCEPT_ALL" ? "ACCEPT" : "NOT_ACCEPT",
@@ -51,21 +51,33 @@ export async function POST(req: NextRequest) {
       data:  { status, reviewedAt: new Date(), reviewedBy: by || null },
     });
 
-    // Push confirmation to LINE group
+    // Push confirmation to LINE group (quote the original message)
     const statusLabel = status in STATUS_LABEL ? STATUS_LABEL[status] : "✅ Accepted";
     const yes = "✅";
     const no  = "❌";
 
-    const lines = [
-      `${statusLabel} [#${seq}] — บันทึกแล้ว`,
-      by ? `By ${by}` : null,
+    const infoLines = [
+      condoName ? `Name : ${condoName}` : null,
+      price != null ? `Price : ${price}` : null,
+    ].filter(Boolean).join("\n");
+
+    const detailLines = [
       `🛋 Fully Furnished: ${fullyFurnished ? yes : no}`,
       `⚡ Fully Electric: ${fullyElectric   ? yes : no}`,
       `✅ Ready to move in: ${readyToMoveIn  ? yes : no}`,
       remark ? `📝 Remark: ${remark}` : null,
     ].filter(Boolean).join("\n");
 
-    await pushMessage(urlRecord.groupId, [{ type: "text", text: lines }]);
+    const sections = [
+      `${statusLabel} [#${seq}]`,
+      infoLines || null,
+      detailLines,
+    ].filter(Boolean).join("\n\n");
+
+    const msg: Record<string, unknown> = { type: "text", text: sections };
+    if (urlRecord.quoteToken) msg.quoteToken = urlRecord.quoteToken;
+
+    await pushMessage(urlRecord.groupId, [msg]);
 
     return NextResponse.json({ success: true });
   } catch (error) {

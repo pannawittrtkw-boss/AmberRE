@@ -34,6 +34,10 @@ export async function GET(req: NextRequest) {
     .track.on { background: #16a34a; border-color: #16a34a; }
     .knob { position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%; background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.25); transition: left 0.2s; pointer-events: none; }
     .track.on .knob { left: 28px; }
+    .field-section { padding: 12px 20px 8px; border-top: 1px solid #f3f4f6; }
+    .field-label { font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 8px; display: block; }
+    .field-input { width: 100%; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; font-size: 14px; font-family: inherit; outline: none; color: #1f2937; background: white; }
+    .field-input:focus { border-color: #C8A951; }
     .remark-section { padding: 12px 20px 8px; border-top: 1px solid #f3f4f6; }
     .remark-label { font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 8px; display: block; }
     .remark-input { width: 100%; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; font-size: 14px; font-family: inherit; resize: vertical; min-height: 80px; outline: none; color: #1f2937; }
@@ -57,6 +61,16 @@ export async function GET(req: NextRequest) {
       <div class="header-status">${statusLabel}</div>
       <div class="header-seq">🔗 #${seq}</div>
       ${by ? `<div class="header-by">By ${by}</div>` : ""}
+    </div>
+
+    <div class="field-section">
+      <label class="field-label" for="condoName">🏢 ชื่อคอนโด <span style="font-weight:400;color:#9ca3af;">(ไม่บังคับ)</span></label>
+      <input id="condoName" class="field-input" type="text" placeholder="เช่น LESTO CONDO 113">
+    </div>
+
+    <div class="field-section">
+      <label class="field-label" for="price">💰 ราคาค่าเช่า (บาท) <span style="font-weight:400;color:#9ca3af;">(ไม่บังคับ)</span></label>
+      <input id="price" class="field-input" type="number" inputmode="numeric" placeholder="เช่น 7000" min="0">
     </div>
 
     <div class="body">
@@ -103,7 +117,9 @@ export async function GET(req: NextRequest) {
       btn.innerHTML = '<span class="spinner"></span> กำลังบันทึก...';
       var err = document.getElementById('error-msg');
       err.style.display = 'none';
-      var remark = document.getElementById('remark').value.trim();
+      var remark    = document.getElementById('remark').value.trim();
+      var condoName = document.getElementById('condoName').value.trim();
+      var priceVal  = document.getElementById('price').value.trim();
 
       fetch('/api/scanlink/accept', {
         method: 'POST',
@@ -117,6 +133,8 @@ export async function GET(req: NextRequest) {
           fullyElectric:  state.electric,
           readyToMoveIn:  state.ready,
           remark:         remark,
+          condoName:      condoName || null,
+          price:          priceVal ? Number(priceVal) : null,
         })
       })
       .then(function(r) { return r.json(); })
