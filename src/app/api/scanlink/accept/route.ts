@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
       propertyType:    "CONDO",
       listingType:     "RENT",
       price:           new Prisma.Decimal(price ?? 0),
+      projectName:     condoName || undefined,
       sourceLink:      urlRecord.url,
       status:          "VERIFIED",
       foreignerAccept: status === "ACCEPT_ALL" ? "ACCEPT" : "NOT_ACCEPT",
