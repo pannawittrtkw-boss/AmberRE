@@ -96,7 +96,7 @@ function shortUrl(url: string, max = 120): string {
 // ── Message builders ──────────────────────────────────────────────────────────
 
 export function buildButtonsMessage(id: number, seq: number, url: string, sentBy?: string | null, dateKey?: string | null) {
-  const btn = (label: string, status: string, display: string) => ({
+  const btn = (label: string, status: string) => ({
     type: "button",
     style: "secondary",
     height: "sm",
@@ -104,7 +104,6 @@ export function buildButtonsMessage(id: number, seq: number, url: string, sentBy
       type: "postback",
       label,
       data: `s=${status}&id=${id}`,
-      displayText: `${display} [#${seq}]`,
     },
   });
 
@@ -139,11 +138,11 @@ export function buildButtonsMessage(id: number, seq: number, url: string, sentBy
         spacing: "xs",
         paddingAll: "10px",
         contents: [
-          btn("❌ Not Accept Agent",           "NOT_ACCEPT_AGENT",           "❌ Not Accept Agent"),
-          btn("✅ Agent & Not Foreigner",       "ACCEPT_AGENT_NOT_FOREIGNER", "✅ Accept Agent & Not Foreigner"),
-          btn("✅ Agent & Foreigner",           "ACCEPT_ALL",                 "✅ Accept Agent & Foreigner"),
-          btn("📞 Unable to contact",          "UNABLE_TO_CONTACT",          "📞 Unable to contact"),
-          btn("🚫 Not Available",              "NOT_AVAILABLE",              "🚫 Not Available"),
+          btn("❌ Not Accept Agent",     "NOT_ACCEPT_AGENT"),
+          btn("✅ Agent & Not Foreigner", "ACCEPT_AGENT_NOT_FOREIGNER"),
+          btn("✅ Agent & Foreigner",     "ACCEPT_ALL"),
+          btn("📞 Unable to contact",    "UNABLE_TO_CONTACT"),
+          btn("🚫 Not Available",        "NOT_AVAILABLE"),
         ],
       },
     },
