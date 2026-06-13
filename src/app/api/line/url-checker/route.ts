@@ -242,6 +242,12 @@ export async function POST(req: NextRequest) {
 
       const text = (event.message.text ?? "").trim();
 
+      // /GroupID command
+      if (/^\/groupid$/i.test(text)) {
+        await reply(event.replyToken, [{ type: "text", text: `🆔 Group ID\n${groupId}` }]);
+        continue;
+      }
+
       // /Summary command
       if (/^\/summary$/i.test(text)) {
         await reply(event.replyToken, [{ type: "text", text: await buildSummaryText(groupId) }]);
