@@ -264,7 +264,7 @@ export async function POST(req: NextRequest) {
       if (/^\/notverify$/i.test(text)) {
         const today   = todayKey();
         const pending = await prisma.lineUrlHistory.findMany({
-          where: { groupId, status: "PENDING" },
+          where: { groupId, status: { in: ["PENDING", "UNABLE_TO_CONTACT"] } },
           orderBy: [{ dateKey: "asc" }, { dailySeq: "asc" }],
         });
 

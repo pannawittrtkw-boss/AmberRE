@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   if (!TOKEN()) return NextResponse.json({ error: "No token" }, { status: 500 });
 
   const groups = await prisma.lineUrlHistory.findMany({
-    where: { status: "PENDING" },
+    where: { status: { in: ["PENDING", "UNABLE_TO_CONTACT"] } },
     select: { groupId: true },
     distinct: ["groupId"],
   });
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   let sent = 0;
   for (const { groupId } of groups) {
     const pending = await prisma.lineUrlHistory.findMany({
-      where: { groupId, status: "PENDING" },
+      where: { groupId, status: { in: ["PENDING", "UNABLE_TO_CONTACT"] } },
       orderBy: { dailySeq: "asc" },
     });
 
