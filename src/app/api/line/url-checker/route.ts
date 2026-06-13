@@ -119,6 +119,7 @@ export function buildButtonsMessage(id: number, seq: number, url: string) {
         layout: "vertical",
         backgroundColor: "#112240",
         paddingAll: "12px",
+        action: { type: "uri", uri: url },
         contents: [
           { type: "text", text: `🔗 #${seq}`, color: "#C8A951", weight: "bold", size: "sm" },
           { type: "text", text: shortUrl(url, 100), color: "#FFFFFF", size: "xs", wrap: true, margin: "sm" },
