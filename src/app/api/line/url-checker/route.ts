@@ -242,7 +242,7 @@ export async function POST(req: NextRequest) {
             if (event.replyToken) {
               const replyMsg: Record<string, unknown> = {
                 type: "text",
-                text: `${statusLabel} [#${displayNum}] — Saved${reviewerName ? `\nBy ${reviewerName}` : ""}\n\n🛋 ระบุรายละเอียดห้อง:\n${acceptUrl}`,
+                text: `${statusLabel} [#${displayNum}]${reviewerName ? `\nBy ${reviewerName}` : ""}\n\n🛋 ระบุรายละเอียดห้อง:\n${acceptUrl}`,
               };
               if (urlRecord.quoteToken) replyMsg.quoteToken = urlRecord.quoteToken;
               await reply(event.replyToken, [replyMsg]);

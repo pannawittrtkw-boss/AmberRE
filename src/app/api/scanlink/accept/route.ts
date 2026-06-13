@@ -4,7 +4,7 @@ import { pushMessage, STATUS_LABEL } from "@/app/api/line/url-checker/route";
 
 export async function POST(req: NextRequest) {
   try {
-    const { propId, urlId, fullyFurnished, fullyElectric, readyToMoveIn, seq, by } = await req.json();
+    const { propId, urlId, fullyFurnished, fullyElectric, readyToMoveIn, remark, seq, by } = await req.json();
 
     if (!propId || !urlId) {
       return NextResponse.json({ success: false, error: "Missing params" }, { status: 400 });
@@ -15,8 +15,9 @@ export async function POST(req: NextRequest) {
       where: { id: Number(propId) },
       data: {
         fullyFurnished: fullyFurnished ?? false,
-        fullyElectric: fullyElectric ?? false,
-        availableDate: readyToMoveIn ? new Date() : undefined,
+        fullyElectric:  fullyElectric  ?? false,
+        availableDate:  readyToMoveIn  ? new Date() : undefined,
+        note:           remark || undefined,
       },
     });
 
@@ -30,12 +31,16 @@ export async function POST(req: NextRequest) {
         ? STATUS_LABEL[urlRecord.status]
         : "✅ Accepted";
 
+      const yes = "✅";
+      const no  = "❌";
+
       const lines = [
         `${statusLabel} [#${seq}] — บันทึกแล้ว`,
         by ? `By ${by}` : null,
-        `🛋 Fully Furnished: ${fullyFurnished ? "✓" : "✗"}`,
-        `⚡ Fully Electric: ${fullyElectric ? "✓" : "✗"}`,
-        `✅ Ready to move in: ${readyToMoveIn ? "✓" : "✗"}`,
+        `🛋 Fully Furnished: ${fullyFurnished ? yes : no}`,
+        `⚡ Fully Electric: ${fullyElectric   ? yes : no}`,
+        `✅ Ready to move in: ${readyToMoveIn  ? yes : no}`,
+        remark ? `📝 Remark: ${remark}` : null,
       ].filter(Boolean).join("\n");
 
       await pushMessage(urlRecord.groupId, [{ type: "text", text: lines }]);
