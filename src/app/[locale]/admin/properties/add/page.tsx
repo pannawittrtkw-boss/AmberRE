@@ -156,6 +156,7 @@ export default function AddPropertyPage({
     status: "PENDING",
     category: "NORMAL",
     priority: "NORMAL",
+    foreignerAccept: "ACCEPT",
     note: "",
     availableDate: new Date().toISOString().split("T")[0],
     province: "",
@@ -267,6 +268,7 @@ export default function AddPropertyPage({
           status: p.status || "PENDING",
           category: p.category || "NORMAL",
           priority: p.priority || "NORMAL",
+          foreignerAccept: (p as any).foreignerAccept || "ACCEPT",
           note: p.note || "",
           availableDate: p.availableDate ? new Date(p.availableDate).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
           province: p.province || "",
@@ -540,6 +542,7 @@ export default function AddPropertyPage({
         status: form.status,
         category: form.category,
         priority: form.priority,
+        foreignerAccept: form.foreignerAccept,
         note: form.note || null,
         availableDate: form.availableDate || null,
         province: form.province || null,
@@ -1554,6 +1557,26 @@ export default function AddPropertyPage({
                 </div>
               </div>
             )}
+
+            {/* Foreigner */}
+            <div>
+              <label className="block text-sm font-semibold mb-2">Foreigner</label>
+              <div className="flex items-center gap-6 mt-1">
+                {[{ val: "ACCEPT", label: "Accept" }, { val: "NOT_ACCEPT", label: "Not Accept" }].map(({ val, label }) => (
+                  <label key={val} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="foreignerAccept"
+                      value={val}
+                      checked={form.foreignerAccept === val}
+                      onChange={(e) => updateForm("foreignerAccept", e.target.value)}
+                      className="w-5 h-5 text-amber-600 focus:ring-amber-500"
+                    />
+                    <span className="text-sm font-medium">{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
 
             {/* Note */}
             <div>

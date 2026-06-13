@@ -87,7 +87,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       "sourceLink", "linkPage", "building", "postFrom",
       "ownerName", "ownerPhone", "ownerLineId", "ownerFacebookUrl",
       "coAgentName", "coAgentPhone", "coAgentLineId", "coAgentFacebookUrl",
-      "status", "category", "priority", "note",
+      "status", "category", "priority", "foreignerAccept", "note",
     ];
     const boolFields = [
       "kitchenPartition", "bedroomPartition", "isFeatured", "isPopular", "isSold", "isExclusive",

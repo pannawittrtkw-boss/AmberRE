@@ -285,6 +285,7 @@ model Property {
   status              String?  @default("PENDING") @db.VarChar(30)
   category            String?  @default("NORMAL") @db.VarChar(20)
   priority            String?  @default("NORMAL") @db.VarChar(20)
+  foreignerAccept     String?  @default("ACCEPT") @db.VarChar(20)
   note                String?  @db.Text
   province            String?  @db.VarChar(100)
   district            String?  @db.VarChar(100)
