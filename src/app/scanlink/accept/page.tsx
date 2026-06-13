@@ -5,32 +5,42 @@ import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 function Toggle({
+  id,
   label,
   value,
   onChange,
 }: {
+  id: string;
   label: string;
   value: boolean;
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div
-      className="flex items-center justify-between py-4 border-b border-gray-100 last:border-0 cursor-pointer"
-      onClick={() => onChange(!value)}
+    <label
+      htmlFor={id}
+      className="flex items-center justify-between py-4 border-b border-gray-100 last:border-0 cursor-pointer select-none"
     >
       <span className="text-base font-medium text-gray-800">{label}</span>
-      <div
-        className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${
-          value ? "bg-green-500" : "bg-gray-200"
-        }`}
-      >
+      <div className="relative flex-shrink-0">
+        <input
+          id={id}
+          type="checkbox"
+          checked={value}
+          onChange={(e) => onChange(e.target.checked)}
+          className="sr-only"
+        />
+        <div
+          className={`w-14 h-7 rounded-full transition-colors duration-200 ${
+            value ? "bg-green-500" : "bg-gray-200"
+          }`}
+        />
         <span
-          className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+          className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 pointer-events-none ${
             value ? "translate-x-8" : "translate-x-1"
           }`}
         />
       </div>
-    </div>
+    </label>
   );
 }
 
@@ -100,9 +110,9 @@ function AcceptForm() {
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
             ระบุสถานะห้อง
           </p>
-          <Toggle label="🛋 Fully Furnished" value={fullyFurnished} onChange={setFullyFurnished} />
-          <Toggle label="⚡ Fully Electric" value={fullyElectric} onChange={setFullyElectric} />
-          <Toggle label="✅ Ready to move in" value={readyToMoveIn} onChange={setReadyToMoveIn} />
+          <Toggle id="furnished" label="🛋 Fully Furnished" value={fullyFurnished} onChange={setFullyFurnished} />
+          <Toggle id="electric" label="⚡ Fully Electric" value={fullyElectric} onChange={setFullyElectric} />
+          <Toggle id="ready" label="✅ Ready to move in" value={readyToMoveIn} onChange={setReadyToMoveIn} />
         </div>
 
         {error && (
