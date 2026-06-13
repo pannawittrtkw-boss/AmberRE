@@ -228,40 +228,24 @@ export async function POST(req: NextRequest) {
             };
             const newProperty = await prisma.property.create({ data: propData });
 
-            // Send link card so admin can fill in room details
+            // Reply with text + link so admin can fill in room details
             const displayNum = urlRecord.dailySeq > 0 ? urlRecord.dailySeq : urlId;
-            const baseUrl = (process.env.NEXTAUTH_URL || "").replace("http://localhost:3000", "https://npb-property.vercel.app");
-            const acceptUrl = `${baseUrl}/scanlink/accept?propId=${newProperty.id}&urlId=${urlId}&seq=${displayNum}&by=${encodeURIComponent(reviewerName || "")}`;
+            const siteUrl =
+              (process.env.NEXTAUTH_URL || "").startsWith("https://")
+                ? process.env.NEXTAUTH_URL!
+                : process.env.VERCEL_URL
+                ? `https://${process.env.VERCEL_URL}`
+                : "https://npb-property.vercel.app";
+            const acceptUrl = `${siteUrl}/scanlink/accept?propId=${newProperty.id}&urlId=${urlId}&seq=${displayNum}&by=${encodeURIComponent(reviewerName || "")}`;
             const statusLabel = STATUS_LABEL[status];
 
             if (event.replyToken) {
-              const detailCard = {
-                type: "flex",
-                altText: `${statusLabel} [#${displayNum}] — ระบุรายละเอียดห้อง`,
-                contents: {
-                  type: "bubble",
-                  size: "kilo",
-                  body: {
-                    type: "box", layout: "vertical", paddingAll: "14px", spacing: "sm",
-                    contents: [
-                      { type: "text", text: `${statusLabel} [#${displayNum}]`, weight: "bold", size: "sm", color: "#1B8A4E", wrap: true },
-                      ...(reviewerName ? [{ type: "text", text: `By ${reviewerName}`, size: "xs", color: "#888888", margin: "xs" as const }] : []),
-                      { type: "separator", margin: "md" },
-                      { type: "text", text: "กรุณาระบุรายละเอียดเพิ่มเติม", size: "xs", color: "#555555", margin: "md" },
-                    ],
-                  },
-                  footer: {
-                    type: "box", layout: "vertical", paddingAll: "10px",
-                    contents: [{
-                      type: "button", style: "primary", color: "#C8A951", height: "sm",
-                      action: { type: "uri", label: "🛋 ระบุรายละเอียดห้อง", uri: acceptUrl },
-                    }],
-                  },
-                },
+              const replyMsg: Record<string, unknown> = {
+                type: "text",
+                text: `${statusLabel} [#${displayNum}] — Saved${reviewerName ? `\nBy ${reviewerName}` : ""}\n\n🛋 ระบุรายละเอียดห้อง:\n${acceptUrl}`,
               };
-              const replyMessages: object[] = [detailCard];
-              if (urlRecord.quoteToken) (replyMessages[0] as any).quoteToken = urlRecord.quoteToken;
-              await reply(event.replyToken, replyMessages);
+              if (urlRecord.quoteToken) replyMsg.quoteToken = urlRecord.quoteToken;
+              await reply(event.replyToken, [replyMsg]);
             }
           } catch (propErr: any) {
             console.error("[ScanLink] property create failed:", propErr);
