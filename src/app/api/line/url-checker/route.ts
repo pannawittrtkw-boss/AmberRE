@@ -208,8 +208,8 @@ export async function POST(req: NextRequest) {
           data:  { status, reviewedAt: new Date(), reviewedBy: reviewerName },
         });
 
-        // Auto-create property stub when accepted for all (agent + foreigner)
-        if (status === STATUS.ACCEPT_ALL) {
+        // Auto-create property stub when agent is accepted (with or without foreigner)
+        if (status === STATUS.ACCEPT_ALL || status === STATUS.ACCEPT_AGENT_NOT_FOREIGNER) {
           try {
             const adminUser = await prisma.user.findFirst({
               where: { role: "ADMIN" },
@@ -217,13 +217,14 @@ export async function POST(req: NextRequest) {
             });
             if (!adminUser) throw new Error("No ADMIN user found");
             const propData: Prisma.PropertyUncheckedCreateInput = {
-              titleTh:      "รายการใหม่ (จาก ScanLink)",
-              propertyType: "CONDO",
-              listingType:  "RENT",
-              price:        new Prisma.Decimal(0),
-              sourceLink:   urlRecord.url,
-              status:       "VERIFIED",
-              ownerId:      adminUser.id,
+              titleTh:        "รายการใหม่ (จาก ScanLink)",
+              propertyType:   "CONDO",
+              listingType:    "RENT",
+              price:          new Prisma.Decimal(0),
+              sourceLink:     urlRecord.url,
+              status:         "VERIFIED",
+              foreignerAccept: status === STATUS.ACCEPT_ALL ? "ACCEPT" : "NOT_ACCEPT",
+              ownerId:        adminUser.id,
             };
             await prisma.property.create({ data: propData });
           } catch (propErr: any) {
