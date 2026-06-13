@@ -2,10 +2,15 @@ import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const propId = searchParams.get("propId") ?? "";
   const urlId  = searchParams.get("urlId")  ?? "";
   const seq    = searchParams.get("seq")    ?? "";
   const by     = searchParams.get("by")     ?? "";
+  const status = searchParams.get("status") ?? "";
+
+  const statusLabel =
+    status === "ACCEPT_ALL"                 ? "✅ Accept Agent & Foreigner" :
+    status === "ACCEPT_AGENT_NOT_FOREIGNER" ? "✅ Accept Agent & Not Foreigner" :
+    "✅ Accepted";
 
   const html = `<!DOCTYPE html>
 <html lang="th">
@@ -18,7 +23,8 @@ export async function GET(req: NextRequest) {
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f3f4f6; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
     .card { background: white; border-radius: 20px; width: 100%; max-width: 380px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
     .header { background: #112240; padding: 16px 20px; }
-    .header-seq { color: #C8A951; font-weight: 700; font-size: 15px; }
+    .header-status { color: #C8A951; font-weight: 700; font-size: 14px; }
+    .header-seq { color: white; font-weight: 700; font-size: 15px; margin-top: 2px; }
     .header-by { color: rgba(255,255,255,0.55); font-size: 12px; margin-top: 4px; }
     .body { padding: 16px 20px 8px; }
     .section-label { font-size: 11px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
@@ -28,7 +34,7 @@ export async function GET(req: NextRequest) {
     .track.on { background: #16a34a; border-color: #16a34a; }
     .knob { position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%; background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.25); transition: left 0.2s; pointer-events: none; }
     .track.on .knob { left: 28px; }
-    .remark-section { padding: 16px 20px 8px; border-top: 1px solid #f3f4f6; }
+    .remark-section { padding: 12px 20px 8px; border-top: 1px solid #f3f4f6; }
     .remark-label { font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 8px; display: block; }
     .remark-input { width: 100%; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; font-size: 14px; font-family: inherit; resize: vertical; min-height: 80px; outline: none; color: #1f2937; }
     .remark-input:focus { border-color: #C8A951; }
@@ -42,12 +48,13 @@ export async function GET(req: NextRequest) {
     .success-sub { font-size: 14px; color: #888; margin-top: 6px; }
     .error-msg { color: #ef4444; font-size: 12px; padding: 0 20px 8px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
+    .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle; }
   </style>
 </head>
 <body>
   <div class="card" id="card">
     <div class="header">
+      <div class="header-status">${statusLabel}</div>
       <div class="header-seq">🔗 #${seq}</div>
       ${by ? `<div class="header-by">By ${by}</div>` : ""}
     </div>
@@ -102,8 +109,8 @@ export async function GET(req: NextRequest) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          propId: '${propId}',
           urlId:  '${urlId}',
+          status: '${status}',
           seq:    '${seq}',
           by:     '${by.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}',
           fullyFurnished: state.furnished,

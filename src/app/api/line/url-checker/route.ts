@@ -96,15 +96,28 @@ function shortUrl(url: string, max = 120): string {
 // ── Message builders ──────────────────────────────────────────────────────────
 
 export function buildButtonsMessage(id: number, seq: number, url: string, sentBy?: string | null, dateKey?: string | null) {
-  const btn = (label: string, status: string) => ({
+  const postbackBtn = (label: string, status: string) => ({
     type: "button",
     style: "secondary",
     height: "sm",
-    action: {
-      type: "postback",
-      label,
-      data: `s=${status}&id=${id}`,
-    },
+    action: { type: "postback", label, data: `s=${status}&id=${id}` },
+  });
+
+  const siteUrl =
+    (process.env.NEXTAUTH_URL || "").startsWith("https://")
+      ? process.env.NEXTAUTH_URL!
+      : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "https://npb-property.vercel.app";
+
+  const acceptUri = (status: string) =>
+    `${siteUrl}/scanlink/accept?urlId=${id}&seq=${seq}&status=${status}&by=${encodeURIComponent(sentBy || "")}`;
+
+  const uriBtn = (label: string, status: string) => ({
+    type: "button",
+    style: "secondary",
+    height: "sm",
+    action: { type: "uri", label, uri: acceptUri(status) },
   });
 
   const metaLine = [sentBy, dateKey].filter(Boolean).join(" · ");
@@ -138,11 +151,11 @@ export function buildButtonsMessage(id: number, seq: number, url: string, sentBy
         spacing: "xs",
         paddingAll: "10px",
         contents: [
-          btn("❌ Not Accept Agent",     "NOT_ACCEPT_AGENT"),
-          btn("✅ Agent & Not Foreigner", "ACCEPT_AGENT_NOT_FOREIGNER"),
-          btn("✅ Agent & Foreigner",     "ACCEPT_ALL"),
-          btn("📞 Unable to contact",    "UNABLE_TO_CONTACT"),
-          btn("🚫 Not Available",        "NOT_AVAILABLE"),
+          postbackBtn("❌ Not Accept Agent",     "NOT_ACCEPT_AGENT"),
+          uriBtn("✅ Agent & Not Foreigner", "ACCEPT_AGENT_NOT_FOREIGNER"),
+          uriBtn("✅ Agent & Foreigner",     "ACCEPT_ALL"),
+          postbackBtn("📞 Unable to contact",    "UNABLE_TO_CONTACT"),
+          postbackBtn("🚫 Not Available",        "NOT_AVAILABLE"),
         ],
       },
     },
@@ -207,55 +220,6 @@ export async function POST(req: NextRequest) {
           where: { id: urlId },
           data:  { status, reviewedAt: new Date(), reviewedBy: reviewerName },
         });
-
-        // Auto-create property stub when agent is accepted (with or without foreigner)
-        if (status === STATUS.ACCEPT_ALL || status === STATUS.ACCEPT_AGENT_NOT_FOREIGNER) {
-          try {
-            const adminUser = await prisma.user.findFirst({
-              where: { role: "ADMIN" },
-              select: { id: true },
-            });
-            if (!adminUser) throw new Error("No ADMIN user found");
-            const propData: Prisma.PropertyUncheckedCreateInput = {
-              titleTh:         "รายการใหม่ (จาก ScanLink)",
-              propertyType:    "CONDO",
-              listingType:     "RENT",
-              price:           new Prisma.Decimal(0),
-              sourceLink:      urlRecord.url,
-              status:          "VERIFIED",
-              foreignerAccept: status === STATUS.ACCEPT_ALL ? "ACCEPT" : "NOT_ACCEPT",
-              ownerId:         adminUser.id,
-            };
-            const newProperty = await prisma.property.create({ data: propData });
-
-            // Reply with text + link so admin can fill in room details
-            const displayNum = urlRecord.dailySeq > 0 ? urlRecord.dailySeq : urlId;
-            const siteUrl =
-              (process.env.NEXTAUTH_URL || "").startsWith("https://")
-                ? process.env.NEXTAUTH_URL!
-                : process.env.VERCEL_URL
-                ? `https://${process.env.VERCEL_URL}`
-                : "https://npb-property.vercel.app";
-            const acceptUrl = `${siteUrl}/scanlink/accept?propId=${newProperty.id}&urlId=${urlId}&seq=${displayNum}&by=${encodeURIComponent(reviewerName || "")}`;
-            const statusLabel = STATUS_LABEL[status];
-
-            if (event.replyToken) {
-              const replyMsg: Record<string, unknown> = {
-                type: "text",
-                text: `${statusLabel} [#${displayNum}]${reviewerName ? `\nBy ${reviewerName}` : ""}\n\n🛋 ระบุรายละเอียดห้อง:\n${acceptUrl}`,
-              };
-              if (urlRecord.quoteToken) replyMsg.quoteToken = urlRecord.quoteToken;
-              await reply(event.replyToken, [replyMsg]);
-            }
-          } catch (propErr: any) {
-            console.error("[ScanLink] property create failed:", propErr);
-            await pushMessage(groupId, [{
-              type: "text",
-              text: `⚠️ สร้างรายการทรัพย์ไม่สำเร็จ\n${propErr?.message ?? String(propErr)}`,
-            }]);
-          }
-          continue;
-        }
 
         if (event.replyToken) {
           const displayNum = urlRecord.dailySeq > 0 ? urlRecord.dailySeq : urlId;
