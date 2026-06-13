@@ -80,6 +80,28 @@ export async function POST(req: NextRequest) {
 
     await pushMessage(urlRecord.groupId, [msg]);
 
+    // Push to Ready-to-Post group (ACCEPT_ALL only)
+    const readyToPostGroupId = process.env.LINE_READY_TO_POST_GROUP_ID;
+    if (status === "ACCEPT_ALL" && readyToPostGroupId) {
+      const now = new Date();
+      const dateStr = `${now.getDate()}/${now.getMonth() + 1}/${String(now.getFullYear()).slice(-2)}`;
+
+      const readyToPostLines = [
+        condoName ? `Name : ${condoName}` : null,
+        price != null ? `Price : ${price}` : null,
+      ].filter(Boolean).join("\n");
+
+      const readyToPostSections = [
+        `${statusLabel} [#${seq}]`,
+        `Link : ${urlRecord.url}`,
+        readyToPostLines || null,
+        detailLines,
+        `Date : ${dateStr}`,
+      ].filter(Boolean).join("\n\n");
+
+      await pushMessage(readyToPostGroupId, [{ type: "text", text: readyToPostSections }]);
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[scanlink/accept] error:", error);
