@@ -95,7 +95,7 @@ function shortUrl(url: string, max = 120): string {
 
 // ── Message builders ──────────────────────────────────────────────────────────
 
-export function buildButtonsMessage(id: number, seq: number, url: string) {
+export function buildButtonsMessage(id: number, seq: number, url: string, sentBy?: string | null, dateKey?: string | null) {
   const btn = (label: string, status: string, display: string) => ({
     type: "button",
     style: "secondary",
@@ -107,6 +107,8 @@ export function buildButtonsMessage(id: number, seq: number, url: string) {
       displayText: `${display} [#${seq}]`,
     },
   });
+
+  const metaLine = [sentBy, dateKey].filter(Boolean).join(" · ");
 
   return {
     type: "flex",
@@ -121,7 +123,13 @@ export function buildButtonsMessage(id: number, seq: number, url: string) {
         paddingAll: "12px",
         action: { type: "uri", uri: url },
         contents: [
-          { type: "text", text: `🔗 #${seq}`, color: "#C8A951", weight: "bold", size: "sm" },
+          {
+            type: "box", layout: "horizontal", justifyContent: "space-between",
+            contents: [
+              { type: "text", text: `🔗 #${seq}`, color: "#C8A951", weight: "bold", size: "sm", flex: 0 },
+              ...(metaLine ? [{ type: "text", text: metaLine, color: "#AAAAAA", size: "xxs", align: "end" as const, flex: 1 }] : []),
+            ],
+          },
           { type: "text", text: shortUrl(url, 100), color: "#FFFFFF", size: "xs", wrap: true, margin: "sm" },
         ],
       },
@@ -282,7 +290,7 @@ export async function POST(req: NextRequest) {
           // Push button cards so admin can review each one directly
           const buttonCards = pending.map((rec, i) => {
             const seqNum = rec.dailySeq > 0 ? rec.dailySeq : i + 1;
-            return buildButtonsMessage(rec.id, seqNum, rec.url);
+            return buildButtonsMessage(rec.id, seqNum, rec.url, rec.sentBy, rec.dateKey);
           });
 
           for (let i = 0; i < buttonCards.length; i += 5) {
@@ -328,7 +336,7 @@ export async function POST(req: NextRequest) {
           const record = await prisma.lineUrlHistory.create({
             data: { groupId, url, userId: userId ?? null, sentBy: displayName, dateKey: today, quoteToken, dailySeq },
           });
-          await reply(event.replyToken, [buildButtonsMessage(record.id, dailySeq, url)]);
+          await reply(event.replyToken, [buildButtonsMessage(record.id, dailySeq, url, displayName, today)]);
         }
       }
     }

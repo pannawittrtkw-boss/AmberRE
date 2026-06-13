@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
     // Push button cards so admin can review each one directly, batched by 5
     const buttonCards = pending.map((rec, i) => {
       const seqNum = rec.dailySeq > 0 ? rec.dailySeq : i + 1;
-      return buildButtonsMessage(rec.id, seqNum, rec.url);
+      return buildButtonsMessage(rec.id, seqNum, rec.url, rec.sentBy, rec.dateKey);
     });
 
     for (let i = 0; i < buttonCards.length; i += 5) {
