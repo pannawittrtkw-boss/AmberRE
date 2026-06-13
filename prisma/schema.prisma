@@ -253,6 +253,8 @@ model Property {
   isFeatured        Boolean  @default(false)
   isPopular         Boolean  @default(false)
   isSold            Boolean  @default(false)
+  fullyFurnished    Boolean  @default(false)
+  fullyElectric     Boolean  @default(false)
   estCode           String?  @db.VarChar(50)
   availableDate     DateTime?
   addedAt           DateTime?
