@@ -95,7 +95,7 @@ function shortUrl(url: string, max = 120): string {
 
 // ── Message builders ──────────────────────────────────────────────────────────
 
-function buildButtonsMessage(id: number, seq: number, url: string) {
+export function buildButtonsMessage(id: number, seq: number, url: string) {
   const btn = (label: string, status: string, display: string) => ({
     type: "button",
     style: "secondary",
@@ -251,64 +251,42 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      // /NotVerify command — today's pending links as Flex bubbles
+      // /NotVerify command — plain text list + push button cards for each pending link
       if (/^\/notverify$/i.test(text)) {
         const today   = todayKey();
         const pending = await prisma.lineUrlHistory.findMany({
-          where: { groupId, status: "PENDING", dateKey: today },
-          orderBy: { sentAt: "asc" },
+          where: { groupId, status: "PENDING" },
+          orderBy: [{ dateKey: "asc" }, { dailySeq: "asc" }],
         });
 
         if (pending.length === 0) {
           await reply(event.replyToken, [{ type: "text", text: "✅ No pending links today" }]);
         } else {
-          const MAX_BUBBLES = 10;
-          const display = pending.slice(0, MAX_BUBBLES);
-          const bubbles = display.map((rec, i) => {
-            const by  = rec.sentBy || "Unknown";
-            const t   = new Date(rec.sentAt);
-            const hh  = String(t.getUTCHours() + 7).padStart(2, "0");
-            const mm  = String(t.getUTCMinutes()).padStart(2, "0");
-            const seq = rec.dailySeq > 0 ? rec.dailySeq : i + 1;
-            return {
-              type: "bubble",
-              size: "kilo",
-              header: {
-                type: "box", layout: "vertical", backgroundColor: "#112240", paddingAll: "10px",
-                action: { type: "uri", label: `Open #${seq}`, uri: rec.url },
-                contents: [
-                  { type: "text", text: `🔗 #${seq}`, color: "#C8A951", weight: "bold", size: "sm" },
-                  { type: "text", text: `${by} · ${hh}:${mm}`, color: "#AAAAAA", size: "xxs", margin: "xs" },
-                ],
-              },
-              body: {
-                type: "box", layout: "vertical", paddingAll: "10px",
-                action: { type: "uri", label: `Open #${seq}`, uri: rec.url },
-                contents: [
-                  { type: "text", text: shortUrl(rec.url, 80), size: "xxs", color: "#555555", wrap: true },
-                ],
-              },
-              footer: {
-                type: "box", layout: "vertical", paddingAll: "8px",
-                contents: [{
-                  type: "button", style: "primary", height: "sm", color: "#1565C0",
-                  action: { type: "uri", label: "🔗 เปิดลิงค์", uri: rec.url },
-                }],
-              },
-            };
+          // Build plain text list
+          const lines = pending.map((rec, i) => {
+            const by     = rec.sentBy || "Unknown";
+            const seqNum = rec.dailySeq > 0 ? rec.dailySeq : i + 1;
+            return `#${seqNum} | ${by} · ${rec.dateKey}\n${shortUrl(rec.url, 100)}`;
           });
 
-          const headerText = `📋 Not Verified Today (${today})\n━━━━━━━━━━━━━━━━━━━━\n⏳ Pending: ${pending.length} link(s)` +
-            (pending.length > MAX_BUBBLES ? `\n⚠️ แสดงแค่ ${MAX_BUBBLES} รายการ` : "");
+          const headerText =
+            `📋 Not Verified Links\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n` +
+            `⏳ Pending: ${pending.length} link(s)\n\n` +
+            lines.join("\n\n");
 
-          await reply(event.replyToken, [
-            { type: "text", text: headerText },
-            {
-              type: "flex",
-              altText: `⏳ Pending ${pending.length} link(s)`,
-              contents: bubbles.length === 1 ? bubbles[0] : { type: "carousel", contents: bubbles },
-            },
-          ]);
+          // Reply with the plain text summary
+          await reply(event.replyToken, [{ type: "text", text: headerText }]);
+
+          // Push button cards so admin can review each one directly
+          const buttonCards = pending.map((rec, i) => {
+            const seqNum = rec.dailySeq > 0 ? rec.dailySeq : i + 1;
+            return buildButtonsMessage(rec.id, seqNum, rec.url);
+          });
+
+          for (let i = 0; i < buttonCards.length; i += 5) {
+            await pushMessage(groupId, buttonCards.slice(i, i + 5));
+          }
         }
         continue;
       }
