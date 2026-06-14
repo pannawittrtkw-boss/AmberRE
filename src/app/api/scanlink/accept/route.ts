@@ -78,7 +78,13 @@ export async function POST(req: NextRequest) {
     const msg: Record<string, unknown> = { type: "text", text: sections };
     if (urlRecord.quoteToken) msg.quoteToken = urlRecord.quoteToken;
 
-    await pushMessage(urlRecord.groupId, [msg]);
+    try {
+      await pushMessage(urlRecord.groupId, [msg]);
+    } catch {
+      // quoteToken อาจหมดอายุ — ส่งใหม่โดยไม่มี quoteToken
+      const { quoteToken: _qt, ...msgWithoutQuote } = msg;
+      await pushMessage(urlRecord.groupId, [msgWithoutQuote]);
+    }
 
     // Push to Ready-to-Post group (ACCEPT_ALL only)
     const readyToPostGroupId = process.env.LINE_READY_TO_POST_GROUP_ID;

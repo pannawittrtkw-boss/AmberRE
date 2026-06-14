@@ -39,11 +39,16 @@ async function reply(replyToken: string, messages: object[]) {
 
 export async function pushMessage(groupId: string, messages: object[]) {
   if (!TOKEN()) return;
-  await fetch(LINE_PUSH_API, {
+  const res = await fetch(LINE_PUSH_API, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${TOKEN()}` },
     body: JSON.stringify({ to: groupId, messages }),
   });
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error("[pushMessage] LINE API error:", res.status, errText);
+    throw new Error(`LINE push failed: ${res.status} ${errText}`);
+  }
 }
 
 async function getMemberName(groupId: string, userId: string): Promise<string | null> {
