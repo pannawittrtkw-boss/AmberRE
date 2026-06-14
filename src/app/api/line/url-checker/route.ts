@@ -259,45 +259,7 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      // /NotVerify command — plain text list + push button cards for each pending link
-      if (/^\/notverify$/i.test(text)) {
-        const today   = todayKey();
-        const pending = await prisma.lineUrlHistory.findMany({
-          where: { groupId, status: { in: ["PENDING", "UNABLE_TO_CONTACT"] } },
-          orderBy: [{ dateKey: "asc" }, { dailySeq: "asc" }],
-        });
-
-        if (pending.length === 0) {
-          await reply(event.replyToken, [{ type: "text", text: "✅ No pending links today" }]);
-        } else {
-          // Build plain text list
-          const lines = pending.map((rec, i) => {
-            const by     = rec.sentBy || "Unknown";
-            const seqNum = rec.dailySeq > 0 ? rec.dailySeq : i + 1;
-            return `#${seqNum} | ${by} · ${rec.dateKey}\n${shortUrl(rec.url, 100)}`;
-          });
-
-          const headerText =
-            `📋 Not Verified Links\n` +
-            `━━━━━━━━━━━━━━━━━━━━\n` +
-            `⏳ Pending: ${pending.length} link(s)\n\n` +
-            lines.join("\n\n");
-
-          // Reply with the plain text summary
-          await reply(event.replyToken, [{ type: "text", text: headerText }]);
-
-          // Push button cards so admin can review each one directly
-          const buttonCards = pending.map((rec, i) => {
-            const seqNum = rec.dailySeq > 0 ? rec.dailySeq : i + 1;
-            return buildButtonsMessage(rec.id, seqNum, rec.url, rec.sentBy, rec.dateKey);
-          });
-
-          for (let i = 0; i < buttonCards.length; i += 5) {
-            await pushMessage(groupId, buttonCards.slice(i, i + 5));
-          }
-        }
-        continue;
-      }
+      // /NotVerify command — disabled (Push API quota)
 
       // URL detection
       const urls = extractUrls(text);
