@@ -180,12 +180,6 @@ export function buildButtonsMessage(id: number, seq: number, url: string, sentBy
           postbackBtn("📞 Unable to contact",    "UNABLE_TO_CONTACT"),
           postbackBtn("⏳ Wait For Reply",       "WAIT_FOR_REPLY"),
           postbackBtn("🚫 Not Available",        "NOT_AVAILABLE"),
-          {
-            type: "button",
-            style: "secondary",
-            height: "sm",
-            action: { type: "postback", label: "🗑️ Remove card", data: `action=delete&id=${id}` },
-          },
         ],
       },
     },
