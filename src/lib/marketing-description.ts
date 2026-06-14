@@ -117,7 +117,6 @@ function buildBlock(p: MarketingProperty, lang: "en" | "th"): string {
           rentLabel: "ค่าเช่า",
           saleLabel: "ราคาขาย",
           contractTerms: "สัญญา 1 ปี | มัดจำ 2 เดือน + ล่วงหน้า 1 เดือน",
-          readyMoveInOwner: "พร้อมเข้าอยู่ | ดีลตรงเจ้าของ",
           readyMoveIn: "พร้อมเข้าอยู่",
           studio: "สตูดิโอ",
           bedroom: "ห้องนอน",
@@ -144,7 +143,6 @@ function buildBlock(p: MarketingProperty, lang: "en" | "th"): string {
           rentLabel: "Rent",
           saleLabel: "Sale Price",
           contractTerms: "1-year contract | 2-month deposit + 1-month advance",
-          readyMoveInOwner: "Ready to move in | Direct deal with owner",
           readyMoveIn: "Ready to move in",
           studio: "Studio",
           bedroom: "Bedroom",
@@ -198,12 +196,8 @@ function buildBlock(p: MarketingProperty, lang: "en" | "th"): string {
     lines.push(`📑 ${T.contractTerms}`);
   }
 
-  // Ownership / availability
-  if (p.postFrom === "OWNER") {
-    lines.push(`✨ ${T.readyMoveInOwner}`);
-  } else {
-    lines.push(`✨ ${T.readyMoveIn}`);
-  }
+  // Availability
+  lines.push(`✨ ${T.readyMoveIn}`);
 
   lines.push(DIVIDER);
 
