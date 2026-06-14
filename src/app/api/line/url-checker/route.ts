@@ -39,12 +39,18 @@ async function reply(replyToken: string, messages: object[]): Promise<string | n
   return (data as { sentMessages?: { id: string }[] }).sentMessages?.[0]?.id ?? null;
 }
 
-async function deleteBotMessage(messageId: string) {
-  if (!TOKEN()) return;
-  await fetch(`https://api.line.me/v2/bot/message/${messageId}`, {
+async function deleteBotMessage(messageId: string): Promise<boolean> {
+  if (!TOKEN()) return false;
+  const res = await fetch(`https://api.line.me/v2/bot/message/${messageId}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${TOKEN()}` },
   });
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error("[deleteBotMessage] error:", res.status, errText);
+    return false;
+  }
+  return true;
 }
 
 export async function pushMessage(groupId: string, messages: object[]) {
@@ -251,8 +257,14 @@ export async function POST(req: NextRequest) {
             where: { id: urlId, groupId },
             select: { botMsgId: true },
           });
-          if (urlRecord?.botMsgId) {
-            await deleteBotMessage(urlRecord.botMsgId);
+          if (!urlRecord?.botMsgId) {
+            console.error("[delete] botMsgId not found for urlId:", urlId);
+            if (event.replyToken) await reply(event.replyToken, [{ type: "text", text: "❌ ไม่พบ message ID (botMsgId is null)" }]);
+          } else {
+            const ok = await deleteBotMessage(urlRecord.botMsgId);
+            if (!ok && event.replyToken) {
+              await reply(event.replyToken, [{ type: "text", text: "❌ ลบ card ไม่สำเร็จ (ดู Vercel logs)" }]);
+            }
           }
           continue;
         }
