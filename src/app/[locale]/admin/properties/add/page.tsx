@@ -627,7 +627,7 @@ export default function AddPropertyPage({
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div>
+        <div className="flex-1">
           <h1 className="text-xl sm:text-2xl font-bold">
             {isEditMode
               ? locale === "th" ? "แก้ไขข้อมูลห้อง" : "Edit Property"
@@ -639,6 +639,17 @@ export default function AddPropertyPage({
             </p>
           )}
         </div>
+        {isEditMode && editId && (
+          <a
+            href={`/${locale}/properties/${editId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <ExternalLink className="w-4 h-4" />
+            View on web
+          </a>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
