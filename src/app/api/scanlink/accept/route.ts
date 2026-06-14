@@ -62,10 +62,17 @@ export async function POST(req: NextRequest) {
       price != null ? `Price : ${price}` : null,
     ].filter(Boolean).join("\n");
 
+    const fmtDate = (s: string) => { const d = new Date(s); return `${d.getUTCDate()}/${d.getUTCMonth()+1}/${String(d.getUTCFullYear()).slice(-2)}`; };
+    const readyLine = readyToMoveIn
+      ? `✅ Ready to move in: ${yes}`
+      : availableDate
+        ? `✅ Ready to move in: ${no} ${fmtDate(availableDate)}`
+        : `✅ Ready to move in: ${no}`;
+
     const detailLines = [
       `🛋 Fully Furnished: ${fullyFurnished ? yes : no}`,
       `⚡ Fully Electric: ${fullyElectric   ? yes : no}`,
-      `✅ Ready to move in: ${readyToMoveIn  ? yes : no}`,
+      readyLine,
       remark ? `📝 Remark: ${remark}` : null,
     ].filter(Boolean).join("\n");
 
