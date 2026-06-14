@@ -6,6 +6,7 @@ export async function GET(req: NextRequest) {
   const seq    = searchParams.get("seq")    ?? "";
   const by     = searchParams.get("by")     ?? "";
   const status = searchParams.get("status") ?? "";
+  const todayStr = new Date().toISOString().slice(0, 10);
 
   const statusLabel =
     status === "ACCEPT_ALL"                 ? "✅ Accept Agent & Foreigner" :
@@ -89,6 +90,11 @@ export async function GET(req: NextRequest) {
       </div>
     </div>
 
+    <div class="field-section" id="avail-date-section">
+      <label class="field-label" for="availDate">📅 สามารถเข้าอยู่ได้ <span style="font-weight:400;color:#9ca3af;">(ไม่บังคับ)</span></label>
+      <input id="availDate" class="field-input" type="date" min="${todayStr}">
+    </div>
+
     <div class="remark-section">
       <label class="remark-label" for="remark">📝 Remark <span style="font-weight:400;color:#9ca3af;">(ไม่บังคับ)</span></label>
       <textarea id="remark" class="remark-input" placeholder="เช่น No TV, No Washing Machine..."></textarea>
@@ -109,6 +115,9 @@ export async function GET(req: NextRequest) {
       var track = document.getElementById('track-' + key);
       if (state[key]) track.classList.add('on');
       else track.classList.remove('on');
+      if (key === 'ready') {
+        document.getElementById('avail-date-section').style.display = state.ready ? 'none' : 'block';
+      }
     }
 
     function submit() {
@@ -120,6 +129,7 @@ export async function GET(req: NextRequest) {
       var remark    = document.getElementById('remark').value.trim();
       var condoName = document.getElementById('condoName').value.trim();
       var priceVal  = document.getElementById('price').value.trim();
+      var availDate = state.ready ? null : (document.getElementById('availDate').value || null);
 
       fetch('/api/scanlink/accept', {
         method: 'POST',
@@ -129,12 +139,13 @@ export async function GET(req: NextRequest) {
           status: '${status}',
           seq:    '${seq}',
           by:     '${by.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}',
-          fullyFurnished: state.furnished,
-          fullyElectric:  state.electric,
-          readyToMoveIn:  state.ready,
-          remark:         remark,
-          condoName:      condoName || null,
-          price:          priceVal ? Number(priceVal) : null,
+          fullyFurnished:  state.furnished,
+          fullyElectric:   state.electric,
+          readyToMoveIn:   state.ready,
+          availableDate:   availDate,
+          remark:          remark,
+          condoName:       condoName || null,
+          price:           priceVal ? Number(priceVal) : null,
         })
       })
       .then(function(r) { return r.json(); })

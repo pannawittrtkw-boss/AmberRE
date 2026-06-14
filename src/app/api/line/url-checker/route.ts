@@ -28,12 +28,22 @@ export const STATUS_LABEL: Record<string, string> = {
 
 // ── LINE helpers ──────────────────────────────────────────────────────────────
 
-async function reply(replyToken: string, messages: object[]) {
-  if (!TOKEN()) return;
-  await fetch(LINE_REPLY_API, {
+async function reply(replyToken: string, messages: object[]): Promise<string | null> {
+  if (!TOKEN()) return null;
+  const res = await fetch(LINE_REPLY_API, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${TOKEN()}` },
     body: JSON.stringify({ replyToken, messages }),
+  });
+  const data = await res.json().catch(() => ({}));
+  return (data as { sentMessages?: { id: string }[] }).sentMessages?.[0]?.id ?? null;
+}
+
+async function deleteBotMessage(messageId: string) {
+  if (!TOKEN()) return;
+  await fetch(`https://api.line.me/v2/bot/message/${messageId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${TOKEN()}` },
   });
 }
 
@@ -164,6 +174,12 @@ export function buildButtonsMessage(id: number, seq: number, url: string, sentBy
           postbackBtn("📞 Unable to contact",    "UNABLE_TO_CONTACT"),
           postbackBtn("⏳ Wait For Reply",       "WAIT_FOR_REPLY"),
           postbackBtn("🚫 Not Available",        "NOT_AVAILABLE"),
+          {
+            type: "button",
+            style: "secondary",
+            height: "sm",
+            action: { type: "postback", label: "🗑️ Remove card", data: `action=delete&id=${id}` },
+          },
         ],
       },
     },
@@ -211,12 +227,37 @@ export async function POST(req: NextRequest) {
 
       const userId = source?.userId as string | undefined;
 
+      // ── Unsend: original message was deleted — delete bot's reply too ───
+      if (event.type === "unsend" && event.unsend?.messageId) {
+        const record = await prisma.lineUrlHistory.findFirst({
+          where: { originalMsgId: event.unsend.messageId as string },
+          select: { botMsgId: true },
+        });
+        if (record?.botMsgId) {
+          await deleteBotMessage(record.botMsgId);
+        }
+        continue;
+      }
+
       // ── Postback: admin pressed a status button ──────────────────────────
       if (event.type === "postback" && event.postback?.data) {
         const params = new URLSearchParams(event.postback.data as string);
-        const status = params.get("s");
+        const action = params.get("action");
         const urlId  = parseInt(params.get("id") ?? "");
 
+        // Delete card action
+        if (action === "delete" && !isNaN(urlId)) {
+          const urlRecord = await prisma.lineUrlHistory.findFirst({
+            where: { id: urlId, groupId },
+            select: { botMsgId: true },
+          });
+          if (urlRecord?.botMsgId) {
+            await deleteBotMessage(urlRecord.botMsgId);
+          }
+          continue;
+        }
+
+        const status = params.get("s");
         if (!status || isNaN(urlId) || !(status in STATUS_LABEL)) continue;
 
         const urlRecord = await prisma.lineUrlHistory.findFirst({ where: { id: urlId, groupId } });
@@ -246,6 +287,7 @@ export async function POST(req: NextRequest) {
       if (!event.replyToken) continue;
 
       const text = (event.message.text ?? "").trim();
+      const originalMsgId = (event.message as { id?: string }).id ?? null;
 
       // /GroupID command
       if (/^\/groupid$/i.test(text)) {
@@ -295,9 +337,12 @@ export async function POST(req: NextRequest) {
           });
           const dailySeq = countToday + 1;
           const record = await prisma.lineUrlHistory.create({
-            data: { groupId, url, userId: userId ?? null, sentBy: displayName, dateKey: today, quoteToken, dailySeq },
+            data: { groupId, url, userId: userId ?? null, sentBy: displayName, dateKey: today, quoteToken, dailySeq, originalMsgId },
           });
-          await reply(event.replyToken, [buildButtonsMessage(record.id, dailySeq, url, displayName, today)]);
+          const botMsgId = await reply(event.replyToken, [buildButtonsMessage(record.id, dailySeq, url, displayName, today)]);
+          if (botMsgId) {
+            await prisma.lineUrlHistory.update({ where: { id: record.id }, data: { botMsgId } });
+          }
         }
       }
     }

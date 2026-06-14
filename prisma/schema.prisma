@@ -658,12 +658,15 @@ model LineUrlHistory {
   status     String    @default("PENDING") @db.VarChar(40)
   reviewedAt DateTime?
   reviewedBy String?   @db.VarChar(100)
-  quoteToken String?   @db.VarChar(300)
+  quoteToken    String?   @db.VarChar(300)
+  originalMsgId String?   @db.VarChar(100)
+  botMsgId      String?   @db.VarChar(100)
 
   @@unique([groupId, url])
   @@index([groupId])
   @@index([groupId, status])
   @@index([groupId, dateKey])
+  @@index([originalMsgId])
 }
 
 // Maps original user message IDs to bot-sent translation message IDs so

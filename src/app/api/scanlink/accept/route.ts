@@ -5,7 +5,7 @@ import { pushMessage, STATUS_LABEL } from "@/app/api/line/url-checker/route";
 
 export async function POST(req: NextRequest) {
   try {
-    const { urlId, status, fullyFurnished, fullyElectric, readyToMoveIn, remark, seq, by, condoName, price } = await req.json();
+    const { urlId, status, fullyFurnished, fullyElectric, readyToMoveIn, availableDate, remark, seq, by, condoName, price } = await req.json();
 
     if (!urlId || !status) {
       return NextResponse.json({ success: false, error: "Missing params" }, { status: 400 });
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       foreignerAccept: status === "ACCEPT_ALL" ? "ACCEPT" : "NOT_ACCEPT",
       fullyFurnished:  fullyFurnished ?? false,
       fullyElectric:   fullyElectric  ?? false,
-      availableDate:   readyToMoveIn  ? new Date() : undefined,
+      availableDate:   readyToMoveIn ? new Date() : availableDate ? new Date(availableDate) : undefined,
       note:            remark || undefined,
       ownerId:         adminUser.id,
     };
