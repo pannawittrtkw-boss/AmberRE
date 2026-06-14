@@ -75,16 +75,21 @@ export async function POST(req: NextRequest) {
       detailLines,
     ].filter(Boolean).join("\n\n");
 
+    // Push confirmation to original group — fallback without quoteToken if rejected
+    const sendToGroup = async (groupId: string, messages: object[]) => {
+      try {
+        await pushMessage(groupId, messages);
+      } catch {
+        const stripped = messages.map(({ quoteToken: _qt, ...rest }: Record<string, unknown>) => rest);
+        try { await pushMessage(groupId, stripped); } catch (e) {
+          console.error("[scanlink/accept] pushMessage fallback failed:", e);
+        }
+      }
+    };
+
     const msg: Record<string, unknown> = { type: "text", text: sections };
     if (urlRecord.quoteToken) msg.quoteToken = urlRecord.quoteToken;
-
-    try {
-      await pushMessage(urlRecord.groupId, [msg]);
-    } catch {
-      // quoteToken อาจหมดอายุ — ส่งใหม่โดยไม่มี quoteToken
-      const { quoteToken: _qt, ...msgWithoutQuote } = msg;
-      await pushMessage(urlRecord.groupId, [msgWithoutQuote]);
-    }
+    await sendToGroup(urlRecord.groupId, [msg]);
 
     // Push to Ready-to-Post group (ACCEPT_ALL only)
     const readyToPostGroupId = process.env.LINE_READY_TO_POST_GROUP_ID;
@@ -105,7 +110,7 @@ export async function POST(req: NextRequest) {
         `Date : ${dateStr}`,
       ].filter(Boolean).join("\n\n");
 
-      await pushMessage(readyToPostGroupId, [{ type: "text", text: readyToPostSections }]);
+      await sendToGroup(readyToPostGroupId, [{ type: "text", text: readyToPostSections }]);
     }
 
     return NextResponse.json({ success: true });
