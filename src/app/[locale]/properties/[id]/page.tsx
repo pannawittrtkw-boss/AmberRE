@@ -266,6 +266,7 @@ export default async function PropertyDetailPage({
     building: property.building,
     condition: property.condition,
     postFrom: property.postFrom,
+    availableDate: property.availableDate,
     furniture,
     appliances,
     facilities,

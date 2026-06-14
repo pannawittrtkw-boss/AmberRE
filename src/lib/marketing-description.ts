@@ -67,6 +67,7 @@ export interface MarketingProperty {
   building?: string | null;
   condition?: string | null;
   postFrom?: string | null;
+  availableDate?: Date | string | null;
   furniture: string[];
   appliances: string[];
   facilities: string[];
@@ -118,6 +119,7 @@ function buildBlock(p: MarketingProperty, lang: "en" | "th"): string {
           saleLabel: "ราคาขาย",
           contractTerms: "สัญญา 1 ปี | มัดจำ 2 เดือน + ล่วงหน้า 1 เดือน",
           readyMoveIn: "พร้อมเข้าอยู่",
+          availableFrom: "พร้อมเข้าอยู่ วันที่",
           studio: "สตูดิโอ",
           bedroom: "ห้องนอน",
           bathroom: "ห้องน้ำ",
@@ -144,6 +146,7 @@ function buildBlock(p: MarketingProperty, lang: "en" | "th"): string {
           saleLabel: "Sale Price",
           contractTerms: "1-year contract | 2-month deposit + 1-month advance",
           readyMoveIn: "Ready to move in",
+          availableFrom: "Available from",
           studio: "Studio",
           bedroom: "Bedroom",
           bathroom: "Bathroom",
@@ -197,7 +200,16 @@ function buildBlock(p: MarketingProperty, lang: "en" | "th"): string {
   }
 
   // Availability
-  lines.push(`✨ ${T.readyMoveIn}`);
+  if (p.availableDate) {
+    const avail = new Date(p.availableDate);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    if (avail <= today) {
+      lines.push(`✨ ${T.readyMoveIn}`);
+    } else {
+      const d = `${avail.getDate()}/${avail.getMonth() + 1}/${String(avail.getFullYear()).slice(-2)}`;
+      lines.push(`✨ ${T.availableFrom} ${d}`);
+    }
+  }
 
   lines.push(DIVIDER);
 
