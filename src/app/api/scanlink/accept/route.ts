@@ -76,11 +76,11 @@ export async function POST(req: NextRequest) {
     ].filter(Boolean).join("\n\n");
 
     // Push confirmation to original group — fallback without quoteToken if rejected
-    const sendToGroup = async (groupId: string, messages: object[]) => {
+    const sendToGroup = async (groupId: string, messages: Record<string, unknown>[]) => {
       try {
         await pushMessage(groupId, messages);
       } catch {
-        const stripped = messages.map(({ quoteToken: _qt, ...rest }: Record<string, unknown>) => rest);
+        const stripped = messages.map(({ quoteToken: _qt, ...rest }) => rest);
         try { await pushMessage(groupId, stripped); } catch (e) {
           console.error("[scanlink/accept] pushMessage fallback failed:", e);
         }
