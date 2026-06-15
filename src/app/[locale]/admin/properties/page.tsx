@@ -628,6 +628,7 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                     )}
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
+                    <span className="text-gray-400 font-mono">#{p.id}</span>
                     {p.sizeSqm && <span>{Number(p.sizeSqm)} sqm</span>}
                     {(p.floor || p.building) && (
                       <span>ชั้น {p.floor || "-"} / ตึก {p.building || "-"}</span>
@@ -750,6 +751,7 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
 
                 {/* Details grid */}
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+                  <span className="text-gray-400 font-mono">#{p.id}</span>
                   {p.sizeSqm && <span>{Number(p.sizeSqm)} sqm</span>}
                   {(p.floor || p.building) && <span>ชั้น {p.floor || "-"} / ตึก {p.building || "-"}</span>}
                   {p.listingType && (
