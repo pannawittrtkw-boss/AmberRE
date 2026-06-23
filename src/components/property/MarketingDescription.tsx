@@ -75,6 +75,7 @@ export default function MarketingDescription({
   const [activeTarget, setActiveTarget] = useState<ShareTarget | null>(null);
   const [shareProgress, setShareProgress] = useState({ done: 0, total: 0 });
   const [desktopHint, setDesktopHint] = useState<ShareTarget | null>(null);
+  const [mobileHint, setMobileHint] = useState<"files" | "textonly" | null>(null);
 
   useEffect(() => {
     import(`@/messages/${locale}.json`).then((m) => setMessages(m.default));
@@ -93,6 +94,8 @@ export default function MarketingDescription({
     imagesReady: "Text and images are ready",
     fbHint: "",
     lineHint: "",
+    lineMobileFilesHint: "",
+    lineMobileTextOnlyHint: "",
     openFacebook: "Open Facebook Share",
     openLine: "Get LINE Desktop",
     close: "Close",
@@ -149,6 +152,8 @@ export default function MarketingDescription({
   const handleShare = async (target: ShareTarget) => {
     if (shareStatus !== "idle") return;
     setActiveTarget(target);
+    setDesktopHint(null);
+    setMobileHint(null);
 
     const isMobile =
       typeof window !== "undefined" &&
@@ -169,24 +174,47 @@ export default function MarketingDescription({
           setShareProgress({ done: i + 1, total: imageUrls.length });
         }
 
-        const shareDataWithFiles: ShareData = {
+        const canShareApi = typeof navigator.canShare === "function";
+
+        // Best case: this device/app supports sharing images and text together.
+        const combinedShare: ShareData = {
           text: `${text}\n\n${propertyUrl}`,
           files,
         };
+        const canShareCombined =
+          files.length > 0 && canShareApi && navigator.canShare(combinedShare);
 
-        const canShareFiles =
+        // Some browsers (notably iOS Safari) accept files OR text, but not
+        // both together — sharing files+text then silently drops the files
+        // and only delivers the text. Detect that case and share files alone
+        // instead, with the text copied to the clipboard to paste right after.
+        const filesOnlyShare: ShareData = { files };
+        const canShareFilesOnly =
+          !canShareCombined &&
           files.length > 0 &&
-          typeof navigator.canShare === "function" &&
-          navigator.canShare(shareDataWithFiles);
+          canShareApi &&
+          navigator.canShare(filesOnlyShare);
 
         setShareStatus("sharing");
-        if (canShareFiles) {
-          await navigator.share(shareDataWithFiles);
+        if (canShareCombined) {
+          await navigator.share(combinedShare);
+        } else if (canShareFilesOnly) {
+          try {
+            await navigator.clipboard.writeText(text);
+          } catch {
+            /* ignore */
+          }
+          await navigator.share(filesOnlyShare);
+          setMobileHint("files");
         } else {
-          await navigator.share({
-            text: text,
-            url: propertyUrl,
-          });
+          // Can't share images at all (no file-share support, or every
+          // image failed to fetch) — at minimum save them to the device so
+          // the user can attach them manually after sending the text.
+          if (imageUrls.length > 0) {
+            await downloadAllImages();
+          }
+          await navigator.share({ text, url: propertyUrl });
+          if (imageUrls.length > 0) setMobileHint("textonly");
         }
         setShareStatus("idle");
         setActiveTarget(null);
@@ -361,6 +389,23 @@ export default function MarketingDescription({
               className={`text-xs shrink-0 hover:underline ${
                 desktopHint === "line" ? "text-emerald-700" : "text-blue-700"
               }`}
+            >
+              {T.close}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {mobileHint && (
+        <div className="px-5 py-3 border-b text-sm bg-emerald-50 border-emerald-100 text-emerald-900">
+          <div className="flex items-start justify-between gap-3">
+            <p className="whitespace-pre-line text-xs leading-relaxed">
+              {mobileHint === "files" ? T.lineMobileFilesHint : T.lineMobileTextOnlyHint}
+            </p>
+            <button
+              type="button"
+              onClick={() => setMobileHint(null)}
+              className="text-xs shrink-0 hover:underline text-emerald-700"
             >
               {T.close}
             </button>

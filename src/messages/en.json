@@ -336,7 +336,9 @@
     "openLine": "Get LINE Desktop",
     "close": "Close",
     "fbHint": "✓ Text copied — paste (Cmd/Ctrl + V) into the \"Say something about this...\" box\n✓ In the dialog tap \"Share to > Group\" to pick the group\n• The preview image + title come from the page; if missing, Facebook may have cached it — clear via Sharing Debugger",
-    "lineHint": "✓ Text copied — open the LINE Desktop app, pick a chat or group, then paste (Cmd/Ctrl + V)\n✓ All images downloaded — drag from your Downloads folder into the LINE chat\n• LINE has no web-share API for sending to groups from the browser — you need the LINE Desktop app"
+    "lineHint": "✓ Text copied — open the LINE Desktop app, pick a chat or group, then paste (Cmd/Ctrl + V)\n✓ All images downloaded — drag from your Downloads folder into the LINE chat\n• LINE has no web-share API for sending to groups from the browser — you need the LINE Desktop app",
+    "lineMobileFilesHint": "✓ Photos sent to LINE\n• This phone can't send photos and text together — the text was copied, paste it into the same chat right after the photos",
+    "lineMobileTextOnlyHint": "✓ Text sent\n✓ All photos were saved to this device — open the LINE chat and attach them from there"
   },
   "investment": {
     "badge": "Investment",
