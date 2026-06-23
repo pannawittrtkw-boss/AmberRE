@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   Loader2,
@@ -94,6 +95,7 @@ function renderAvailableDate(availableDate: any, size: "sm" | "xs" = "sm") {
 }
 
 export default function AdminPropertiesPage({ params }: { params: Promise<{ locale: string }> }) {
+  const router = useRouter();
   const [locale, setLocale] = useState("th");
   const [messages, setMessages] = useState<any>(null);
   const [properties, setProperties] = useState<any[]>([]);
@@ -568,7 +570,10 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
               {/* Main Row - Desktop */}
               <div className="hidden sm:flex items-center gap-3 px-4 py-3">
                 <div className="w-8 text-center text-sm font-bold text-gray-400">{idx + 1}</div>
-                <Link href={`/${locale}/admin/properties/add?edit=${p.id}`} className="flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity">
+                <div
+                  onClick={() => router.push(`/${locale}/admin/properties/add?edit=${p.id}`)}
+                  className="flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
+                >
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-semibold text-gray-900 truncate">
                       {p.projectName || p.titleTh || "-"}
@@ -658,7 +663,7 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                       </div>
                     ) : null;
                   })()}
-                </Link>
+                </div>
                 <div className="text-right min-w-[100px]">
                   {price > 0 && (
                     <div className="text-sm font-bold text-gray-800">฿{price.toLocaleString()}<span className="text-[10px] text-gray-400 font-normal">/เดือน</span></div>
