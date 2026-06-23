@@ -140,3 +140,8 @@ export function getStationFullName(code: string): string {
   const name = getStationEnName(code);
   return `${linePrefix(code)} ${name}`;
 }
+
+export function getStationThaiFullName(code: string): string {
+  const name = getStationThaiName(code);
+  return `${linePrefix(code)} ${name}`;
+}

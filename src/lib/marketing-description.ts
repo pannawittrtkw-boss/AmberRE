@@ -1,4 +1,4 @@
-import { getStationFullName, getStationThaiName } from "./stations";
+import { getStationFullName, getStationThaiFullName } from "./stations";
 
 const FURNITURE_MAP: Record<string, { en: string; th: string }> = {
   bed: { en: "Bed", th: "เตียง" },
@@ -179,7 +179,7 @@ function buildBlock(p: MarketingProperty, lang: "en" | "th"): string {
 
   // Stations
   if (p.stations.length > 0) {
-    const fmt = lang === "th" ? getStationThaiName : getStationFullName;
+    const fmt = lang === "th" ? getStationThaiFullName : getStationFullName;
     lines.push(`🚆 ${p.stations.map(fmt).join(" • ")}`);
   }
 
@@ -284,7 +284,7 @@ function buildBlock(p: MarketingProperty, lang: "en" | "th"): string {
   if (p.stations.length > 0) {
     const stn =
       lang === "th"
-        ? getStationThaiName(p.stations[0])
+        ? getStationThaiFullName(p.stations[0])
         : getStationFullName(p.stations[0]);
     highlights.push(T.highMrtNear(stn));
   }
