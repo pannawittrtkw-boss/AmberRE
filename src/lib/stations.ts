@@ -59,18 +59,84 @@ const STATION_NAMES: Record<string, string> = {
   A5: "หัวหมาก", A6: "บ้านทับช้าง", A7: "ลาดกระบัง", A8: "สุวรรณภูมิ",
 };
 
+const STATION_NAMES_EN: Record<string, string> = {
+  // BTS Sukhumvit
+  N24: "Khu Khot", N23: "Yak Khlong Luang", N22: "Thammasat University", N21: "Mueang Ek - Wat Phra Si Mahathat",
+  N20: "Phahon Yothin 59", N19: "Sai Yud", N18: "Saphan Mai", N17: "Royal Thai Air Force Museum",
+  N16: "Bhumibol Adulyadej Hospital", N15: "11th Infantry Regiment", N14: "Wat Phra Si Mahathat",
+  N13: "Phahon Yothin 24", N12: "Ratchayothin", N11: "Senanikom", N10: "Kasetsart University",
+  N9: "Ha Yaek Lat Phrao", N8: "Mo Chit", N7: "Saphan Khwai", N6: "Sena Ruam",
+  N5: "Ari", N4: "Sanam Pao", N3: "Victory Monument", N2: "Phaya Thai",
+  N1: "Ratchathewi", CEN: "Siam",
+  E1: "Chit Lom", E2: "Phloen Chit", E3: "Nana", E4: "Asok",
+  E5: "Phrom Phong", E6: "Thong Lo", E7: "Ekkamai", E8: "Phra Khanong",
+  E9: "On Nut", E10: "Bang Chak", E11: "Punnawithi", E12: "Udom Suk",
+  E13: "Bang Na", E14: "Bearing", E15: "Samrong", E16: "Pu Chao",
+  E17: "Chang Erawan", E18: "Royal Thai Naval Academy", E19: "Pak Nam",
+  E20: "Si Nagarindra", E21: "Phraek Sa", E22: "Sai Luat", E23: "Kheha",
+  // BTS Silom
+  W1: "National Stadium", S1: "Ratchadamri", S2: "Sala Daeng", S3: "Chong Nonsi",
+  S4: "Saint Louis", S5: "Surasak", S6: "Saphan Taksin", S7: "Krung Thon Buri",
+  S8: "Wongwian Yai", S9: "Pho Nimit", S10: "Talat Phlu", S11: "Wutthakat", S12: "Bang Wa",
+  // BTS Gold
+  G1: "Krung Thon Buri", G2: "Charoen Nakhon", G3: "Khlong San",
+  // MRT Blue
+  BL01: "Tha Phra", BL02: "Charan 13", BL03: "Fai Chai", BL04: "Bang Khun Non",
+  BL05: "Bang Yi Khan", BL06: "Sirindhorn", BL07: "Bang Phlat", BL08: "Bang O",
+  BL09: "Bang Pho", BL10: "Tao Poon", BL11: "Bang Sue", BL12: "Kamphaeng Phet",
+  BL13: "Chatuchak Park", BL14: "Phahon Yothin", BL15: "Lat Phrao", BL16: "Ratchadaphisek",
+  BL17: "Sutthisan", BL18: "Huai Khwang", BL19: "Thailand Cultural Centre", BL20: "Phra Ram 9",
+  BL21: "Phetchaburi", BL22: "Sukhumvit", BL23: "Queen Sirikit National Convention Centre", BL24: "Khlong Toei",
+  BL25: "Lumphini", BL26: "Si Lom", BL27: "Sam Yan", BL28: "Hua Lamphong",
+  BL29: "Wat Mangkon", BL30: "Sam Yot", BL31: "Sanam Chai", BL32: "Itsaraphap",
+  BL33: "Bang Phai", BL34: "Bang Wa", BL35: "Phet Kasem 48", BL36: "Phasi Charoen",
+  BL37: "Bang Khae", BL38: "Lak Song",
+  // MRT Purple
+  PP01: "Khlong Bang Phai", PP02: "Talad Bang Yai", PP03: "Sam Yaek Bang Yai", PP04: "Bang Phlu",
+  PP05: "Bang Rak Yai", PP06: "Bang Rak Noi Tha It", PP07: "Sai Ma",
+  PP08: "Phra Nang Klao Bridge", PP09: "Yaek Nonthaburi 1", PP10: "Bang Krasor",
+  PP11: "Nonthaburi Civic Center", PP12: "Ministry of Public Health", PP13: "Yaek Tiwanon",
+  PP14: "Wong Sawang", PP15: "Bang Son", PP16: "Tao Poon",
+  // MRT Yellow
+  YL01: "Lat Phrao", YL02: "Phahon Yothin 48", YL03: "Phawana", YL04: "Chok Chai 4",
+  YL05: "Lat Phrao 71", YL06: "Lat Phrao 83", YL07: "Mahat Thai",
+  YL08: "Lat Phrao 101", YL09: "Bang Kapi", YL10: "Yaek Lam Sali", YL11: "Si Kritha",
+  YL12: "Hua Mak", YL13: "Kalantan", YL14: "Si Nut", YL15: "Srinagarindra 38",
+  YL16: "Suan Luang Rama IX", YL17: "Si Udom", YL18: "Si Iam", YL19: "Si La Salle",
+  YL20: "Si Bearing", YL21: "Si Dan", YL22: "Si Thepha", YL23: "Thipphawan", YL24: "Samrong",
+  // MRT Pink
+  PK01: "Nonthaburi Civic Center", PK02: "Khae Rai", PK03: "Sanambin Nam", PK04: "Samakkhi",
+  PK05: "Royal Irrigation Department", PK06: "Pak Kret", PK07: "Pak Kret Bypass",
+  PK08: "Chaeng Watthana-Pak Kret 28", PK09: "Si Rat", PK10: "Muang Thong Thani",
+  PK11: "Chaeng Watthana 14", PK12: "Government Complex", PK13: "Thot Damri",
+  PK14: "Lak Si", PK15: "Ratchapruek", PK16: "Nopphawong",
+  PK17: "Wat Phra Sri Mahathat", PK18: "Ram Inthra 3", PK19: "Lat Phrao Intersection",
+  PK20: "Ram Inthra Kilo 4", PK21: "Maiyalap", PK22: "Watcharapol", PK23: "Ram Inthra Kilo 6",
+  PK24: "Khu Bon", PK25: "Ram Inthra Kilo 9", PK26: "Outer Ring Road-Ram Inthra",
+  PK27: "Nopparat", PK28: "Bang Chan", PK29: "Setthabutbamphen", PK30: "Min Buri",
+  // Airport Rail Link
+  A1: "Phaya Thai", A2: "Ratchaprarop", A3: "Makkasan", A4: "Ramkhamhaeng",
+  A5: "Hua Mak", A6: "Ban Thap Chang", A7: "Lat Krabang", A8: "Suvarnabhumi",
+};
+
+function linePrefix(code: string): string {
+  if (code.startsWith("BL")) return "MRT";
+  if (code.startsWith("PP")) return "MRT";
+  if (code.startsWith("YL")) return "MRT";
+  if (code.startsWith("PK")) return "MRT";
+  if (code.startsWith("A")) return "ARL";
+  return "BTS";
+}
+
 export function getStationThaiName(code: string): string {
   return STATION_NAMES[code] || code;
 }
 
+export function getStationEnName(code: string): string {
+  return STATION_NAMES_EN[code] || STATION_NAMES[code] || code;
+}
+
 export function getStationFullName(code: string): string {
-  const name = STATION_NAMES[code];
-  if (!name) return code;
-  // Determine line prefix
-  if (code.startsWith("BL")) return `MRT ${name}`;
-  if (code.startsWith("PP")) return `MRT ${name}`;
-  if (code.startsWith("YL")) return `MRT ${name}`;
-  if (code.startsWith("PK")) return `MRT ${name}`;
-  if (code.startsWith("A")) return `ARL ${name}`;
-  return `BTS ${name}`;
+  const name = getStationEnName(code);
+  return `${linePrefix(code)} ${name}`;
 }
