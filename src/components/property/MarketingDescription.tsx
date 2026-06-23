@@ -82,7 +82,7 @@ export default function MarketingDescription({
   }, [locale]);
 
   const T = messages?.marketing ?? {
-    headerHint: "Ready to post on Facebook / LINE",
+    headerHint: "Share",
     copy: "Copy text",
     copied: "Copied",
     download: "Download all images",

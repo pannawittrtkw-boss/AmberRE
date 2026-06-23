@@ -547,11 +547,11 @@ export default async function PropertyDetailPage({
             {/* Marketing Listing Copy */}
             <section>
               <SectionTitle
-                badge={locale === "th" ? "ข้อความประกาศ" : "Listing Copy"}
+                badge={locale === "th" ? "ข้อความประกาศ" : "Listing"}
                 title={
                   locale === "th"
                     ? "ข้อความสำหรับโพสต์"
-                    : "Ready-to-Post Listing"
+                    : "Listing Detail"
                 }
                 className="mb-5"
               />
