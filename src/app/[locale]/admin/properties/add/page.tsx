@@ -501,9 +501,8 @@ export default function AddPropertyPage({
 
       const imageUrls = allImageUrls;
 
-      // Convert station IDs (string codes like "E16") to DB station IDs if needed
-      // For now we store station codes as stationIds - the API will handle them
-      const stationIds = selectedStations.length > 0 ? selectedStations : undefined;
+      // Always send the array (even when empty) so removing all stations clears the field on update
+      const stationIds = selectedStations;
 
       const isLand = form.propertyType === "LAND";
       const payload = {
