@@ -206,6 +206,15 @@ function SignedPdfModal({
                 >
                   {copied ? "✓ Copied" : locale === "th" ? "คัดลอก" : "Copy"}
                 </button>
+                <a
+                  href={shareUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={locale === "th" ? "เปิดลิงก์" : "Open link"}
+                  className="shrink-0 flex items-center justify-center px-2 py-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded border border-blue-200"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
               </div>
             </div>
           )}
