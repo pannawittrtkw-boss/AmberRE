@@ -22,6 +22,7 @@ import {
   BellRing,
   PenLine,
   RotateCcw,
+  ExternalLink,
 } from "lucide-react";
 import { getIntlLocale } from "@/lib/utils";
 
@@ -424,16 +425,20 @@ function ESignModal({
   contract,
   locale,
   onClose,
+  onSaved,
 }: {
   contract: Contract;
   locale: string;
   onClose: () => void;
+  onSaved: (updated: Pick<Contract, "id" | "signedPdfUrl" | "shareToken">) => void;
 }) {
   const [info, setInfo] = useState<ESignInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [savingPdf, setSavingPdf] = useState(false);
+  const [savedJustNow, setSavedJustNow] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -480,6 +485,35 @@ function ESignModal({
 
   const hasTokens = info?.lessorSignToken && info?.lesseeSignToken;
   const needsJointLesseeToken = !!info?.jointLesseeName && !info?.jointLesseeSignToken;
+  const allSigned =
+    !!info?.lessorSignedAt &&
+    !!info?.lesseeSignedAt &&
+    (!info?.jointLesseeName || !!info?.jointLesseeSignedAt);
+
+  const saveToAttachment = async () => {
+    setSavingPdf(true);
+    setError("");
+    try {
+      const pdfRes = await fetch(`/api/admin/contracts/${contract.id}/pdf`);
+      if (!pdfRes.ok) throw new Error("สร้าง PDF ไม่สำเร็จ");
+      const blob = await pdfRes.blob();
+      const file = new File([blob], `${contract.contractNumber}.pdf`, { type: "application/pdf" });
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`/api/admin/contracts/${contract.id}/signed-pdf`, {
+        method: "POST",
+        body: fd,
+      });
+      const d = await res.json();
+      if (!d.success) throw new Error(d.error || "บันทึกไฟล์ไม่สำเร็จ");
+      onSaved({ id: contract.id, signedPdfUrl: d.data.signedPdfUrl, shareToken: d.data.shareToken });
+      setSavedJustNow(true);
+      setTimeout(() => setSavedJustNow(false), 3000);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "เกิดข้อผิดพลาด");
+    }
+    setSavingPdf(false);
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -557,6 +591,15 @@ function ESignModal({
                     >
                       {copiedKey === "lessor" ? "✓" : locale === "th" ? "คัดลอก" : "Copy"}
                     </button>
+                    <a
+                      href={buildSignUrl(info.lessorSignToken)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={locale === "th" ? "เปิดลิงก์" : "Open link"}
+                      className="shrink-0 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
                     <button
                       onClick={() => { if (confirm("สร้างลิงก์ใหม่? ลิงก์เดิมและลายเซ็นจะถูกลบ")) generate("lessor"); }}
                       disabled={generating}
@@ -603,6 +646,15 @@ function ESignModal({
                     >
                       {copiedKey === "lessee" ? "✓" : locale === "th" ? "คัดลอก" : "Copy"}
                     </button>
+                    <a
+                      href={buildSignUrl(info.lesseeSignToken)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={locale === "th" ? "เปิดลิงก์" : "Open link"}
+                      className="shrink-0 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
                     <button
                       onClick={() => { if (confirm("สร้างลิงก์ใหม่? ลิงก์เดิมและลายเซ็นจะถูกลบ")) generate("lessee"); }}
                       disabled={generating}
@@ -665,6 +717,15 @@ function ESignModal({
                     >
                       {copiedKey === "joint_lessee" ? "✓" : locale === "th" ? "คัดลอก" : "Copy"}
                     </button>
+                    <a
+                      href={buildSignUrl(info.jointLesseeSignToken)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={locale === "th" ? "เปิดลิงก์" : "Open link"}
+                      className="shrink-0 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
                     <button
                       onClick={() => { if (confirm("สร้างลิงก์ใหม่? ลิงก์เดิมและลายเซ็นจะถูกลบ")) generate("joint_lessee"); }}
                       disabled={generating}
@@ -682,7 +743,25 @@ function ESignModal({
           )}
         </div>
 
-        <div className="flex justify-end px-5 py-4 border-t bg-gray-50 rounded-b-xl">
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t bg-gray-50 rounded-b-xl">
+          {allSigned && (
+            <button
+              onClick={saveToAttachment}
+              disabled={savingPdf}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-60 rounded-lg"
+            >
+              {savingPdf ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : savedJustNow ? (
+                <CheckCircle2 className="w-4 h-4" />
+              ) : (
+                <Paperclip className="w-4 h-4" />
+              )}
+              {savedJustNow
+                ? locale === "th" ? "บันทึกแล้ว" : "Saved"
+                : locale === "th" ? "บันทึกไฟล์เข้าไฟล์แนบ" : "Save to attachment"}
+            </button>
+          )}
           <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
             {locale === "th" ? "ปิด" : "Close"}
           </button>
@@ -1079,6 +1158,10 @@ export default function AdminContractsPage({
           contract={esignModal}
           locale={locale}
           onClose={() => setEsignModal(null)}
+          onSaved={(updated) => {
+            setContracts((prev) => prev.map((x) => (x.id === updated.id ? { ...x, ...updated } : x)));
+            setEsignModal((prev) => (prev ? { ...prev, ...updated } : null));
+          }}
         />
       )}
     </div>
