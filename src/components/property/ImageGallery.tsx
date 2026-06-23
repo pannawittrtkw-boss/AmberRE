@@ -19,7 +19,7 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
 
   if (images.length === 0) {
     return (
-      <div className="w-full h-64 sm:h-[420px] lg:h-[520px] bg-gray-200 rounded-xl flex items-center justify-center text-gray-500">
+      <div className="w-full h-80 sm:h-[520px] lg:h-[640px] bg-gray-200 rounded-xl flex items-center justify-center text-gray-500">
         No images available
       </div>
     );
@@ -33,7 +33,7 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
         navigation
         pagination={{ clickable: true }}
         thumbs={{ swiper: thumbsSwiper && !thumbsSwiper.destroyed ? thumbsSwiper : null }}
-        className="w-full h-64 sm:h-[420px] lg:h-[520px] rounded-xl overflow-hidden"
+        className="w-full h-80 sm:h-[520px] lg:h-[640px] rounded-xl overflow-hidden"
       >
         {images.map((img) => (
           <SwiperSlide key={img.id}>
