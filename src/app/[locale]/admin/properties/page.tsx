@@ -580,6 +580,8 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                     )}
                     <select
                       value={p.status || "PENDING"}
+                      onClick={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
                       onChange={async (e) => {
                         const newStatus = e.target.value;
                         if (newStatus === "ADDED_PROPERTIES") {
