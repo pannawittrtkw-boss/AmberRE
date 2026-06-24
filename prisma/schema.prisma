@@ -148,9 +148,9 @@ model Contract {
   clauseOverrides String? @db.Text
 
   // ID card images
-  lessorIdImage      String? @db.VarChar(500)
-  lesseeIdImage      String? @db.VarChar(500)
-  jointLesseeIdImage String? @db.VarChar(500)
+  lessorIdImage      String? @db.Text
+  lesseeIdImage      String? @db.Text
+  jointLesseeIdImage String? @db.Text
 
   // Contract type
   contractType String @default("NEW") @db.VarChar(10) // NEW | RENEW

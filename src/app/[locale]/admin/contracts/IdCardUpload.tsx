@@ -104,6 +104,34 @@ export default function IdCardUpload({
     setShowRaw(false);
   };
 
+  // Compress image client-side and return as a base64 data URI.
+  // Max 1600px on longest side, JPEG 0.82 quality — keeps ID cards sharp
+  // while staying well under 500 KB, no external upload needed.
+  const compressToDataUri = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        img.onload = () => {
+          const MAX = 1600;
+          let { width, height } = img;
+          if (width > MAX || height > MAX) {
+            if (width >= height) { height = Math.round((height * MAX) / width); width = MAX; }
+            else { width = Math.round((width * MAX) / height); height = MAX; }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", 0.82));
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
   const handleFile = async (file: File) => {
     setError("");
     if (!file.type.startsWith("image/")) {
@@ -112,20 +140,13 @@ export default function IdCardUpload({
     }
     setStage("uploading");
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!data.success || !data.data?.url) {
-        setError(data.error || (locale === "th" ? "อัพโหลดไม่สำเร็จ" : "Upload failed"));
-        setStage("idle");
-        return;
-      }
-      onChange(data.data.url);
+      // Store as base64 directly in DB — no Blob storage required.
+      const dataUri = await compressToDataUri(file);
+      onChange(dataUri);
       if (onOcrText) await runOcr(file);
       else setStage("idle");
     } catch {
-      setError(locale === "th" ? "อัพโหลดไม่สำเร็จ" : "Upload failed");
+      setError(locale === "th" ? "อ่านไฟล์ไม่สำเร็จ" : "Failed to read file");
       setStage("idle");
     }
   };

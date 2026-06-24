@@ -105,6 +105,7 @@ export async function GET(
   const proto = hdrs.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
   const toAbs = (u: string | null | undefined): string | null => {
     if (!u) return null;
+    if (u.startsWith("data:")) return u;
     if (/^https?:\/\//i.test(u)) return u;
     if (!host) return null;
     return `${proto}://${host}${u.startsWith("/") ? "" : "/"}${u}`;

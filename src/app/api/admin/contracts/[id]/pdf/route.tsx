@@ -155,6 +155,9 @@ export async function GET(
   // convert it to a base64 data URI so the renderer receives ready-to-use
   // embedded data instead of a remote URL.
   const toBase64DataUri = async (u: string | null | undefined): Promise<string | null> => {
+    if (!u) return null;
+    // Already a data URI (base64 stored directly in DB) — use as-is.
+    if (u.startsWith("data:")) return u;
     const abs = toAbs(u);
     if (!abs) return null;
     try {
