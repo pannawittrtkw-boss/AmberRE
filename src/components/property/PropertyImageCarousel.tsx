@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface CarouselImage {
@@ -161,13 +162,14 @@ export default function PropertyImageCarousel({
       >
         {ordered.map((img, i) => (
           <div key={i} className="relative w-full h-full shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={img.imageUrl}
               alt={alt}
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               draggable={false}
-              className={`w-full h-full object-cover transition-transform duration-500 ${imageClassName}`}
-              loading={i === 0 ? "eager" : "lazy"}
+              className={`object-cover transition-transform duration-500 ${imageClassName}`}
+              priority={i === 0}
             />
           </div>
         ))}

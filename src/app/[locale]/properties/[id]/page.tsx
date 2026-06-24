@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Bed,
   Bath,
@@ -329,11 +330,13 @@ export default async function PropertyDetailPage({
       <section className="relative">
         <div className="relative h-[55vh] min-h-[380px] max-h-[560px] overflow-hidden bg-stone-900">
           {heroImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={heroImage}
               alt={title}
-              className="w-full h-full object-cover"
+              fill
+              sizes="100vw"
+              className="object-cover"
+              priority
             />
           ) : (
             <div className="flex items-center justify-center h-full text-stone-700">

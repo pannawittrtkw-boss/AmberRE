@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Thumbs } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
@@ -63,10 +64,13 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
                 setLightboxOpen(true);
               }}
             >
-              <img
+              <Image
                 src={img.imageUrl}
                 alt={title}
-                className="w-full h-full object-cover"
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 800px"
+                className="object-cover"
+                priority={idx === 0}
               />
               <div className="absolute top-3 right-3 p-2 bg-black/40 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                 <Expand className="w-4 h-4" />
@@ -91,17 +95,22 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
         >
           {images.map((img) => (
             <SwiperSlide key={img.id} className="cursor-pointer">
-              <img
-                src={img.imageUrl}
-                alt={title}
-                className="w-full h-full object-cover rounded-lg opacity-70 hover:opacity-100 transition-opacity"
-              />
+              <div className="relative w-full h-full">
+                <Image
+                  src={img.imageUrl}
+                  alt={title}
+                  fill
+                  sizes="120px"
+                  className="object-cover rounded-lg opacity-70 hover:opacity-100 transition-opacity"
+                />
+              </div>
             </SwiperSlide>
           ))}
         </Swiper>
       )}
 
-      {/* Lightbox */}
+      {/* Lightbox — uses native img intentionally so the browser
+          renders the photo at its natural aspect ratio unconstrained */}
       {lightboxOpen && (
         <div
           className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center"
@@ -137,6 +146,7 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
             </>
           )}
 
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={images[activeIndex].imageUrl}
             alt={title}
