@@ -137,9 +137,6 @@ export async function GET(
     return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
   }
 
-  // react-pdf renders server-side and needs absolute URLs to fetch the ID
-  // images. Vercel Blob already returns full https:// URLs, but local /uploads
-  // paths must be prefixed with the request origin.
   const hdrs = await headers();
   const host = hdrs.get("host") || "";
   const proto =
@@ -150,6 +147,26 @@ export async function GET(
     if (/^https?:\/\//i.test(u)) return u;
     if (!host) return null;
     return `${proto}://${host}${u.startsWith("/") ? "" : "/"}${u}`;
+  };
+
+  // react-pdf cannot reliably fetch external image URLs inside a Vercel
+  // serverless function (network is restricted and the renderer's internal
+  // image cache may silently fail). Pre-fetch each ID-card image here and
+  // convert it to a base64 data URI so the renderer receives ready-to-use
+  // embedded data instead of a remote URL.
+  const toBase64DataUri = async (u: string | null | undefined): Promise<string | null> => {
+    const abs = toAbs(u);
+    if (!abs) return null;
+    try {
+      const res = await fetch(abs);
+      if (!res.ok) return null;
+      const buf = await res.arrayBuffer();
+      const mime = res.headers.get("content-type") || "image/jpeg";
+      const b64 = Buffer.from(buf).toString("base64");
+      return `data:${mime};base64,${b64}`;
+    } catch {
+      return null;
+    }
   };
 
   const data: ContractPdfData = {
@@ -226,9 +243,9 @@ export async function GET(
       parseClauseOverrides(contract.clauseOverrides)
     ),
 
-    lessorIdImage: toAbs(contract.lessorIdImage),
-    lesseeIdImage: toAbs(contract.lesseeIdImage),
-    jointLesseeIdImage: toAbs(contract.jointLesseeIdImage),
+    lessorIdImage: await toBase64DataUri(contract.lessorIdImage),
+    lesseeIdImage: await toBase64DataUri(contract.lesseeIdImage),
+    jointLesseeIdImage: await toBase64DataUri(contract.jointLesseeIdImage),
 
     lessorSignature: contract.lessorSignature,
     lesseeSignature: contract.lesseeSignature,
