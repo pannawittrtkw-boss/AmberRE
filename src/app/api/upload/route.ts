@@ -61,13 +61,20 @@ export async function POST(req: NextRequest) {
       .toString(36)
       .substring(2)}${ext}`;
 
-    // Storage strategy:
-    //  - If BLOB_READ_WRITE_TOKEN env var is set → use Vercel Blob (production)
-    //  - Otherwise → write to public/uploads/ (local dev / VPS)
-    const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+    // Storage priority:
+    //  1. Cloudflare R2 (if R2 env vars set) — no egress fees
+    //  2. Vercel Blob (if BLOB_READ_WRITE_TOKEN set) — fallback
+    //  3. Local filesystem — dev
+    const { isR2Configured, uploadToR2 } = await import("@/lib/r2");
 
+    if (isR2Configured()) {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const url = await uploadToR2(`uploads/${fileName}`, buffer, file.type);
+      return NextResponse.json({ success: true, data: { url, fileName } });
+    }
+
+    const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
     if (blobToken) {
-      // Vercel Blob path — works on Vercel/serverless filesystems
       const { put } = await import("@vercel/blob");
       const blob = await put(`uploads/${fileName}`, file, {
         access: "public",

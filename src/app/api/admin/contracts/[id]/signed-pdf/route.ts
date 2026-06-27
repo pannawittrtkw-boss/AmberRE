@@ -48,23 +48,28 @@ export async function POST(
 
   let fileUrl: string;
 
-  const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
-  if (blobToken) {
-    const { put } = await import("@vercel/blob");
-    const blob = await put(fileName, file, {
-      access: "public",
-      token: blobToken,
-      contentType: "application/pdf",
-    });
-    fileUrl = blob.url;
+  const { isR2Configured, uploadToR2 } = await import("@/lib/r2");
+  if (isR2Configured()) {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    fileUrl = await uploadToR2(fileName, buffer, "application/pdf");
   } else {
-    // Local fallback
-    const { writeFile, mkdir } = await import("fs/promises");
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "signed-contracts");
-    await mkdir(uploadDir, { recursive: true });
-    const localName = path.basename(fileName);
-    await writeFile(path.join(uploadDir, localName), Buffer.from(await file.arrayBuffer()));
-    fileUrl = `/uploads/signed-contracts/${localName}`;
+    const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+    if (blobToken) {
+      const { put } = await import("@vercel/blob");
+      const blob = await put(fileName, file, {
+        access: "public",
+        token: blobToken,
+        contentType: "application/pdf",
+      });
+      fileUrl = blob.url;
+    } else {
+      const { writeFile, mkdir } = await import("fs/promises");
+      const uploadDir = path.join(process.cwd(), "public", "uploads", "signed-contracts");
+      await mkdir(uploadDir, { recursive: true });
+      const localName = path.basename(fileName);
+      await writeFile(path.join(uploadDir, localName), Buffer.from(await file.arrayBuffer()));
+      fileUrl = `/uploads/signed-contracts/${localName}`;
+    }
   }
 
   // Generate share token if not already set

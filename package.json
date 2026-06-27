@@ -11,6 +11,7 @@
     "seed:thai-address": "node scripts/seed-thai-address.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1075.0",
     "@neondatabase/serverless": "^1.1.0",
     "@prisma/adapter-neon": "^6.19.3",
     "@prisma/client": "^6.19.2",
