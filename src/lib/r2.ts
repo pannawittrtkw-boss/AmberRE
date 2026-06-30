@@ -1,26 +1,8 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-
 export function isR2Configured(): boolean {
   return !!(
-    process.env.CLOUDFLARE_ACCOUNT_ID &&
-    process.env.R2_ACCESS_KEY_ID &&
-    process.env.R2_SECRET_ACCESS_KEY &&
-    process.env.R2_BUCKET_NAME &&
-    process.env.R2_PUBLIC_URL
+    process.env.R2_WORKER_URL &&
+    process.env.R2_UPLOAD_SECRET
   );
-}
-
-function getR2Client(): S3Client {
-  return new S3Client({
-    region: "auto",
-    endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    credentials: {
-      accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-    },
-    forcePathStyle: true,
-  });
 }
 
 export async function uploadToR2(
@@ -28,30 +10,23 @@ export async function uploadToR2(
   body: Buffer | Uint8Array,
   contentType: string
 ): Promise<string> {
-  const client = getR2Client();
+  const workerUrl = process.env.R2_WORKER_URL!;
+  const secret = process.env.R2_UPLOAD_SECRET!;
 
-  // Generate a presigned PUT URL (pure crypto — no network call in SDK)
-  const presignedUrl = await getSignedUrl(
-    client,
-    new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET_NAME!,
-      Key: key,
-      ContentType: contentType,
-    }),
-    { expiresIn: 300 }
-  );
-
-  // Use fetch (undici) instead of AWS SDK's HTTP handler to avoid TLS issues
-  const res = await fetch(presignedUrl, {
+  const res = await fetch(`${workerUrl}/${key}`, {
     method: "PUT",
-    body: body instanceof Buffer ? body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength) as ArrayBuffer : body.buffer as ArrayBuffer,
-    headers: { "Content-Type": contentType },
+    body: body instanceof Buffer ? body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength) as ArrayBuffer : (body as Uint8Array).buffer as ArrayBuffer,
+    headers: {
+      "Content-Type": contentType,
+      "X-Upload-Secret": secret,
+    },
   });
 
   if (!res.ok) {
     const msg = await res.text().catch(() => res.status.toString());
-    throw new Error(`R2 upload failed: ${res.status} ${msg}`);
+    throw new Error(`R2 Worker upload failed: ${res.status} ${msg}`);
   }
 
-  return `${process.env.R2_PUBLIC_URL}/${key}`;
+  const data = (await res.json()) as { url: string };
+  return data.url;
 }
