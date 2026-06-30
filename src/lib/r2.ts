@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export function isR2Configured(): boolean {
   return !!(
@@ -28,13 +29,29 @@ export async function uploadToR2(
   contentType: string
 ): Promise<string> {
   const client = getR2Client();
-  await client.send(
+
+  // Generate a presigned PUT URL (pure crypto — no network call in SDK)
+  const presignedUrl = await getSignedUrl(
+    client,
     new PutObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME!,
       Key: key,
-      Body: body,
       ContentType: contentType,
-    })
+    }),
+    { expiresIn: 300 }
   );
+
+  // Use fetch (undici) instead of AWS SDK's HTTP handler to avoid TLS issues
+  const res = await fetch(presignedUrl, {
+    method: "PUT",
+    body: body instanceof Buffer ? body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength) as ArrayBuffer : body.buffer as ArrayBuffer,
+    headers: { "Content-Type": contentType },
+  });
+
+  if (!res.ok) {
+    const msg = await res.text().catch(() => res.status.toString());
+    throw new Error(`R2 upload failed: ${res.status} ${msg}`);
+  }
+
   return `${process.env.R2_PUBLIC_URL}/${key}`;
 }
