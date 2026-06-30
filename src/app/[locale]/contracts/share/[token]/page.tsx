@@ -73,8 +73,8 @@ export default function ContractSharePage({
           </div>
         </div>
         <a
-          href={contract.signedPdfUrl}
-          download
+          href={`/api/contracts/share/${token}/pdf`}
+          download={`${contract.contractNumber}.pdf`}
           target="_blank"
           rel="noopener noreferrer"
           className="shrink-0 inline-flex items-center gap-2 px-3 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors"
@@ -123,7 +123,7 @@ export default function ContractSharePage({
         {/* PDF embed */}
         <div className="bg-white rounded-xl border shadow-sm overflow-hidden" style={{ height: "calc(100vh - 220px)", minHeight: 500 }}>
           <iframe
-            src={`${contract.signedPdfUrl}#toolbar=1&navpanes=0`}
+            src={`/api/contracts/share/${token}/pdf#toolbar=1&navpanes=0`}
             className="w-full h-full"
             title="Signed Contract"
           />
