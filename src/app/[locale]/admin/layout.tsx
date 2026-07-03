@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Building2, Users, FileText, Star, Loader2, Settings,
   Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature, Lock, Crown, LayoutList, UserSearch, CalendarDays,
-  Receipt, ClipboardList, Building,
+  Receipt, ClipboardList, Building, Bot,
 } from "lucide-react";
 
 // Full list of every menu item a CO_AGENT can ever be given access to.
@@ -51,6 +51,7 @@ const ALL_ADMIN_NAV = [
   { key: "reviews",                icon: Star,            hrefSuffix: "/reviews",                  labelKey: "reviewModeration" },
   { key: "settings",               icon: Settings,        hrefSuffix: "/settings",                 labelKey: "settings", fallback: "Settings" },
   { key: "languages",              icon: Globe,           hrefSuffix: "/settings/languages",       labelKey: "languageSettings", fallback: "ตั้งค่าภาษา" },
+  { key: "ai-office",              icon: Bot,             hrefSuffix: "/ai-office",                labelKey: null, labelFallback: { th: "AI Office", en: "AI Office" } },
 ];
 
 export default function AdminLayout({

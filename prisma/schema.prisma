@@ -313,6 +313,9 @@ model Property {
   invLoanTermYears       Decimal? @db.Decimal(5, 2)
   invLoanInterestRate    Decimal? @db.Decimal(6, 4)
 
+  // AI-generated content tracking
+  descriptionGeneratedAt DateTime?
+
   ownerId    Int
   owner      User   @relation("OwnerProperties", fields: [ownerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   agentId    Int?
@@ -680,6 +683,23 @@ model LineBotTranslation {
 
   @@index([groupId])
   @@index([createdAt])
+}
+
+// ==========================================
+// AI Office
+// ==========================================
+
+model AiAgent {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(100)
+  position   String   @db.VarChar(100)
+  duties     String   @db.Text
+  icon       String   @default("🤖") @db.VarChar(10)
+  color      String   @default("#6366f1") @db.VarChar(20)
+  isActive   Boolean  @default(true)
+  actionType String   @default("NONE") @db.VarChar(30)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model LineUrlDuplicate {
