@@ -184,8 +184,9 @@ export default function AdminLayout({
     return item.key;
   };
 
+  const ALWAYS_VISIBLE_ADMIN_KEYS = ["menu-config", "ai-office"];
   const navItems = ALL_ADMIN_NAV
-    .filter((item) => item.key === "menu-config" || adminAllowedKeys.includes(item.key))
+    .filter((item) => ALWAYS_VISIBLE_ADMIN_KEYS.includes(item.key) || adminAllowedKeys.includes(item.key))
     .map((item) => ({
       key: item.key,
       href: `/${locale}/admin${item.hrefSuffix}`,
