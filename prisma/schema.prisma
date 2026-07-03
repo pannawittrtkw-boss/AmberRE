@@ -698,6 +698,7 @@ model AiAgent {
   color      String   @default("#6366f1") @db.VarChar(20)
   isActive   Boolean  @default(true)
   actionType String   @default("NONE") @db.VarChar(30)
+  appearance String?  @db.Text
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }

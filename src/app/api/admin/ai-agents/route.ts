@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
       color: body.color ? String(body.color).trim() : "#6366f1",
       isActive: body.isActive !== false,
       actionType: body.actionType ? String(body.actionType).trim() : "NONE",
+      appearance: body.appearance ? JSON.stringify(body.appearance) : null,
     },
   });
   return NextResponse.json({ success: true, data: agent }, { status: 201 });
