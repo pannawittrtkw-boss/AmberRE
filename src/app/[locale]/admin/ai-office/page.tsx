@@ -53,9 +53,9 @@ function parseAppearance(raw?: string | null): AgentAppearance {
 
 // ── Character Image with local fallback ───────────────────────────────────────
 // Always renders — tries R2 URL first, falls back to /public if it 404s
-function CharImg({ file, charUrls, className, style, draggable: dr = false }: {
+function CharImg({ file, charUrls, className, style, draggable: dr = false, blend = true }: {
   file: string; charUrls: Record<string, string>;
-  className?: string; style?: React.CSSProperties; draggable?: boolean;
+  className?: string; style?: React.CSSProperties; draggable?: boolean; blend?: boolean;
 }) {
   const local   = `/images/Agent%20Charecter/${encodeURIComponent(file)}`;
   const primary = charUrls[file] || local;
@@ -65,7 +65,7 @@ function CharImg({ file, charUrls, className, style, draggable: dr = false }: {
       src={primary}
       onError={e => { (e.currentTarget as HTMLImageElement).src = local; }}
       className={className}
-      style={style}
+      style={{ mixBlendMode: blend ? "multiply" : undefined, ...style }}
       draggable={dr}
       alt=""
     />
@@ -416,11 +416,11 @@ function OfficeScene({ agents, onEdit, onDelete, onUse, onAdd, onPositionUpdate,
                 {/* Character */}
                 <div
                   onMouseDown={e => {
-                    // Record mousedown intent; drag only activates after movement threshold
                     e.preventDefault();
                     pendingRef.current = { id: agent.id, startX: e.clientX, startY: e.clientY };
                   }}
-                  className={`relative cursor-grab active:cursor-grabbing ${!agent.isActive ? "opacity-50 grayscale" : ""}`}>
+                  className={`relative cursor-grab active:cursor-grabbing ${!agent.isActive ? "opacity-50 grayscale" : ""}`}
+                  style={{ filter: "drop-shadow(0 6px 12px rgba(0,0,0,0.28))" }}>
 
                   {agent.actionType !== "NONE" && (
                     <span className="absolute top-1 left-1 z-10 bg-indigo-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow">AI</span>
@@ -430,7 +430,7 @@ function OfficeScene({ agents, onEdit, onDelete, onUse, onAdd, onPositionUpdate,
                   </span>
 
                   <CharImg file={ap.imageFile} charUrls={charUrls}
-                    className="object-cover object-top rounded-xl shadow-[0_6px_20px_rgba(0,0,0,0.35)]"
+                    className="object-cover object-top"
                     style={{ height: 90, width: "auto" }} />
                 </div>
 
