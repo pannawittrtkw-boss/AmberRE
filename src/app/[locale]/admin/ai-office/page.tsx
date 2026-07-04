@@ -51,6 +51,27 @@ function parseAppearance(raw?: string | null): AgentAppearance {
   catch { return def; }
 }
 
+// ── Character Image with local fallback ───────────────────────────────────────
+// Always renders — tries R2 URL first, falls back to /public if it 404s
+function CharImg({ file, charUrls, className, style, draggable: dr = false }: {
+  file: string; charUrls: Record<string, string>;
+  className?: string; style?: React.CSSProperties; draggable?: boolean;
+}) {
+  const local   = `/images/Agent%20Charecter/${encodeURIComponent(file)}`;
+  const primary = charUrls[file] || local;
+  return (
+    <img
+      key={primary}
+      src={primary}
+      onError={e => { (e.currentTarget as HTMLImageElement).src = local; }}
+      className={className}
+      style={style}
+      draggable={dr}
+      alt=""
+    />
+  );
+}
+
 // ── Status Dot ─────────────────────────────────────────────────────────────────
 function StatusDot({ status, size = 12 }: { status: AgentStatus; size?: number }) {
   const cfg = STATUS_CFG[status];
@@ -81,13 +102,7 @@ function CharacterPicker({ value, onChange, charUrls }: {
             className={`relative rounded-xl overflow-hidden border-2 transition-all aspect-[3/4] hover:scale-105 bg-gray-100 ${value === file
               ? "border-indigo-500 ring-2 ring-indigo-300 scale-105 shadow-lg"
               : "border-gray-200 hover:border-indigo-300"}`}>
-            {charUrls[file] ? (
-              <img src={charUrls[file]} alt="" className="w-full h-full object-cover object-top" draggable={false} />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-              </div>
-            )}
+            <CharImg file={file} charUrls={charUrls} className="w-full h-full object-cover object-top" />
             {value === file && (
               <div className="absolute inset-0 bg-indigo-600/15 flex items-end justify-center pb-1.5">
                 <span className="bg-indigo-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow">✓ เลือก</span>
@@ -130,7 +145,6 @@ function AgentFormModal({ agent, onClose, onSave, charUrls }: {
     } as Omit<AiAgent, "id">).finally(() => setSaving(false));
   };
 
-  const previewUrl = charUrls[imageFile];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-y-auto">
@@ -144,10 +158,7 @@ function AgentFormModal({ agent, onClose, onSave, charUrls }: {
           <div className="flex gap-4">
             {/* Preview */}
             <div className="shrink-0 w-28 rounded-2xl overflow-hidden border-2 border-indigo-100 bg-gradient-to-b from-sky-100 to-blue-50 flex items-end">
-              {previewUrl
-                ? <img src={previewUrl} alt="preview" className="w-full object-cover object-top" draggable={false} />
-                : <div className="w-full h-40 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-indigo-300" /></div>
-              }
+              <CharImg file={imageFile} charUrls={charUrls} className="w-full object-cover object-top" />
             </div>
             {/* Picker */}
             <div className="flex-1 min-w-0">
@@ -255,14 +266,12 @@ function ContentWriterModal({ agent, onClose, charUrls }: { agent: AiAgent; onCl
     } catch { setError("เชื่อมต่อไม่ได้"); } finally { setGenerating(false); }
   };
 
-  const imgUrl = charUrls[ap.imageFile];
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col">
         <div className="flex items-center gap-4 p-5 border-b shrink-0">
           <div className="w-16 h-20 rounded-xl overflow-hidden border bg-gradient-to-b from-sky-100 to-indigo-50 shrink-0">
-            {imgUrl && <img src={imgUrl} alt="" className="w-full h-full object-cover object-top" />}
+            <CharImg file={ap.imageFile} charUrls={charUrls} className="w-full h-full object-cover object-top" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
@@ -396,7 +405,6 @@ function OfficeScene({ agents, onEdit, onDelete, onUse, onAdd, onPositionUpdate,
           const ap  = parseAppearance(agent.appearance);
           const pos = getPos(agent);
           const isD = draggingId === agent.id;
-          const imgUrl = charUrls[ap.imageFile];
 
           return (
             <div key={agent.id}
@@ -421,16 +429,9 @@ function OfficeScene({ agents, onEdit, onDelete, onUse, onAdd, onPositionUpdate,
                     <StatusDot status={ap.status} size={12} />
                   </span>
 
-                  {imgUrl ? (
-                    <img src={imgUrl} alt={agent.name} draggable={false}
-                      className="object-cover object-top rounded-xl shadow-[0_6px_20px_rgba(0,0,0,0.35)]"
-                      style={{ height: 90, width: "auto" }} />
-                  ) : (
-                    <div className="rounded-xl bg-gray-200 flex items-center justify-center"
-                      style={{ height: 90, width: 60 }}>
-                      <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-                    </div>
-                  )}
+                  <CharImg file={ap.imageFile} charUrls={charUrls}
+                    className="object-cover object-top rounded-xl shadow-[0_6px_20px_rgba(0,0,0,0.35)]"
+                    style={{ height: 90, width: "auto" }} />
                 </div>
 
                 {/* Name tag */}
@@ -445,7 +446,7 @@ function OfficeScene({ agents, onEdit, onDelete, onUse, onAdd, onPositionUpdate,
                     <div className="bg-white/98 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 p-3.5">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-10 h-12 rounded-lg overflow-hidden shrink-0 border bg-gray-100">
-                          {imgUrl && <img src={imgUrl} alt="" className="w-full h-full object-cover object-top" />}
+                          <CharImg file={ap.imageFile} charUrls={charUrls} className="w-full h-full object-cover object-top" />
                         </div>
                         <div className="min-w-0">
                           <p className="text-xs font-bold text-gray-900 truncate">{agent.name}</p>
@@ -508,7 +509,7 @@ function OfficeScene({ agents, onEdit, onDelete, onUse, onAdd, onPositionUpdate,
 }
 
 // ── Upload Banner ──────────────────────────────────────────────────────────────
-function UploadBanner({ onUpload }: { onUpload: () => void }) {
+function UploadBanner({ onSuccess }: { onSuccess: (urls: Record<string, string>) => void }) {
   const [uploading, setUploading] = useState(false);
   const [error,     setError]     = useState<string | null>(null);
 
@@ -517,12 +518,14 @@ function UploadBanner({ onUpload }: { onUpload: () => void }) {
     try {
       const res = await fetch("/api/admin/ai-characters", { method: "POST" });
       const d   = await res.json();
-      if (d.data?.uploaded > 0 || d.success) {
-        onUpload(); // parent clears banner + reloads URLs
+      if ((d.data?.uploaded ?? 0) > 0 || d.success) {
+        // Pass back the real R2 URLs — no re-probe needed
+        onSuccess(d.data?.urls ?? {});
       } else {
-        setError(d.data?.errors?.join(", ") || "Upload failed");
+        const errs = d.data?.errors as string[] | undefined;
+        setError(errs?.join(", ") || "Upload ไม่สำเร็จ กรุณาลองใหม่");
       }
-    } catch { setError("Connection error"); } finally { setUploading(false); }
+    } catch { setError("เชื่อมต่อไม่ได้"); } finally { setUploading(false); }
   };
 
   return (
@@ -558,16 +561,17 @@ export default function AiOfficePage() {
       const r = await fetch("/api/admin/ai-characters");
       const d = await r.json();
       if (d.success) {
-        const urls: Record<string, string> = d.data.urls;
-        setCharUrls(urls);
-
-        // Probe first image to detect if R2 images exist yet
-        const firstUrl = urls[CHAR_FILES[0]];
-        if (firstUrl && d.data.source === "r2") {
-          const img = new Image();
-          img.onload  = () => setNeedUpload(false);
-          img.onerror = () => setNeedUpload(true);
-          img.src = `${firstUrl}?_probe=${Date.now()}`;
+        setCharUrls(d.data.urls);
+        // Show upload banner when R2 is configured — images might not be there yet.
+        // CharImg always falls back to local /public so images still show either way.
+        if (d.data.source === "r2") {
+          const firstUrl: string = d.data.urls[CHAR_FILES[0]];
+          if (firstUrl) {
+            const img = new Image();
+            img.onload  = () => setNeedUpload(false);
+            img.onerror = () => setNeedUpload(true);
+            img.src = firstUrl;
+          }
         } else {
           setNeedUpload(false);
         }
@@ -674,8 +678,14 @@ export default function AiOfficePage() {
         </div>
       </div>
 
-      {/* Upload banner — show when R2 is configured but images aren't uploaded yet */}
-      {needUpload && <UploadBanner onUpload={() => { setNeedUpload(false); loadCharUrls(); }} />}
+      {/* Upload banner — detected via Image probe, always hides after successful upload */}
+      {needUpload && (
+        <UploadBanner onSuccess={(urls) => {
+          // Update charUrls with real R2 URLs directly — no re-probe needed
+          setCharUrls(prev => ({ ...prev, ...urls }));
+          setNeedUpload(false);
+        }} />
+      )}
 
       {/* Content */}
       {loading ? (
@@ -685,7 +695,7 @@ export default function AiOfficePage() {
           <div className="flex justify-center gap-6">
             {["02.jpeg","05.jpeg","09.jpeg"].map(f => (
               <div key={f} className="w-20 rounded-2xl overflow-hidden border-2 border-indigo-100 shadow-lg opacity-70 bg-gray-100">
-                {charUrls[f] && <img src={charUrls[f]} alt="" className="w-full object-cover object-top" draggable={false} />}
+                <CharImg file={f} charUrls={charUrls} className="w-full object-cover object-top" />
               </div>
             ))}
           </div>
