@@ -400,7 +400,7 @@ function OfficeScene({ agents, onEdit, onDelete, onUse, onAdd, onPositionUpdate,
 
           return (
             <div key={agent.id}
-              className={`absolute ${isD ? "z-50" : "z-10 hover:z-20"}`}
+              className={`absolute group ${isD ? "z-50" : "z-10 hover:z-20"}`}
               style={{ left: `${pos.x}%`, top: `${pos.y}%`, transform: "translate(-50%, -100%)" }}>
 
               <div className={`flex flex-col items-center transition-transform duration-75 ${isD ? "scale-110 drop-shadow-2xl" : ""}`}>
@@ -510,7 +510,6 @@ function OfficeScene({ agents, onEdit, onDelete, onUse, onAdd, onPositionUpdate,
 // ── Upload Banner ──────────────────────────────────────────────────────────────
 function UploadBanner({ onUpload }: { onUpload: () => void }) {
   const [uploading, setUploading] = useState(false);
-  const [done,      setDone]      = useState(false);
   const [error,     setError]     = useState<string | null>(null);
 
   const handleUpload = async () => {
@@ -518,19 +517,20 @@ function UploadBanner({ onUpload }: { onUpload: () => void }) {
     try {
       const res = await fetch("/api/admin/ai-characters", { method: "POST" });
       const d   = await res.json();
-      if (d.success) { setDone(true); onUpload(); }
-      else setError(d.data?.errors?.join(", ") || "Upload failed");
+      if (d.data?.uploaded > 0 || d.success) {
+        onUpload(); // parent clears banner + reloads URLs
+      } else {
+        setError(d.data?.errors?.join(", ") || "Upload failed");
+      }
     } catch { setError("Connection error"); } finally { setUploading(false); }
   };
-
-  if (done) return null;
 
   return (
     <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex items-start gap-3">
       <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-amber-800">รูปตัวละครยังไม่ได้อัปโหลดขึ้น Cloud</p>
-        <p className="text-xs text-amber-600 mt-0.5">กด Upload เพื่อส่งรูปไปเก็บที่ Cloudflare R2 (ทำครั้งเดียว)</p>
+        <p className="text-sm font-semibold text-amber-800">รูปตัวละครยังไม่ได้อัปโหลดขึ้น Cloudflare R2</p>
+        <p className="text-xs text-amber-600 mt-0.5">กด Upload เพื่อส่งรูปทั้งหมดไปเก็บ Cloud (ทำครั้งเดียว)</p>
         {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
       </div>
       <button onClick={handleUpload} disabled={uploading}
@@ -550,14 +550,28 @@ export default function AiOfficePage() {
   const [showForm,    setShowForm]    = useState(false);
   const [activeAgent, setActiveAgent] = useState<AiAgent | null>(null);
   const [deleting,    setDeleting]    = useState<number | null>(null);
-  const [charUrls,    setCharUrls]    = useState<Record<string, string>>({});
-  const [charSource,  setCharSource]  = useState<"r2" | "local" | null>(null);
+  const [charUrls,   setCharUrls]   = useState<Record<string, string>>({});
+  const [needUpload, setNeedUpload] = useState(false);
 
   const loadCharUrls = useCallback(async () => {
     try {
       const r = await fetch("/api/admin/ai-characters");
       const d = await r.json();
-      if (d.success) { setCharUrls(d.data.urls); setCharSource(d.data.source); }
+      if (d.success) {
+        const urls: Record<string, string> = d.data.urls;
+        setCharUrls(urls);
+
+        // Probe first image to detect if R2 images exist yet
+        const firstUrl = urls[CHAR_FILES[0]];
+        if (firstUrl && d.data.source === "r2") {
+          const img = new Image();
+          img.onload  = () => setNeedUpload(false);
+          img.onerror = () => setNeedUpload(true);
+          img.src = `${firstUrl}?_probe=${Date.now()}`;
+        } else {
+          setNeedUpload(false);
+        }
+      }
     } catch { /* ignore */ }
   }, []);
 
@@ -660,8 +674,8 @@ export default function AiOfficePage() {
         </div>
       </div>
 
-      {/* Upload banner — show when using local source (images not yet on R2) */}
-      {charSource === "local" && <UploadBanner onUpload={loadCharUrls} />}
+      {/* Upload banner — show when R2 is configured but images aren't uploaded yet */}
+      {needUpload && <UploadBanner onUpload={() => { setNeedUpload(false); loadCharUrls(); }} />}
 
       {/* Content */}
       {loading ? (
