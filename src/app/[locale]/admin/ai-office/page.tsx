@@ -531,7 +531,7 @@ function OfficeScene({
       <div className="relative w-full" style={{ paddingBottom: "72%" }}>
         {/* Background image */}
         <img
-          src="/images/office-bg.jpg"
+          src="/images/office-bg.png"
           alt="office"
           className="absolute inset-0 w-full h-full object-cover"
           style={{ objectPosition: "top" }}
