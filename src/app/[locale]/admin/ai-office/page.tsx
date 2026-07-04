@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Plus, Pencil, Trash2, Zap, Loader2, X, Check, Search, RefreshCw, Bot } from "lucide-react";
+import { Plus, Pencil, Trash2, Zap, Loader2, X, Check, Search, RefreshCw, Bot, CloudUpload, AlertCircle } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type AgentStatus = "office" | "online" | "away" | "offline";
 
 interface AgentAppearance {
   imageFile: string;
-  posX: number;   // % from left in office scene
-  posY: number;   // % from top  in office scene
+  posX: number;
+  posY: number;
   status: AgentStatus;
 }
 
@@ -26,11 +26,10 @@ interface AiAgent {
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-const CHAR_IMAGES = [
+const CHAR_FILES = [
   "01.jpg","02.jpeg","03.jpeg","04.jpeg","05.jpeg","06.jpeg",
   "07.jpeg","09.jpeg","10.jpeg","11.jpeg","12.jpeg",
 ];
-const CHAR_BASE = "/images/Agent%20Charecter/";
 
 const STATUS_CFG: Record<AgentStatus, { label: string; color: string; pulse: boolean }> = {
   office:  { label: "ในออฟฟิศ", color: "#22c55e", pulse: true  },
@@ -40,8 +39,8 @@ const STATUS_CFG: Record<AgentStatus, { label: string; color: string; pulse: boo
 };
 
 const ACTION_TYPES = [
-  { value: "NONE",           label: "ไม่มี action"       },
-  { value: "CONTENT_WRITER", label: "เขียน Description"  },
+  { value: "NONE",           label: "ไม่มี action"      },
+  { value: "CONTENT_WRITER", label: "เขียน Description" },
 ];
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -52,17 +51,13 @@ function parseAppearance(raw?: string | null): AgentAppearance {
   catch { return def; }
 }
 
-function charUrl(file: string) {
-  return `${CHAR_BASE}${encodeURIComponent(file)}`;
-}
-
-// ── Status Badge ───────────────────────────────────────────────────────────────
+// ── Status Dot ─────────────────────────────────────────────────────────────────
 function StatusDot({ status, size = 12 }: { status: AgentStatus; size?: number }) {
   const cfg = STATUS_CFG[status];
   return (
-    <span className="relative inline-flex" style={{ width: size, height: size }}>
+    <span className="relative inline-flex shrink-0" style={{ width: size, height: size }}>
       {cfg.pulse && (
-        <span className="absolute inset-0 rounded-full animate-ping opacity-60"
+        <span className="absolute inset-0 rounded-full animate-ping opacity-50"
           style={{ backgroundColor: cfg.color }} />
       )}
       <span className="relative rounded-full border-2 border-white shadow"
@@ -71,21 +66,31 @@ function StatusDot({ status, size = 12 }: { status: AgentStatus; size?: number }
   );
 }
 
-// ── Character Image Picker ─────────────────────────────────────────────────────
-function CharacterPicker({ value, onChange }: { value: string; onChange: (f: string) => void }) {
+// ── Character Picker ───────────────────────────────────────────────────────────
+function CharacterPicker({ value, onChange, charUrls }: {
+  value: string;
+  onChange: (f: string) => void;
+  charUrls: Record<string, string>;
+}) {
   return (
     <div>
       <p className="text-xs font-semibold text-gray-600 mb-2">เลือกตัวละคร</p>
-      <div className="grid grid-cols-4 gap-2 max-h-52 overflow-y-auto pr-1">
-        {CHAR_IMAGES.map(file => (
+      <div className="grid grid-cols-4 gap-2 max-h-52 overflow-y-auto pr-0.5">
+        {CHAR_FILES.map(file => (
           <button key={file} type="button" onClick={() => onChange(file)}
-            className={`relative rounded-xl overflow-hidden border-2 transition-all aspect-[3/4] hover:scale-105 ${value === file
+            className={`relative rounded-xl overflow-hidden border-2 transition-all aspect-[3/4] hover:scale-105 bg-gray-100 ${value === file
               ? "border-indigo-500 ring-2 ring-indigo-300 scale-105 shadow-lg"
               : "border-gray-200 hover:border-indigo-300"}`}>
-            <img src={charUrl(file)} alt="" className="w-full h-full object-cover object-top" draggable={false} />
+            {charUrls[file] ? (
+              <img src={charUrls[file]} alt="" className="w-full h-full object-cover object-top" draggable={false} />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+              </div>
+            )}
             {value === file && (
-              <div className="absolute inset-0 bg-indigo-600/15 flex items-end justify-center pb-1">
-                <span className="bg-indigo-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">✓ เลือก</span>
+              <div className="absolute inset-0 bg-indigo-600/15 flex items-end justify-center pb-1.5">
+                <span className="bg-indigo-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow">✓ เลือก</span>
               </div>
             )}
           </button>
@@ -96,19 +101,20 @@ function CharacterPicker({ value, onChange }: { value: string; onChange: (f: str
 }
 
 // ── Agent Form Modal ───────────────────────────────────────────────────────────
-function AgentFormModal({ agent, onClose, onSave }: {
+function AgentFormModal({ agent, onClose, onSave, charUrls }: {
   agent: Partial<AiAgent> | null;
   onClose: () => void;
   onSave: (d: Omit<AiAgent, "id">) => Promise<void>;
+  charUrls: Record<string, string>;
 }) {
   const ap = parseAppearance(agent?.appearance);
-  const [imageFile, setImageFile]   = useState(ap.imageFile);
-  const [status,    setStatus]      = useState<AgentStatus>(ap.status);
+  const [imageFile, setImageFile] = useState(ap.imageFile);
+  const [status,    setStatus]    = useState<AgentStatus>(ap.status);
   const [form, setForm] = useState({
-    name:       agent?.name      ?? "",
-    position:   agent?.position  ?? "",
-    duties:     agent?.duties    ?? "",
-    isActive:   agent?.isActive  ?? true,
+    name:       agent?.name       ?? "",
+    position:   agent?.position   ?? "",
+    duties:     agent?.duties     ?? "",
+    isActive:   agent?.isActive   ?? true,
     actionType: agent?.actionType ?? "NONE",
   });
   const [saving, setSaving] = useState(false);
@@ -124,23 +130,28 @@ function AgentFormModal({ agent, onClose, onSave }: {
     } as Omit<AiAgent, "id">).finally(() => setSaving(false));
   };
 
+  const previewUrl = charUrls[imageFile];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md my-4">
-        {/* Header */}
         <div className="flex items-center justify-between p-5 border-b">
           <h3 className="text-lg font-bold">{agent?.id ? "แก้ไข" : "เพิ่ม"} AI Agent</h3>
           <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-gray-100"><X className="w-5 h-5 text-gray-500" /></button>
         </div>
 
         <form onSubmit={submit} className="p-5 space-y-4">
-          {/* Preview + picker */}
           <div className="flex gap-4">
-            <div className="shrink-0 w-28 rounded-2xl overflow-hidden border-2 border-indigo-200 bg-gradient-to-b from-sky-100 to-blue-50 flex items-end">
-              <img src={charUrl(imageFile)} alt="preview" className="w-full object-cover object-top" draggable={false} />
+            {/* Preview */}
+            <div className="shrink-0 w-28 rounded-2xl overflow-hidden border-2 border-indigo-100 bg-gradient-to-b from-sky-100 to-blue-50 flex items-end">
+              {previewUrl
+                ? <img src={previewUrl} alt="preview" className="w-full object-cover object-top" draggable={false} />
+                : <div className="w-full h-40 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-indigo-300" /></div>
+              }
             </div>
+            {/* Picker */}
             <div className="flex-1 min-w-0">
-              <CharacterPicker value={imageFile} onChange={setImageFile} />
+              <CharacterPicker value={imageFile} onChange={setImageFile} charUrls={charUrls} />
             </div>
           </div>
 
@@ -161,31 +172,24 @@ function AgentFormModal({ agent, onClose, onSave }: {
             </div>
           </div>
 
-          {/* Name */}
           <div>
             <label className="text-xs font-semibold text-gray-600 mb-1 block">ชื่อ Agent *</label>
             <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required
               className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
               placeholder="เช่น Content AI" />
           </div>
-
-          {/* Position */}
           <div>
             <label className="text-xs font-semibold text-gray-600 mb-1 block">ตำแหน่ง *</label>
             <input value={form.position} onChange={e => setForm(f => ({ ...f, position: e.target.value }))} required
               className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
               placeholder="เช่น นักเขียน Content" />
           </div>
-
-          {/* Duties */}
           <div>
             <label className="text-xs font-semibold text-gray-600 mb-1 block">หน้าที่ *</label>
             <textarea value={form.duties} onChange={e => setForm(f => ({ ...f, duties: e.target.value }))} required rows={2}
               className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
               placeholder="อธิบายหน้าที่..." />
           </div>
-
-          {/* Action + Active */}
           <div className="flex gap-3">
             <div className="flex-1">
               <label className="text-xs font-semibold text-gray-600 mb-1 block">Action</label>
@@ -205,7 +209,6 @@ function AgentFormModal({ agent, onClose, onSave }: {
             </div>
           </div>
 
-          {/* Buttons */}
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 border rounded-xl text-sm text-gray-700 hover:bg-gray-50 font-medium">ยกเลิก</button>
             <button type="submit" disabled={saving}
@@ -220,7 +223,7 @@ function AgentFormModal({ agent, onClose, onSave }: {
 }
 
 // ── Content Writer Modal ───────────────────────────────────────────────────────
-function ContentWriterModal({ agent, onClose }: { agent: AiAgent; onClose: () => void }) {
+function ContentWriterModal({ agent, onClose, charUrls }: { agent: AiAgent; onClose: () => void; charUrls: Record<string, string> }) {
   const ap = parseAppearance(agent.appearance);
   const [propertyId,    setPropertyId]    = useState("");
   const [propertyTitle, setPropertyTitle] = useState<string | null>(null);
@@ -252,13 +255,14 @@ function ContentWriterModal({ agent, onClose }: { agent: AiAgent; onClose: () =>
     } catch { setError("เชื่อมต่อไม่ได้"); } finally { setGenerating(false); }
   };
 
+  const imgUrl = charUrls[ap.imageFile];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col">
-        {/* Header */}
         <div className="flex items-center gap-4 p-5 border-b shrink-0">
           <div className="w-16 h-20 rounded-xl overflow-hidden border bg-gradient-to-b from-sky-100 to-indigo-50 shrink-0">
-            <img src={charUrl(ap.imageFile)} alt="" className="w-full h-full object-cover object-top" />
+            {imgUrl && <img src={imgUrl} alt="" className="w-full h-full object-cover object-top" />}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
@@ -269,11 +273,8 @@ function ContentWriterModal({ agent, onClose }: { agent: AiAgent; onClose: () =>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-gray-100 shrink-0"><X className="w-5 h-5 text-gray-500" /></button>
         </div>
-
-        {/* Body */}
         <div className="p-5 space-y-4 overflow-y-auto">
           <p className="text-sm text-gray-600">{agent.duties}</p>
-
           <div className="bg-indigo-50 rounded-xl p-4">
             <label className="text-xs font-semibold text-indigo-700 mb-2 block">Property ID</label>
             <div className="flex gap-2">
@@ -292,16 +293,13 @@ function ContentWriterModal({ agent, onClose }: { agent: AiAgent; onClose: () =>
               </div>
             )}
           </div>
-
           {error && <div className="bg-red-50 text-red-700 rounded-xl px-4 py-3 text-sm">{error}</div>}
-
           {propertyTitle && !result && (
             <button onClick={generate} disabled={generating}
               className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold text-sm hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2">
               {generating ? <><Loader2 className="w-4 h-4 animate-spin" />กำลังสร้าง...</> : <><Zap className="w-4 h-4" />สร้าง Content ด้วย AI</>}
             </button>
           )}
-
           {result && (
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-green-600 text-sm font-medium"><Check className="w-4 h-4" />บันทึกแล้ว</div>
@@ -323,8 +321,8 @@ function ContentWriterModal({ agent, onClose }: { agent: AiAgent; onClose: () =>
   );
 }
 
-// ── Office Scene (drag-and-drop) ───────────────────────────────────────────────
-function OfficeScene({ agents, onEdit, onDelete, onUse, onAdd, onPositionUpdate, deleting }: {
+// ── Office Scene ───────────────────────────────────────────────────────────────
+function OfficeScene({ agents, onEdit, onDelete, onUse, onAdd, onPositionUpdate, deleting, charUrls }: {
   agents: AiAgent[];
   onEdit: (a: AiAgent) => void;
   onDelete: (id: number) => void;
@@ -332,28 +330,43 @@ function OfficeScene({ agents, onEdit, onDelete, onUse, onAdd, onPositionUpdate,
   onAdd: () => void;
   onPositionUpdate: (id: number, x: number, y: number) => void;
   deleting: number | null;
+  charUrls: Record<string, string>;
 }) {
-  const containerRef  = useRef<HTMLDivElement>(null);
-  const [draggingId, setDraggingId] = useState<number | null>(null);
-  const [localPos, setLocalPos]     = useState<Record<number, { x: number; y: number }>>({});
-  const lastPosRef = useRef<{ x: number; y: number } | null>(null);
+  const containerRef   = useRef<HTMLDivElement>(null);
+  const [draggingId,   setDraggingId]   = useState<number | null>(null);
+  const [localPos,     setLocalPos]     = useState<Record<number, { x: number; y: number }>>({});
+  const lastPosRef     = useRef<{ x: number; y: number } | null>(null);
+  // Pending drag — tracks mousedown before threshold is exceeded
+  const pendingRef     = useRef<{ id: number; startX: number; startY: number } | null>(null);
 
-  // Document-level drag listeners
   useEffect(() => {
-    if (draggingId === null) return;
-
     const onMove = (e: MouseEvent) => {
-      if (!containerRef.current) return;
+      // Activate drag only after 7px threshold
+      if (pendingRef.current && draggingId === null) {
+        const dx = Math.abs(e.clientX - pendingRef.current.startX);
+        const dy = Math.abs(e.clientY - pendingRef.current.startY);
+        if (dx > 7 || dy > 7) {
+          setDraggingId(pendingRef.current.id);
+          pendingRef.current = null;
+        }
+        return;
+      }
+
+      if (draggingId === null || !containerRef.current) return;
       const r = containerRef.current.getBoundingClientRect();
-      const x = Math.round(Math.max(5, Math.min(95, ((e.clientX - r.left)  / r.width)  * 100)));
-      const y = Math.round(Math.max(5, Math.min(90, ((e.clientY - r.top)   / r.height) * 100)));
+      const x = Math.round(Math.max(5,  Math.min(95, ((e.clientX - r.left)  / r.width)  * 100)));
+      const y = Math.round(Math.max(5,  Math.min(90, ((e.clientY - r.top)   / r.height) * 100)));
       lastPosRef.current = { x, y };
       setLocalPos(p => ({ ...p, [draggingId]: { x, y } }));
     };
+
     const onUp = () => {
-      if (lastPosRef.current) onPositionUpdate(draggingId, lastPosRef.current.x, lastPosRef.current.y);
-      lastPosRef.current = null;
-      setDraggingId(null);
+      pendingRef.current = null; // cancel any pending drag (it was just a click)
+      if (draggingId !== null) {
+        if (lastPosRef.current) onPositionUpdate(draggingId, lastPosRef.current.x, lastPosRef.current.y);
+        lastPosRef.current = null;
+        setDraggingId(null);
+      }
     };
 
     document.addEventListener("mousemove", onMove);
@@ -371,50 +384,53 @@ function OfficeScene({ agents, onEdit, onDelete, onUse, onAdd, onPositionUpdate,
 
   return (
     <div className="rounded-2xl overflow-hidden border shadow-xl">
-      {/* Scene */}
-      <div ref={containerRef} className="relative w-full select-none overflow-hidden"
+      <div ref={containerRef}
+        className="relative w-full select-none overflow-hidden"
         style={{ paddingBottom: "56%", cursor: draggingId !== null ? "grabbing" : "default" }}>
 
-        {/* Background */}
-        <img src="/images/office-bg.png" alt="office background"
+        <img src="/images/office-bg.png" alt=""
           className="absolute inset-0 w-full h-full object-cover object-top pointer-events-none" />
         <div className="absolute inset-0 bg-black/8 pointer-events-none" />
 
-        {/* Agents */}
         {agents.map(agent => {
           const ap  = parseAppearance(agent.appearance);
           const pos = getPos(agent);
-          const isDragging = draggingId === agent.id;
+          const isD = draggingId === agent.id;
+          const imgUrl = charUrls[ap.imageFile];
 
           return (
             <div key={agent.id}
-              className={`absolute group ${isDragging ? "z-50" : "z-10 hover:z-20"}`}
+              className={`absolute ${isD ? "z-50" : "z-10 hover:z-20"}`}
               style={{ left: `${pos.x}%`, top: `${pos.y}%`, transform: "translate(-50%, -100%)" }}>
 
-              <div className={`flex flex-col items-center transition-transform duration-75 ${isDragging ? "scale-110 drop-shadow-2xl" : ""}`}>
+              <div className={`flex flex-col items-center transition-transform duration-75 ${isD ? "scale-110 drop-shadow-2xl" : ""}`}>
 
-                {/* Character + drag handle */}
+                {/* Character */}
                 <div
-                  onMouseDown={e => { e.preventDefault(); setDraggingId(agent.id); }}
+                  onMouseDown={e => {
+                    // Record mousedown intent; drag only activates after movement threshold
+                    e.preventDefault();
+                    pendingRef.current = { id: agent.id, startX: e.clientX, startY: e.clientY };
+                  }}
                   className={`relative cursor-grab active:cursor-grabbing ${!agent.isActive ? "opacity-50 grayscale" : ""}`}>
 
-                  {/* AI badge */}
                   {agent.actionType !== "NONE" && (
                     <span className="absolute top-1 left-1 z-10 bg-indigo-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow">AI</span>
                   )}
-
-                  {/* Status dot */}
                   <span className="absolute top-1 right-1 z-10">
                     <StatusDot status={ap.status} size={12} />
                   </span>
 
-                  <img
-                    src={charUrl(ap.imageFile)}
-                    alt={agent.name}
-                    draggable={false}
-                    className="object-cover object-top rounded-xl shadow-[0_6px_20px_rgba(0,0,0,0.35)]"
-                    style={{ height: 90, width: "auto" }}
-                  />
+                  {imgUrl ? (
+                    <img src={imgUrl} alt={agent.name} draggable={false}
+                      className="object-cover object-top rounded-xl shadow-[0_6px_20px_rgba(0,0,0,0.35)]"
+                      style={{ height: 90, width: "auto" }} />
+                  ) : (
+                    <div className="rounded-xl bg-gray-200 flex items-center justify-center"
+                      style={{ height: 90, width: 60 }}>
+                      <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                    </div>
+                  )}
                 </div>
 
                 {/* Name tag */}
@@ -423,35 +439,31 @@ function OfficeScene({ agents, onEdit, onDelete, onUse, onAdd, onPositionUpdate,
                   <p className="text-[10px] font-bold text-gray-900 truncate">{agent.name}</p>
                 </div>
 
-                {/* Hover popup — hidden while dragging */}
-                {!isDragging && (
-                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-44 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto z-30">
+                {/* Hover popup — only when not dragging */}
+                {!isD && (
+                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-44 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto z-30 group">
                     <div className="bg-white/98 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 p-3.5">
-                      {/* Agent info */}
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="w-10 h-12 rounded-lg overflow-hidden shrink-0 border">
-                          <img src={charUrl(ap.imageFile)} alt="" className="w-full h-full object-cover object-top" />
+                        <div className="w-10 h-12 rounded-lg overflow-hidden shrink-0 border bg-gray-100">
+                          {imgUrl && <img src={imgUrl} alt="" className="w-full h-full object-cover object-top" />}
                         </div>
                         <div className="min-w-0">
                           <p className="text-xs font-bold text-gray-900 truncate">{agent.name}</p>
                           <p className="text-[10px] text-gray-500 truncate">{agent.position}</p>
                           <div className="flex items-center gap-1 mt-0.5">
-                            <StatusDot status={ap.status} size={8} />
+                            <StatusDot status={ap.status} size={7} />
                             <span className="text-[10px]" style={{ color: STATUS_CFG[ap.status].color }}>
                               {STATUS_CFG[ap.status].label}
                             </span>
                           </div>
                         </div>
                       </div>
-
                       <p className="text-[10px] text-gray-600 leading-relaxed mb-3 line-clamp-2">{agent.duties}</p>
-
-                      {/* Actions */}
                       <div className="flex gap-1.5">
                         {agent.actionType !== "NONE" && agent.isActive && (
                           <button onClick={() => onUse(agent)}
                             className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold px-2 py-1.5 rounded-lg transition-colors">
-                            <Zap className="w-3 h-3 inline mr-1" />ใช้งาน
+                            <Zap className="w-3 h-3 inline mr-0.5" />ใช้งาน
                           </button>
                         )}
                         <button onClick={() => onEdit(agent)}
@@ -467,7 +479,6 @@ function OfficeScene({ agents, onEdit, onDelete, onUse, onAdd, onPositionUpdate,
                       </div>
                       <p className="text-[9px] text-gray-400 text-center mt-2">↕ ลากเพื่อย้ายตำแหน่ง</p>
                     </div>
-                    {/* Arrow */}
                     <div className="w-3 h-3 bg-white rotate-45 absolute -bottom-1.5 left-1/2 -translate-x-1/2 border-r border-b border-gray-100" />
                   </div>
                 )}
@@ -476,7 +487,6 @@ function OfficeScene({ agents, onEdit, onDelete, onUse, onAdd, onPositionUpdate,
           );
         })}
 
-        {/* Add button overlay */}
         <button onClick={onAdd}
           className="absolute bottom-4 right-4 z-20 flex items-center gap-2 bg-white/90 hover:bg-white text-gray-800 text-sm font-semibold rounded-xl px-4 py-2.5 shadow-lg border border-white/60 backdrop-blur transition-all hover:shadow-xl">
           <Plus className="w-4 h-4" />เพิ่ม Agent
@@ -484,29 +494,74 @@ function OfficeScene({ agents, onEdit, onDelete, onUse, onAdd, onPositionUpdate,
       </div>
 
       {/* Legend */}
-      <div className="bg-white border-t px-5 py-3 flex flex-wrap gap-x-5 gap-y-1">
+      <div className="bg-white border-t px-5 py-3 flex flex-wrap gap-x-5 gap-y-1 items-center">
         {(Object.keys(STATUS_CFG) as AgentStatus[]).map(s => (
           <div key={s} className="flex items-center gap-1.5">
             <StatusDot status={s} size={10} />
             <span className="text-xs text-gray-500">{STATUS_CFG[s].label}</span>
           </div>
         ))}
-        <span className="ml-auto text-xs text-gray-400 italic">hover ที่ตัวละครเพื่อดูรายละเอียด · ลากเพื่อย้าย</span>
+        <span className="ml-auto text-xs text-gray-400 italic hidden sm:inline">hover ที่ตัวละครเพื่อดูรายละเอียด · ลากเพื่อย้าย</span>
       </div>
+    </div>
+  );
+}
+
+// ── Upload Banner ──────────────────────────────────────────────────────────────
+function UploadBanner({ onUpload }: { onUpload: () => void }) {
+  const [uploading, setUploading] = useState(false);
+  const [done,      setDone]      = useState(false);
+  const [error,     setError]     = useState<string | null>(null);
+
+  const handleUpload = async () => {
+    setUploading(true); setError(null);
+    try {
+      const res = await fetch("/api/admin/ai-characters", { method: "POST" });
+      const d   = await res.json();
+      if (d.success) { setDone(true); onUpload(); }
+      else setError(d.data?.errors?.join(", ") || "Upload failed");
+    } catch { setError("Connection error"); } finally { setUploading(false); }
+  };
+
+  if (done) return null;
+
+  return (
+    <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex items-start gap-3">
+      <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-amber-800">รูปตัวละครยังไม่ได้อัปโหลดขึ้น Cloud</p>
+        <p className="text-xs text-amber-600 mt-0.5">กด Upload เพื่อส่งรูปไปเก็บที่ Cloudflare R2 (ทำครั้งเดียว)</p>
+        {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+      </div>
+      <button onClick={handleUpload} disabled={uploading}
+        className="shrink-0 flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-semibold disabled:opacity-60 transition-colors">
+        {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CloudUpload className="w-4 h-4" />}
+        {uploading ? "กำลัง Upload..." : "Upload to Cloud"}
+      </button>
     </div>
   );
 }
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function AiOfficePage() {
-  const [agents,    setAgents]    = useState<AiAgent[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [editAgent, setEditAgent] = useState<Partial<AiAgent> | null>(null);
-  const [showForm,  setShowForm]  = useState(false);
+  const [agents,      setAgents]      = useState<AiAgent[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [editAgent,   setEditAgent]   = useState<Partial<AiAgent> | null>(null);
+  const [showForm,    setShowForm]    = useState(false);
   const [activeAgent, setActiveAgent] = useState<AiAgent | null>(null);
-  const [deleting,  setDeleting]  = useState<number | null>(null);
+  const [deleting,    setDeleting]    = useState<number | null>(null);
+  const [charUrls,    setCharUrls]    = useState<Record<string, string>>({});
+  const [charSource,  setCharSource]  = useState<"r2" | "local" | null>(null);
 
-  const load = useCallback(async () => {
+  const loadCharUrls = useCallback(async () => {
+    try {
+      const r = await fetch("/api/admin/ai-characters");
+      const d = await r.json();
+      if (d.success) { setCharUrls(d.data.urls); setCharSource(d.data.source); }
+    } catch { /* ignore */ }
+  }, []);
+
+  const loadAgents = useCallback(async () => {
     try {
       const r = await fetch("/api/admin/ai-agents");
       const d = await r.json();
@@ -514,57 +569,55 @@ export default function AiOfficePage() {
     } catch { /* ignore */ } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadCharUrls(); loadAgents(); }, [loadCharUrls, loadAgents]);
 
   const handleSave = async (data: Omit<AiAgent, "id">) => {
     const method = editAgent?.id ? "PUT" : "POST";
     const url    = editAgent?.id ? `/api/admin/ai-agents/${editAgent.id}` : "/api/admin/ai-agents";
     await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
-    setShowForm(false); setEditAgent(null); await load();
+    setShowForm(false); setEditAgent(null); await loadAgents();
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm("ลบ AI Agent นี้?")) return;
     setDeleting(id);
     await fetch(`/api/admin/ai-agents/${id}`, { method: "DELETE" });
-    setDeleting(null); await load();
+    setDeleting(null); await loadAgents();
   };
 
   const handlePositionUpdate = useCallback(async (id: number, x: number, y: number) => {
     const agent = agents.find(a => a.id === id);
     if (!agent) return;
     const ap = parseAppearance(agent.appearance);
+    const newAp = { ...ap, posX: x, posY: y };
     await fetch(`/api/admin/ai-agents/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ appearance: { ...ap, posX: x, posY: y } }),
+      body: JSON.stringify({ appearance: newAp }),
     });
-    // Update local state without full reload for smooth UX
-    setAgents(prev => prev.map(a => a.id === id
-      ? { ...a, appearance: JSON.stringify({ ...ap, posX: x, posY: y }) }
-      : a
+    setAgents(prev => prev.map(a =>
+      a.id === id ? { ...a, appearance: JSON.stringify(newAp) } : a
     ));
   }, [agents]);
 
   const seedDefault = async () => {
-    const defaults = [
-      { name:"Content AI", position:"นักเขียน Content", duties:"สร้างคำอธิบายทรัพย์สินภาษาไทยและอังกฤษ", actionType:"CONTENT_WRITER", imageFile:"02.jpeg", posX:30, posY:45, status:"office" as AgentStatus },
-      { name:"Analyst",    position:"นักวิเคราะห์ตลาด", duties:"วิเคราะห์ราคาและแนวโน้มตลาดอสังหาริมทรัพย์", actionType:"NONE",           imageFile:"05.jpeg", posX:60, posY:35, status:"online" as AgentStatus },
+    const items = [
+      { name:"Content AI", position:"นักเขียน Content", duties:"สร้างคำอธิบายทรัพย์สิน", actionType:"CONTENT_WRITER", imageFile:"02.jpeg", posX:30, posY:45, status:"office" as AgentStatus },
+      { name:"Analyst",    position:"นักวิเคราะห์ตลาด", duties:"วิเคราะห์ราคาและแนวโน้มตลาด",  actionType:"NONE",           imageFile:"05.jpeg", posX:65, posY:35, status:"online" as AgentStatus },
     ];
-    for (const d of defaults) {
+    for (const d of items) {
       await fetch("/api/admin/ai-agents", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name:d.name, position:d.position, duties:d.duties, icon:"🤖", color:"#6366f1", isActive:true, actionType:d.actionType, appearance:JSON.stringify({ imageFile:d.imageFile, posX:d.posX, posY:d.posY, status:d.status }) }),
       });
     }
-    await load();
+    await loadAgents();
   };
 
-  // Stats
-  const total   = agents.length;
-  const active  = agents.filter(a => a.isActive).length;
+  const total    = agents.length;
+  const active   = agents.filter(a => a.isActive).length;
   const inOffice = agents.filter(a => parseAppearance(a.appearance).status === "office").length;
-  const online  = agents.filter(a => parseAppearance(a.appearance).status === "online").length;
+  const online   = agents.filter(a => parseAppearance(a.appearance).status === "online").length;
 
   return (
     <div className="min-h-screen">
@@ -577,30 +630,27 @@ export default function AiOfficePage() {
               style={{ width:(i%3)*4+6+"px", height:(i%3)*4+6+"px", background:["#6366f1","#a855f7","#ec4899","#38bdf8"][i%4], opacity:0.15+(i%3)*0.08, top:((i*41)%90)+"%", left:((i*57)%90)+"%", animationDelay:i*0.4+"s" }} />
           ))}
         </div>
-
         <div className="relative z-10 flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 bg-white/10 backdrop-blur rounded-xl flex items-center justify-center">
                 <Bot className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">AI Office</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white">AI Office</h1>
             </div>
-            <p className="text-white/60 text-sm">ทีม AI ผู้ช่วย — hover เพื่อดูรายละเอียด · ลากเพื่อย้ายตำแหน่ง</p>
+            <p className="text-white/60 text-sm">hover เพื่อดูรายละเอียด · ลากเพื่อย้ายตำแหน่ง</p>
           </div>
           <button onClick={() => { setEditAgent({}); setShowForm(true); }}
             className="shrink-0 flex items-center gap-2 px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white rounded-xl text-sm font-medium border border-white/20 backdrop-blur transition-colors">
             <Plus className="w-4 h-4" />เพิ่ม Agent
           </button>
         </div>
-
-        {/* Stats */}
         <div className="relative z-10 flex gap-3 mt-5 flex-wrap">
           {[
             { l:"ทั้งหมด", v:total,    c:"text-white"       },
-            { l:"Active",   v:active,   c:"text-green-400"   },
-            { l:"ในออฟฟิศ", v:inOffice, c:"text-emerald-300" },
-            { l:"ออนไลน์",  v:online,   c:"text-blue-300"    },
+            { l:"Active",  v:active,   c:"text-green-400"   },
+            { l:"ในออฟฟิศ",v:inOffice, c:"text-emerald-300" },
+            { l:"ออนไลน์", v:online,   c:"text-blue-300"    },
           ].map(s => (
             <div key={s.l} className="bg-white/10 backdrop-blur rounded-xl px-4 py-2.5 text-center min-w-[70px]">
               <p className={`text-2xl font-bold ${s.c}`}>{s.v}</p>
@@ -610,16 +660,18 @@ export default function AiOfficePage() {
         </div>
       </div>
 
+      {/* Upload banner — show when using local source (images not yet on R2) */}
+      {charSource === "local" && <UploadBanner onUpload={loadCharUrls} />}
+
       {/* Content */}
       {loading ? (
         <div className="flex justify-center py-24"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>
       ) : agents.length === 0 ? (
         <div className="text-center py-20 space-y-5">
-          {/* Show a couple of preview characters */}
           <div className="flex justify-center gap-6">
             {["02.jpeg","05.jpeg","09.jpeg"].map(f => (
-              <div key={f} className="w-20 rounded-2xl overflow-hidden border-2 border-indigo-100 shadow-lg opacity-70">
-                <img src={charUrl(f)} alt="" className="w-full object-cover object-top" draggable={false} />
+              <div key={f} className="w-20 rounded-2xl overflow-hidden border-2 border-indigo-100 shadow-lg opacity-70 bg-gray-100">
+                {charUrls[f] && <img src={charUrls[f]} alt="" className="w-full object-cover object-top" draggable={false} />}
               </div>
             ))}
           </div>
@@ -641,6 +693,7 @@ export default function AiOfficePage() {
       ) : (
         <OfficeScene
           agents={agents}
+          charUrls={charUrls}
           onEdit={a  => { setEditAgent(a); setShowForm(true); }}
           onDelete={handleDelete}
           onUse={setActiveAgent}
@@ -650,16 +703,16 @@ export default function AiOfficePage() {
         />
       )}
 
-      {/* Modals */}
       {showForm && (
         <AgentFormModal
           agent={editAgent}
+          charUrls={charUrls}
           onClose={() => { setShowForm(false); setEditAgent(null); }}
           onSave={handleSave}
         />
       )}
       {activeAgent?.actionType === "CONTENT_WRITER" && (
-        <ContentWriterModal agent={activeAgent} onClose={() => setActiveAgent(null)} />
+        <ContentWriterModal agent={activeAgent} charUrls={charUrls} onClose={() => setActiveAgent(null)} />
       )}
     </div>
   );
