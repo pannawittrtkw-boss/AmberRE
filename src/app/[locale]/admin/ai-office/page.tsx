@@ -490,7 +490,7 @@ function OfficeScene({ agents, onEdit, onDelete, onUse, onAdd, onPositionUpdate,
 
                   <CharImg file={ap.imageFile} charUrls={charUrls}
                     className="object-cover object-top"
-                    style={{ height: 90, width: "auto" }} />
+                    style={{ height: 140, width: "auto" }} />
                 </div>
 
                 {/* Name tag */}
