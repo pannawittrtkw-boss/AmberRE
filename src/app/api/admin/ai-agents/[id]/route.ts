@@ -30,7 +30,10 @@ export async function PUT(
   if (body.color !== undefined) data.color = String(body.color).trim();
   if (body.isActive !== undefined) data.isActive = Boolean(body.isActive);
   if (body.actionType !== undefined) data.actionType = String(body.actionType).trim();
-  if (body.appearance !== undefined) data.appearance = body.appearance ? JSON.stringify(body.appearance) : null;
+  if (body.appearance !== undefined) {
+    if (!body.appearance) data.appearance = null;
+    else data.appearance = typeof body.appearance === "string" ? body.appearance : JSON.stringify(body.appearance);
+  }
 
   const agent = await prisma.aiAgent.update({
     where: { id: parseInt(id, 10) },

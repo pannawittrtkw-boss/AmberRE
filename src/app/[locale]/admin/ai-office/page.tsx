@@ -47,7 +47,11 @@ const ACTION_TYPES = [
 function parseAppearance(raw?: string | null): AgentAppearance {
   const def: AgentAppearance = { imageFile: "01.jpg", posX: 50, posY: 50, status: "office" };
   if (!raw) return def;
-  try { return { ...def, ...JSON.parse(raw) }; }
+  try {
+    let p = JSON.parse(raw);
+    if (typeof p === "string") p = JSON.parse(p); // fix legacy double-encoded records in DB
+    return { ...def, ...p };
+  }
   catch { return def; }
 }
 
@@ -141,7 +145,7 @@ function AgentFormModal({ agent, onClose, onSave, charUrls }: {
     const posY = agent?.id ? ap.posY : Math.round(Math.random() * 40 + 20);
     await onSave({
       ...form, icon: "🤖", color: "#6366f1",
-      appearance: JSON.stringify({ imageFile, posX, posY, status }),
+      appearance: { imageFile, posX, posY, status } as any,
     } as Omit<AiAgent, "id">).finally(() => setSaving(false));
   };
 
@@ -408,7 +412,7 @@ function OfficeScene({ agents, onEdit, onDelete, onUse, onAdd, onPositionUpdate,
 
           return (
             <div key={agent.id}
-              className={`absolute group ${isD ? "z-50" : "z-10 hover:z-20"}`}
+              className={`absolute group ${isD ? "z-50" : ""}`}
               style={{ left: `${pos.x}%`, top: `${pos.y}%`, transform: "translate(-50%, -100%)" }}>
 
               <div className={`flex flex-col items-center transition-transform duration-75 ${isD ? "scale-110 drop-shadow-2xl" : ""}`}>
@@ -419,8 +423,7 @@ function OfficeScene({ agents, onEdit, onDelete, onUse, onAdd, onPositionUpdate,
                     e.preventDefault();
                     pendingRef.current = { id: agent.id, startX: e.clientX, startY: e.clientY };
                   }}
-                  className={`relative cursor-grab active:cursor-grabbing ${!agent.isActive ? "opacity-50 grayscale" : ""}`}
-                  style={{ filter: "drop-shadow(0 6px 12px rgba(0,0,0,0.28))" }}>
+                  className={`relative cursor-grab active:cursor-grabbing ${!agent.isActive ? "opacity-50 grayscale" : ""}`}>
 
                   {agent.actionType !== "NONE" && (
                     <span className="absolute top-1 left-1 z-10 bg-indigo-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow">AI</span>
@@ -626,7 +629,7 @@ export default function AiOfficePage() {
     for (const d of items) {
       await fetch("/api/admin/ai-agents", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name:d.name, position:d.position, duties:d.duties, icon:"🤖", color:"#6366f1", isActive:true, actionType:d.actionType, appearance:JSON.stringify({ imageFile:d.imageFile, posX:d.posX, posY:d.posY, status:d.status }) }),
+        body: JSON.stringify({ name:d.name, position:d.position, duties:d.duties, icon:"🤖", color:"#6366f1", isActive:true, actionType:d.actionType, appearance:{ imageFile:d.imageFile, posX:d.posX, posY:d.posY, status:d.status } }),
       });
     }
     await loadAgents();
