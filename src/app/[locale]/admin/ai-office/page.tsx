@@ -55,21 +55,77 @@ function parseAppearance(raw?: string | null): AgentAppearance {
   catch { return def; }
 }
 
-// ── Character Image with local fallback ───────────────────────────────────────
-// Always renders — tries R2 URL first, falls back to /public if it 404s
-function CharImg({ file, charUrls, className, style, draggable: dr = false, blend = true }: {
+// ── Background remover (flood-fill from edges, removes connected white region) ─
+function removeBg(imageData: ImageData): void {
+  const { data, width, height } = imageData;
+  const visited = new Uint8Array(width * height);
+  const isLight = (i: number) => data[i] > 215 && data[i+1] > 215 && data[i+2] > 215 && data[i+3] > 30;
+  const stack: number[] = [];
+  for (let x = 0; x < width; x++) {
+    for (const y of [0, height - 1]) {
+      const p = y * width + x;
+      if (!visited[p] && isLight(p * 4)) { visited[p] = 1; stack.push(p); }
+    }
+  }
+  for (let y = 1; y < height - 1; y++) {
+    for (const x of [0, width - 1]) {
+      const p = y * width + x;
+      if (!visited[p] && isLight(p * 4)) { visited[p] = 1; stack.push(p); }
+    }
+  }
+  while (stack.length) {
+    const p = stack.pop()!;
+    data[p * 4 + 3] = 0;
+    const x = p % width, y = (p / width) | 0;
+    for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+        const np = ny * width + nx;
+        if (!visited[np] && isLight(np * 4)) { visited[np] = 1; stack.push(np); }
+      }
+    }
+  }
+}
+
+// ── Character Image — canvas-based background removal ─────────────────────────
+function CharImg({ file, charUrls, className, style, draggable: dr = false }: {
   file: string; charUrls: Record<string, string>;
-  className?: string; style?: React.CSSProperties; draggable?: boolean; blend?: boolean;
+  className?: string; style?: React.CSSProperties; draggable?: boolean;
 }) {
-  const local   = `/images/Agent%20Charecter/${encodeURIComponent(file)}`;
-  const primary = charUrls[file] || local;
+  const local = `/images/Agent%20Charecter/${encodeURIComponent(file)}`;
+  const [processed, setProcessed] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    setProcessed(null);
+    const fallback = charUrls[file] || local;
+    const img = new Image();
+    img.onload = () => {
+      if (!active) return;
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { setProcessed(fallback); return; }
+      ctx.drawImage(img, 0, 0);
+      try {
+        const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        removeBg(id);
+        ctx.putImageData(id, 0, 0);
+        if (active) setProcessed(canvas.toDataURL("image/png"));
+      } catch { if (active) setProcessed(fallback); }
+    };
+    img.onerror = () => { if (active) setProcessed(fallback); };
+    img.src = local; // same-origin path = no CORS restriction on canvas
+    return () => { active = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [file]);
+
   return (
     <img
-      key={primary}
-      src={primary}
-      onError={e => { (e.currentTarget as HTMLImageElement).src = local; }}
+      src={processed ?? (charUrls[file] || local)}
       className={className}
-      style={{ mixBlendMode: blend ? "multiply" : undefined, ...style }}
+      style={style}
       draggable={dr}
       alt=""
     />
