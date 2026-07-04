@@ -494,17 +494,16 @@ function ContentWriterModal({ agent, onClose }: { agent: AiAgent; onClose: () =>
 }
 
 // ── Office Scene – characters on top of background image ──────────────────
-// Each seat maps to a [left%, bottom%] position over the meeting room image.
-// Portrait image (≈728×1000 px) – 8 seats around the conference table.
+// Landscape office image – seats at desks/workstations across the open plan.
 const SEATS = [
-  { left: "22%", bottom: "42%" }, // left side top
-  { left: "16%", bottom: "32%" }, // left side mid-upper
-  { left: "14%", bottom: "22%" }, // left side mid-lower
-  { left: "22%", bottom: "14%" }, // left side bottom
-  { left: "62%", bottom: "14%" }, // right side bottom
-  { left: "72%", bottom: "22%" }, // right side mid-lower
-  { left: "72%", bottom: "32%" }, // right side mid-upper
-  { left: "62%", bottom: "42%" }, // right side top
+  { left: "17%", bottom: "22%" }, // far-left front desk
+  { left: "32%", bottom: "32%" }, // center-left desk
+  { left: "44%", bottom: "42%" }, // center desk area
+  { left: "56%", bottom: "36%" }, // center-right standing area
+  { left: "68%", bottom: "24%" }, // right counter/break area
+  { left: "80%", bottom: "36%" }, // far-right workstation
+  { left: "60%", bottom: "58%" }, // back-center (meeting room)
+  { left: "38%", bottom: "58%" }, // back-left desk
 ];
 
 function OfficeScene({
@@ -528,7 +527,7 @@ function OfficeScene({
   return (
     <div className="rounded-2xl overflow-hidden border shadow-lg">
       {/* Office background + seated agents */}
-      <div className="relative w-full" style={{ paddingBottom: "72%" }}>
+      <div className="relative w-full" style={{ paddingBottom: "56%" }}>
         {/* Background image */}
         <img
           src="/images/office-bg.png"
