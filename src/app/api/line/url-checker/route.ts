@@ -143,14 +143,13 @@ export function buildButtonsMessage(id: number, seq: number, url: string, sentBy
     action: { type: "uri", label, uri: acceptUri(status) },
   });
 
-  const metaLine = [sentBy, dateKey].filter(Boolean).join(" · ");
-
   return {
     type: "flex",
     altText: `🔗 New URL #${seq} — Please review`,
     contents: {
       type: "bubble",
       size: "kilo",
+      // Dark header — entire area tappable → opens the URL for review
       header: {
         type: "box",
         layout: "vertical",
@@ -162,10 +161,18 @@ export function buildButtonsMessage(id: number, seq: number, url: string, sentBy
             type: "box", layout: "horizontal", justifyContent: "space-between",
             contents: [
               { type: "text", text: `🔗 #${seq}`, color: "#C8A951", weight: "bold", size: "sm", flex: 0 },
-              ...(metaLine ? [{ type: "text", text: metaLine, color: "#AAAAAA", size: "xxs", align: "end" as const, flex: 1 }] : []),
+              { type: "text", text: "กดเพื่อเปิด →", color: "#C8A951", size: "xxs", align: "end" as const, flex: 1 },
             ],
           },
           { type: "text", text: shortUrl(url, 100), color: "#FFFFFF", size: "xs", wrap: true, margin: "sm" },
+          // Sender + date metadata
+          {
+            type: "box", layout: "horizontal", margin: "sm",
+            contents: [
+              ...(sentBy ? [{ type: "text" as const, text: `👤 ${sentBy}`, color: "#AAAAAA", size: "xxs", flex: 1 }] : []),
+              ...(dateKey ? [{ type: "text" as const, text: dateKey, color: "#AAAAAA", size: "xxs", align: "end" as const, flex: 0 }] : []),
+            ],
+          },
         ],
       },
       footer: {
@@ -307,7 +314,54 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      // /NotVerify command — disabled (Push API quota)
+      // /NotVerify command — list all pending links as an interactive carousel
+      if (/^\/notverify$/i.test(text)) {
+        const allPending = await prisma.lineUrlHistory.findMany({
+          where:   { groupId, status: STATUS.PENDING },
+          orderBy: [{ dateKey: "asc" }, { dailySeq: "asc" }],
+        });
+
+        if (allPending.length === 0) {
+          await reply(event.replyToken, [{
+            type: "text",
+            text: "✅ ไม่มีรายการค้าง\nทุกลิงค์ได้รับการตรวจสอบแล้ว",
+          }]);
+          continue;
+        }
+
+        // Count by date for summary
+        const byDate: Record<string, number> = {};
+        for (const r of allPending) {
+          byDate[r.dateKey] = (byDate[r.dateKey] || 0) + 1;
+        }
+        const total = allPending.length;
+        const show  = allPending.slice(0, 10); // LINE carousel max 10 bubbles
+
+        // Build summary text (newest date first)
+        let summaryText = `⚠️ ยังไม่ได้ตรวจสอบ ${total} รายการ\n━━━━━━━━━━━━━━━━━━━━`;
+        for (const dk of Object.keys(byDate).sort().reverse()) {
+          const label =
+            dk === todayKey()     ? "📅 วันนี้"   :
+            dk === yesterdayKey() ? "📅 เมื่อวาน" : `📅 ${dk}`;
+          summaryText += `\n${label} : ${byDate[dk]} รายการ`;
+        }
+        if (total > 10) summaryText += `\n\n⚡ แสดง 10 รายการแรก — ตรวจสอบแล้วพิมพ์ /notverify อีกครั้งเพื่อดูถัดไป`;
+
+        // Build carousel — reuse existing bubble builder
+        const bubbles = show.map(r =>
+          buildButtonsMessage(r.id, r.dailySeq || r.id, r.url, r.sentBy, r.dateKey).contents
+        );
+
+        await reply(event.replyToken, [
+          { type: "text", text: summaryText },
+          {
+            type: "flex",
+            altText: `⚠️ ${total} รายการรอตรวจสอบ`,
+            contents: { type: "carousel", contents: bubbles },
+          },
+        ]);
+        continue;
+      }
 
       // URL detection
       const urls = extractUrls(text);
