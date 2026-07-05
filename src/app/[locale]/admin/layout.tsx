@@ -52,6 +52,7 @@ const ALL_ADMIN_NAV = [
   { key: "settings",               icon: Settings,        hrefSuffix: "/settings",                 labelKey: "settings", fallback: "Settings" },
   { key: "languages",              icon: Globe,           hrefSuffix: "/settings/languages",       labelKey: "languageSettings", fallback: "ตั้งค่าภาษา" },
   { key: "ai-office",              icon: Bot,             hrefSuffix: "/ai-office",                labelKey: null, labelFallback: { th: "AI Office", en: "AI Office" } },
+  { key: "scanlink",               icon: FileText,        hrefSuffix: "/scanlink",                 labelKey: null, labelFallback: { th: "ScanLink", en: "ScanLink" } },
 ];
 
 export default function AdminLayout({
@@ -184,7 +185,7 @@ export default function AdminLayout({
     return item.key;
   };
 
-  const ALWAYS_VISIBLE_ADMIN_KEYS = ["menu-config", "ai-office"];
+  const ALWAYS_VISIBLE_ADMIN_KEYS = ["menu-config", "ai-office", "scanlink"];
   const navItems = ALL_ADMIN_NAV
     .filter((item) => ALWAYS_VISIBLE_ADMIN_KEYS.includes(item.key) || adminAllowedKeys.includes(item.key))
     .map((item) => ({
