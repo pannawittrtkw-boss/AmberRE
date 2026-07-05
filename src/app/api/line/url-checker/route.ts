@@ -252,6 +252,18 @@ export async function POST(req: NextRequest) {
         const action = params.get("action");
         const urlId  = parseInt(params.get("id") ?? "");
 
+        // Show original card action — triggered from /notverify list
+        if (action === "show" && !isNaN(urlId)) {
+          const urlRecord = await prisma.lineUrlHistory.findFirst({ where: { id: urlId, groupId } });
+          if (urlRecord && event.replyToken) {
+            const seq = urlRecord.dailySeq > 0 ? urlRecord.dailySeq : urlRecord.id;
+            await reply(event.replyToken, [
+              buildButtonsMessage(urlRecord.id, seq, urlRecord.url, urlRecord.sentBy, urlRecord.dateKey),
+            ]);
+          }
+          continue;
+        }
+
         // Delete card action
         if (action === "delete" && !isNaN(urlId)) {
           const urlRecord = await prisma.lineUrlHistory.findFirst({
@@ -314,14 +326,19 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      // /NotVerify command — list all pending links as an interactive carousel
+      // /NotVerify command — compact list; tap a row → bot replies with that card
       if (/^\/notverify$/i.test(text)) {
-        const allPending = await prisma.lineUrlHistory.findMany({
-          where:   { groupId, status: STATUS.PENDING },
-          orderBy: [{ dateKey: "asc" }, { dailySeq: "asc" }],
-        });
+        const MAX_ROWS = 12;
+        const [allPending, totalPending] = await Promise.all([
+          prisma.lineUrlHistory.findMany({
+            where:   { groupId, status: STATUS.PENDING },
+            orderBy: [{ dateKey: "asc" }, { dailySeq: "asc" }],
+            take:    MAX_ROWS,
+          }),
+          prisma.lineUrlHistory.count({ where: { groupId, status: STATUS.PENDING } }),
+        ]);
 
-        if (allPending.length === 0) {
+        if (totalPending === 0) {
           await reply(event.replyToken, [{
             type: "text",
             text: "✅ ไม่มีรายการค้าง\nทุกลิงค์ได้รับการตรวจสอบแล้ว",
@@ -329,37 +346,80 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        // Count by date for summary
+        // Count pending per date for header subtitle
         const byDate: Record<string, number> = {};
-        for (const r of allPending) {
-          byDate[r.dateKey] = (byDate[r.dateKey] || 0) + 1;
-        }
-        const total = allPending.length;
-        const show  = allPending.slice(0, 10); // LINE carousel max 10 bubbles
-
-        // Build summary text (newest date first)
-        let summaryText = `⚠️ ยังไม่ได้ตรวจสอบ ${total} รายการ\n━━━━━━━━━━━━━━━━━━━━`;
-        for (const dk of Object.keys(byDate).sort().reverse()) {
+        for (const r of allPending) byDate[r.dateKey] = (byDate[r.dateKey] || 0) + 1;
+        const dateLines = Object.keys(byDate).sort().reverse().map(dk => {
           const label =
-            dk === todayKey()     ? "📅 วันนี้"   :
-            dk === yesterdayKey() ? "📅 เมื่อวาน" : `📅 ${dk}`;
-          summaryText += `\n${label} : ${byDate[dk]} รายการ`;
+            dk === todayKey()     ? "วันนี้"   :
+            dk === yesterdayKey() ? "เมื่อวาน" : dk;
+          return `${label} ${byDate[dk]} รายการ`;
+        }).join("  ·  ");
+
+        // Build list rows — each row is a postback button
+        const rows: object[] = [];
+        allPending.forEach((r, i) => {
+          const seq = r.dailySeq > 0 ? r.dailySeq : r.id;
+          rows.push({
+            type: "box",
+            layout: "horizontal",
+            paddingAll: "12px",
+            action: { type: "postback", label: `#${seq}`, data: `action=show&id=${r.id}` },
+            contents: [
+              {
+                type: "text", text: `#${seq}`,
+                color: "#C8A951", weight: "bold", size: "sm", flex: 0, gravity: "center",
+              },
+              {
+                type: "box", layout: "vertical", flex: 1, margin: "md",
+                contents: [
+                  { type: "text", text: r.sentBy || "—", size: "sm", color: "#111827" },
+                  { type: "text", text: r.dateKey,        size: "xxs", color: "#9ca3af" },
+                ],
+              },
+              { type: "text", text: "›", color: "#C8A951", size: "lg", flex: 0, gravity: "center" },
+            ],
+          });
+          if (i < allPending.length - 1) rows.push({ type: "separator" });
+        });
+
+        if (totalPending > MAX_ROWS) {
+          rows.push({ type: "separator" });
+          rows.push({
+            type: "box", layout: "vertical", paddingAll: "10px",
+            contents: [{
+              type: "text",
+              text: `+ อีก ${totalPending - MAX_ROWS} รายการ — ตรวจสอบแล้วพิมพ์ /notverify อีกครั้ง`,
+              color: "#9ca3af", size: "xxs", align: "center",
+            }],
+          });
         }
-        if (total > 10) summaryText += `\n\n⚡ แสดง 10 รายการแรก — ตรวจสอบแล้วพิมพ์ /notverify อีกครั้งเพื่อดูถัดไป`;
 
-        // Build carousel — reuse existing bubble builder
-        const bubbles = show.map(r =>
-          buildButtonsMessage(r.id, r.dailySeq || r.id, r.url, r.sentBy, r.dateKey).contents
-        );
-
-        await reply(event.replyToken, [
-          { type: "text", text: summaryText },
-          {
-            type: "flex",
-            altText: `⚠️ ${total} รายการรอตรวจสอบ`,
-            contents: { type: "carousel", contents: bubbles },
+        await reply(event.replyToken, [{
+          type: "flex",
+          altText: `⚠️ ${totalPending} รายการรอตรวจสอบ`,
+          contents: {
+            type: "bubble",
+            size: "kilo",
+            header: {
+              type: "box", layout: "vertical",
+              backgroundColor: "#112240", paddingAll: "14px",
+              contents: [
+                { type: "text", text: "⚠️ ยังไม่ได้ตรวจสอบ", color: "#C8A951", weight: "bold", size: "sm" },
+                { type: "text", text: `${totalPending} รายการ`, color: "#FFFFFF", weight: "bold", size: "xl" },
+                ...(dateLines ? [{ type: "text" as const, text: dateLines, color: "#AAAAAA", size: "xxs", margin: "sm" as const }] : []),
+              ],
+            },
+            body: {
+              type: "box", layout: "vertical", spacing: "none", paddingAll: "0px",
+              contents: rows,
+            },
+            footer: {
+              type: "box", layout: "vertical", paddingAll: "10px", backgroundColor: "#f9fafb",
+              contents: [{ type: "text", text: "กดตัวเลขเพื่อดู card ตรวจสอบ", color: "#9ca3af", size: "xs", align: "center" }],
+            },
           },
-        ]);
+        }]);
         continue;
       }
 
