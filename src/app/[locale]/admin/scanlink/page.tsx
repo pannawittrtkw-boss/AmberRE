@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ExternalLink, RefreshCw, Loader2, CheckCircle2, XCircle, Clock, PhoneOff, Ban, Filter } from "lucide-react";
+import { ExternalLink, RefreshCw, Loader2, CheckCircle2, XCircle, Clock, PhoneOff, Ban, Trash2 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface UrlRecord {
@@ -64,6 +64,7 @@ export default function ScanlinkPage() {
   const [filter,     setFilter]     = useState("ALL");
   const [selected,   setSelected]   = useState<Set<number>>(new Set());
   const [updating,   setUpdating]   = useState(false);
+  const [deleting,   setDeleting]   = useState<number | null>(null);
   const [page,       setPage]       = useState(1);
   const limit = 100;
 
@@ -108,6 +109,23 @@ export default function ScanlinkPage() {
       setSelected(new Set());
       await load(filter, page);
     } finally { setUpdating(false); }
+  };
+
+  const deleteIds = async (ids: number[]) => {
+    if (ids.length === 0) return;
+    const confirmed = window.confirm(`ต้องการลบ ${ids.length} รายการ? ไม่สามารถกู้คืนได้`);
+    if (!confirmed) return;
+    if (ids.length === 1) setDeleting(ids[0]);
+    else setUpdating(true);
+    try {
+      await fetch("/api/admin/scanlink", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      setSelected(new Set());
+      await load(filter, page);
+    } finally { setDeleting(null); setUpdating(false); }
   };
 
   const countByStatus = (s: string) => stats.find(x => x.status === s)?._count.status ?? 0;
@@ -173,11 +191,15 @@ export default function ScanlinkPage() {
               { s: "ACCEPT_ALL",                 l: "✅ Agent & Foreigner" },
               { s: "NOT_AVAILABLE",              l: "🚫 ไม่ว่าง" },
             ].map(b => (
-              <button key={b.s} onClick={() => bulkUpdate(b.s)} disabled={updating}
+              <button key={b.s} onClick={() => bulkUpdate(b.s)} disabled={updating || deleting !== null}
                 className="px-3 py-1.5 bg-white border rounded-lg text-xs font-medium hover:bg-gray-50 disabled:opacity-50">
                 {b.l}
               </button>
             ))}
+            <button onClick={() => deleteIds([...selected])} disabled={updating || deleting !== null}
+              className="px-3 py-1.5 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs font-medium hover:bg-red-100 disabled:opacity-50 flex items-center gap-1">
+              <Trash2 className="w-3.5 h-3.5" />ลบ
+            </button>
           </div>
         </div>
       )}
@@ -205,6 +227,7 @@ export default function ScanlinkPage() {
                   <th className="px-3 py-3 text-left w-24">วันที่</th>
                   <th className="px-3 py-3 text-left w-40">สถานะ</th>
                   <th className="px-3 py-3 text-left w-28">ตรวจสอบโดย</th>
+                  <th className="px-3 py-3 w-12"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -227,6 +250,15 @@ export default function ScanlinkPage() {
                     <td className="px-3 py-3 text-gray-500 text-xs">{r.dateKey}</td>
                     <td className="px-3 py-3"><StatusBadge status={r.status} /></td>
                     <td className="px-3 py-3 text-gray-500 text-xs">{r.reviewedBy || "—"}</td>
+                    <td className="px-3 py-3">
+                      <button onClick={() => deleteIds([r.id])} disabled={deleting === r.id || updating}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
+                        title="ลบรายการ">
+                        {deleting === r.id
+                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          : <Trash2 className="w-3.5 h-3.5" />}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

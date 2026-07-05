@@ -53,6 +53,21 @@ export async function GET(req: NextRequest) {
   });
 }
 
+// DELETE — single or bulk delete
+export async function DELETE(req: NextRequest) {
+  if (!(await requireAdmin())) {
+    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+  }
+  const body = await req.json().catch(() => null);
+  if (!body?.ids || !Array.isArray(body.ids) || body.ids.length === 0) {
+    return NextResponse.json({ success: false, error: "ids required" }, { status: 400 });
+  }
+  const deleted = await prisma.lineUrlHistory.deleteMany({
+    where: { id: { in: body.ids } },
+  });
+  return NextResponse.json({ success: true, data: { count: deleted.count } });
+}
+
 // PATCH — bulk or single status update
 export async function PATCH(req: NextRequest) {
   if (!(await requireAdmin())) {
