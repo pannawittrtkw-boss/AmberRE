@@ -252,14 +252,19 @@ export async function POST(req: NextRequest) {
         const action = params.get("action");
         const urlId  = parseInt(params.get("id") ?? "");
 
-        // Show original card action — triggered from /notverify list
+        // Show action — triggered from /notverify list
+        // Quote the original user message so tapping the preview scrolls to it;
+        // the verification card is right below that message in the chat.
         if (action === "show" && !isNaN(urlId)) {
           const urlRecord = await prisma.lineUrlHistory.findFirst({ where: { id: urlId, groupId } });
           if (urlRecord && event.replyToken) {
             const seq = urlRecord.dailySeq > 0 ? urlRecord.dailySeq : urlRecord.id;
-            await reply(event.replyToken, [
-              buildButtonsMessage(urlRecord.id, seq, urlRecord.url, urlRecord.sentBy, urlRecord.dateKey),
-            ]);
+            const msg: Record<string, unknown> = {
+              type: "text",
+              text: `🔍 #${seq} — กดข้อความที่ถูก quote เพื่อข้ามไปดู card ตรวจสอบ`,
+            };
+            if (urlRecord.quoteToken) msg.quoteToken = urlRecord.quoteToken;
+            await reply(event.replyToken, [msg]);
           }
           continue;
         }
