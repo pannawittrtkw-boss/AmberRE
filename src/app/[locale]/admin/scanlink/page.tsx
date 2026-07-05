@@ -56,14 +56,15 @@ function shortUrl(url: string, max = 70) {
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function ScanlinkPage() {
-  const [records,  setRecords]  = useState<UrlRecord[]>([]);
-  const [total,    setTotal]    = useState(0);
-  const [stats,    setStats]    = useState<StatItem[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [filter,   setFilter]   = useState("ALL");
-  const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [updating, setUpdating] = useState(false);
-  const [page,     setPage]     = useState(1);
+  const [records,    setRecords]    = useState<UrlRecord[]>([]);
+  const [total,      setTotal]      = useState(0);
+  const [grandTotal, setGrandTotal] = useState(0);
+  const [stats,      setStats]      = useState<StatItem[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [filter,     setFilter]     = useState("ALL");
+  const [selected,   setSelected]   = useState<Set<number>>(new Set());
+  const [updating,   setUpdating]   = useState(false);
+  const [page,       setPage]       = useState(1);
   const limit = 100;
 
   const load = useCallback(async (status: string, p: number) => {
@@ -74,6 +75,7 @@ export default function ScanlinkPage() {
       if (d.success) {
         setRecords(d.data.records);
         setTotal(d.data.total);
+        setGrandTotal(d.data.grandTotal);
         setStats(d.data.stats);
       }
     } finally { setLoading(false); }
@@ -132,7 +134,7 @@ export default function ScanlinkPage() {
         {/* Stats */}
         <div className="flex gap-3 mt-5 flex-wrap">
           {[
-            { l: "ทั้งหมด",      v: total,    c: "text-white" },
+            { l: "ทั้งหมด",      v: grandTotal, c: "text-white" },
             { l: "รอตรวจสอบ",    v: pending,  c: "text-amber-300" },
             { l: "รับ Agent",    v: accepted, c: "text-green-300" },
             { l: "ไม่รับ/ไม่ว่าง", v: rejected, c: "text-red-300" },

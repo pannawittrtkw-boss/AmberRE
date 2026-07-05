@@ -25,7 +25,9 @@ export async function GET(req: NextRequest) {
   if (status !== "ALL") where.status = status;
   if (groupId) where.groupId = groupId;
 
-  const [records, total, groups, stats] = await Promise.all([
+  const statsWhere = groupId ? { groupId } : undefined;
+
+  const [records, total, grandTotal, groups, stats] = await Promise.all([
     prisma.lineUrlHistory.findMany({
       where,
       orderBy: [{ dateKey: "desc" }, { dailySeq: "asc" }],
@@ -33,19 +35,21 @@ export async function GET(req: NextRequest) {
       take: limit,
     }),
     prisma.lineUrlHistory.count({ where }),
-    // distinct group IDs for filter dropdown
+    // Grand total — always all records, unaffected by status filter
+    prisma.lineUrlHistory.count({ where: statsWhere }),
+    // Distinct group IDs for filter dropdown
     prisma.lineUrlHistory.groupBy({ by: ["groupId"] }),
-    // status breakdown (all groups or filtered group)
+    // Status breakdown — not filtered by status, so it's always the full breakdown
     prisma.lineUrlHistory.groupBy({
       by: ["status"],
-      where: groupId ? { groupId } : undefined,
+      where: statsWhere,
       _count: { status: true },
     }),
   ]);
 
   return NextResponse.json({
     success: true,
-    data: { records, total, page, limit, groups: groups.map(g => g.groupId), stats },
+    data: { records, total, grandTotal, page, limit, groups: groups.map(g => g.groupId), stats },
   });
 }
 
