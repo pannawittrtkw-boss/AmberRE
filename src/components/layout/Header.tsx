@@ -58,7 +58,7 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
           {/* Logo */}
           <Link href={`/${locale}`} className="flex items-center gap-2">
             {logoUrl ? (
-              <img src={logoUrl} alt="NPB Property" className="h-16 w-auto object-contain drop-shadow-lg" />
+              <img src={logoUrl} alt="NPB Property" className="h-20 w-auto object-contain drop-shadow-lg" />
             ) : (
               <>
                 <span className="text-2xl font-bold text-[#C8A951]">NPB</span>
