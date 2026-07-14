@@ -88,7 +88,7 @@ export interface AccPdfData {
   paymentMethod?: string;
 }
 
-const GOLD   = "#C8A951";
+const GOLD   = "#1C1C1C";
 const TEAL   = "#0D9488";
 const PURPLE = "#7C3AED";
 const BLACK  = "#1C1C1C";
