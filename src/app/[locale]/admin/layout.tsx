@@ -214,7 +214,7 @@ export default function AdminLayout({
             <Link
               href={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                isActive ? "bg-[#C8A951] text-white" : "text-gray-300 hover:bg-white/10 hover:text-white"
+                isActive ? "bg-[#112240] text-white" : "text-gray-700 hover:bg-gray-100 hover:text-[#112240]"
               }`}
             >
               <item.icon className="w-4 h-4" />
@@ -234,7 +234,7 @@ export default function AdminLayout({
                       key={sub.href}
                       href={sub.href}
                       className={`flex items-center gap-2 pl-4 pr-3 py-1.5 rounded-lg text-xs transition-colors ${
-                        subActive ? "bg-[#C8A951]/80 text-white" : "text-gray-400 hover:bg-white/10 hover:text-white"
+                        subActive ? "bg-[#112240]/80 text-white" : "text-gray-500 hover:bg-gray-100 hover:text-[#112240]"
                       }`}
                     >
                       <sub.icon className="w-3 h-3" />
@@ -280,7 +280,7 @@ export default function AdminLayout({
         `}
         style={{ minHeight: "calc(100vh - 64px)" }}
       >
-        <div className="h-full bg-[#112240] text-white">
+        <div className="h-full bg-white text-gray-900 border-r border-gray-200">
           <div className="p-4 pt-20 lg:pt-4">
             <SidebarContent />
           </div>
