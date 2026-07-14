@@ -640,6 +640,13 @@ export interface ContractPdfData {
   lessorSignature?: string | null;
   lesseeSignature?: string | null;
   jointLesseeSignature?: string | null;
+
+  // Witnesses (พยาน) — entered by admin staff, not via the e-sign token
+  // flow. Signature is a base64 data-URL PNG (uploaded or drawn).
+  witness1Name?: string | null;
+  witness1Signature?: string | null;
+  witness2Name?: string | null;
+  witness2Signature?: string | null;
 }
 
 const formatNum = (n: number) =>
@@ -1064,12 +1071,28 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
 
           <View style={[styles.twoCol, { marginTop: 36 }]}>
             <View style={styles.signatureBlock}>
-              <View style={styles.signatureLine} />
+              {data.witness1Signature ? (
+                // eslint-disable-next-line jsx-a11y/alt-text
+                <Image src={data.witness1Signature} style={styles.signatureImage} />
+              ) : (
+                <View style={styles.signatureLine} />
+              )}
               <TText style={styles.small}>พยาน / Witness</TText>
+              {data.witness1Name && (
+                <TText style={styles.boldHL}>({data.witness1Name})</TText>
+              )}
             </View>
             <View style={styles.signatureBlock}>
-              <View style={styles.signatureLine} />
+              {data.witness2Signature ? (
+                // eslint-disable-next-line jsx-a11y/alt-text
+                <Image src={data.witness2Signature} style={styles.signatureImage} />
+              ) : (
+                <View style={styles.signatureLine} />
+              )}
               <TText style={styles.small}>พยาน / Witness</TText>
+              {data.witness2Name && (
+                <TText style={styles.boldHL}>({data.witness2Name})</TText>
+              )}
             </View>
           </View>
         </View>

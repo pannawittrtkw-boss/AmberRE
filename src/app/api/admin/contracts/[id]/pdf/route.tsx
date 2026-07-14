@@ -253,6 +253,11 @@ export async function GET(
     lessorSignature: contract.lessorSignature,
     lesseeSignature: contract.lesseeSignature,
     jointLesseeSignature: contract.jointLesseeSignature,
+
+    witness1Name: contract.witness1Name,
+    witness1Signature: contract.witness1Signature,
+    witness2Name: contract.witness2Name,
+    witness2Signature: contract.witness2Signature,
   };
 
   try {
