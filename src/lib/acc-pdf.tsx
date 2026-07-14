@@ -172,8 +172,8 @@ const s = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: GOLD,
   },
-  logoImg: { width: 66, height: 80, objectFit: "contain" },
-  logoPlaceholder: { width: 66 },
+  logoImg: { width: 84, height: 84, objectFit: "contain" },
+  logoPlaceholder: { width: 84 },
 
   // Company info sits between logo and title inside the header
   companyMeta: { flex: 1, paddingLeft: 8, paddingRight: 12, alignSelf: "center" },
