@@ -6,7 +6,6 @@ import Link from "next/link";
 import { Loader2, ArrowLeft, ChevronDown, ChevronUp, Save } from "lucide-react";
 import ItemSelector from "./ItemSelector";
 import IdCardUpload from "./IdCardUpload";
-import WitnessSignature from "./WitnessSignature";
 import CustomClausesEditor from "./CustomClausesEditor";
 import StandardClausesEditor from "./StandardClausesEditor";
 import { parseIdCardOcr } from "@/lib/idcard-ocr";
@@ -138,11 +137,6 @@ export default function ContractForm({
     coAgentPhone: initialData?.coAgentPhone || "",
     coAgentLineId: initialData?.coAgentLineId || "",
     status: initialData?.status || "DRAFT",
-
-    witness1Name: initialData?.witness1Name || "",
-    witness1Signature: initialData?.witness1Signature || "",
-    witness2Name: initialData?.witness2Name || "",
-    witness2Signature: initialData?.witness2Signature || "",
   });
 
   const [furniture, setFurniture] = useState<ContractItem[]>(
@@ -1282,50 +1276,6 @@ export default function ContractForm({
               onResetFromTemplate={handleResetCustomClausesFromTemplate}
               locale={locale}
             />
-          </div>
-        </div>
-      </Card>
-
-      {/* Witnesses */}
-      <Card title={locale === "th" ? "พยาน (Witnesses)" : "Witnesses"}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <Field label={locale === "th" ? "ชื่อพยานคนที่ 1" : "Witness 1 name"}>
-              <input
-                value={form.witness1Name}
-                onChange={(e) => update("witness1Name", e.target.value)}
-                className={inputCls}
-              />
-            </Field>
-            <div className="mt-3">
-              <label className="block text-sm font-medium mb-1.5">
-                {locale === "th" ? "ลายเซ็นพยานคนที่ 1" : "Witness 1 signature"}
-              </label>
-              <WitnessSignature
-                locale={locale}
-                value={form.witness1Signature}
-                onChange={(v) => update("witness1Signature", v)}
-              />
-            </div>
-          </div>
-          <div>
-            <Field label={locale === "th" ? "ชื่อพยานคนที่ 2" : "Witness 2 name"}>
-              <input
-                value={form.witness2Name}
-                onChange={(e) => update("witness2Name", e.target.value)}
-                className={inputCls}
-              />
-            </Field>
-            <div className="mt-3">
-              <label className="block text-sm font-medium mb-1.5">
-                {locale === "th" ? "ลายเซ็นพยานคนที่ 2" : "Witness 2 signature"}
-              </label>
-              <WitnessSignature
-                locale={locale}
-                value={form.witness2Signature}
-                onChange={(v) => update("witness2Signature", v)}
-              />
-            </div>
           </div>
         </div>
       </Card>

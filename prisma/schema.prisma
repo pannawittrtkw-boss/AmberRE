@@ -183,15 +183,6 @@ model Contract {
   lesseeSignedAt        DateTime?
   jointLesseeSignedAt   DateTime?
 
-  // Witnesses (พยาน) — entered by admin staff on the contract form, not
-  // via a sign-token flow like the parties above. Signatures are base64
-  // data-URL PNGs (uploaded or drawn), same storage convention as
-  // lessor/lesseeSignature.
-  witness1Name      String? @db.VarChar(200)
-  witness1Signature String? @db.Text
-  witness2Name      String? @db.VarChar(200)
-  witness2Signature String? @db.Text
-
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   createdById Int?

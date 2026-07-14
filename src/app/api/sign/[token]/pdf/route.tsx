@@ -17,6 +17,7 @@ import {
   applyOverrides,
   STANDARD_CLAUSES,
 } from "@/lib/contract-clauses";
+import { getWitnessSettings } from "@/lib/contract-witnesses";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -100,6 +101,8 @@ export async function GET(
     return NextResponse.json({ success: false, error: "Invalid link" }, { status: 404 });
   }
 
+  const witnesses = await getWitnessSettings();
+
   const hdrs = await headers();
   const host = hdrs.get("host") || "";
   const proto = hdrs.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
@@ -176,10 +179,7 @@ export async function GET(
     lesseeSignature: contract.lesseeSignature,
     jointLesseeSignature: contract.jointLesseeSignature,
 
-    witness1Name: contract.witness1Name,
-    witness1Signature: contract.witness1Signature,
-    witness2Name: contract.witness2Name,
-    witness2Signature: contract.witness2Signature,
+    ...witnesses,
   };
 
   try {

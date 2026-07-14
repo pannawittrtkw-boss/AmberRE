@@ -896,6 +896,13 @@ export default function AdminContractsPage({
             {locale === "th" ? "Template มาตรฐาน" : "Standard Template"}
           </Link>
           <Link
+            href={`/${locale}/admin/contracts/witnesses`}
+            className="inline-flex items-center justify-center gap-2 bg-white border border-stone-300 hover:bg-stone-50 px-4 py-2.5 rounded-lg text-sm font-medium text-stone-700"
+          >
+            <PenLine className="w-4 h-4" />
+            {locale === "th" ? "พยาน" : "Witnesses"}
+          </Link>
+          <Link
             href={`/${locale}/admin/contracts/new`}
             className="inline-flex items-center justify-center gap-2 bg-[#C8A951] text-white px-4 py-2.5 rounded-lg hover:bg-[#B8993F] text-sm font-medium"
           >

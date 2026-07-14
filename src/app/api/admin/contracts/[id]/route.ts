@@ -125,11 +125,6 @@ export async function PUT(
         coAgentPhone: body.dealType === "CO_AGENT" ? (body.coAgentPhone || null) : null,
         coAgentLineId: body.dealType === "CO_AGENT" ? (body.coAgentLineId || null) : null,
         status: body.status || undefined,
-
-        witness1Name: body.witness1Name || null,
-        witness1Signature: body.witness1Signature || null,
-        witness2Name: body.witness2Name || null,
-        witness2Signature: body.witness2Signature || null,
       },
     });
 
