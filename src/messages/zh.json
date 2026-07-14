@@ -74,7 +74,7 @@
     "monthly": "每月",
     "yearly": "每年",
     "viewAllProjects": "查看所有项目",
-    "slogan": "NPB Property",
+    "slogan": "Amber Real Estate",
     "featuredSubtitle": "精选优质房源",
     "projects": "项目",
     "featuredProjectsTitle": "推荐项目",
@@ -179,7 +179,7 @@
     "loginError": "邮箱或密码不正确",
     "registerSuccess": "注册成功",
     "signinSubtitle": "填写以下信息以登录",
-    "agentRegisteredNotice": "Agent账号注册成功！请登录 — 您的账号将在NPB Property团队审核后激活。",
+    "agentRegisteredNotice": "Agent账号注册成功！请登录 — 您的账号将在Amber Real Estate团队审核后激活。",
     "forgotPassword": "忘记密码？",
     "createAccount": "注册账号",
     "registerSubtitle": "只需不到1分钟",
@@ -211,7 +211,7 @@
     "changePassword": "修改密码",
     "buyerDesc": "浏览房源并收藏",
     "ownerDesc": "发布您的房产",
-    "agentDesc": "经纪人 / 与NPB合作的Co-Agent"
+    "agentDesc": "经纪人 / 与Amber Real Estate合作的Co-Agent"
   },
   "contact": {
     "title": "联系我们",
@@ -319,7 +319,7 @@
     "aboutUs": "关于我们",
     "quickLinks": "快速链接",
     "followUs": "关注我们",
-    "copyright": "© 2024 NPB Property. 版权所有。"
+    "copyright": "© 2024 Amber Real Estate. 版权所有。"
   },
   "marketing": {
     "headerHint": "准备发布到 Facebook / LINE",

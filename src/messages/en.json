@@ -74,7 +74,7 @@
     "monthly": "Monthly",
     "yearly": "Yearly",
     "viewAllProjects": "View All Projects",
-    "slogan": "NPB Property",
+    "slogan": "Amber Real Estate",
     "featuredSubtitle": "Hand-picked listings curated for you",
     "projects": "Projects",
     "featuredProjectsTitle": "Featured Projects",
@@ -179,7 +179,7 @@
     "loginError": "Invalid email or password",
     "registerSuccess": "Registration successful",
     "signinSubtitle": "Enter your credentials below to sign in",
-    "agentRegisteredNotice": "Agent account registered! Please log in — your account will be activated after NPB Property team reviews your application.",
+    "agentRegisteredNotice": "Agent account registered! Please log in — your account will be activated after Amber Real Estate team reviews your application.",
     "forgotPassword": "Forgot password?",
     "createAccount": "Create Account",
     "registerSubtitle": "Takes less than a minute",
@@ -211,7 +211,7 @@
     "changePassword": "Change Password",
     "buyerDesc": "Browse listings and save favorites",
     "ownerDesc": "List your own property",
-    "agentDesc": "Broker / Co-Agent partnering with NPB"
+    "agentDesc": "Broker / Co-Agent partnering with Amber Real Estate"
   },
   "contact": {
     "title": "Contact Us",
@@ -319,7 +319,7 @@
     "aboutUs": "About Us",
     "quickLinks": "Quick Links",
     "followUs": "Follow Us",
-    "copyright": "© 2024 NPB Property. All rights reserved."
+    "copyright": "© 2024 Amber Real Estate. All rights reserved."
   },
   "marketing": {
     "headerHint": "Share",

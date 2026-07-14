@@ -266,8 +266,8 @@ export default function CoAgentPage({
           </h1>
           <p className="text-lg text-white/70 max-w-2xl mx-auto">
             {locale === "th"
-              ? "ร่วมเป็นตัวแทนกับ NPB Property เพื่อขยายโอกาสทางธุรกิจของคุณ"
-              : "Join NPB Property as a Co-Agent to expand your business opportunities"}
+              ? "ร่วมเป็นตัวแทนกับ Amber Real Estate เพื่อขยายโอกาสทางธุรกิจของคุณ"
+              : "Join Amber Real Estate as a Co-Agent to expand your business opportunities"}
           </p>
         </div>
       </section>
@@ -654,8 +654,8 @@ export default function CoAgentPage({
                 </h3>
                 <p className="text-sm text-white/70 mb-6 leading-relaxed">
                   {locale === "th"
-                    ? "เป็นส่วนหนึ่งของทีม NPB Property ในการให้บริการลูกค้าทั่วประเทศ"
-                    : "Be part of the NPB Property team and serve clients across Thailand"}
+                    ? "เป็นส่วนหนึ่งของทีม Amber Real Estate ในการให้บริการลูกค้าทั่วประเทศ"
+                    : "Be part of the Amber Real Estate team and serve clients across Thailand"}
                 </p>
                 <ul className="space-y-2 text-sm text-white/80">
                   <li className="flex items-start gap-2">
@@ -711,8 +711,8 @@ export default function CoAgentPage({
                     </h2>
                     <p className="text-sm text-stone-500">
                       {locale === "th"
-                        ? "ยินดีต้อนรับสู่ทีมงาน NPB Property"
-                        : "Welcome to the NPB Property team"}
+                        ? "ยินดีต้อนรับสู่ทีมงาน Amber Real Estate"
+                        : "Welcome to the Amber Real Estate team"}
                     </p>
                   </>
                 ) : application.status === "PENDING" ? (

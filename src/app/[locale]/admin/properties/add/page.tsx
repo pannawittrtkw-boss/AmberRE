@@ -634,7 +634,7 @@ export default function AddPropertyPage({
           </h1>
           {isAgentMode && (
             <p className="text-sm text-amber-600 mt-0.5">
-              ทรัพย์จะถูกส่งให้ทีม NPB Property พิจารณาเผยแพร่
+              ทรัพย์จะถูกส่งให้ทีม Amber Real Estate พิจารณาเผยแพร่
             </p>
           )}
         </div>
@@ -1509,7 +1509,7 @@ export default function AddPropertyPage({
           </div>
           {isAgentMode && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-700 mb-4">
-              ทรัพย์ที่เพิ่มจะมีสถานะ <strong>รออนุมัติ (PENDING)</strong> และทีม NPB Property จะพิจารณาเผยแพร่ในระบบ
+              ทรัพย์ที่เพิ่มจะมีสถานะ <strong>รออนุมัติ (PENDING)</strong> และทีม Amber Real Estate จะพิจารณาเผยแพร่ในระบบ
             </div>
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

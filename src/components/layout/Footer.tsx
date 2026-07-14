@@ -66,7 +66,7 @@ export default function Footer({ locale, messages, logoUrl }: FooterProps) {
         {/* Bottom */}
         <div className="mt-10 pt-6 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-gray-500">
-            &copy; {new Date().getFullYear()} บ้านดี คอนโดดี NPB Property
+            &copy; {new Date().getFullYear()} บ้านดี คอนโดดี Amber Real Estate
           </p>
           <div className="flex items-center gap-4">
             <a href="#" className="text-gray-500 hover:text-[#C8A951] transition-colors">

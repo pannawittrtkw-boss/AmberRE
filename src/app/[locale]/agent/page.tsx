@@ -294,8 +294,8 @@ export default function AgentPortalPage({ params }: { params: Promise<{ locale: 
           <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
           <div className="text-xs text-amber-700 space-y-1">
             <p className="font-medium">ข้อมูลสำหรับ Co-Agent</p>
-            <p>ทรัพย์ที่คุณเพิ่มจะมีสถานะ "รออนุมัติ" และทีม NPB Property จะพิจารณาเผยแพร่ในระบบ</p>
-            <p>โปรไฟล์ของคุณ (ชื่อ, บริษัท, เบอร์, Line ID) จะแสดงในหน้ารายละเอียดทรัพย์แทนข้อมูล NPB Property</p>
+            <p>ทรัพย์ที่คุณเพิ่มจะมีสถานะ "รออนุมัติ" และทีม Amber Real Estate จะพิจารณาเผยแพร่ในระบบ</p>
+            <p>โปรไฟล์ของคุณ (ชื่อ, บริษัท, เบอร์, Line ID) จะแสดงในหน้ารายละเอียดทรัพย์แทนข้อมูล Amber Real Estate</p>
           </div>
         </div>
 

@@ -68,7 +68,7 @@ export default function LoginPage({
             <div>
               <div className="flex items-center gap-2 text-[#E8C97A] text-xs uppercase tracking-widest font-medium mb-3">
                 <span className="w-6 h-px bg-[#E8C97A]" />
-                NPB Property
+                Amber Real Estate
               </div>
               <h1 className="text-4xl xl:text-5xl font-bold leading-tight mb-4">
                 <span className="text-[#E8C97A]">{messages.home.heroTitle}</span>

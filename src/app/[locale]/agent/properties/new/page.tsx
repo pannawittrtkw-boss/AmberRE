@@ -96,7 +96,7 @@ export default function AgentPropertyNewPage({ params }: { params: Promise<{ loc
           <CheckCircle className="w-8 h-8 text-green-600" />
         </div>
         <h2 className="text-xl font-bold text-stone-900 mb-2">ส่งทรัพย์เรียบร้อยแล้ว!</h2>
-        <p className="text-sm text-stone-500 mb-6">ทรัพย์ของคุณอยู่ระหว่างการพิจารณาจากทีม NPB Property</p>
+        <p className="text-sm text-stone-500 mb-6">ทรัพย์ของคุณอยู่ระหว่างการพิจารณาจากทีม Amber Real Estate</p>
         <div className="flex justify-center gap-3">
           <Link href={`/${locale}/agent`} className="px-5 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600">
             กลับหน้า Portal
@@ -120,7 +120,7 @@ export default function AgentPropertyNewPage({ params }: { params: Promise<{ loc
             <ChevronLeft className="w-4 h-4" /> กลับ Agent Portal
           </Link>
           <h1 className="text-xl font-bold text-stone-900">เพิ่มทรัพย์ใหม่</h1>
-          <p className="text-sm text-stone-500 mt-1">ทรัพย์จะถูกส่งให้ทีม NPB พิจารณาเผยแพร่</p>
+          <p className="text-sm text-stone-500 mt-1">ทรัพย์จะถูกส่งให้ทีม Amber Real Estate พิจารณาเผยแพร่</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -244,7 +244,7 @@ export default function AgentPropertyNewPage({ params }: { params: Promise<{ loc
               </div>
               <div>
                 <label className="label">หมายเหตุ (สำหรับทีมงาน)</label>
-                <textarea value={form.note} onChange={set("note")} rows={2} className={fieldCls} placeholder="ข้อมูลเพิ่มเติมสำหรับทีม NPB..." />
+                <textarea value={form.note} onChange={set("note")} rows={2} className={fieldCls} placeholder="ข้อมูลเพิ่มเติมสำหรับทีม Amber Real Estate..." />
               </div>
             </div>
           </Section>

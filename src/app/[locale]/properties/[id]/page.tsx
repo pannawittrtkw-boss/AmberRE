@@ -152,7 +152,7 @@ export async function generateMetadata({
       : property.descriptionTh || "";
   const description = stockDescription
     ? stockDescription.replace(/\s+/g, " ").slice(0, 200)
-    : `${bedStr} • ${sizeStr} • ${priceStr} — NPB Property`;
+    : `${bedStr} • ${sizeStr} • ${priceStr} — Amber Real Estate`;
 
   const heroImage = property.images[0]?.imageUrl
     ? absoluteUrl(property.images[0].imageUrl, host, proto)
@@ -169,7 +169,7 @@ export async function generateMetadata({
       type: "article",
       url: `${proto}://${host}/${locale}/properties/${id}`,
       images: heroImage ? [{ url: heroImage }] : undefined,
-      siteName: "NPB Property",
+      siteName: "Amber Real Estate",
     },
     twitter: {
       card: "summary_large_image",
@@ -808,22 +808,22 @@ export default async function PropertyDetailPage({
                     {property.agent.coAgentApplication?.companyName && (
                       <p className="text-xs text-stone-500">{property.agent.coAgentApplication.companyName}</p>
                     )}
-                    <p className="text-xs text-amber-600 font-medium mt-0.5">Co-Agent · NPB Property</p>
+                    <p className="text-xs text-amber-600 font-medium mt-0.5">Co-Agent · Amber Real Estate</p>
                   </div>
                 </div>
               ) : (
-                /* Default NPB card */
+                /* Default Amber Real Estate card */
                 <div className="flex items-center gap-4 mb-5">
                   <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={siteSettings.logo || "/placeholder.png"}
-                      alt="NPB Property"
+                      alt="Amber Real Estate"
                       className="w-full h-full object-contain"
                     />
                   </div>
                   <div>
-                    <p className="font-bold text-stone-900">NPB Property</p>
+                    <p className="font-bold text-stone-900">Amber Real Estate</p>
                     <p className="text-xs text-stone-500">
                       {locale === "th" ? "ตัวแทนอสังหาฯ มืออาชีพ" : "Professional Real Estate Agent"}
                     </p>

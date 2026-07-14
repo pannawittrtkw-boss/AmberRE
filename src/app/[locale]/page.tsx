@@ -198,7 +198,7 @@ export default async function HomePage({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={whyUsImage}
-                  alt="Why NPB Property"
+                  alt="Why Amber Real Estate"
                   className="absolute inset-0 w-full h-full object-cover"
                 />
               ) : (

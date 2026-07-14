@@ -74,7 +74,7 @@
     "monthly": "လစဉ်",
     "yearly": "နှစ်စဉ်",
     "viewAllProjects": "ပရောဂျက်အားလုံးကြည့်ရန်",
-    "slogan": "NPB Property",
+    "slogan": "Amber Real Estate",
     "featuredSubtitle": "သင့်အတွက် ကောင်းမွန်သော အိမ်ခြံမြေများ",
     "projects": "ပရောဂျက်",
     "featuredProjectsTitle": "အကြံပြုထားသော ပရောဂျက်များ",
@@ -179,7 +179,7 @@
     "loginError": "အီးမေးလ် သို့မဟုတ် စကားဝှက် မှားယွင်းနေသည်",
     "registerSuccess": "စာရင်းသွင်းခြင်း အောင်မြင်ပါသည်",
     "signinSubtitle": "အောက်ပါအချက်အလက်များဖြည့်၍ ဝင်ရောက်ပါ",
-    "agentRegisteredNotice": "Agent အကောင့် မှတ်ပုံတင်ပြီးပါပြီ! ဝင်ရောက်ပါ — NPB Property အဖွဲ့ စစ်ဆေးပြီးနောက် သင့်အကောင့်ကို အတည်ပြုမည်ဖြစ်သည်။",
+    "agentRegisteredNotice": "Agent အကောင့် မှတ်ပုံတင်ပြီးပါပြီ! ဝင်ရောက်ပါ — Amber Real Estate အဖွဲ့ စစ်ဆေးပြီးနောက် သင့်အကောင့်ကို အတည်ပြုမည်ဖြစ်သည်။",
     "forgotPassword": "စကားဝှက်မေ့သွားပါသလား?",
     "createAccount": "အကောင့်ဖွင့်ပါ",
     "registerSubtitle": "1 မိနစ်မျှသာ ကြာမည်ဖြစ်သည်",
@@ -211,7 +211,7 @@
     "changePassword": "စကားဝှက်ပြောင်းပါ",
     "buyerDesc": "ရှာဖွေပြီး စိတ်ကြိုက်ကိုသိမ်းပါ",
     "ownerDesc": "သင့်အိမ်ခြံမြေကြောငာပါ",
-    "agentDesc": "NPB နှင့်ပူးပေါင်းသော ပွဲစား / Co-Agent"
+    "agentDesc": "Amber Real Estate နှင့်ပူးပေါင်းသော ပွဲစား / Co-Agent"
   },
   "contact": {
     "title": "ဆက်သွယ်ရန်",
@@ -319,7 +319,7 @@
     "aboutUs": "ကျွန်ုပ်တို့အကြောင်း",
     "quickLinks": "အမြန်လင့်ခ်များ",
     "followUs": "ကျွန်ုပ်တို့ကို စောင့်ကြည့်ပါ",
-    "copyright": "© 2024 NPB Property. မူပိုင်ခွင့် အားလုံးရယူထားသည်။"
+    "copyright": "© 2024 Amber Real Estate. မူပိုင်ခွင့် အားလုံးရယူထားသည်။"
   },
   "marketing": {
     "headerHint": "Facebook / LINE တင်ရန် အဆင်သင့်ဖြစ်သည်",

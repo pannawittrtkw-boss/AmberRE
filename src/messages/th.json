@@ -74,7 +74,7 @@
     "monthly": "รายเดือน",
     "yearly": "รายปี",
     "viewAllProjects": "ดูโครงการทั้งหมด",
-    "slogan": "บ้านดี คอนโดดี NPB Property",
+    "slogan": "บ้านดี คอนโดดี Amber Real Estate",
     "featuredSubtitle": "ห้องที่ดีที่สุดที่เราคัดสรรมาให้คุณ",
     "projects": "โครงการ",
     "featuredProjectsTitle": "โครงการแนะนำ",
@@ -82,7 +82,7 @@
     "uploadImageHint": "อัปโหลดรูปได้ที่หน้า Settings",
     "whyChooseUs": "ทำไมต้องเลือกเรา",
     "whyUsTitlePrefix": "บ้านดี คอนโดดี",
-    "whyUsTitleHighlight": "NPB Property",
+    "whyUsTitleHighlight": "Amber Real Estate",
     "getInTouch": "ติดต่อเรา"
   },
   "property": {
@@ -179,7 +179,7 @@
     "loginError": "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
     "registerSuccess": "สมัครสมาชิกสำเร็จ",
     "signinSubtitle": "กรอกข้อมูลด้านล่างเพื่อเข้าสู่ระบบ",
-    "agentRegisteredNotice": "สมัครสมาชิก Agent เรียบร้อยแล้ว! กรุณา Login เข้าสู่ระบบ — บัญชีของคุณจะถูก Activate หลังจากทีม NPB Property อนุมัติ",
+    "agentRegisteredNotice": "สมัครสมาชิก Agent เรียบร้อยแล้ว! กรุณา Login เข้าสู่ระบบ — บัญชีของคุณจะถูก Activate หลังจากทีม Amber Real Estate อนุมัติ",
     "forgotPassword": "ลืมรหัสผ่าน?",
     "createAccount": "สมัครสมาชิก",
     "registerSubtitle": "ใช้เวลาเพียง 1 นาทีเพื่อสร้างบัญชี",
@@ -211,7 +211,7 @@
     "changePassword": "เปลี่ยนรหัสผ่าน",
     "buyerDesc": "ค้นหาทรัพย์และบันทึกรายการโปรด",
     "ownerDesc": "ลงประกาศทรัพย์สินของคุณ",
-    "agentDesc": "นายหน้า / Co-Agent ร่วมขายกับ NPB"
+    "agentDesc": "นายหน้า / Co-Agent ร่วมขายกับ Amber Real Estate"
   },
   "contact": {
     "title": "ติดต่อเรา",
@@ -319,7 +319,7 @@
     "aboutUs": "เกี่ยวกับเรา",
     "quickLinks": "ลิงก์ด่วน",
     "followUs": "ติดตามเรา",
-    "copyright": "© 2024 NPB Property. สงวนลิขสิทธิ์"
+    "copyright": "© 2024 Amber Real Estate. สงวนลิขสิทธิ์"
   },
   "marketing": {
     "headerHint": "ข้อความพร้อมโพสต์ Facebook / LINE",
