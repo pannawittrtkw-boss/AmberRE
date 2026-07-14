@@ -221,6 +221,16 @@ const styles = StyleSheet.create({
     objectPositionY: "100%",
     marginBottom: 2,
   },
+  // Witnesses render smaller than the lessor/lessee signatures — they're a
+  // secondary confirmation, not a party to the agreement.
+  witnessSignatureImage: {
+    width: "55%",
+    height: 45,
+    objectFit: "contain",
+    objectPositionX: "50%",
+    objectPositionY: "100%",
+    marginBottom: 2,
+  },
   // Items table (sections 10.1 / 10.2 / 10.3) — Listing | Qty.
   itemTable: {
     marginTop: 4,
@@ -1073,7 +1083,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
             <View style={styles.signatureBlock}>
               {data.witness1Signature ? (
                 // eslint-disable-next-line jsx-a11y/alt-text
-                <Image src={data.witness1Signature} style={styles.signatureImage} />
+                <Image src={data.witness1Signature} style={styles.witnessSignatureImage} />
               ) : (
                 <View style={styles.signatureLine} />
               )}
@@ -1085,7 +1095,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
             <View style={styles.signatureBlock}>
               {data.witness2Signature ? (
                 // eslint-disable-next-line jsx-a11y/alt-text
-                <Image src={data.witness2Signature} style={styles.signatureImage} />
+                <Image src={data.witness2Signature} style={styles.witnessSignatureImage} />
               ) : (
                 <View style={styles.signatureLine} />
               )}
