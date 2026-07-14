@@ -591,7 +591,7 @@ export function AccPdf({ data }: { data: AccPdfData }) {
               )}
               <TText style={s.sigRole}>{roles.companyTh}</TText>
               <Text style={s.sigRoleEn}>{roles.companyEn}</Text>
-              <TText style={s.sigDate}>วันที่ / Date ___________</TText>
+              <TText style={s.sigDate}>{"วันที่ / Date " + data.date}</TText>
             </View>
 
             {/* Stamp */}
@@ -611,7 +611,7 @@ export function AccPdf({ data }: { data: AccPdfData }) {
               <View style={s.sigLine} />
               <TText style={s.sigRole}>{roles.customerTh}</TText>
               <Text style={s.sigRoleEn}>{roles.customerEn}</Text>
-              <TText style={s.sigDate}>วันที่ / Date ___________</TText>
+              <TText style={s.sigDate}>{"วันที่ / Date " + data.date}</TText>
             </View>
           </View>
         </View>
