@@ -66,7 +66,16 @@ export function splitThai(text: string): string[] {
     for (const seg of thaiSegmenter.segment(text)) {
       if (seg.segment) fragments.push(seg.segment);
     }
-    return fragments.length > 0 ? fragments : [text];
+    if (fragments.length === 0) return [text];
+    // @react-pdf/renderer clips the last glyph of a Thai string — since the
+    // last fragment renders as its own <Text> run, guard it the same way
+    // insertThaiBreaks() does.
+    const lastIdx = fragments.length - 1;
+    const last = fragments[lastIdx];
+    if (THAI_RANGE.test(last[last.length - 1])) {
+      fragments[lastIdx] = last + ZWSP;
+    }
+    return fragments;
   } catch {
     return [text];
   }
