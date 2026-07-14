@@ -54,7 +54,7 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
   return (
     <header className="bg-white sticky top-0 z-50 shadow-md border-b-2 border-[#C8A951]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-1.5">
+        <div className="flex justify-between items-center py-0.5">
           {/* Logo */}
           <Link href={`/${locale}`} className="flex items-center gap-2">
             {logoUrl ? (
