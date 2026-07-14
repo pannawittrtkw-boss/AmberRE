@@ -16,7 +16,7 @@ export default function Footer({ locale, messages, logoUrl }: FooterProps) {
           <div>
             {logoUrl && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt="บ้านดี คอนโดดี" className="h-24 mb-4 object-contain" />
+              <img src={logoUrl} alt="บ้านดี คอนโดดี" className="h-32 mb-4 object-contain" />
             )}
             <p className="text-sm text-gray-600 leading-relaxed">
               Your lens into the world of real estate. We connect you to your next home.
