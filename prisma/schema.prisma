@@ -759,6 +759,10 @@ model AccInvoice {
   docNumber    String    @unique @db.VarChar(50)
   date         DateTime
   dueDate      DateTime?
+  // Credit term used to auto-calc dueDate from date, e.g. "0" (cash/due on
+  // receipt), "7", "15", "30", "45", "60" (days). Null/empty means dueDate
+  // was set manually (custom) — not shown on the PDF.
+  creditTerm   String?   @db.VarChar(20)
   customerId   Int
   customer     AccCustomer @relation(fields: [customerId], references: [id])
   items        Json

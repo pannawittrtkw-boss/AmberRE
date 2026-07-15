@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { renderToBuffer } from "@react-pdf/renderer";
-import { AccPdf, AccPdfData, parseAccLang, formatAccDate } from "@/lib/acc-pdf";
+import { AccPdf, AccPdfData, parseAccLang, formatAccDate, formatCreditTerm } from "@/lib/acc-pdf";
 import React from "react";
 
 export const runtime = "nodejs";
@@ -34,6 +34,7 @@ export async function GET(
     docNumber: invoice.docNumber,
     date: formatAccDate(invoice.date, lang),
     dueDate: invoice.dueDate ? formatAccDate(invoice.dueDate, lang) : undefined,
+    creditTermText: formatCreditTerm(invoice.creditTerm, lang),
     companyName: company?.name ?? "",
     companyNameEn: company?.nameEn ?? undefined,
     companyAddress: company?.address ?? undefined,

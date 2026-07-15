@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
   const body = await req.json();
-  const { date, dueDate, customerId, items, subtotal, vatRate, vatAmount, totalAmount, note } = body;
+  const { date, dueDate, creditTerm, customerId, items, subtotal, vatRate, vatAmount, totalAmount, note } = body;
   if (!date || !customerId) {
     return NextResponse.json({ success: false, error: "date and customerId required" }, { status: 400 });
   }
@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
       docNumber,
       date: dateObj,
       dueDate: dueDate ? new Date(dueDate) : null,
+      creditTerm: creditTerm || null,
       customerId: parseInt(customerId, 10),
       items: items ?? [],
       subtotal,

@@ -18,6 +18,7 @@ interface Invoice {
   docNumber: string;
   date: string;
   dueDate?: string;
+  creditTerm?: string;
   customerId: number;
   customer: Customer;
   items: AccItem[];
@@ -36,6 +37,18 @@ const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
   PAID: { label: "ชำระแล้ว", cls: "bg-green-100 text-green-800" },
   CANCELLED: { label: "ยกเลิก", cls: "bg-gray-100 text-gray-600" },
 };
+
+// Value = number of credit days as a string, "" = custom (manual due date,
+// not shown on the PDF). Matches formatCreditTerm() in lib/acc-pdf.tsx.
+const CREDIT_TERM_OPTIONS = [
+  { value: "", label: "กำหนดเอง (ไม่แสดงในเอกสาร)" },
+  { value: "0", label: "เงินสด / Due on Receipt" },
+  { value: "7", label: "เครดิต 7 วัน / Net 7" },
+  { value: "15", label: "เครดิต 15 วัน / Net 15" },
+  { value: "30", label: "เครดิต 30 วัน / Net 30" },
+  { value: "45", label: "เครดิต 45 วัน / Net 45" },
+  { value: "60", label: "เครดิต 60 วัน / Net 60" },
+];
 
 function fmt(n: number) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -199,6 +212,7 @@ function InvoiceModal({
   const today = new Date().toISOString().split("T")[0];
   const [date, setDate] = useState(editing ? editing.date.split("T")[0] : today);
   const [dueDate, setDueDate] = useState(editing?.dueDate ? editing.dueDate.split("T")[0] : "");
+  const [creditTerm, setCreditTerm] = useState(editing?.creditTerm ?? "");
   const [customerId, setCustomerId] = useState(editing ? String(editing.customerId) : "");
   const [vatRate, setVatRate] = useState(editing ? Number(editing.vatRate) : 7);
   const [note, setNote] = useState(editing?.note ?? "");
@@ -206,6 +220,27 @@ function InvoiceModal({
     editing?.items?.length ? editing.items : [{ ...EMPTY_ITEM }]
   );
   const [saving, setSaving] = useState(false);
+
+  // Recompute dueDate from a given date + credit-term days. "" (custom)
+  // leaves dueDate as a freely-editable manual field, so callers only
+  // invoke this when a preset term is active.
+  const applyCreditTerm = (days: number, baseDate: string) => {
+    const d = new Date(baseDate);
+    d.setDate(d.getDate() + days);
+    setDueDate(d.toISOString().split("T")[0]);
+  };
+
+  const handleDateChange = (v: string) => {
+    setDate(v);
+    const days = parseInt(creditTerm, 10);
+    if (creditTerm !== "" && !isNaN(days)) applyCreditTerm(days, v);
+  };
+
+  const handleCreditTermChange = (v: string) => {
+    setCreditTerm(v);
+    const days = parseInt(v, 10);
+    if (v !== "" && !isNaN(days)) applyCreditTerm(days, date);
+  };
 
   const { subtotal, vatAmount, totalAmount } = calcTotals(items, vatRate);
 
@@ -233,7 +268,7 @@ function InvoiceModal({
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        date, dueDate: dueDate || null, customerId, items,
+        date, dueDate: dueDate || null, creditTerm: creditTerm || null, customerId, items,
         subtotal, vatRate, vatAmount, totalAmount, note,
       }),
     });
@@ -262,13 +297,28 @@ function InvoiceModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">วันที่ออกเอกสาร *</label>
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+              <input type="date" value={date} onChange={(e) => handleDateChange(e.target.value)}
                 className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">วันครบกำหนด</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">เครดิตเทอม</label>
+              <select value={creditTerm} onChange={(e) => handleCreditTermChange(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 bg-white">
+                {CREDIT_TERM_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                วันครบกำหนด {creditTerm !== "" && <span className="text-xs font-normal text-gray-400">(คำนวณจากเครดิตเทอม)</span>}
+              </label>
               <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200" />
+                disabled={creditTerm !== ""}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 disabled:bg-gray-50 disabled:text-gray-500" />
             </div>
           </div>
 

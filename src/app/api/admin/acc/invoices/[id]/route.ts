@@ -34,12 +34,13 @@ export async function PUT(
   }
   const { id } = await params;
   const body = await req.json();
-  const { date, dueDate, customerId, items, subtotal, vatRate, vatAmount, totalAmount, note, status } = body;
+  const { date, dueDate, creditTerm, customerId, items, subtotal, vatRate, vatAmount, totalAmount, note, status } = body;
   const invoice = await prisma.accInvoice.update({
     where: { id: parseInt(id, 10) },
     data: {
       ...(date && { date: new Date(date) }),
       dueDate: dueDate ? new Date(dueDate) : null,
+      creditTerm: creditTerm || null,
       ...(customerId && { customerId: parseInt(customerId, 10) }),
       ...(items !== undefined && { items }),
       ...(subtotal !== undefined && { subtotal }),

@@ -67,6 +67,9 @@ export interface AccPdfData {
   docNumber: string;
   date: string;
   dueDate?: string;
+  // Pre-formatted for the selected lang (e.g. "Net 30 Days" / "เครดิต 30 วัน") —
+  // build via formatCreditTerm(). Omit/undefined hides the row entirely.
+  creditTermText?: string;
   refDocNumber?: string;
   companyName: string;
   companyNameEn?: string;
@@ -190,6 +193,17 @@ function bi(th: string, en: string, lang: AccLang): string {
   if (lang === "TH") return th;
   if (lang === "EN") return en;
   return `${th} / ${en}`;
+}
+
+// term is the number of credit days as a string ("0" = cash/due on receipt),
+// or null/empty/non-numeric when the due date was set manually (custom) —
+// in which case the Credit Terms row is omitted from the PDF entirely.
+export function formatCreditTerm(term: string | null | undefined, lang: AccLang): string | undefined {
+  if (!term) return undefined;
+  const days = parseInt(term, 10);
+  if (isNaN(days)) return undefined;
+  if (lang === "EN") return days === 0 ? "Due on Receipt" : `Net ${days} Days`;
+  return days === 0 ? "เงินสด" : `เครดิต ${days} วัน`;
 }
 
 function docLabels(t: AccDocType): { th: string; en: string; color: string } {
@@ -528,6 +542,9 @@ export function AccPdf({ data }: { data: AccPdfData }) {
               <DocRow labelTh="วันที่"     labelEn="Date"      value={data.date}      color={C} lang={lang} />
               {data.dueDate && (
                 <DocRow labelTh="ครบกำหนด" labelEn="Due Date"  value={data.dueDate}   color={C} lang={lang} />
+              )}
+              {data.creditTermText && (
+                <DocRow labelTh="เครดิตเทอม" labelEn="Credit Terms" value={data.creditTermText} color={C} lang={lang} />
               )}
               {data.refDocNumber
                 ? <DocRow labelTh="อ้างถึง" labelEn="Reference" value={data.refDocNumber} color={C} lang={lang} isLast />
