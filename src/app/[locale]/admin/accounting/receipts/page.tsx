@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Loader2, Plus, Receipt, Trash2, Pencil, X, ExternalLink } from "lucide-react";
+import { Loader2, Plus, Receipt, Trash2, Pencil, X } from "lucide-react";
 import { CustomerSection, type Customer } from "../CustomerSection";
+import PdfLangMenu from "../PdfLangMenu";
 interface BillingNote { id: number; docNumber: string; status: string; totalAmount: number; items: AccItem[]; vatRate: number; subtotal: number; vatAmount: number; }
 interface Invoice { id: number; docNumber: string; status: string; totalAmount: number; items: AccItem[]; vatRate: number; subtotal: number; vatAmount: number; }
 
@@ -135,10 +136,7 @@ export default function ReceiptsPage() {
                     </td>
                     <td className="px-2 py-3">
                       <div className="flex items-center gap-1 justify-end">
-                        <a href={`/api/admin/acc/receipts/${rc.id}/pdf`} target="_blank" rel="noopener noreferrer"
-                          className="p-1.5 text-gray-400 hover:text-[#C8A951] hover:bg-amber-50 rounded" title="ดู PDF">
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
+                        <PdfLangMenu href={`/api/admin/acc/receipts/${rc.id}/pdf`} />
                         <button onClick={() => { setEditing(rc); setShowModal(true); }}
                           className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded" title="แก้ไข">
                           <Pencil className="w-3.5 h-3.5" />

@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Loader2, Plus, ClipboardList, Trash2, Pencil, X, ExternalLink } from "lucide-react";
+import { Loader2, Plus, ClipboardList, Trash2, Pencil, X } from "lucide-react";
 import { CustomerSection, type Customer } from "../CustomerSection";
+import PdfLangMenu from "../PdfLangMenu";
 
 interface Invoice {
   id: number;
@@ -146,10 +147,10 @@ export default function BillingNotesPage() {
                       </td>
                       <td className="px-2 py-3">
                         <div className="flex items-center gap-1 justify-end">
-                          <a href={`/api/admin/acc/billing-notes/${note.id}/pdf`} target="_blank" rel="noopener noreferrer"
-                            className="p-1.5 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded" title="ดู PDF">
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
+                          <PdfLangMenu
+                            href={`/api/admin/acc/billing-notes/${note.id}/pdf`}
+                            buttonHoverClass="hover:text-teal-600 hover:bg-teal-50"
+                          />
                           <button onClick={() => { setEditing(note); setShowModal(true); }}
                             className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded" title="แก้ไข">
                             <Pencil className="w-3.5 h-3.5" />

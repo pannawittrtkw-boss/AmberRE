@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Loader2, Plus, FileText, Trash2, Pencil, X, ExternalLink } from "lucide-react";
+import { Loader2, Plus, FileText, Trash2, Pencil, X } from "lucide-react";
 import { CustomerSection, type Customer } from "../CustomerSection";
+import PdfLangMenu from "../PdfLangMenu";
 
 interface AccItem {
   description: string;
@@ -140,15 +141,7 @@ export default function InvoicesPage() {
                       </td>
                       <td className="px-2 py-3">
                         <div className="flex items-center gap-1 justify-end">
-                          <a
-                            href={`/api/admin/acc/invoices/${inv.id}/pdf`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1.5 text-gray-400 hover:text-[#C8A951] hover:bg-amber-50 rounded"
-                            title="ดู PDF"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
+                          <PdfLangMenu href={`/api/admin/acc/invoices/${inv.id}/pdf`} />
                           <button
                             onClick={() => { setEditing(inv); setShowModal(true); }}
                             className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"

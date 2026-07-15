@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { renderToBuffer } from "@react-pdf/renderer";
-import { AccPdf, AccPdfData } from "@/lib/acc-pdf";
+import { AccPdf, AccPdfData, parseAccLang } from "@/lib/acc-pdf";
 import React from "react";
 
 export const runtime = "nodejs";
@@ -15,7 +15,7 @@ function fmtDate(d: Date): string {
 }
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
@@ -23,6 +23,7 @@ export async function GET(
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
   const { id } = await params;
+  const lang = parseAccLang(req.nextUrl.searchParams.get("lang"));
   const [receipt, company] = await Promise.all([
     prisma.accReceipt.findUnique({
       where: { id: parseInt(id, 10) },
@@ -60,6 +61,7 @@ export async function GET(
     totalAmount: Number(receipt.totalAmount),
     paymentMethod: receipt.paymentMethod,
     note: receipt.note ?? undefined,
+    lang,
   };
 
   try {
@@ -68,7 +70,7 @@ export async function GET(
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${receipt.docNumber}.pdf"`,
+        "Content-Disposition": `inline; filename="${receipt.docNumber}${lang !== "BOTH" ? "-" + lang : ""}.pdf"`,
       },
     });
   } catch (err: any) {

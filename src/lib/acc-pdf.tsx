@@ -46,6 +46,13 @@ function TText({ children, style, wrap }: TTextProps) {
 }
 
 export type AccDocType = "INVOICE" | "BILLING_NOTE" | "RECEIPT";
+export type AccLang = "TH" | "EN" | "BOTH";
+
+// Validates a `?lang=` query param into an AccLang, defaulting to the
+// original bilingual layout for anything missing/unrecognized.
+export function parseAccLang(value: string | null | undefined): AccLang {
+  return value === "TH" || value === "EN" ? value : "BOTH";
+}
 
 export interface AccItem {
   description: string;
@@ -86,6 +93,8 @@ export interface AccPdfData {
   totalAmount: number;
   note?: string;
   paymentMethod?: string;
+  // Defaults to "BOTH" (the original bilingual layout) when omitted.
+  lang?: AccLang;
 }
 
 const GOLD   = "#1C1C1C";
@@ -130,6 +139,15 @@ export function bahtText(num: number): string {
     result += readChunk(intStr);
   }
   return (num < 0 ? "ลบ" : "") + result + "บาทถ้วน";
+}
+
+// Joins a Thai/English label pair according to the selected doc language —
+// "th / en" for BOTH (the original bilingual layout), or just the one side
+// for TH/EN-only output.
+function bi(th: string, en: string, lang: AccLang): string {
+  if (lang === "TH") return th;
+  if (lang === "EN") return en;
+  return `${th} / ${en}`;
 }
 
 function docLabels(t: AccDocType): { th: string; en: string; color: string } {
@@ -367,23 +385,23 @@ function fmt(n: number) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function TH({ th, en, style }: { th: string; en: string; style: Style | Style[] }) {
+function TH({ th, en, style, lang }: { th: string; en: string; style: Style | Style[]; lang: AccLang }) {
   return (
     <View style={style}>
-      <TText style={s.thTh}>{th}</TText>
-      <Text style={s.thEn}>{en}</Text>
+      {lang !== "EN" && <TText style={s.thTh}>{th}</TText>}
+      {lang !== "TH" && en && <Text style={s.thEn}>{en}</Text>}
     </View>
   );
 }
 
 function DocRow({
-  labelTh, labelEn, value, isLast, color,
-}: { labelTh: string; labelEn: string; value: string; isLast?: boolean; color: string }) {
+  labelTh, labelEn, value, isLast, color, lang,
+}: { labelTh: string; labelEn: string; value: string; isLast?: boolean; color: string; lang: AccLang }) {
   return (
     <View style={isLast ? s.docInfoRowLast : s.docInfoRow}>
       <View style={s.docInfoKey}>
-        <TText style={[s.docInfoKeyTh, { color }]}>{labelTh}</TText>
-        <Text style={s.docInfoKeyEn}>{labelEn}</Text>
+        {lang !== "EN" && <TText style={[s.docInfoKeyTh, { color }]}>{labelTh}</TText>}
+        {lang !== "TH" && <Text style={s.docInfoKeyEn}>{labelEn}</Text>}
       </View>
       <TText style={s.docInfoVal}>{value}</TText>
     </View>
@@ -394,6 +412,7 @@ export function AccPdf({ data }: { data: AccPdfData }) {
   const { th: titleTh, en: titleEn, color: C } = docLabels(data.docType);
   const roles = sigRoles(data.docType);
   const hasDiscount = data.items.some((it) => (it.discountPct ?? 0) > 0);
+  const lang: AccLang = data.lang || "BOTH";
 
   return (
     <Document>
@@ -409,61 +428,63 @@ export function AccPdf({ data }: { data: AccPdfData }) {
             <Text style={s.companyName}>{data.companyName + "​"}</Text>
             {data.companyAddress && <TText style={s.companyText}>{data.companyAddress}</TText>}
             {data.companyTaxId && (
-              <TText style={s.companyText}>{"เลขประจำตัวผู้เสียภาษี / Tax ID: " + data.companyTaxId}</TText>
+              <TText style={s.companyText}>{bi("เลขประจำตัวผู้เสียภาษี", "Tax ID", lang) + ": " + data.companyTaxId}</TText>
             )}
             {data.companyPhone && (
-              <TText style={s.companyText}>{"โทร / Tel: " + data.companyPhone}</TText>
+              <TText style={s.companyText}>{bi("โทร", "Tel", lang) + ": " + data.companyPhone}</TText>
             )}
           </View>
 
           <View style={s.titleBlock}>
-            <View style={s.titleThWrap}>
-              <TText style={[s.titleTh, { color: C }]}>{titleTh}</TText>
-            </View>
-            <Text style={[s.titleEn, { color: C }]}>{titleEn}</Text>
-            <TText style={s.titleSub}>ต้นฉบับ / Original</TText>
+            {lang !== "EN" && (
+              <View style={s.titleThWrap}>
+                <TText style={[s.titleTh, { color: C }]}>{titleTh}</TText>
+              </View>
+            )}
+            {lang !== "TH" && <Text style={[s.titleEn, { color: C }]}>{titleEn}</Text>}
+            <TText style={s.titleSub}>{bi("ต้นฉบับ", "Original", lang)}</TText>
           </View>
         </View>
 
         {/* ── Customer info + Doc info ── */}
         <View style={s.customerStrip}>
-          <TText style={[s.customerLabel, { color: C }]}>ลูกค้า / CUSTOMER</TText>
+          <TText style={[s.customerLabel, { color: C }]}>{bi("ลูกค้า", "CUSTOMER", lang)}</TText>
           <View style={s.infoStrip}>
             <View style={s.customerBlock}>
               <Text style={s.customerName}>{data.customerName + "​"}</Text>
               {data.customerAddress && <TText style={s.customerText}>{data.customerAddress}</TText>}
               {data.customerTaxId && (
-                <TText style={s.customerText}>{"เลขประจำตัวผู้เสียภาษี / Tax ID: " + data.customerTaxId}</TText>
+                <TText style={s.customerText}>{bi("เลขประจำตัวผู้เสียภาษี", "Tax ID", lang) + ": " + data.customerTaxId}</TText>
               )}
               {data.customerContactName && (
                 <View style={s.contactRow}>
-                  <Text style={s.contactKey}>ผู้ติดต่อ</Text>
+                  <Text style={s.contactKey}>{bi("ผู้ติดต่อ", "Contact", lang)}</Text>
                   <TText style={s.contactVal}>{data.customerContactName}</TText>
                 </View>
               )}
               {data.customerPhone && (
                 <View style={s.contactRow}>
-                  <Text style={s.contactKey}>{"โทร / Tel"}</Text>
+                  <Text style={s.contactKey}>{bi("โทร", "Tel", lang)}</Text>
                   <Text style={s.contactVal}>{data.customerPhone}</Text>
                 </View>
               )}
               {data.customerEmail && (
                 <View style={s.contactRow}>
-                  <Text style={s.contactKey}>{"อีเมล / Email"}</Text>
+                  <Text style={s.contactKey}>{bi("อีเมล", "Email", lang)}</Text>
                   <Text style={s.contactVal}>{data.customerEmail}</Text>
                 </View>
               )}
             </View>
 
             <View style={s.docInfoWrap}>
-              <DocRow labelTh="เลขที่"     labelEn="No."       value={data.docNumber} color={C} />
-              <DocRow labelTh="วันที่"     labelEn="Date"      value={data.date}      color={C} />
+              <DocRow labelTh="เลขที่"     labelEn="No."       value={data.docNumber} color={C} lang={lang} />
+              <DocRow labelTh="วันที่"     labelEn="Date"      value={data.date}      color={C} lang={lang} />
               {data.dueDate && (
-                <DocRow labelTh="ครบกำหนด" labelEn="Due Date"  value={data.dueDate}   color={C} />
+                <DocRow labelTh="ครบกำหนด" labelEn="Due Date"  value={data.dueDate}   color={C} lang={lang} />
               )}
               {data.refDocNumber
-                ? <DocRow labelTh="อ้างถึง" labelEn="Reference" value={data.refDocNumber} color={C} isLast />
-                : <DocRow labelTh="ผู้รับ"  labelEn="Attention" value={data.customerContactName || data.customerName} color={C} isLast />
+                ? <DocRow labelTh="อ้างถึง" labelEn="Reference" value={data.refDocNumber} color={C} lang={lang} isLast />
+                : <DocRow labelTh="ผู้รับ"  labelEn="Attention" value={data.customerContactName || data.customerName} color={C} lang={lang} isLast />
               }
             </View>
           </View>
@@ -471,12 +492,12 @@ export function AccPdf({ data }: { data: AccPdfData }) {
 
         {/* ── Items Table ── */}
         <View style={s.tableHead}>
-          <TH th="#" en="" style={s.colNo} />
-          <TH th="รายละเอียด" en="Description" style={s.colDesc} />
-          <TH th="จำนวน" en="Qty" style={[s.colQty, { textAlign: "right" }]} />
-          <TH th="ราคาต่อหน่วย" en="Unit Price" style={[s.colPrice, { textAlign: "right" }]} />
-          {hasDiscount && <TH th="ส่วนลด%" en="Disc%" style={[s.colDisc, { textAlign: "right" }]} />}
-          <TH th="มูลค่า" en="Amount" style={[s.colAmt, { textAlign: "right" }]} />
+          <TH th="#" en="" style={s.colNo} lang={lang} />
+          <TH th="รายละเอียด" en="Description" style={s.colDesc} lang={lang} />
+          <TH th="จำนวน" en="Qty" style={[s.colQty, { textAlign: "right" }]} lang={lang} />
+          <TH th="ราคาต่อหน่วย" en="Unit Price" style={[s.colPrice, { textAlign: "right" }]} lang={lang} />
+          {hasDiscount && <TH th="ส่วนลด%" en="Disc%" style={[s.colDisc, { textAlign: "right" }]} lang={lang} />}
+          <TH th="มูลค่า" en="Amount" style={[s.colAmt, { textAlign: "right" }]} lang={lang} />
         </View>
         {data.items.map((item, idx) => (
           <View key={idx} style={[s.tableRow, idx % 2 === 1 ? s.tableRowAlt : {}]}>
@@ -494,28 +515,28 @@ export function AccPdf({ data }: { data: AccPdfData }) {
         {/* ── Totals ── */}
         <View style={s.totalsSection}>
           <View style={s.bahtBox}>
-            <TText style={s.bahtLabel}>จำนวนเงิน (ตัวอักษร) / Amount in Words</TText>
+            <TText style={s.bahtLabel}>{bi("จำนวนเงิน (ตัวอักษร)", "Amount in Words", lang)}</TText>
             <TText style={s.bahtVal}>{"(" + bahtText(data.totalAmount) + ")"}</TText>
           </View>
           <View style={s.totalsWrap}>
             <View style={s.totalsRow}>
               <View style={s.totalsKey}>
-                <TText style={s.totalsKeyTh}>รวมเป็นเงิน</TText>
-                <Text style={s.totalsKeyEn}>Subtotal</Text>
+                {lang !== "EN" && <TText style={s.totalsKeyTh}>รวมเป็นเงิน</TText>}
+                {lang !== "TH" && <Text style={s.totalsKeyEn}>Subtotal</Text>}
               </View>
               <Text style={s.totalsVal}>{fmt(data.subtotal)}</Text>
             </View>
             <View style={s.totalsRow}>
               <View style={s.totalsKey}>
-                <TText style={s.totalsKeyTh}>{"ภาษีมูลค่าเพิ่ม " + data.vatRate + "%"}</TText>
-                <Text style={s.totalsKeyEn}>{"VAT " + data.vatRate + "%"}</Text>
+                {lang !== "EN" && <TText style={s.totalsKeyTh}>{"ภาษีมูลค่าเพิ่ม " + data.vatRate + "%"}</TText>}
+                {lang !== "TH" && <Text style={s.totalsKeyEn}>{"VAT " + data.vatRate + "%"}</Text>}
               </View>
               <Text style={s.totalsVal}>{fmt(data.vatAmount)}</Text>
             </View>
             <View style={s.grandRow}>
               <View style={s.grandKey}>
-                <TText style={s.grandKeyTh}>จำนวนเงินรวมทั้งสิ้น</TText>
-                <Text style={s.grandKeyEn}>Grand Total (THB)</Text>
+                {lang !== "EN" && <TText style={s.grandKeyTh}>จำนวนเงินรวมทั้งสิ้น</TText>}
+                {lang !== "TH" && <Text style={s.grandKeyEn}>Grand Total (THB)</Text>}
               </View>
               <Text style={[s.grandVal, { color: C }]}>{fmt(data.totalAmount)}</Text>
             </View>
@@ -525,7 +546,7 @@ export function AccPdf({ data }: { data: AccPdfData }) {
         {/* ── Payment (Receipt) ── */}
         {data.docType === "RECEIPT" && (
           <View style={s.paymentWrap}>
-            <TText style={s.paymentKey}>วิธีชำระเงิน / Payment Method</TText>
+            <TText style={s.paymentKey}>{bi("วิธีชำระเงิน", "Payment Method", lang)}</TText>
             <View style={s.paymentRow}>
               {PAYMENT_OPTIONS.map((m) => (
                 <View key={m.key} style={s.paymentItem}>
@@ -533,8 +554,8 @@ export function AccPdf({ data }: { data: AccPdfData }) {
                     {data.paymentMethod === m.key && <Text style={s.paymentCheck}>✓</Text>}
                   </View>
                   <View>
-                    <TText style={s.paymentTh}>{m.th}</TText>
-                    <Text style={s.paymentEn}>{m.en}</Text>
+                    {lang !== "EN" && <TText style={s.paymentTh}>{m.th}</TText>}
+                    {lang !== "TH" && <Text style={s.paymentEn}>{m.en}</Text>}
                   </View>
                 </View>
               ))}
@@ -545,7 +566,7 @@ export function AccPdf({ data }: { data: AccPdfData }) {
         {/* ── Note ── */}
         {data.note && (
           <View style={s.noteWrap}>
-            <TText style={s.noteKey}>หมายเหตุ / Remark</TText>
+            <TText style={s.noteKey}>{bi("หมายเหตุ", "Remark", lang)}</TText>
             <TText style={s.noteVal}>{data.note}</TText>
           </View>
         )}
@@ -555,22 +576,22 @@ export function AccPdf({ data }: { data: AccPdfData }) {
           {(data.docType === "INVOICE" || data.docType === "BILLING_NOTE") &&
            (data.companyBankName || data.companyBankAccountNumber) && (
             <View style={s.bankWrap}>
-              <TText style={s.bankTitle}>ช่องทางการชำระเงิน / Payment Details</TText>
+              <TText style={s.bankTitle}>{bi("ช่องทางการชำระเงิน", "Payment Details", lang)}</TText>
               <View style={s.bankRow}>
                 <View style={s.bankItem}>
-                  <Text style={s.bankKey}>ธนาคาร / Bank</Text>
+                  <Text style={s.bankKey}>{bi("ธนาคาร", "Bank", lang)}</Text>
                   <TText style={s.bankVal}>
                     {[data.companyBankName, data.companyBankNameEn].filter(Boolean).join(" / ")}
                   </TText>
                 </View>
                 <View style={s.bankItem}>
-                  <Text style={s.bankKey}>ชื่อบัญชี / Account Name</Text>
+                  <Text style={s.bankKey}>{bi("ชื่อบัญชี", "Account Name", lang)}</Text>
                   <TText style={s.bankVal}>
                     {[data.companyBankAccountName, data.companyBankAccountNameEn].filter(Boolean).join(" / ")}
                   </TText>
                 </View>
                 <View style={s.bankItem}>
-                  <Text style={s.bankKey}>เลขที่บัญชี / Account No.</Text>
+                  <Text style={s.bankKey}>{bi("เลขที่บัญชี", "Account No.", lang)}</Text>
                   <Text style={s.bankVal}>{data.companyBankAccountNumber ?? "-"}</Text>
                 </View>
               </View>
@@ -580,7 +601,7 @@ export function AccPdf({ data }: { data: AccPdfData }) {
           <View style={s.sigRow}>
             {/* Company */}
             <View style={s.sigCol}>
-              <Text style={s.sigInName}>ในนาม / On behalf of</Text>
+              <Text style={s.sigInName}>{bi("ในนาม", "On behalf of", lang)}</Text>
               <Text style={s.sigEntity}>{data.companyName + "​"}</Text>
               {data.companySignatureUrl
                 ? <Image src={data.companySignatureUrl} style={s.sigImg} />
@@ -589,9 +610,9 @@ export function AccPdf({ data }: { data: AccPdfData }) {
               {data.companyAuthorizedName && (
                 <TText style={s.sigName}>{"(" + data.companyAuthorizedName + ")"}</TText>
               )}
-              <TText style={s.sigRole}>{roles.companyTh}</TText>
-              <Text style={s.sigRoleEn}>{roles.companyEn}</Text>
-              <TText style={s.sigDate}>{"วันที่ / Date " + data.date}</TText>
+              {lang !== "EN" && <TText style={s.sigRole}>{roles.companyTh}</TText>}
+              {lang !== "TH" && <Text style={s.sigRoleEn}>{roles.companyEn}</Text>}
+              <TText style={s.sigDate}>{bi("วันที่", "Date", lang) + " " + data.date}</TText>
             </View>
 
             {/* Stamp */}
@@ -599,19 +620,19 @@ export function AccPdf({ data }: { data: AccPdfData }) {
               <View style={s.stampCircle}>
                 {data.companyLogoUrl
                   ? <Image src={data.companyLogoUrl} style={s.stampImg} />
-                  : <Text style={s.stampText}>{"ตราประทับ\nCompany Seal"}</Text>}
+                  : <Text style={s.stampText}>{bi("ตราประทับ", "Company Seal", lang).replace(" / ", "\n")}</Text>}
               </View>
             </View>
 
             {/* Customer */}
             <View style={s.sigCol}>
-              <Text style={s.sigInName}>ในนาม / On behalf of</Text>
+              <Text style={s.sigInName}>{bi("ในนาม", "On behalf of", lang)}</Text>
               <Text style={s.sigEntity}>{data.customerName + "​"}</Text>
               <View style={s.sigSpace} />
               <View style={s.sigLine} />
-              <TText style={s.sigRole}>{roles.customerTh}</TText>
-              <Text style={s.sigRoleEn}>{roles.customerEn}</Text>
-              <TText style={s.sigDate}>{"วันที่ / Date " + data.date}</TText>
+              {lang !== "EN" && <TText style={s.sigRole}>{roles.customerTh}</TText>}
+              {lang !== "TH" && <Text style={s.sigRoleEn}>{roles.customerEn}</Text>}
+              <TText style={s.sigDate}>{bi("วันที่", "Date", lang) + " " + data.date}</TText>
             </View>
           </View>
         </View>
