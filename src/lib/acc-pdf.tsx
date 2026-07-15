@@ -144,6 +144,45 @@ export function bahtText(num: number): string {
   return (num < 0 ? "ลบ" : "") + result + "บาทถ้วน";
 }
 
+const ONES_EN = [
+  "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
+  "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen",
+];
+const TENS_EN = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+
+function numToWordsEn(n: number): string {
+  if (n < 20) return ONES_EN[n];
+  if (n < 100) return TENS_EN[Math.floor(n / 10)] + (n % 10 ? "-" + ONES_EN[n % 10] : "");
+  if (n < 1000) return ONES_EN[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + numToWordsEn(n % 100) : "");
+  const scales: Array<[number, string]> = [[1_000_000_000, "Billion"], [1_000_000, "Million"], [1_000, "Thousand"]];
+  for (const [value, name] of scales) {
+    if (n >= value) {
+      const whole = Math.floor(n / value);
+      const rest = n % value;
+      return numToWordsEn(whole) + " " + name + (rest ? " " + numToWordsEn(rest) : "");
+    }
+  }
+  return "";
+}
+
+export function bahtTextEn(num: number): string {
+  const intPart = Math.floor(Math.abs(num));
+  const cents = Math.round((Math.abs(num) - intPart) * 100);
+  let result = (intPart === 0 ? "Zero" : numToWordsEn(intPart)) + " Baht";
+  result += cents > 0 ? " and " + numToWordsEn(cents) + " Satang" : " Only";
+  return (num < 0 ? "Minus " : "") + result;
+}
+
+const TH_MONTHS_ABBR = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+const EN_MONTHS_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// Thai dates use the Buddhist calendar (year + 543); English dates stay
+// Gregorian with English month abbreviations.
+export function formatAccDate(d: Date, lang: AccLang): string {
+  if (lang === "EN") return `${d.getDate()} ${EN_MONTHS_ABBR[d.getMonth()]} ${d.getFullYear()}`;
+  return `${d.getDate()} ${TH_MONTHS_ABBR[d.getMonth()]} ${d.getFullYear() + 543}`;
+}
+
 // Joins a Thai/English label pair according to the selected doc language —
 // "th / en" for BOTH (the original bilingual layout), or just the one side
 // for TH/EN-only output.
@@ -524,7 +563,9 @@ export function AccPdf({ data }: { data: AccPdfData }) {
         <View style={s.totalsSection}>
           <View style={s.bahtBox}>
             <TText style={s.bahtLabel}>{bi("จำนวนเงิน (ตัวอักษร)", "Amount in Words", lang)}</TText>
-            <TText style={s.bahtVal}>{"(" + bahtText(data.totalAmount) + ")"}</TText>
+            <TText style={s.bahtVal}>
+              {"(" + (lang === "EN" ? bahtTextEn(data.totalAmount) : bahtText(data.totalAmount)) + ")"}
+            </TText>
           </View>
           <View style={s.totalsWrap}>
             <View style={s.totalsRow}>

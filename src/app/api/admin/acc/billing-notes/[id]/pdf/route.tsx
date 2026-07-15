@@ -3,16 +3,11 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { renderToBuffer } from "@react-pdf/renderer";
-import { AccPdf, AccPdfData, parseAccLang } from "@/lib/acc-pdf";
+import { AccPdf, AccPdfData, parseAccLang, formatAccDate } from "@/lib/acc-pdf";
 import React from "react";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-function fmtDate(d: Date): string {
-  const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`;
-}
 
 export async function GET(
   req: NextRequest,
@@ -37,8 +32,8 @@ export async function GET(
   const data: AccPdfData = {
     docType: "BILLING_NOTE",
     docNumber: note.docNumber,
-    date: fmtDate(note.date),
-    dueDate: note.dueDate ? fmtDate(note.dueDate) : undefined,
+    date: formatAccDate(note.date, lang),
+    dueDate: note.dueDate ? formatAccDate(note.dueDate, lang) : undefined,
     refDocNumber: note.invoice?.docNumber ?? undefined,
     companyName: company?.name ?? "",
     companyNameEn: company?.nameEn ?? undefined,
