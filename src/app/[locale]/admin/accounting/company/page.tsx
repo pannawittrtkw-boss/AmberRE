@@ -5,12 +5,15 @@ import { Loader2, Save, Building2, Upload, X, RotateCcw, CheckCircle2, PenLine, 
 
 interface CompanyForm {
   name: string;
+  nameEn: string;
   address: string;
+  addressEn: string;
   taxId: string;
   phone: string;
   logoUrl: string;
   signatureUrl: string;
   authorizedName: string;
+  authorizedNameEn: string;
   bankName: string;
   bankNameEn: string;
   bankAccountNumber: string;
@@ -19,8 +22,8 @@ interface CompanyForm {
 }
 
 const EMPTY: CompanyForm = {
-  name: "", address: "", taxId: "", phone: "",
-  logoUrl: "", signatureUrl: "", authorizedName: "",
+  name: "", nameEn: "", address: "", addressEn: "", taxId: "", phone: "",
+  logoUrl: "", signatureUrl: "", authorizedName: "", authorizedNameEn: "",
   bankName: "", bankNameEn: "", bankAccountNumber: "", bankAccountName: "", bankAccountNameEn: "",
 };
 
@@ -295,12 +298,15 @@ export default function AccountingCompanyPage() {
         if (d.success && d.data?.id) {
           setForm({
             name: d.data.name ?? "",
+            nameEn: d.data.nameEn ?? "",
             address: d.data.address ?? "",
+            addressEn: d.data.addressEn ?? "",
             taxId: d.data.taxId ?? "",
             phone: d.data.phone ?? "",
             logoUrl: d.data.logoUrl ?? "",
             signatureUrl: d.data.signatureUrl ?? "",
             authorizedName: d.data.authorizedName ?? "",
+            authorizedNameEn: d.data.authorizedNameEn ?? "",
             bankName: d.data.bankName ?? "",
             bankNameEn: d.data.bankNameEn ?? "",
             bankAccountNumber: d.data.bankAccountNumber ?? "",
@@ -353,28 +359,51 @@ export default function AccountingCompanyPage() {
 
       <div className="bg-white rounded-xl border p-6 space-y-6">
         {/* Company name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            ชื่อบริษัท / ร้านค้า <span className="text-red-500">*</span>
-          </label>
-          <input
-            value={form.name}
-            onChange={set("name")}
-            className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
-            placeholder="เช่น บริษัท แอมเบอร์ รีเอสเตท จำกัด"
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              ชื่อบริษัท / ร้านค้า (ภาษาไทย) <span className="text-red-500">*</span>
+            </label>
+            <input
+              value={form.name}
+              onChange={set("name")}
+              className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
+              placeholder="เช่น บริษัท แอมเบอร์ รีเอสเตท จำกัด"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Company Name (English)</label>
+            <input
+              value={form.nameEn}
+              onChange={set("nameEn")}
+              className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
+              placeholder="e.g. Amber Real Estate Co., Ltd."
+            />
+          </div>
         </div>
 
         {/* Address */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">ที่อยู่</label>
-          <textarea
-            value={form.address}
-            onChange={set("address")}
-            rows={3}
-            className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 resize-none"
-            placeholder="ที่อยู่บริษัท"
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">ที่อยู่ (ภาษาไทย)</label>
+            <textarea
+              value={form.address}
+              onChange={set("address")}
+              rows={3}
+              className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 resize-none"
+              placeholder="ที่อยู่บริษัท"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Address (English)</label>
+            <textarea
+              value={form.addressEn}
+              onChange={set("addressEn")}
+              rows={3}
+              className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 resize-none"
+              placeholder="Company address"
+            />
+          </div>
         </div>
 
         {/* Tax ID + Phone */}
@@ -400,14 +429,25 @@ export default function AccountingCompanyPage() {
         </div>
 
         {/* Authorized name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">ชื่อผู้มีอำนาจลงนาม</label>
-          <input
-            value={form.authorizedName}
-            onChange={set("authorizedName")}
-            className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
-            placeholder="ชื่อ-นามสกุล"
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">ชื่อผู้มีอำนาจลงนาม (ภาษาไทย)</label>
+            <input
+              value={form.authorizedName}
+              onChange={set("authorizedName")}
+              className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
+              placeholder="ชื่อ-นามสกุล"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Authorized Name (English)</label>
+            <input
+              value={form.authorizedNameEn}
+              onChange={set("authorizedNameEn")}
+              className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
+              placeholder="Full name"
+            />
+          </div>
         </div>
 
         <hr className="border-gray-100" />

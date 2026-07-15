@@ -69,12 +69,15 @@ export interface AccPdfData {
   dueDate?: string;
   refDocNumber?: string;
   companyName: string;
+  companyNameEn?: string;
   companyAddress?: string;
+  companyAddressEn?: string;
   companyTaxId?: string;
   companyPhone?: string;
   companyLogoUrl?: string | null;
   companySignatureUrl?: string | null;
   companyAuthorizedName?: string;
+  companyAuthorizedNameEn?: string;
   companyBankName?: string;
   companyBankNameEn?: string;
   companyBankAccountNumber?: string;
@@ -413,6 +416,11 @@ export function AccPdf({ data }: { data: AccPdfData }) {
   const roles = sigRoles(data.docType);
   const hasDiscount = data.items.some((it) => (it.discountPct ?? 0) > 0);
   const lang: AccLang = data.lang || "BOTH";
+  // English fields fall back to the Thai value when unset, so English-only
+  // output still shows something even if a translation hasn't been entered.
+  const companyName = lang === "EN" && data.companyNameEn ? data.companyNameEn : data.companyName;
+  const companyAddress = lang === "EN" && data.companyAddressEn ? data.companyAddressEn : data.companyAddress;
+  const companyAuthorizedName = lang === "EN" && data.companyAuthorizedNameEn ? data.companyAuthorizedNameEn : data.companyAuthorizedName;
 
   return (
     <Document>
@@ -425,8 +433,8 @@ export function AccPdf({ data }: { data: AccPdfData }) {
             : <View style={s.logoPlaceholder} />}
 
           <View style={s.companyMeta}>
-            <Text style={s.companyName}>{data.companyName + "​"}</Text>
-            {data.companyAddress && <TText style={s.companyText}>{data.companyAddress}</TText>}
+            <Text style={s.companyName}>{companyName + "​"}</Text>
+            {companyAddress && <TText style={s.companyText}>{companyAddress}</TText>}
             {data.companyTaxId && (
               <TText style={s.companyText}>{bi("เลขประจำตัวผู้เสียภาษี", "Tax ID", lang) + ": " + data.companyTaxId}</TText>
             )}
@@ -602,13 +610,13 @@ export function AccPdf({ data }: { data: AccPdfData }) {
             {/* Company */}
             <View style={s.sigCol}>
               <Text style={s.sigInName}>{bi("ในนาม", "On behalf of", lang)}</Text>
-              <Text style={s.sigEntity}>{data.companyName + "​"}</Text>
+              <Text style={s.sigEntity}>{companyName + "​"}</Text>
               {data.companySignatureUrl
                 ? <Image src={data.companySignatureUrl} style={s.sigImg} />
                 : <View style={s.sigSpace} />}
               <View style={s.sigLine} />
-              {data.companyAuthorizedName && (
-                <TText style={s.sigName}>{"(" + data.companyAuthorizedName + ")"}</TText>
+              {companyAuthorizedName && (
+                <TText style={s.sigName}>{"(" + companyAuthorizedName + ")"}</TText>
               )}
               {lang !== "EN" && <TText style={s.sigRole}>{roles.companyTh}</TText>}
               {lang !== "TH" && <Text style={s.sigRoleEn}>{roles.companyEn}</Text>}
