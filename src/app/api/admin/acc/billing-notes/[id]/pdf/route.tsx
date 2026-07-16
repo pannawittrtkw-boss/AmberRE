@@ -53,6 +53,7 @@ export async function GET(
     companySwiftCode: company?.swiftCode ?? undefined,
     companyBankBranchName: company?.bankBranchName ?? undefined,
     companyBankAddress: company?.bankAddress ?? undefined,
+    companyBankAddressEn: company?.bankAddressEn ?? undefined,
     companyCurrency: company?.currency ?? undefined,
     customerName: note.customer.name,
     customerAddress: note.customer.address ?? undefined,

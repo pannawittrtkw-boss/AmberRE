@@ -22,6 +22,7 @@ interface CompanyForm {
   swiftCode: string;
   bankBranchName: string;
   bankAddress: string;
+  bankAddressEn: string;
   currency: string;
 }
 
@@ -29,7 +30,7 @@ const EMPTY: CompanyForm = {
   name: "", nameEn: "", address: "", addressEn: "", taxId: "", phone: "",
   logoUrl: "", signatureUrl: "", authorizedName: "", authorizedNameEn: "",
   bankName: "", bankNameEn: "", bankAccountNumber: "", bankAccountName: "", bankAccountNameEn: "",
-  swiftCode: "", bankBranchName: "", bankAddress: "", currency: "THB",
+  swiftCode: "", bankBranchName: "", bankAddress: "", bankAddressEn: "", currency: "THB",
 };
 
 const CURRENCY_OPTIONS = [
@@ -330,6 +331,7 @@ export default function AccountingCompanyPage() {
             swiftCode: d.data.swiftCode ?? "",
             bankBranchName: d.data.bankBranchName ?? "",
             bankAddress: d.data.bankAddress ?? "",
+            bankAddressEn: d.data.bankAddressEn ?? "",
             currency: d.data.currency ?? "THB",
           });
         }
@@ -556,15 +558,27 @@ export default function AccountingCompanyPage() {
                 </select>
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Bank Address</label>
-              <textarea
-                value={form.bankAddress}
-                onChange={set("bankAddress")}
-                rows={2}
-                className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 resize-none"
-                placeholder="e.g. 39 Mega Bangna Shopping Center Building, 1st Floor, Unit 1634, Bangna-Trat Road Parallel Road, Bang Kaeo Subdistrict, Bang Phli District, Samut Prakan 10540."
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">ที่อยู่ธนาคาร (ภาษาไทย)</label>
+                <textarea
+                  value={form.bankAddress}
+                  onChange={set("bankAddress")}
+                  rows={2}
+                  className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 resize-none"
+                  placeholder="ที่อยู่ธนาคาร (ภาษาไทย)"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Bank Address (English)</label>
+                <textarea
+                  value={form.bankAddressEn}
+                  onChange={set("bankAddressEn")}
+                  rows={2}
+                  className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 resize-none"
+                  placeholder="e.g. 39 Mega Bangna Shopping Center Building, 1st Floor, Unit 1634, Bangna-Trat Road Parallel Road, Bang Kaeo Subdistrict, Bang Phli District, Samut Prakan 10540."
+                />
+              </div>
             </div>
           </div>
         </div>

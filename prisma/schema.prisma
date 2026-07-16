@@ -738,6 +738,7 @@ model AccountingCompany {
   swiftCode         String?  @db.VarChar(20)
   bankBranchName    String?  @db.VarChar(200)
   bankAddress       String?  @db.Text
+  bankAddressEn     String?  @db.Text
   currency          String   @default("THB") @db.VarChar(10)
   updatedAt         DateTime @updatedAt
 }

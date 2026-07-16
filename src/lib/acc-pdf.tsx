@@ -89,6 +89,7 @@ export interface AccPdfData {
   companySwiftCode?: string;
   companyBankBranchName?: string;
   companyBankAddress?: string;
+  companyBankAddressEn?: string;
   companyCurrency?: string;
   customerName: string;
   customerAddress?: string;
@@ -478,6 +479,7 @@ export function AccPdf({ data }: { data: AccPdfData }) {
   const companyName = lang === "EN" && data.companyNameEn ? data.companyNameEn : data.companyName;
   const companyAddress = lang === "EN" && data.companyAddressEn ? data.companyAddressEn : data.companyAddress;
   const companyAuthorizedName = lang === "EN" && data.companyAuthorizedNameEn ? data.companyAuthorizedNameEn : data.companyAuthorizedName;
+  const companyBankAddress = lang === "EN" && data.companyBankAddressEn ? data.companyBankAddressEn : data.companyBankAddress;
 
   return (
     <Document>
@@ -687,10 +689,10 @@ export function AccPdf({ data }: { data: AccPdfData }) {
                   )}
                 </View>
               )}
-              {data.companyBankAddress && (
+              {companyBankAddress && (
                 <View style={{ marginTop: 5 }}>
                   <Text style={s.bankKey}>{bi("ที่อยู่ธนาคาร", "Bank Address", lang)}</Text>
-                  <TText style={s.bankVal}>{data.companyBankAddress}</TText>
+                  <TText style={s.bankVal}>{companyBankAddress}</TText>
                 </View>
               )}
             </View>

@@ -24,15 +24,15 @@ export async function PUT(req: NextRequest) {
   const body = await req.json();
   const { name, nameEn, address, addressEn, taxId, phone, logoUrl, signatureUrl, authorizedName, authorizedNameEn,
           bankName, bankNameEn, bankAccountNumber, bankAccountName, bankAccountNameEn,
-          swiftCode, bankBranchName, bankAddress, currency } = body;
+          swiftCode, bankBranchName, bankAddress, bankAddressEn, currency } = body;
   const company = await prisma.accountingCompany.upsert({
     where: { id: 1 },
     update: { name, nameEn, address, addressEn, taxId, phone, logoUrl, signatureUrl, authorizedName, authorizedNameEn,
               bankName, bankNameEn, bankAccountNumber, bankAccountName, bankAccountNameEn,
-              swiftCode, bankBranchName, bankAddress, currency: currency || "THB" },
+              swiftCode, bankBranchName, bankAddress, bankAddressEn, currency: currency || "THB" },
     create: { id: 1, name: name || "", nameEn, address, addressEn, taxId, phone, logoUrl, signatureUrl, authorizedName, authorizedNameEn,
               bankName, bankNameEn, bankAccountNumber, bankAccountName, bankAccountNameEn,
-              swiftCode, bankBranchName, bankAddress, currency: currency || "THB" },
+              swiftCode, bankBranchName, bankAddress, bankAddressEn, currency: currency || "THB" },
   });
   return NextResponse.json({ success: true, data: company });
 }
