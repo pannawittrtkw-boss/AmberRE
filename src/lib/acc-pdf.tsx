@@ -86,6 +86,10 @@ export interface AccPdfData {
   companyBankAccountNumber?: string;
   companyBankAccountName?: string;
   companyBankAccountNameEn?: string;
+  companySwiftCode?: string;
+  companyBankBranchName?: string;
+  companyBankAddress?: string;
+  companyCurrency?: string;
   customerName: string;
   customerAddress?: string;
   customerTaxId?: string;
@@ -661,6 +665,34 @@ export function AccPdf({ data }: { data: AccPdfData }) {
                   <Text style={s.bankVal}>{data.companyBankAccountNumber ?? "-"}</Text>
                 </View>
               </View>
+              {(data.companySwiftCode || data.companyBankBranchName || data.companyCurrency) && (
+                <View style={[s.bankRow, { marginTop: 5 }]}>
+                  {data.companyBankBranchName && (
+                    <View style={s.bankItem}>
+                      <Text style={s.bankKey}>{bi("สาขา", "Bank and Branch", lang)}</Text>
+                      <TText style={s.bankVal}>{data.companyBankBranchName}</TText>
+                    </View>
+                  )}
+                  {data.companySwiftCode && (
+                    <View style={s.bankItem}>
+                      <Text style={s.bankKey}>{bi("รหัส Swift", "Swift Code", lang)}</Text>
+                      <Text style={s.bankVal}>{data.companySwiftCode}</Text>
+                    </View>
+                  )}
+                  {data.companyCurrency && (
+                    <View style={s.bankItem}>
+                      <Text style={s.bankKey}>{bi("สกุลเงิน", "Currency", lang)}</Text>
+                      <Text style={s.bankVal}>{data.companyCurrency}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+              {data.companyBankAddress && (
+                <View style={{ marginTop: 5 }}>
+                  <Text style={s.bankKey}>{bi("ที่อยู่ธนาคาร", "Bank Address", lang)}</Text>
+                  <TText style={s.bankVal}>{data.companyBankAddress}</TText>
+                </View>
+              )}
             </View>
           )}
           <View style={s.sigSeparator} />

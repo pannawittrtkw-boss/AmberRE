@@ -735,6 +735,10 @@ model AccountingCompany {
   bankAccountNumber String?  @db.VarChar(50)
   bankAccountName   String?  @db.VarChar(200)
   bankAccountNameEn String?  @db.VarChar(200)
+  swiftCode         String?  @db.VarChar(20)
+  bankBranchName    String?  @db.VarChar(200)
+  bankAddress       String?  @db.Text
+  currency          String   @default("THB") @db.VarChar(10)
   updatedAt         DateTime @updatedAt
 }
 

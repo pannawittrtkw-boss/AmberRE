@@ -19,13 +19,28 @@ interface CompanyForm {
   bankAccountNumber: string;
   bankAccountName: string;
   bankAccountNameEn: string;
+  swiftCode: string;
+  bankBranchName: string;
+  bankAddress: string;
+  currency: string;
 }
 
 const EMPTY: CompanyForm = {
   name: "", nameEn: "", address: "", addressEn: "", taxId: "", phone: "",
   logoUrl: "", signatureUrl: "", authorizedName: "", authorizedNameEn: "",
   bankName: "", bankNameEn: "", bankAccountNumber: "", bankAccountName: "", bankAccountNameEn: "",
+  swiftCode: "", bankBranchName: "", bankAddress: "", currency: "THB",
 };
+
+const CURRENCY_OPTIONS = [
+  { value: "THB", label: "THB - Thai Baht" },
+  { value: "USD", label: "USD - US Dollar" },
+  { value: "EUR", label: "EUR - Euro" },
+  { value: "GBP", label: "GBP - British Pound" },
+  { value: "SGD", label: "SGD - Singapore Dollar" },
+  { value: "CNY", label: "CNY - Chinese Yuan" },
+  { value: "JPY", label: "JPY - Japanese Yen" },
+];
 
 // ── Simple image uploader ─────────────────────────────────────────────────────
 function ImageUploader({
@@ -312,6 +327,10 @@ export default function AccountingCompanyPage() {
             bankAccountNumber: d.data.bankAccountNumber ?? "",
             bankAccountName: d.data.bankAccountName ?? "",
             bankAccountNameEn: d.data.bankAccountNameEn ?? "",
+            swiftCode: d.data.swiftCode ?? "",
+            bankBranchName: d.data.bankBranchName ?? "",
+            bankAddress: d.data.bankAddress ?? "",
+            currency: d.data.currency ?? "THB",
           });
         }
       })
@@ -334,7 +353,7 @@ export default function AccountingCompanyPage() {
   };
 
   const set = (k: keyof CompanyForm) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm((p) => ({ ...p, [k]: e.target.value }));
 
   if (loading) {
@@ -504,6 +523,48 @@ export default function AccountingCompanyPage() {
                   placeholder="Account name in English"
                 />
               </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Swift Code</label>
+                <input
+                  value={form.swiftCode}
+                  onChange={set("swiftCode")}
+                  className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
+                  placeholder="e.g. KASITHBKXXX"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Bank and Branch name (code)</label>
+                <input
+                  value={form.bankBranchName}
+                  onChange={set("bankBranchName")}
+                  className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
+                  placeholder="e.g. Kasikorn Bank – Mega Bangna 2 Branch"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">สกุลเงิน (Currency)</label>
+                <select
+                  value={form.currency}
+                  onChange={set("currency")}
+                  className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 bg-white"
+                >
+                  {CURRENCY_OPTIONS.map((c) => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Bank Address</label>
+              <textarea
+                value={form.bankAddress}
+                onChange={set("bankAddress")}
+                rows={2}
+                className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 resize-none"
+                placeholder="e.g. 39 Mega Bangna Shopping Center Building, 1st Floor, Unit 1634, Bangna-Trat Road Parallel Road, Bang Kaeo Subdistrict, Bang Phli District, Samut Prakan 10540."
+              />
             </div>
           </div>
         </div>
