@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Building2, Users, FileText, Star, Loader2, Settings,
   Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature, Lock, Crown, LayoutList, UserSearch, CalendarDays,
-  Receipt, ClipboardList, Building, Bot,
+  Receipt, ClipboardList, Building, Bot, CloudUpload,
 } from "lucide-react";
 
 // Full list of every menu item a CO_AGENT can ever be given access to.
@@ -51,6 +51,7 @@ const ALL_ADMIN_NAV = [
   { key: "reviews",                icon: Star,            hrefSuffix: "/reviews",                  labelKey: "reviewModeration" },
   { key: "settings",               icon: Settings,        hrefSuffix: "/settings",                 labelKey: "settings", fallback: "Settings" },
   { key: "languages",              icon: Globe,           hrefSuffix: "/settings/languages",       labelKey: "languageSettings", fallback: "ตั้งค่าภาษา" },
+  { key: "storage-migration",      icon: CloudUpload,     hrefSuffix: "/settings/storage-migration", labelKey: null, labelFallback: { th: "ย้ายไฟล์ไป Cloudflare", en: "Migrate to Cloudflare" } },
   { key: "ai-office",              icon: Bot,             hrefSuffix: "/ai-office",                labelKey: null, labelFallback: { th: "AI Office", en: "AI Office" } },
   { key: "scanlink",               icon: FileText,        hrefSuffix: "/scanlink",                 labelKey: null, labelFallback: { th: "ScanLink", en: "ScanLink" } },
 ];
@@ -185,7 +186,7 @@ export default function AdminLayout({
     return item.key;
   };
 
-  const ALWAYS_VISIBLE_ADMIN_KEYS = ["menu-config", "ai-office", "scanlink"];
+  const ALWAYS_VISIBLE_ADMIN_KEYS = ["menu-config", "ai-office", "scanlink", "storage-migration"];
   const navItems = ALL_ADMIN_NAV
     .filter((item) => ALWAYS_VISIBLE_ADMIN_KEYS.includes(item.key) || adminAllowedKeys.includes(item.key))
     .map((item) => ({
