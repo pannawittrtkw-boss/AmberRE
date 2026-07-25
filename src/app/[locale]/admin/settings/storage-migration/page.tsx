@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Loader2, CloudUpload, CheckCircle2, AlertTriangle, Play, Square } from "lucide-react";
+import { Loader2, CloudUpload, CheckCircle2, AlertTriangle, Play, Square, FolderOpen } from "lucide-react";
 
 interface RemainingBreakdown {
   propertyImages: number;
@@ -9,6 +9,14 @@ interface RemainingBreakdown {
   successStories: number;
   transactions: number;
   total: number;
+}
+
+interface LocalItem {
+  key: string;
+  model: "SuccessStory" | "PropertyImage";
+  id: number;
+  field: string;
+  filename: string;
 }
 
 export default function StorageMigrationPage() {
@@ -67,6 +75,74 @@ export default function StorageMigrationPage() {
 
   const stop = () => {
     stopRef.current = true;
+  };
+
+  // ── Local-only uploads (files that only ever existed on someone's dev machine) ──
+  const [localItems, setLocalItems] = useState<LocalItem[]>([]);
+  const [localLoading, setLocalLoading] = useState(true);
+  const [localRunning, setLocalRunning] = useState(false);
+  const [localDone, setLocalDone] = useState(0);
+  const [localMissing, setLocalMissing] = useState<string[]>([]);
+  const [localErrors, setLocalErrors] = useState<string[]>([]);
+  const folderInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchLocalItems = useCallback(async () => {
+    const res = await fetch("/api/admin/fix-local-uploads");
+    const d = await res.json();
+    if (d.success) setLocalItems(d.data.items);
+    setLocalLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchLocalItems();
+  }, [fetchLocalItems]);
+
+  const handleFolderSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    const byName = new Map<string, File>();
+    for (const f of files) byName.set(f.name, f);
+
+    setLocalRunning(true);
+    setLocalDone(0);
+    setLocalMissing([]);
+    setLocalErrors([]);
+
+    const missing: string[] = [];
+    const errors: string[] = [];
+    let done = 0;
+
+    for (const item of localItems) {
+      const file = byName.get(item.filename);
+      if (!file) {
+        missing.push(item.filename);
+        continue;
+      }
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        const upRes = await fetch("/api/upload", { method: "POST", body: fd });
+        const upData = await upRes.json();
+        if (!upData.success || !upData.data?.url) throw new Error(upData.error || "อัปโหลดไม่สำเร็จ");
+        const fixRes = await fetch("/api/admin/fix-local-uploads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ model: item.model, id: item.id, field: item.field, url: upData.data.url }),
+        });
+        const fixData = await fixRes.json();
+        if (!fixData.success) throw new Error(fixData.error || "อัปเดตฐานข้อมูลไม่สำเร็จ");
+        done++;
+        setLocalDone(done);
+      } catch (err: any) {
+        errors.push(`${item.key}: ${err?.message || err}`);
+      }
+    }
+
+    setLocalMissing(missing);
+    setLocalErrors(errors);
+    setLocalRunning(false);
+    fetchLocalItems();
+    if (folderInputRef.current) folderInputRef.current.value = "";
   };
 
   if (loading) {
@@ -179,6 +255,88 @@ export default function StorageMigrationPage() {
             )
           )}
         </div>
+      </div>
+
+      <div className="flex items-center gap-3 mb-6 mt-10">
+        <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+          <FolderOpen className="w-5 h-5 text-[#C8A951]" />
+        </div>
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">กู้คืนไฟล์ที่ยังอยู่ในเครื่อง local</h1>
+          <p className="text-sm text-gray-500">ไฟล์เก่าบางไฟล์ถูกบันทึกเป็นลิงก์ในเครื่อง dev เท่านั้น ไม่เคยขึ้น server จริง</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border p-6 space-y-6">
+        {localLoading ? (
+          <div className="flex justify-center py-6">
+            <Loader2 className="w-5 h-5 animate-spin text-[#C8A951]" />
+          </div>
+        ) : localItems.length === 0 ? (
+          <div className="flex items-center gap-2 p-4 rounded-lg bg-green-50 text-green-700">
+            <CheckCircle2 className="w-5 h-5" />
+            <span className="font-medium">ไม่มีไฟล์ที่ต้องกู้คืนแล้ว</span>
+          </div>
+        ) : (
+          <>
+            <div className="flex justify-between px-3 py-2 rounded-lg bg-amber-50 text-sm">
+              <span className="text-gray-600">ไฟล์ที่ยังเป็นลิงก์ในเครื่อง local</span>
+              <span className="font-bold text-[#C8A951]">{localItems.length} ไฟล์</span>
+            </div>
+
+            <p className="text-xs text-gray-400">
+              กดเลือกโฟลเดอร์ <code className="bg-gray-100 px-1 rounded">public/uploads</code> ในโปรเจกต์นี้
+              (เครื่องที่มีไฟล์ต้นฉบับอยู่) ระบบจะจับคู่ไฟล์ตามชื่อ อัปโหลดขึ้น Cloudflare
+              แล้วอัปเดตลิงก์ในฐานข้อมูลให้อัตโนมัติ
+            </p>
+
+            {localRunning && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>กำลังอัปโหลด... {localDone}/{localItems.length} ไฟล์</span>
+              </div>
+            )}
+
+            {localMissing.length > 0 && (
+              <div className="p-3 rounded-lg bg-amber-50 text-amber-700 text-xs space-y-1 max-h-32 overflow-y-auto">
+                <p className="font-medium">หาไฟล์ไม่พบในโฟลเดอร์ที่เลือก ({localMissing.length} ไฟล์)</p>
+                {localMissing.map((f, i) => (
+                  <p key={i} className="font-mono">{f}</p>
+                ))}
+              </div>
+            )}
+
+            {localErrors.length > 0 && (
+              <div className="p-3 rounded-lg bg-red-50 text-red-700 text-xs space-y-1 max-h-32 overflow-y-auto">
+                <p className="font-medium flex items-center gap-1">
+                  <AlertTriangle className="w-3.5 h-3.5" /> ข้อผิดพลาด ({localErrors.length} รายการ)
+                </p>
+                {localErrors.map((err, i) => (
+                  <p key={i} className="font-mono">{err}</p>
+                ))}
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2">
+              <input
+                ref={folderInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={handleFolderSelect}
+                {...({ webkitdirectory: "true", directory: "true" } as any)}
+              />
+              <button
+                onClick={() => folderInputRef.current?.click()}
+                disabled={localRunning}
+                className="inline-flex items-center gap-2 bg-[#C8A951] hover:bg-[#B8993F] disabled:opacity-50 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition-colors"
+              >
+                <FolderOpen className="w-4 h-4" />
+                เลือกโฟลเดอร์ public/uploads
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
