@@ -23,6 +23,7 @@ import {
   PenLine,
   RotateCcw,
   ExternalLink,
+  Search,
 } from "lucide-react";
 import { getIntlLocale } from "@/lib/utils";
 
@@ -796,6 +797,7 @@ export default function AdminContractsPage({
   const [stats, setStats] = useState<{ draft: number; active: number; expiringSoon: number; expired: number } | null>(null);
   const [filterYear, setFilterYear] = useState<string>(String(new Date().getFullYear()));
   const [filterMonth, setFilterMonth] = useState<string>(String(new Date().getMonth() + 1));
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     params.then(({ locale: l }) => setLocale(l));
@@ -855,6 +857,8 @@ export default function AdminContractsPage({
     const d = new Date(c.startDate);
     if (filterYear !== "all" && d.getFullYear() !== parseInt(filterYear)) return false;
     if (filterMonth !== "all" && d.getMonth() + 1 !== parseInt(filterMonth)) return false;
+    const q = searchQuery.trim().toLowerCase();
+    if (q && !c.unitNumber.toLowerCase().includes(q) && !c.projectName.toLowerCase().includes(q)) return false;
     return true;
   });
 
@@ -936,6 +940,16 @@ export default function AdminContractsPage({
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="relative">
+          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={locale === "th" ? "ค้นหาเลขที่ห้อง, ชื่อคอนโด..." : "Search room no., condo name..."}
+            className="text-sm border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white w-64"
+          />
+        </div>
         <div className="flex items-center gap-2">
           <label className="text-sm text-gray-500">{locale === "th" ? "ปี" : "Year"}</label>
           <select
@@ -966,9 +980,9 @@ export default function AdminContractsPage({
             ))}
           </select>
         </div>
-        {(filterYear !== "all" || filterMonth !== "all") && (
+        {(filterYear !== "all" || filterMonth !== "all" || searchQuery.trim()) && (
           <button
-            onClick={() => { setFilterYear("all"); setFilterMonth("all"); }}
+            onClick={() => { setFilterYear("all"); setFilterMonth("all"); setSearchQuery(""); }}
             className="text-xs text-gray-400 hover:text-gray-600 underline"
           >
             {locale === "th" ? "ล้างตัวกรอง" : "Clear"}
