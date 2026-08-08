@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Thumbs } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
@@ -64,13 +63,12 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
                 setLightboxOpen(true);
               }}
             >
-              <Image
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={img.imageUrl}
                 alt={title}
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 800px"
-                className="object-cover"
-                priority={idx === 0}
+                loading={idx === 0 ? "eager" : "lazy"}
+                className="absolute inset-0 w-full h-full object-cover"
               />
               <div className="absolute top-3 right-3 p-2 bg-black/40 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                 <Expand className="w-4 h-4" />
@@ -96,12 +94,12 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
           {images.map((img) => (
             <SwiperSlide key={img.id} className="cursor-pointer">
               <div className="relative w-full h-full">
-                <Image
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={img.imageUrl}
                   alt={title}
-                  fill
-                  sizes="120px"
-                  className="object-cover rounded-lg opacity-70 hover:opacity-100 transition-opacity"
+                  loading="lazy"
+                  className="absolute inset-0 w-full h-full object-cover rounded-lg opacity-70 hover:opacity-100 transition-opacity"
                 />
               </div>
             </SwiperSlide>
