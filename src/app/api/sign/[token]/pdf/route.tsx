@@ -18,6 +18,8 @@ import {
   STANDARD_CLAUSES,
 } from "@/lib/contract-clauses";
 import { getWitnessSettings } from "@/lib/contract-witnesses";
+import { CommissionPdf, CommissionPdfData } from "@/lib/commission-pdf";
+import { getCommissionAgentSettings } from "@/lib/contract-commission-agent";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -93,12 +95,57 @@ export async function GET(
         { lessorSignToken: token },
         { lesseeSignToken: token },
         { jointLesseeSignToken: token },
+        { commissionSignToken: token },
       ],
     },
   });
 
   if (!contract) {
     return NextResponse.json({ success: false, error: "Invalid link" }, { status: 404 });
+  }
+
+  // The commission appointment agreement is a separate document from the
+  // lease — render it instead when the token belongs to that role.
+  if (contract.commissionSignToken === token) {
+    const agent = await getCommissionAgentSettings();
+    const commissionData: CommissionPdfData = {
+      contractDateTh: fmtThaiDate(contract.contractDate),
+      startDateTh: fmtThaiDate(contract.startDate),
+      endDateTh: fmtThaiDate(contract.endDate),
+      projectName: contract.projectName,
+      unitNumber: contract.unitNumber,
+      buildingName: contract.buildingName,
+      floorNumber: contract.floorNumber,
+      propertyAddress: contract.propertyAddress,
+      sizeSqm: contract.sizeSqm ? Number(contract.sizeSqm) : null,
+      monthlyRentText: new Intl.NumberFormat("en-US").format(Number(contract.monthlyRent)),
+      ownerName: contract.lessorName,
+      ownerAddress: contract.lessorAddress,
+      ownerIdCard: contract.lessorIdCard,
+      ownerPhone: contract.lessorPhone,
+      ownerIdImage: contract.lessorIdImage,
+      ownerSignature: contract.commissionSignature,
+      agentName: agent.agentName,
+      agentAddress: agent.agentAddress,
+      agentIdCard: agent.agentIdCard,
+      agentPhone: agent.agentPhone,
+      agentIdImage: agent.agentIdImage,
+      agentSignature: agent.agentSignature,
+    };
+    try {
+      const buffer = await renderToBuffer(<CommissionPdf data={commissionData} />);
+      return new NextResponse(new Uint8Array(buffer), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `inline; filename="${contract.contractNumber}-commission.pdf"`,
+        },
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "PDF render failed";
+      console.error("Sign commission PDF render error:", err);
+      return NextResponse.json({ success: false, error: message }, { status: 500 });
+    }
   }
 
   const witnesses = await getWitnessSettings();

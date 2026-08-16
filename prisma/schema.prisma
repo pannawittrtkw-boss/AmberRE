@@ -183,6 +183,14 @@ model Contract {
   lesseeSignedAt        DateTime?
   jointLesseeSignedAt   DateTime?
 
+  // E-Sign for the broker/agent commission appointment agreement — a
+  // separate document the lessor signs alongside the lease. Only the
+  // lessor is a party to it (the agent side is fixed, see
+  // contract-commission-agent.ts), so there's just one token/signature pair.
+  commissionSignToken  String?   @unique @db.VarChar(100)
+  commissionSignature  String?   @db.Text
+  commissionSignedAt   DateTime?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   createdById Int?

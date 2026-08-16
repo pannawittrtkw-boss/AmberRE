@@ -24,6 +24,7 @@ import {
   RotateCcw,
   ExternalLink,
   Search,
+  Briefcase,
 } from "lucide-react";
 import { getIntlLocale } from "@/lib/utils";
 
@@ -53,9 +54,11 @@ type ESignInfo = {
   lessorSignToken?: string | null;
   lesseeSignToken?: string | null;
   jointLesseeSignToken?: string | null;
+  commissionSignToken?: string | null;
   lessorSignedAt?: string | null;
   lesseeSignedAt?: string | null;
   jointLesseeSignedAt?: string | null;
+  commissionSignedAt?: string | null;
 };
 
 function daysRemaining(endDate: string): number {
@@ -462,7 +465,7 @@ function ESignModal({
 
   useEffect(() => { load(); }, [contract.id]);
 
-  const generate = async (regenerate?: "lessor" | "lessee" | "joint_lessee" | "both") => {
+  const generate = async (regenerate?: "lessor" | "lessee" | "joint_lessee" | "commission" | "both") => {
     setGenerating(true);
     setError("");
     try {
@@ -748,6 +751,80 @@ function ESignModal({
                 </div>
               )}
 
+              {/* Commission agreement — generate link if token missing */}
+              {info?.lessorName && !info?.commissionSignToken && (
+                <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50 p-4">
+                  <p className="text-xs font-semibold text-gray-700 mb-0.5">
+                    สัญญาแต่งตั้งนายหน้า / Commission Agreement (ผู้ให้เช่า)
+                  </p>
+                  <p className="text-sm font-medium text-gray-900 mb-3">{info.lessorName}</p>
+                  <button
+                    onClick={() => generate("commission")}
+                    disabled={generating}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#C8A951] text-white text-xs font-medium rounded-lg hover:bg-amber-600 disabled:opacity-60"
+                  >
+                    {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PenLine className="w-3.5 h-3.5" />}
+                    สร้างลิงก์สัญญาแต่งตั้งนายหน้า
+                  </button>
+                </div>
+              )}
+
+              {info?.commissionSignToken && (
+                <div className={`rounded-xl border p-4 ${info.commissionSignedAt ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"}`}>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700">
+                        สัญญาแต่งตั้งนายหน้า / Commission Agreement (ผู้ให้เช่า)
+                      </p>
+                      <p className="text-sm font-medium text-gray-900">{info.lessorName}</p>
+                    </div>
+                    {info.commissionSignedAt ? (
+                      <span className="flex items-center gap-1 text-xs text-green-700 bg-green-100 px-2 py-1 rounded-full shrink-0">
+                        <CheckCircle2 className="w-3 h-3" /> เซ็นแล้ว
+                      </span>
+                    ) : (
+                      <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full shrink-0">
+                        รอเซ็น
+                      </span>
+                    )}
+                  </div>
+                  {info.commissionSignedAt && (
+                    <p className="text-xs text-green-600 mb-2">เซ็นเมื่อ {fmtSignedAt(info.commissionSignedAt)}</p>
+                  )}
+                  <div className="flex gap-2 items-center">
+                    <input
+                      readOnly
+                      value={buildSignUrl(info.commissionSignToken)}
+                      className="flex-1 text-xs bg-white border border-gray-200 rounded px-2 py-1.5 text-gray-600 select-all min-w-0"
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                    />
+                    <button
+                      onClick={() => copyLink("commission", info.commissionSignToken!)}
+                      className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded transition-colors ${copiedKey === "commission" ? "bg-green-500 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                    >
+                      {copiedKey === "commission" ? "✓" : locale === "th" ? "คัดลอก" : "Copy"}
+                    </button>
+                    <a
+                      href={buildSignUrl(info.commissionSignToken)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={locale === "th" ? "เปิดลิงก์" : "Open link"}
+                      className="shrink-0 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                    <button
+                      onClick={() => { if (confirm("สร้างลิงก์ใหม่? ลิงก์เดิมและลายเซ็นจะถูกลบ")) generate("commission"); }}
+                      disabled={generating}
+                      title="สร้างลิงก์ใหม่"
+                      className="shrink-0 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {error && <p className="text-xs text-red-600">{error}</p>}
             </>
           )}
@@ -905,6 +982,13 @@ export default function AdminContractsPage({
           >
             <PenLine className="w-4 h-4" />
             {locale === "th" ? "พยาน" : "Witnesses"}
+          </Link>
+          <Link
+            href={`/${locale}/admin/contracts/commission-agent`}
+            className="inline-flex items-center justify-center gap-2 bg-white border border-stone-300 hover:bg-stone-50 px-4 py-2.5 rounded-lg text-sm font-medium text-stone-700"
+          >
+            <Briefcase className="w-4 h-4" />
+            {locale === "th" ? "ข้อมูลนายหน้า" : "Commission Agent"}
           </Link>
           <Link
             href={`/${locale}/admin/contracts/new`}

@@ -15,6 +15,7 @@ export async function GET(
         { lessorSignToken: token },
         { lesseeSignToken: token },
         { jointLesseeSignToken: token },
+        { commissionSignToken: token },
       ],
     },
     select: {
@@ -28,9 +29,11 @@ export async function GET(
       lessorSignToken: true,
       lesseeSignToken: true,
       jointLesseeSignToken: true,
+      commissionSignToken: true,
       lessorSignedAt: true,
       lesseeSignedAt: true,
       jointLesseeSignedAt: true,
+      commissionSignedAt: true,
     },
   });
 
@@ -40,30 +43,37 @@ export async function GET(
 
   const isLessor = contract.lessorSignToken === token;
   const isJointLessee = contract.jointLesseeSignToken === token;
+  const isCommission = contract.commissionSignToken === token;
   // else it's the primary lessee
 
-  const role: "lessor" | "lessee" | "joint_lessee" = isLessor
+  const role: "lessor" | "lessee" | "joint_lessee" | "commission" = isLessor
     ? "lessor"
     : isJointLessee
     ? "joint_lessee"
+    : isCommission
+    ? "commission"
     : "lessee";
 
-  const signerName = isLessor
-    ? contract.lessorName
-    : isJointLessee
+  const signerName = isJointLessee
     ? (contract.jointLesseeName ?? "Joint Lessee")
+    : isLessor || isCommission
+    ? contract.lessorName
     : contract.lesseeName;
 
   const alreadySigned = isLessor
     ? !!contract.lessorSignedAt
     : isJointLessee
     ? !!contract.jointLesseeSignedAt
+    : isCommission
+    ? !!contract.commissionSignedAt
     : !!contract.lesseeSignedAt;
 
   const signedAt = isLessor
     ? contract.lessorSignedAt
     : isJointLessee
     ? contract.jointLesseeSignedAt
+    : isCommission
+    ? contract.commissionSignedAt
     : contract.lesseeSignedAt;
 
   return NextResponse.json({
@@ -92,6 +102,7 @@ export async function POST(
         { lessorSignToken: token },
         { lesseeSignToken: token },
         { jointLesseeSignToken: token },
+        { commissionSignToken: token },
       ],
     },
     select: {
@@ -99,9 +110,11 @@ export async function POST(
       lessorSignToken: true,
       lesseeSignToken: true,
       jointLesseeSignToken: true,
+      commissionSignToken: true,
       lessorSignedAt: true,
       lesseeSignedAt: true,
       jointLesseeSignedAt: true,
+      commissionSignedAt: true,
     },
   });
 
@@ -111,11 +124,14 @@ export async function POST(
 
   const isLessor = contract.lessorSignToken === token;
   const isJointLessee = contract.jointLesseeSignToken === token;
+  const isCommission = contract.commissionSignToken === token;
 
   const alreadySigned = isLessor
     ? !!contract.lessorSignedAt
     : isJointLessee
     ? !!contract.jointLesseeSignedAt
+    : isCommission
+    ? !!contract.commissionSignedAt
     : !!contract.lesseeSignedAt;
 
   if (alreadySigned) {
@@ -138,6 +154,8 @@ export async function POST(
       ? { lessorSignature: signature, lessorSignedAt: now }
       : isJointLessee
       ? { jointLesseeSignature: signature, jointLesseeSignedAt: now }
+      : isCommission
+      ? { commissionSignature: signature, commissionSignedAt: now }
       : { lesseeSignature: signature, lesseeSignedAt: now },
   });
 
