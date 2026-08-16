@@ -44,9 +44,12 @@ export function insertThaiBreaks(text: string): string {
     for (const seg of thaiSegmenter.segment(text)) {
       if (seg.segment) fragments.push(seg.segment);
     }
-    const joined = fragments.length > 1 ? fragments.join(ZWSP) : text;
-    // @react-pdf/renderer clips the last glyph of a Thai string — append ZWSP guard
-    return THAI_RANGE.test(joined[joined.length - 1]) ? joined + ZWSP : joined;
+    let joined = fragments.length > 1 ? fragments.join(ZWSP) : text;
+    // @react-pdf/renderer can clip the first or last glyph of a Thai
+    // string (seen on both ends, not just trailing) — guard both.
+    if (THAI_RANGE.test(joined[0])) joined = ZWSP + joined;
+    if (THAI_RANGE.test(joined[joined.length - 1])) joined = joined + ZWSP;
+    return joined;
   } catch {
     return text;
   }
@@ -67,9 +70,13 @@ export function splitThai(text: string): string[] {
       if (seg.segment) fragments.push(seg.segment);
     }
     if (fragments.length === 0) return [text];
-    // @react-pdf/renderer clips the last glyph of a Thai string — since the
-    // last fragment renders as its own <Text> run, guard it the same way
-    // insertThaiBreaks() does.
+    // @react-pdf/renderer can clip the first or last glyph of a Thai string
+    // — since each fragment renders as its own <Text> run, guard both ends
+    // the same way insertThaiBreaks() does.
+    const first = fragments[0];
+    if (THAI_RANGE.test(first[0])) {
+      fragments[0] = ZWSP + first;
+    }
     const lastIdx = fragments.length - 1;
     const last = fragments[lastIdx];
     if (THAI_RANGE.test(last[last.length - 1])) {

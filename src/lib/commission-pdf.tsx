@@ -132,7 +132,7 @@ export function CommissionPdf({ data }: { data: CommissionPdfData }) {
       <Page size="A4" style={styles.page} wrap>
         <View style={styles.header}>
           <TText style={styles.title}>
-            สัญญารับค่าคอมมิชชั่นการปล่อยเช่าคอนโดมิเนียมและข้อตกลงตัวแทนอสังหาริมทรัพย์
+            สัญญาแต่งตั้งและข้อตกลงตัวแทนอสังหาริมทรัพย์
           </TText>
         </View>
 
@@ -241,7 +241,8 @@ export function CommissionPdf({ data }: { data: CommissionPdfData }) {
         <TText style={styles.sectionHeading}>ข้อ 4: ข้อกำหนดกรณีพิเศษ</TText>
         <TText style={styles.bullet}>• หากผู้ว่าจ้างหาผู้เช่าเอง ผู้รับจ้างไม่มีสิทธิ์เรียกค่าคอมมิชชั่น</TText>
         <TText style={styles.bullet}>
-          • หากผู้เช่าไม่ทำสัญญาตามตกลง ผู้รับจ้างจะได้รับค่าตอบแทน 4,000 บาท (ครึ่งเดือน)
+          • หากผู้เช่าได้ทำการเงินจองเรียบร้อยแล้ว แต่ไม่ทำสัญญาตามตกลง
+          ผู้ให้เช่าจะต้องชำระค่าตอบแทนให้กับผู้รับจ้างเป็นมูลค่าเท่ากับ &quot;ครึ่งหนึ่งของมูลค่าเงินจอง&quot; ที่ผู้เช่าได้ชำระไว้
         </TText>
         <TText style={styles.bullet}>• หากผู้เช่าอยู่ไม่ครบตามสัญญา ผู้รับจ้างไม่ต้องคืนค่าคอมมิชชั่น</TText>
         <TText style={styles.bullet}>
