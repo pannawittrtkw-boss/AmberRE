@@ -40,7 +40,11 @@ type Contract = {
   unitNumber: string;
   monthlyRent: string;
   contractType: string;
+  dealType: string;
+  termMonths: number;
   status: string;
+  commissionReceived: boolean;
+  commissionPaid: boolean;
   signedPdfUrl?: string | null;
   shareToken?: string | null;
   property?: { id: number; titleTh: string; projectName: string | null } | null;
@@ -60,6 +64,18 @@ type ESignInfo = {
   jointLesseeSignedAt?: string | null;
   commissionSignedAt?: string | null;
 };
+
+// New contract: commission = 1 month's rent. Renewal: commission = rent
+// x half a month per year renewed (12mo → 0.5x, 6mo → 0.25x, prorated for
+// anything in between). Co-agent deals split the result in half.
+function calcCommission(c: Pick<Contract, "monthlyRent" | "contractType" | "termMonths" | "dealType">): number {
+  const rent = Number(c.monthlyRent) || 0;
+  let commission = c.contractType === "RENEW"
+    ? rent * (c.termMonths / 12) * 0.5
+    : rent;
+  if (c.dealType === "CO_AGENT") commission /= 2;
+  return commission;
+}
 
 function daysRemaining(endDate: string): number {
   const end = new Date(endDate);
@@ -917,6 +933,22 @@ export default function AdminContractsPage({
     }
   };
 
+  const handleCommissionToggle = async (c: Contract, field: "commissionReceived" | "commissionPaid") => {
+    const value = !c[field];
+    setContracts((prev) => prev.map((x) => (x.id === c.id ? { ...x, [field]: value } : x)));
+    try {
+      const res = await fetch(`/api/admin/contracts/${c.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: value }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "Failed");
+    } catch {
+      await refresh();
+    }
+  };
+
   const handleSignedSaved = (updated: Pick<Contract, "id" | "signedPdfUrl" | "shareToken">) => {
     setContracts((prev) =>
       prev.map((x) => x.id === updated.id ? { ...x, ...updated } : x)
@@ -1087,6 +1119,9 @@ export default function AdminContractsPage({
                 <th className="text-left py-3 px-4">{locale === "th" ? "ผู้เช่า" : "Lessee"}</th>
                 <th className="text-left py-3 px-4">{locale === "th" ? "ระยะเวลา" : "Period"}</th>
                 <th className="text-right py-3 px-4">{locale === "th" ? "ค่าเช่า/เดือน" : "Rent"}</th>
+                <th className="text-right py-3 px-4">{locale === "th" ? "ค่าคอมมิชชั่น" : "Commission"}</th>
+                <th className="text-center py-3 px-4">{locale === "th" ? "รับค่าคอม" : "Received"}</th>
+                <th className="text-center py-3 px-4">{locale === "th" ? "จ่ายค่าคอม" : "Paid"}</th>
                 <th className="text-center py-3 px-4">{locale === "th" ? "คงเหลือ" : "Remaining"}</th>
                 <th className="text-center py-3 px-4">{locale === "th" ? "สถานะ" : "Status"}</th>
                 <th className="text-right py-3 px-4">{locale === "th" ? "จัดการ" : "Actions"}</th>
@@ -1095,7 +1130,7 @@ export default function AdminContractsPage({
             <tbody>
               {filteredContracts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-gray-400">
+                  <td colSpan={11} className="text-center py-12 text-gray-400">
                     {locale === "th" ? "ไม่พบสัญญาในช่วงเวลาที่เลือก" : "No contracts found"}
                   </td>
                 </tr>
@@ -1134,6 +1169,31 @@ export default function AdminContractsPage({
                     </td>
                     <td className="py-3 px-4 text-right">
                       ฿{Number(c.monthlyRent).toLocaleString()}
+                    </td>
+                    <td className="py-3 px-4 text-right font-medium text-amber-700">
+                      ฿{calcCommission(c).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleCommissionToggle(c, "commissionReceived")}
+                        role="switch"
+                        aria-checked={c.commissionReceived}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${c.commissionReceived ? "bg-green-500" : "bg-gray-300"}`}
+                      >
+                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${c.commissionReceived ? "translate-x-4" : "translate-x-1"}`} />
+                      </button>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleCommissionToggle(c, "commissionPaid")}
+                        role="switch"
+                        aria-checked={c.commissionPaid}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${c.commissionPaid ? "bg-green-500" : "bg-gray-300"}`}
+                      >
+                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${c.commissionPaid ? "translate-x-4" : "translate-x-1"}`} />
+                      </button>
                     </td>
                     <td className="py-3 px-4 text-center">
                       {(() => {
@@ -1243,6 +1303,19 @@ export default function AdminContractsPage({
                 ))
               )}
             </tbody>
+            {filteredContracts.length > 0 && (
+              <tfoot>
+                <tr className="border-t-2 bg-gray-50 font-medium">
+                  <td colSpan={5} className="py-3 px-4 text-right text-gray-500">
+                    {locale === "th" ? "รวมค่าคอมมิชชั่น" : "Total commission"}
+                  </td>
+                  <td className="py-3 px-4 text-right text-amber-700">
+                    ฿{filteredContracts.reduce((sum, c) => sum + calcCommission(c), 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                  </td>
+                  <td colSpan={5} />
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </div>

@@ -164,6 +164,12 @@ model Contract {
   // Status
   status String @default("DRAFT") @db.VarChar(20) // DRAFT | ACTIVE | EXPIRED | TERMINATED
 
+  // Commission tracking — whether the commission for this contract has
+  // been collected from the owner, and whether it's been paid out to
+  // the team/agent. Independent of `status`.
+  commissionReceived Boolean @default(false)
+  commissionPaid     Boolean @default(false)
+
   // LINE notification group
   lineGroupId  String? @db.VarChar(100) // LINE Group ID for rent-due notifications
 

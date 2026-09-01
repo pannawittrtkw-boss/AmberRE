@@ -138,9 +138,9 @@ export async function PUT(
   }
 }
 
-// Partial update — currently scoped to `status` only. Lets the
-// contracts table flip status inline without sending the full PUT
-// payload (which clobbers any optional field missing from the body).
+// Partial update — scoped to `status` and the two commission-tracking
+// flags. Lets the contracts table flip these inline without sending the
+// full PUT payload (which clobbers any optional field missing from the body).
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -167,6 +167,8 @@ export async function PATCH(
       where: { id: contractId },
       data: {
         ...(body.status ? { status: body.status } : {}),
+        ...(typeof body.commissionReceived === "boolean" ? { commissionReceived: body.commissionReceived } : {}),
+        ...(typeof body.commissionPaid === "boolean" ? { commissionPaid: body.commissionPaid } : {}),
       },
     });
 
