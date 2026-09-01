@@ -1312,7 +1312,13 @@ export default function AdminContractsPage({
                   <td className="py-3 px-4 text-right text-amber-700">
                     ฿{filteredContracts.reduce((sum, c) => sum + calcCommission(c), 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                   </td>
-                  <td colSpan={5} />
+                  <td className="py-3 px-4 text-center text-green-700">
+                    ฿{filteredContracts.filter((c) => c.commissionReceived).reduce((sum, c) => sum + calcCommission(c), 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                  </td>
+                  <td className="py-3 px-4 text-center text-green-700">
+                    ฿{filteredContracts.filter((c) => c.commissionPaid).reduce((sum, c) => sum + calcCommission(c), 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                  </td>
+                  <td colSpan={3} />
                 </tr>
               </tfoot>
             )}
