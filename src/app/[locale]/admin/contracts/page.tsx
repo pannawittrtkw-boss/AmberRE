@@ -971,6 +971,10 @@ export default function AdminContractsPage({
     return true;
   });
 
+  const totalCommission = filteredContracts.reduce((sum, c) => sum + calcCommission(c), 0);
+  const receivedCommission = filteredContracts.filter((c) => c.commissionReceived).reduce((sum, c) => sum + calcCommission(c), 0);
+  const paidCommission = filteredContracts.filter((c) => c.commissionPaid).reduce((sum, c) => sum + calcCommission(c), 0);
+
   const copyShareLink = (c: Contract) => {
     if (!c.shareToken) return;
     const url = `${window.location.origin}/${locale}/contracts/share/${c.shareToken}`;
@@ -1310,15 +1314,20 @@ export default function AdminContractsPage({
                     {locale === "th" ? "รวมค่าคอมมิชชั่น" : "Total commission"}
                   </td>
                   <td className="py-3 px-4 text-right text-amber-700">
-                    ฿{filteredContracts.reduce((sum, c) => sum + calcCommission(c), 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    ฿{totalCommission.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                   </td>
                   <td className="py-3 px-4 text-center text-green-700">
-                    ฿{filteredContracts.filter((c) => c.commissionReceived).reduce((sum, c) => sum + calcCommission(c), 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    ฿{receivedCommission.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                   </td>
                   <td className="py-3 px-4 text-center text-green-700">
-                    ฿{filteredContracts.filter((c) => c.commissionPaid).reduce((sum, c) => sum + calcCommission(c), 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    ฿{paidCommission.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                   </td>
-                  <td colSpan={3} />
+                  <td colSpan={3} className="py-3 px-4 text-right text-gray-500">
+                    {locale === "th" ? "ผลต่าง (รับ − จ่าย)" : "Difference (recv. − paid)"}{" "}
+                    <span className={receivedCommission - paidCommission >= 0 ? "text-green-700" : "text-red-600"}>
+                      ฿{(receivedCommission - paidCommission).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    </span>
+                  </td>
                 </tr>
               </tfoot>
             )}
