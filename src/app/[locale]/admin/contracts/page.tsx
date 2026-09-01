@@ -25,6 +25,7 @@ import {
   ExternalLink,
   Search,
   Briefcase,
+  Wallet,
 } from "lucide-react";
 import { getIntlLocale } from "@/lib/utils";
 
@@ -949,6 +950,20 @@ export default function AdminContractsPage({
     }
   };
 
+  const [creatingIncomeId, setCreatingIncomeId] = useState<number | null>(null);
+  const handleCreateCommissionIncome = async (c: Contract) => {
+    setCreatingIncomeId(c.id);
+    try {
+      const res = await fetch(`/api/admin/contracts/${c.id}/commission-income`, { method: "POST" });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || (locale === "th" ? "สร้างรายการไม่สำเร็จ" : "Failed to create"));
+      alert(locale === "th" ? "Create Income completed" : "Create Income completed");
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : (locale === "th" ? "สร้างรายการไม่สำเร็จ" : "Failed to create"));
+    }
+    setCreatingIncomeId(null);
+  };
+
   const handleSignedSaved = (updated: Pick<Contract, "id" | "signedPdfUrl" | "shareToken">) => {
     setContracts((prev) =>
       prev.map((x) => x.id === updated.id ? { ...x, ...updated } : x)
@@ -1225,6 +1240,15 @@ export default function AdminContractsPage({
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center justify-end gap-1">
+                        {/* Create commission income transaction in accounting */}
+                        <button
+                          onClick={() => handleCreateCommissionIncome(c)}
+                          disabled={creatingIncomeId === c.id}
+                          title={locale === "th" ? "บันทึกรายรับค่าคอมมิชชั่นเข้าบัญชี" : "Create commission income transaction"}
+                          className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded disabled:opacity-50"
+                        >
+                          {creatingIncomeId === c.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
+                        </button>
                         {/* Payment schedule */}
                         <button
                           onClick={() => setScheduleModal(c)}
