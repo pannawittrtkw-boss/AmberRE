@@ -1322,14 +1322,23 @@ export default function AdminContractsPage({
                     <td className="py-3 px-4">
                       <div className="flex items-center justify-end gap-1">
                         {/* Create commission income transaction in accounting */}
-                        <button
-                          onClick={() => setIncomeModalContract(c)}
-                          disabled={creatingIncomeId === c.id}
-                          title={locale === "th" ? "บันทึกรายรับค่าคอมมิชชั่นเข้าบัญชี" : "Create commission income transaction"}
-                          className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded disabled:opacity-50"
-                        >
-                          {creatingIncomeId === c.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
-                        </button>
+                        {c.commissionReceived ? (
+                          <span
+                            title={locale === "th" ? "สร้างรายการรับค่าคอมมิชชั่นแล้ว" : "Income already recorded"}
+                            className="p-1.5 text-gray-300 cursor-not-allowed"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => setIncomeModalContract(c)}
+                            disabled={creatingIncomeId === c.id}
+                            title={locale === "th" ? "บันทึกรายรับค่าคอมมิชชั่นเข้าบัญชี" : "Create commission income transaction"}
+                            className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded disabled:opacity-50"
+                          >
+                            {creatingIncomeId === c.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
+                          </button>
+                        )}
                         {/* Payment schedule */}
                         <button
                           onClick={() => setScheduleModal(c)}
