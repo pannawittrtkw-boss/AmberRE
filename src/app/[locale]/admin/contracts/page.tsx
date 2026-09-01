@@ -45,6 +45,7 @@ type Contract = {
   termMonths: number;
   status: string;
   commissionReceived: boolean;
+  commissionReceivedDate?: string | null;
   commissionPaid: boolean;
   signedPdfUrl?: string | null;
   shareToken?: string | null;
@@ -875,6 +876,72 @@ function ESignModal({
   );
 }
 
+// ── Create commission income modal ───────────────────────────────────────────
+function CommissionIncomeModal({
+  contract,
+  locale,
+  submitting,
+  onClose,
+  onConfirm,
+}: {
+  contract: Contract;
+  locale: string;
+  submitting: boolean;
+  onClose: () => void;
+  onConfirm: (receivedDate: string) => void;
+}) {
+  const [receivedDate, setReceivedDate] = useState(contract.startDate.slice(0, 10));
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b">
+          <div className="flex items-center gap-2">
+            <Wallet className="w-4 h-4 text-emerald-600" />
+            <h3 className="font-semibold text-gray-900">
+              {locale === "th" ? "บันทึกรายรับค่าคอมมิชชั่น" : "Record Commission Income"}
+            </h3>
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-4">
+          <p className="text-sm text-gray-500">
+            {contract.contractNumber} · {contract.projectName} #{contract.unitNumber}
+          </p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              {locale === "th" ? "วันที่ได้รับเงิน" : "Date payment received"}
+            </label>
+            <input
+              type="date"
+              value={receivedDate}
+              onChange={(e) => setReceivedDate(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t bg-gray-50 rounded-b-xl">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
+            {locale === "th" ? "ยกเลิก" : "Cancel"}
+          </button>
+          <button
+            onClick={() => onConfirm(receivedDate)}
+            disabled={submitting || !receivedDate}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 rounded-lg"
+          >
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
+            {locale === "th" ? "สร้างรายการ" : "Create"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main page ───────────────────────────────────────────────────────────────
 export default function AdminContractsPage({
   params,
@@ -951,13 +1018,22 @@ export default function AdminContractsPage({
   };
 
   const [creatingIncomeId, setCreatingIncomeId] = useState<number | null>(null);
-  const handleCreateCommissionIncome = async (c: Contract) => {
+  const [incomeModalContract, setIncomeModalContract] = useState<Contract | null>(null);
+  const handleCreateCommissionIncome = async (c: Contract, receivedDate: string) => {
     setCreatingIncomeId(c.id);
     try {
-      const res = await fetch(`/api/admin/contracts/${c.id}/commission-income`, { method: "POST" });
+      const res = await fetch(`/api/admin/contracts/${c.id}/commission-income`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ receivedDate }),
+      });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || (locale === "th" ? "สร้างรายการไม่สำเร็จ" : "Failed to create"));
-      alert(locale === "th" ? "Create Income completed" : "Create Income completed");
+      setContracts((prev) =>
+        prev.map((x) => (x.id === c.id ? { ...x, ...data.data.contract } : x))
+      );
+      setIncomeModalContract(null);
+      alert("Create Income completed");
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : (locale === "th" ? "สร้างรายการไม่สำเร็จ" : "Failed to create"));
     }
@@ -1202,6 +1278,11 @@ export default function AdminContractsPage({
                       >
                         <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${c.commissionReceived ? "translate-x-4" : "translate-x-1"}`} />
                       </button>
+                      {c.commissionReceivedDate && (
+                        <div className="text-[10px] text-gray-400 mt-1">
+                          {new Date(c.commissionReceivedDate).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+                        </div>
+                      )}
                     </td>
                     <td className="py-3 px-4 text-center">
                       <button
@@ -1242,7 +1323,7 @@ export default function AdminContractsPage({
                       <div className="flex items-center justify-end gap-1">
                         {/* Create commission income transaction in accounting */}
                         <button
-                          onClick={() => handleCreateCommissionIncome(c)}
+                          onClick={() => setIncomeModalContract(c)}
                           disabled={creatingIncomeId === c.id}
                           title={locale === "th" ? "บันทึกรายรับค่าคอมมิชชั่นเข้าบัญชี" : "Create commission income transaction"}
                           className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded disabled:opacity-50"
@@ -1388,6 +1469,17 @@ export default function AdminContractsPage({
             setContracts((prev) => prev.map((x) => (x.id === updated.id ? { ...x, ...updated } : x)));
             setEsignModal((prev) => (prev ? { ...prev, ...updated } : null));
           }}
+        />
+      )}
+
+      {/* Commission income creation modal */}
+      {incomeModalContract && (
+        <CommissionIncomeModal
+          contract={incomeModalContract}
+          locale={locale}
+          submitting={creatingIncomeId === incomeModalContract.id}
+          onClose={() => setIncomeModalContract(null)}
+          onConfirm={(receivedDate) => handleCreateCommissionIncome(incomeModalContract, receivedDate)}
         />
       )}
     </div>

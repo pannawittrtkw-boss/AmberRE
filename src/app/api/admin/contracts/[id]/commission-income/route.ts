@@ -41,7 +41,7 @@ function buildDescription(c: {
 }
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
@@ -56,6 +56,12 @@ export async function POST(
     return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
   }
 
+  const body = await req.json().catch(() => ({}));
+  const receivedDate = body.receivedDate ? new Date(body.receivedDate) : null;
+  if (!receivedDate || isNaN(receivedDate.getTime())) {
+    return NextResponse.json({ success: false, error: "Missing or invalid receivedDate" }, { status: 400 });
+  }
+
   const description = buildDescription(contract);
   const amount = calcCommission(
     Number(contract.monthlyRent),
@@ -64,8 +70,10 @@ export async function POST(
     contract.dealType
   );
 
-  const monthStart = new Date(contract.startDate.getFullYear(), contract.startDate.getMonth(), 1);
-  const monthEnd = new Date(contract.startDate.getFullYear(), contract.startDate.getMonth() + 1, 1);
+  // Duplicate check is scoped to the month of the receive date, since
+  // that's the field the transaction is now actually stored under.
+  const monthStart = new Date(receivedDate.getFullYear(), receivedDate.getMonth(), 1);
+  const monthEnd = new Date(receivedDate.getFullYear(), receivedDate.getMonth() + 1, 1);
 
   const existing = await prisma.transaction.findFirst({
     where: {
@@ -85,17 +93,33 @@ export async function POST(
   }
 
   const userId = Number((session.user as any).id);
-  const txn = await prisma.transaction.create({
+  const [txn, updatedContract] = await prisma.$transaction([
+    prisma.transaction.create({
+      data: {
+        date: receivedDate,
+        amount,
+        type: "INCOME",
+        recordType: "ACTUAL",
+        category: "Commission Rent",
+        description,
+        createdById: userId || null,
+      },
+    }),
+    // Stamp the contract with when the commission was actually received —
+    // separate from `commissionReceived`, which can also be flipped
+    // manually without going through this flow.
+    prisma.contract.update({
+      where: { id: contract.id },
+      data: { commissionReceived: true, commissionReceivedDate: receivedDate },
+      select: { commissionReceived: true, commissionReceivedDate: true },
+    }),
+  ]);
+
+  return NextResponse.json({
+    success: true,
     data: {
-      date: contract.startDate,
-      amount,
-      type: "INCOME",
-      recordType: "ACTUAL",
-      category: "Commission Rent",
-      description,
-      createdById: userId || null,
+      transaction: { ...txn, amount: Number(txn.amount) },
+      contract: updatedContract,
     },
   });
-
-  return NextResponse.json({ success: true, data: { ...txn, amount: Number(txn.amount) } });
 }
