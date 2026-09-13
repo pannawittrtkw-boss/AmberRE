@@ -66,7 +66,9 @@ const FIELD_LABEL: Record<FieldKey, string> = {
   nearbyStations: "สถานี",
 };
 
-const BATCH_SIZE = 8;
+// Kept small since the API route now processes each item sequentially
+// (with a throttle) to stay under Gemini's free-tier rate limit.
+const BATCH_SIZE = 6;
 
 export default function PropertiesAiEnrichPage({
   params,
@@ -243,10 +245,11 @@ export default function PropertiesAiEnrichPage({
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900 mb-5">
         <p className="text-xs leading-relaxed">
-          AI จะอ่านชื่อ/คำอธิบาย/ที่อยู่ที่มีอยู่แล้วในระบบ แล้วเสนอค่าประเภททรัพย์สิน, ประเภทประกาศ,
-          ราคาเช่า, ราคาขาย และสถานีใกล้เคียง — ถ้าไม่มีข้อมูลชัดเจนพอจะคงค่าปัจจุบันไว้ ไม่มีการเดา
+          <strong>สถานีใกล้เคียง</strong>ตรวจด้วยการจับคู่ชื่อสถานีในข้อความตรงๆ (ไม่ใช้ AI ฟรี 100%)
+          ส่วน<strong>ประเภททรัพย์สิน, ประเภทประกาศ, ราคาเช่า, ราคาขาย</strong> ให้ Gemini (ฟรีเทียร์) อ่านชื่อ/คำอธิบาย/ที่อยู่ที่มีอยู่แล้วในระบบแล้วเสนอค่าให้
+          — ถ้าไม่มีข้อมูลชัดเจนพอจะคงค่าปัจจุบันไว้ ไม่มีการเดา
           ระบบจะ<strong>ไม่บันทึกอะไรเลย</strong>จนกว่าจะติ๊กเลือกทีละช่องแล้วกด &quot;บันทึกที่เลือกไว้&quot;
-          ด้านล่าง — ตรวจสอบทั้งหมด {rows.length} รายการ (สถานะ Verified)
+          ด้านล่าง — ตรวจสอบทั้งหมด {rows.length} รายการ (สถานะ Verified) — เพราะเป็น free tier การรันทั้งหมดจะใช้เวลานานกว่าปกติ
         </p>
       </div>
 

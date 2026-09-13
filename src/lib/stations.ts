@@ -445,3 +445,31 @@ export const LINES: LineData[] = [
     ],
   },
 ];
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Deterministic (no AI, no cost) station lookup: flags a station as
+// "mentioned" if its Thai name appears anywhere in the text, or its
+// English name appears as a whole word. Free and won't hallucinate a
+// station that isn't actually named in the text — the tradeoff is it
+// only finds stations that are literally named, so it won't catch a
+// station referred to some other way.
+export function matchStationsInText(text: string): string[] {
+  if (!text) return [];
+  const matched = new Set<string>();
+  for (const line of LINES) {
+    for (const s of line.stations) {
+      if (s.nameTh && text.includes(s.nameTh)) {
+        matched.add(s.code);
+        continue;
+      }
+      if (s.nameEn) {
+        const re = new RegExp(`\\b${escapeRegex(s.nameEn)}\\b`, "i");
+        if (re.test(text)) matched.add(s.code);
+      }
+    }
+  }
+  return Array.from(matched);
+}
