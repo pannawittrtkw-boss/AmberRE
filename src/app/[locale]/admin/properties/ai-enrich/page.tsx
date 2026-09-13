@@ -38,6 +38,7 @@ interface RowState {
   suggested?: FieldValues;
   checked: Partial<Record<FieldKey, boolean>>;
   status: "pending" | "loading" | "done" | "error";
+  errorMessage?: string;
 }
 
 function fieldsDiffer(a: FieldValues, b: FieldValues, key: FieldKey): boolean {
@@ -108,7 +109,9 @@ export default function PropertiesAiEnrichPage({
     setError("");
     setApplyResult("");
 
-    const pendingIds = rows.filter((r) => r.status === "pending").map((r) => r.property.id);
+    // Retry errored rows too, so a transient failure (or one fixed by
+    // re-running) doesn't permanently strand those properties.
+    const pendingIds = rows.filter((r) => r.status === "pending" || r.status === "error").map((r) => r.property.id);
 
     for (let i = 0; i < pendingIds.length; i += BATCH_SIZE) {
       if (stopRef.current) break;
@@ -126,7 +129,7 @@ export default function PropertiesAiEnrichPage({
           prev.map((r) => {
             const result = data.data.find((x: { id: number }) => x.id === r.property.id);
             if (!result) return r;
-            if (!result.success) return { ...r, status: "error" };
+            if (!result.success) return { ...r, status: "error", errorMessage: result.error };
             const suggested: FieldValues = result.suggested;
             const checked: Partial<Record<FieldKey, boolean>> = {};
             for (const key of FIELD_KEYS) {
@@ -138,8 +141,13 @@ export default function PropertiesAiEnrichPage({
         );
         setProcessedCount((n) => n + batch.length);
       } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : "เกิดข้อผิดพลาด");
-        setRows((prev) => prev.map((r) => (batch.includes(r.property.id) ? { ...r, status: "error" } : r)));
+        const message = e instanceof Error ? e.message : "เกิดข้อผิดพลาด";
+        setError(message);
+        setRows((prev) => prev.map((r) => (batch.includes(r.property.id) ? { ...r, status: "error", errorMessage: message } : r)));
+        // A whole-batch failure (network/auth/config) will fail identically
+        // for every remaining batch too — stop instead of burning through
+        // all of them with the same error.
+        break;
       }
     }
 
@@ -162,6 +170,7 @@ export default function PropertiesAiEnrichPage({
     (r) => r.suggested && FIELD_KEYS.some((k) => fieldsDiffer(r.property, r.suggested!, k))
   );
   const visibleRows = onlyDiffs ? changedRows : rows.filter((r) => r.status === "done");
+  const erroredRows = rows.filter((r) => r.status === "error");
   const selectedCount = rows.reduce(
     (sum, r) => sum + FIELD_KEYS.filter((k) => r.checked[k]).length,
     0
@@ -247,6 +256,20 @@ export default function PropertiesAiEnrichPage({
         </div>
       )}
 
+      {erroredRows.length > 0 && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs mb-4 p-3 max-h-40 overflow-y-auto">
+          <p className="font-medium flex items-center gap-1 mb-1.5">
+            <AlertTriangle className="w-3.5 h-3.5" /> วิเคราะห์ไม่สำเร็จ {erroredRows.length} รายการ
+          </p>
+          {erroredRows.slice(0, 20).map((r) => (
+            <p key={r.property.id} className="font-mono">
+              #{r.property.id} {r.property.titleTh}: {r.errorMessage || "unknown error"}
+            </p>
+          ))}
+          {erroredRows.length > 20 && <p>...และอีก {erroredRows.length - 20} รายการ</p>}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-3 mb-4">
         {running ? (
           <button
@@ -258,7 +281,7 @@ export default function PropertiesAiEnrichPage({
         ) : (
           <button
             onClick={start}
-            disabled={rows.every((r) => r.status !== "pending")}
+            disabled={rows.every((r) => r.status !== "pending" && r.status !== "error")}
             className="inline-flex items-center gap-2 bg-[#C8A951] hover:bg-[#B8993F] disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium"
           >
             <Sparkles className="w-4 h-4" /> เริ่มวิเคราะห์
@@ -291,7 +314,11 @@ export default function PropertiesAiEnrichPage({
               {visibleRows.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="text-center py-10 text-gray-400">
-                    {rows.some((r) => r.status === "done") ? "ไม่มีรายการที่ต้องแก้ไข" : "ยังไม่ได้เริ่มวิเคราะห์"}
+                    {rows.some((r) => r.status === "done")
+                      ? "ไม่มีรายการที่ต้องแก้ไข"
+                      : rows.some((r) => r.status === "error")
+                      ? "วิเคราะห์ไม่สำเร็จเลยสักรายการ — ดูสาเหตุด้านบน"
+                      : "ยังไม่ได้เริ่มวิเคราะห์"}
                   </td>
                 </tr>
               ) : (

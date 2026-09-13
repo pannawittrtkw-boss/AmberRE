@@ -155,7 +155,8 @@ ${info}
         return { id: p.id, success: true, suggested };
       } catch (err) {
         console.error(`[ai-enrich] property ${p.id} failed:`, err);
-        return { id: p.id, success: false, error: "AI suggestion failed" };
+        const message = err instanceof Error ? err.message : "AI suggestion failed";
+        return { id: p.id, success: false, error: message };
       }
     })
   );
