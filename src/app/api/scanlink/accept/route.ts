@@ -5,11 +5,22 @@ import { pushMessage, STATUS_LABEL } from "@/app/api/line/url-checker/route";
 
 export async function POST(req: NextRequest) {
   try {
-    const { urlId, status, fullyFurnished, fullyElectric, readyToMoveIn, availableDate, remark, seq, by, condoName, price, stationIds } = await req.json();
+    const { urlId, status, fullyFurnished, fullyElectric, readyToMoveIn, availableDate, remark, seq, by, condoName, propertyType, listingType, price, salePrice, stationIds } = await req.json();
 
     if (!urlId || !status) {
       return NextResponse.json({ success: false, error: "Missing params" }, { status: 400 });
     }
+    if (!condoName || !String(condoName).trim()) {
+      return NextResponse.json({ success: false, error: "Missing project name" }, { status: 400 });
+    }
+    if (price == null || salePrice == null) {
+      return NextResponse.json({ success: false, error: "Missing rent price or sale price" }, { status: 400 });
+    }
+
+    const PROPERTY_TYPES = ["CONDO", "HOUSE", "TOWNHOUSE", "LAND"];
+    const LISTING_TYPES = ["RENT", "SALE", "RENT_AND_SALE"];
+    const safePropertyType = PROPERTY_TYPES.includes(propertyType) ? propertyType : "CONDO";
+    const safeListingType = LISTING_TYPES.includes(listingType) ? listingType : "RENT";
 
     const urlRecord = await prisma.lineUrlHistory.findFirst({
       where: { id: Number(urlId) },
@@ -29,11 +40,12 @@ export async function POST(req: NextRequest) {
     }
 
     const propData: Prisma.PropertyUncheckedCreateInput = {
-      titleTh:         condoName || "รายการใหม่ (จาก ScanLink)",
-      propertyType:    "CONDO",
-      listingType:     "RENT",
-      price:           new Prisma.Decimal(price ?? 0),
-      projectName:     condoName || undefined,
+      titleTh:         condoName,
+      propertyType:    safePropertyType,
+      listingType:     safeListingType,
+      price:           new Prisma.Decimal(price),
+      salePrice:       new Prisma.Decimal(salePrice),
+      projectName:     condoName,
       sourceLink:      urlRecord.url,
       status:          "VERIFIED",
       foreignerAccept: status === "ACCEPT_ALL" ? "ACCEPT" : "NOT_ACCEPT",
@@ -60,7 +72,9 @@ export async function POST(req: NextRequest) {
 
     const infoLines = [
       condoName ? `Name : ${condoName}` : null,
-      price != null ? `Price : ${price}` : null,
+      `Type : ${safePropertyType} (${safeListingType})`,
+      price != null ? `Rent Price : ${price}` : null,
+      salePrice != null ? `Sale Price : ${salePrice}` : null,
       Array.isArray(stationIds) && stationIds.length ? `Stations : ${stationIds.join(", ")}` : null,
     ].filter(Boolean).join("\n");
 
@@ -108,7 +122,9 @@ export async function POST(req: NextRequest) {
 
       const readyToPostLines = [
         condoName ? `Name : ${condoName}` : null,
-        price != null ? `Price : ${price}` : null,
+        `Type : ${safePropertyType} (${safeListingType})`,
+        price != null ? `Rent Price : ${price}` : null,
+        salePrice != null ? `Sale Price : ${salePrice}` : null,
       ].filter(Boolean).join("\n");
 
       const readyToPostSections = [

@@ -19,7 +19,10 @@ function ScanlinkAcceptForm() {
     "✅ Accepted";
 
   const [condoName, setCondoName] = useState("");
+  const [propertyType, setPropertyType] = useState("CONDO");
+  const [listingType, setListingType] = useState("RENT");
   const [price, setPrice] = useState("");
+  const [salePrice, setSalePrice] = useState("");
   const [furnished, setFurnished] = useState(false);
   const [electric, setElectric] = useState(false);
   const [ready, setReady] = useState(false);
@@ -42,8 +45,12 @@ function ScanlinkAcceptForm() {
     .slice(0, 3);
 
   const handleSubmit = async () => {
-    setSubmitting(true);
     setError("");
+    if (!condoName.trim()) { setError("กรุณากรอกชื่อโครงการ"); return; }
+    if (!price.trim()) { setError("กรุณากรอกราคาเช่า"); return; }
+    if (!salePrice.trim()) { setError("กรุณากรอกราคาขาย"); return; }
+
+    setSubmitting(true);
     try {
       const res = await fetch("/api/scanlink/accept", {
         method: "POST",
@@ -58,8 +65,11 @@ function ScanlinkAcceptForm() {
           readyToMoveIn: ready,
           availableDate: ready ? null : (availDate || null),
           remark,
-          condoName: condoName.trim() || null,
-          price: price.trim() ? Number(price) : null,
+          condoName: condoName.trim(),
+          propertyType,
+          listingType,
+          price: Number(price),
+          salePrice: Number(salePrice),
           stationIds: selectedStations,
         }),
       });
@@ -94,10 +104,10 @@ function ScanlinkAcceptForm() {
           {by && <div className="text-white/55 text-xs mt-1">By {by}</div>}
         </div>
 
-        {/* Condo name */}
+        {/* Project name */}
         <div className="px-5 pt-3 pb-2 border-t border-gray-100">
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            🏢 ชื่อคอนโด <span className="font-normal text-gray-400">(ไม่บังคับ)</span>
+            🏢 ชื่อโครงการ <span className="font-normal text-red-500">*</span>
           </label>
           <input
             value={condoName}
@@ -107,20 +117,65 @@ function ScanlinkAcceptForm() {
           />
         </div>
 
-        {/* Price */}
-        <div className="px-5 pt-3 pb-2 border-t border-gray-100">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            💰 ราคาค่าเช่า (บาท) <span className="font-normal text-gray-400">(ไม่บังคับ)</span>
-          </label>
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            className="w-full border border-gray-200 rounded-[10px] px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-[#C8A951]"
-            placeholder="เช่น 7000"
-          />
+        {/* Property type & Listing type */}
+        <div className="px-5 pt-3 pb-2 border-t border-gray-100 grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">ประเภททรัพย์สิน</label>
+            <select
+              value={propertyType}
+              onChange={(e) => setPropertyType(e.target.value)}
+              className="w-full border border-gray-200 rounded-[10px] px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-[#C8A951] bg-white"
+            >
+              <option value="CONDO">Condo</option>
+              <option value="HOUSE">House</option>
+              <option value="TOWNHOUSE">Townhome</option>
+              <option value="LAND">Land</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">ประเภทประกาศ</label>
+            <select
+              value={listingType}
+              onChange={(e) => setListingType(e.target.value)}
+              className="w-full border border-gray-200 rounded-[10px] px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-[#C8A951] bg-white"
+            >
+              <option value="RENT">เช่า</option>
+              <option value="SALE">ขาย</option>
+              <option value="RENT_AND_SALE">เช่าและขาย</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Rent price & Sale price */}
+        <div className="px-5 pt-3 pb-2 border-t border-gray-100 grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              💰 ราคาเช่า (บาท) <span className="font-normal text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="w-full border border-gray-200 rounded-[10px] px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-[#C8A951]"
+              placeholder="เช่น 7000"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              💵 ราคาขาย (บาท) <span className="font-normal text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              value={salePrice}
+              onChange={(e) => setSalePrice(e.target.value)}
+              className="w-full border border-gray-200 rounded-[10px] px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-[#C8A951]"
+              placeholder="เช่น 3000000"
+            />
+          </div>
         </div>
 
         {/* Nearby stations — reuses the same picker as the search page */}
