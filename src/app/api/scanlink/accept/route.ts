@@ -5,7 +5,7 @@ import { pushMessage, STATUS_LABEL } from "@/app/api/line/url-checker/route";
 
 export async function POST(req: NextRequest) {
   try {
-    const { urlId, status, fullyFurnished, fullyElectric, readyToMoveIn, availableDate, remark, seq, by, condoName, price } = await req.json();
+    const { urlId, status, fullyFurnished, fullyElectric, readyToMoveIn, availableDate, remark, seq, by, condoName, price, stationIds } = await req.json();
 
     if (!urlId || !status) {
       return NextResponse.json({ success: false, error: "Missing params" }, { status: 400 });
@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
       fullyElectric:   fullyElectric  ?? false,
       availableDate:   readyToMoveIn ? new Date() : availableDate ? new Date(availableDate) : undefined,
       note:            remark || undefined,
+      nearbyStations:  Array.isArray(stationIds) && stationIds.length ? JSON.stringify(stationIds) : undefined,
       ownerId:         adminUser.id,
     };
 
@@ -60,6 +61,7 @@ export async function POST(req: NextRequest) {
     const infoLines = [
       condoName ? `Name : ${condoName}` : null,
       price != null ? `Price : ${price}` : null,
+      Array.isArray(stationIds) && stationIds.length ? `Stations : ${stationIds.join(", ")}` : null,
     ].filter(Boolean).join("\n");
 
     const fmtDate = (s: string) => { const d = new Date(s); return `${d.getUTCDate()}/${d.getUTCMonth()+1}/${String(d.getUTCFullYear()).slice(-2)}`; };
