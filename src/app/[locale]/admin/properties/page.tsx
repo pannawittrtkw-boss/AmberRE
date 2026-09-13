@@ -24,6 +24,7 @@ import {
   Train,
   Receipt,
   Lock,
+  Sparkles,
 } from "lucide-react";
 import StationMapSelector, { LINES } from "@/components/admin/StationMapSelector";
 import BookingReceiptModal from "./BookingReceiptModal";
@@ -311,6 +312,15 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
             {bulkLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Train className="w-4 h-4" />}
             {bulkLocating ? "กำลังอัปเดต..." : "อัปเดตที่ตั้ง"}
           </button>
+
+          {/* AI enrich (Verified properties) */}
+          <Link
+            href={`/${locale}/admin/properties/ai-enrich`}
+            className="inline-flex items-center gap-2 px-3 py-2 border border-[#C8A951] text-[#C8A951] rounded-lg hover:bg-amber-50 transition-colors text-sm"
+          >
+            <Sparkles className="w-4 h-4" />
+            AI ตรวจสอบข้อมูล
+          </Link>
 
           {/* Add Property */}
           <Link
