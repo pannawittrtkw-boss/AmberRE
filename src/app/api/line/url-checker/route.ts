@@ -15,6 +15,7 @@ export const STATUS = {
   UNABLE_TO_CONTACT:          "UNABLE_TO_CONTACT",
   NOT_AVAILABLE:              "NOT_AVAILABLE",
   WAIT_FOR_REPLY:             "WAIT_FOR_REPLY",
+  REPEAT:                     "REPEAT",
 } as const;
 
 export const STATUS_LABEL: Record<string, string> = {
@@ -24,6 +25,7 @@ export const STATUS_LABEL: Record<string, string> = {
   NOT_AVAILABLE:              "🚫 Not Available",
   UNABLE_TO_CONTACT:          "📞 Unable to contact",
   WAIT_FOR_REPLY:             "⏳ Wait For Reply",
+  REPEAT:                     "🔁 Repeat",
 };
 
 // ── LINE helpers ──────────────────────────────────────────────────────────────
@@ -187,6 +189,7 @@ export function buildButtonsMessage(id: number, seq: number, url: string, sentBy
           postbackBtn("📞 Unable to contact",    "UNABLE_TO_CONTACT"),
           postbackBtn("⏳ Wait For Reply",       "WAIT_FOR_REPLY"),
           postbackBtn("🚫 Not Available",        "NOT_AVAILABLE"),
+          postbackBtn("🔁 Repeat",               "REPEAT"),
         ],
       },
     },

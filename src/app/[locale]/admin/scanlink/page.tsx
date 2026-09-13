@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ExternalLink, RefreshCw, Loader2, CheckCircle2, XCircle, Clock, PhoneOff, Ban, Trash2 } from "lucide-react";
+import { ExternalLink, RefreshCw, Loader2, CheckCircle2, XCircle, Clock, PhoneOff, Ban, Trash2, Repeat } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface UrlRecord {
@@ -28,6 +28,7 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string; ic
   UNABLE_TO_CONTACT:          { label: "ติดต่อไม่ได้",         color: "text-orange-700",bg: "bg-orange-100", icon: <PhoneOff className="w-3 h-3" /> },
   WAIT_FOR_REPLY:             { label: "รอตอบกลับ",           color: "text-blue-700",  bg: "bg-blue-100",   icon: <Clock className="w-3 h-3" /> },
   NOT_AVAILABLE:              { label: "ไม่ว่าง",              color: "text-gray-700",  bg: "bg-gray-100",   icon: <Ban className="w-3 h-3" /> },
+  REPEAT:                     { label: "ซ้ำ",                  color: "text-purple-700", bg: "bg-purple-100", icon: <Repeat className="w-3 h-3" /> },
 };
 
 const FILTERS = [
@@ -39,6 +40,7 @@ const FILTERS = [
   { key: "UNABLE_TO_CONTACT",          label: "ติดต่อไม่ได้" },
   { key: "WAIT_FOR_REPLY",             label: "รอตอบ" },
   { key: "NOT_AVAILABLE",              label: "ไม่ว่าง" },
+  { key: "REPEAT",                     label: "ซ้ำ" },
 ];
 
 function StatusBadge({ status }: { status: string }) {
@@ -190,6 +192,7 @@ export default function ScanlinkPage() {
               { s: "ACCEPT_AGENT_NOT_FOREIGNER", l: "✅ Agent เท่านั้น" },
               { s: "ACCEPT_ALL",                 l: "✅ Agent & Foreigner" },
               { s: "NOT_AVAILABLE",              l: "🚫 ไม่ว่าง" },
+              { s: "REPEAT",                     l: "🔁 ซ้ำ" },
             ].map(b => (
               <button key={b.s} onClick={() => bulkUpdate(b.s)} disabled={updating || deleting !== null}
                 className="px-3 py-1.5 bg-white border rounded-lg text-xs font-medium hover:bg-gray-50 disabled:opacity-50">
