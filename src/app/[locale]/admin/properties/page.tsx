@@ -25,7 +25,7 @@ import {
   Receipt,
   Lock,
 } from "lucide-react";
-import { LINES } from "@/components/admin/StationMapSelector";
+import StationMapSelector, { LINES } from "@/components/admin/StationMapSelector";
 import BookingReceiptModal from "./BookingReceiptModal";
 import ExclusiveModal from "./ExclusiveModal";
 
@@ -122,7 +122,8 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
   const [filterCategory, setFilterCategory] = useState("");
   const [filterMinPrice, setFilterMinPrice] = useState("");
   const [filterMaxPrice, setFilterMaxPrice] = useState("");
-  const [filterStation, setFilterStation] = useState("");
+  const [filterStations, setFilterStations] = useState<string[]>([]);
+  const [showStationFilterModal, setShowStationFilterModal] = useState(false);
   const [filterExclusive, setFilterExclusive] = useState(false);
   const [filterPostDateFrom, setFilterPostDateFrom] = useState("");
   const [filterPostDateTo, setFilterPostDateTo] = useState("");
@@ -218,15 +219,10 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
     const price = Number(p.price) || 0;
     if (filterMinPrice && price < Number(filterMinPrice)) return false;
     if (filterMaxPrice && price > Number(filterMaxPrice)) return false;
-    // Station - search by code or Thai name
-    if (filterStation) {
-      const q = filterStation.toLowerCase();
+    // Station - matches if this property has any of the selected stations
+    if (filterStations.length > 0) {
       const codes = parseJson(p.nearbyStations);
-      const matched = codes.some((code: string) => {
-        if (code.toLowerCase().includes(q)) return true;
-        const name = getStationName(code).toLowerCase();
-        return name.includes(q);
-      });
+      const matched = codes.some((code: string) => filterStations.includes(code));
       if (!matched) return false;
     }
     // Exclusive contract
@@ -242,12 +238,12 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
     return true;
   });
 
-  const hasActiveFilters = filterStatus || filterListing || filterPriority || filterCategory || filterMinPrice || filterMaxPrice || filterStation || filterExclusive || filterPostDateFrom || filterPostDateTo;
+  const hasActiveFilters = filterStatus || filterListing || filterPriority || filterCategory || filterMinPrice || filterMaxPrice || filterStations.length > 0 || filterExclusive || filterPostDateFrom || filterPostDateTo;
 
   const clearFilters = () => {
     setSearchText(""); setFilterStatus(""); setFilterListing("");
     setFilterPriority(""); setFilterCategory("");
-    setFilterMinPrice(""); setFilterMaxPrice(""); setFilterStation("");
+    setFilterMinPrice(""); setFilterMaxPrice(""); setFilterStations([]);
     setFilterExclusive(false); setFilterPostDateFrom(""); setFilterPostDateTo("");
   };
 
@@ -448,7 +444,21 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">สถานี BTS/MRT</label>
-                <input type="text" value={filterStation} onChange={(e) => setFilterStation(e.target.value)} placeholder="E16, ปู่เจ้า" className="w-full border rounded-lg px-3 py-2 text-sm" />
+                <button
+                  type="button"
+                  onClick={() => setShowStationFilterModal(true)}
+                  className="w-full border rounded-lg px-3 py-2 text-sm text-left flex items-center gap-1.5 hover:bg-gray-50 transition-colors"
+                >
+                  <Train className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                  {filterStations.length > 0 ? (
+                    <span className="flex-1 truncate">
+                      {filterStations.slice(0, 2).map((c) => getStationName(c)).join(", ")}
+                      {filterStations.length > 2 ? ` +${filterStations.length - 2}` : ""}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">เลือกสถานี</span>
+                  )}
+                </button>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Post date ตั้งแต่</label>
@@ -913,6 +923,15 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
           </div>
         )}
       </div>
+
+      {/* Station filter picker */}
+      {showStationFilterModal && (
+        <StationMapSelector
+          selectedStations={filterStations}
+          onChange={setFilterStations}
+          onClose={() => setShowStationFilterModal(false)}
+        />
+      )}
 
       {/* Exclusive Contract Modal */}
       {exclusiveModal && (
