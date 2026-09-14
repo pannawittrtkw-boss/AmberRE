@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Sparkles, Square, Check, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, Square, Check, AlertTriangle, Pencil } from "lucide-react";
 import { LINES } from "@/lib/stations";
+import StationMapSelector from "@/components/admin/StationMapSelector";
 
 function getStationLabel(code: string): string {
   for (const line of LINES) {
@@ -83,6 +84,7 @@ export default function PropertiesAiEnrichPage({
   const [applying, setApplying] = useState(false);
   const [applyResult, setApplyResult] = useState("");
   const [onlyDiffs, setOnlyDiffs] = useState(true);
+  const [editingStationsFor, setEditingStationsFor] = useState<number | null>(null);
   const [error, setError] = useState("");
   const stopRef = useRef(false);
 
@@ -167,6 +169,33 @@ export default function PropertiesAiEnrichPage({
       )
     );
   };
+
+  // Manual override from the station picker — the auto-match can false-
+  // positive on generic names (e.g. "สุขุมวิท" matching MRT Sukhumvit
+  // even though the actual nearest station is a BTS stop further down
+  // the same road), so admins need a way to just pick the right one.
+  const applyManualStations = (id: number, stations: string[]) => {
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r.property.id !== id) return r;
+        const suggested = r.suggested ?? {
+          propertyType: r.property.propertyType,
+          listingType: r.property.listingType,
+          price: r.property.price,
+          salePrice: r.property.salePrice,
+          nearbyStations: r.property.nearbyStations,
+        };
+        return {
+          ...r,
+          status: "done",
+          suggested: { ...suggested, nearbyStations: stations },
+          checked: { ...r.checked, nearbyStations: true },
+        };
+      })
+    );
+  };
+
+  const editingRow = rows.find((r) => r.property.id === editingStationsFor);
 
   const changedRows = rows.filter(
     (r) => r.suggested && FIELD_KEYS.some((k) => fieldsDiffer(r.property, r.suggested!, k))
@@ -336,26 +365,40 @@ export default function PropertiesAiEnrichPage({
                       const differs = r.suggested && fieldsDiffer(r.property, r.suggested, key);
                       return (
                         <td key={key} className="py-2.5 px-3">
-                          {differs ? (
-                            <label className="flex items-start gap-1.5 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                className="mt-0.5"
-                                checked={!!r.checked[key]}
-                                onChange={() => toggleField(r.property.id, key)}
-                              />
-                              <span>
-                                <span className="block text-gray-400 line-through text-xs">
-                                  {formatValue(r.property, key)}
-                                </span>
-                                <span className="block text-emerald-700 font-medium">
-                                  {formatValue(r.suggested!, key)}
-                                </span>
-                              </span>
-                            </label>
-                          ) : (
-                            <span className="text-gray-600">{formatValue(r.property, key)}</span>
-                          )}
+                          <div className="flex items-start gap-1">
+                            <div className="flex-1 min-w-0">
+                              {differs ? (
+                                <label className="flex items-start gap-1.5 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    className="mt-0.5"
+                                    checked={!!r.checked[key]}
+                                    onChange={() => toggleField(r.property.id, key)}
+                                  />
+                                  <span>
+                                    <span className="block text-gray-400 line-through text-xs">
+                                      {formatValue(r.property, key)}
+                                    </span>
+                                    <span className="block text-emerald-700 font-medium">
+                                      {formatValue(r.suggested!, key)}
+                                    </span>
+                                  </span>
+                                </label>
+                              ) : (
+                                <span className="text-gray-600">{formatValue(r.property, key)}</span>
+                              )}
+                            </div>
+                            {key === "nearbyStations" && (
+                              <button
+                                type="button"
+                                onClick={() => setEditingStationsFor(r.property.id)}
+                                className="shrink-0 p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                                title="เลือกสถานีใหม่"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       );
                     })}
@@ -381,6 +424,14 @@ export default function PropertiesAiEnrichPage({
           บันทึกที่เลือกไว้ ({selectedCount})
         </button>
       </div>
+
+      {editingRow && (
+        <StationMapSelector
+          selectedStations={editingRow.suggested?.nearbyStations ?? editingRow.property.nearbyStations}
+          onChange={(stations) => applyManualStations(editingRow.property.id, stations)}
+          onClose={() => setEditingStationsFor(null)}
+        />
+      )}
     </div>
   );
 }
