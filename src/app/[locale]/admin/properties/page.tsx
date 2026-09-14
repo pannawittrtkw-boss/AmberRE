@@ -319,7 +319,7 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
             className="inline-flex items-center gap-2 px-3 py-2 border border-[#C8A951] text-[#C8A951] rounded-lg hover:bg-amber-50 transition-colors text-sm"
           >
             <Sparkles className="w-4 h-4" />
-            AI ตรวจสอบข้อมูล
+            ตรวจสอบข้อมูลอัตโนมัติ
           </Link>
 
           {/* Add Property */}
