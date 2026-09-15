@@ -26,12 +26,20 @@ const FB_SHARER_URL = "https://www.facebook.com/sharer/sharer.php?u=";
 const FB_GROUPS_URL = "https://www.facebook.com/groups/feed/";
 const LINE_SHARE_URL = "https://line.me/R/share?text=";
 
+// The R2/Blob buckets serve images without CORS headers, so fetching them
+// directly with mode:"cors" fails silently on every image. Route through
+// our own same-origin proxy instead so the browser never has to do a
+// cross-origin fetch at all.
+function proxiedUrl(url: string): string {
+  return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+}
+
 async function fetchImageAsFile(
   url: string,
   index: number
 ): Promise<File | null> {
   try {
-    const res = await fetch(url, { mode: "cors" });
+    const res = await fetch(proxiedUrl(url));
     if (!res.ok) return null;
     const blob = await res.blob();
     const ext = (blob.type.split("/")[1] || "jpg").replace("jpeg", "jpg");
@@ -44,7 +52,7 @@ async function fetchImageAsFile(
 
 async function triggerDownload(url: string, filename: string): Promise<boolean> {
   try {
-    const res = await fetch(url, { mode: "cors" });
+    const res = await fetch(proxiedUrl(url));
     if (!res.ok) return false;
     const blob = await res.blob();
     const objUrl = URL.createObjectURL(blob);
