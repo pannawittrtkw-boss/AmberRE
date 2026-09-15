@@ -75,7 +75,9 @@ export default function MarketingDescription({
   const [activeTarget, setActiveTarget] = useState<ShareTarget | null>(null);
   const [shareProgress, setShareProgress] = useState({ done: 0, total: 0 });
   const [desktopHint, setDesktopHint] = useState<ShareTarget | null>(null);
-  const [mobileHint, setMobileHint] = useState<"files" | "textonly" | null>(null);
+  const [mobileHint, setMobileHint] = useState<
+    "files" | "textonly" | "download" | null
+  >(null);
 
   useEffect(() => {
     import(`@/messages/${locale}.json`).then((m) => setMessages(m.default));
@@ -96,6 +98,7 @@ export default function MarketingDescription({
     lineHint: "",
     lineMobileFilesHint: "",
     lineMobileTextOnlyHint: "",
+    downloadMobileHint: "",
     openFacebook: "Open Facebook Share",
     openLine: "Get LINE Desktop",
     close: "Close",
@@ -136,16 +139,70 @@ export default function MarketingDescription({
   const handleDownloadOnly = async () => {
     if (shareStatus !== "idle") return;
     setActiveTarget("download");
+    setMobileHint(null);
+
+    const isMobile =
+      typeof window !== "undefined" &&
+      /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+    const canUseShare = typeof navigator !== "undefined" && "share" in navigator;
+
     try {
+      // <a download> is unreliable on mobile — iOS Safari ignores the
+      // attribute entirely and just opens the image, while Android saves it
+      // to the Downloads folder rather than the Photos album. Route through
+      // the native share sheet instead, which has a real "Save Image(s)"
+      // action that writes straight into the photo library.
+      if (isMobile && canUseShare) {
+        setShareStatus("preparing");
+        setShareProgress({ done: 0, total: imageUrls.length });
+
+        const files: File[] = [];
+        for (let i = 0; i < imageUrls.length; i++) {
+          const f = await fetchImageAsFile(imageUrls[i], i);
+          if (f) files.push(f);
+          setShareProgress({ done: i + 1, total: imageUrls.length });
+        }
+
+        const filesShare: ShareData = { files };
+        const canShareFiles =
+          files.length > 0 &&
+          typeof navigator.canShare === "function" &&
+          navigator.canShare(filesShare);
+
+        if (canShareFiles) {
+          setShareStatus("sharing");
+          await navigator.share(filesShare);
+          setMobileHint("download");
+          setShareStatus("done");
+          setTimeout(() => {
+            setShareStatus("idle");
+            setActiveTarget(null);
+          }, 4000);
+          return;
+        }
+      }
+
       await downloadAllImages();
       setShareStatus("done");
       setTimeout(() => {
         setShareStatus("idle");
         setActiveTarget(null);
       }, 2000);
-    } catch {
-      setShareStatus("idle");
-      setActiveTarget(null);
+    } catch (err) {
+      const aborted = err instanceof Error && err.name === "AbortError";
+      if (aborted) {
+        setShareStatus("idle");
+        setActiveTarget(null);
+        return;
+      }
+      // Share sheet failed outright (not just user-cancelled) — fall back to
+      // the plain download so the user still gets something.
+      await downloadAllImages().catch(() => {});
+      setShareStatus("done");
+      setTimeout(() => {
+        setShareStatus("idle");
+        setActiveTarget(null);
+      }, 2000);
     }
   };
 
@@ -400,7 +457,11 @@ export default function MarketingDescription({
         <div className="px-5 py-3 border-b text-sm bg-emerald-50 border-emerald-100 text-emerald-900">
           <div className="flex items-start justify-between gap-3">
             <p className="whitespace-pre-line text-xs leading-relaxed">
-              {mobileHint === "files" ? T.lineMobileFilesHint : T.lineMobileTextOnlyHint}
+              {mobileHint === "files"
+                ? T.lineMobileFilesHint
+                : mobileHint === "download"
+                ? T.downloadMobileHint
+                : T.lineMobileTextOnlyHint}
             </p>
             <button
               type="button"
