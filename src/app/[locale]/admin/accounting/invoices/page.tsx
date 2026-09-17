@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Loader2, Plus, FileText, Trash2, Pencil, X } from "lucide-react";
+import { Loader2, Plus, FileText, Trash2, Pencil, Copy, X } from "lucide-react";
 import { CustomerSection, type Customer } from "../CustomerSection";
 import PdfLangMenu from "../PdfLangMenu";
 
@@ -78,6 +78,7 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Invoice | null>(null);
+  const [duplicateFrom, setDuplicateFrom] = useState<Invoice | null>(null);
 
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
@@ -96,6 +97,12 @@ export default function InvoicesPage() {
       .then((r) => r.json())
       .then((d) => { if (d.success) setCustomers(d.data); });
   }, [fetchInvoices]);
+
+  const handleDuplicate = (inv: Invoice) => {
+    setEditing(null);
+    setDuplicateFrom(inv);
+    setShowModal(true);
+  };
 
   const handleDelete = async (inv: Invoice) => {
     if (inv.status !== "PENDING") { alert("ลบได้เฉพาะสถานะ PENDING"); return; }
@@ -163,6 +170,13 @@ export default function InvoicesPage() {
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
+                            onClick={() => handleDuplicate(inv)}
+                            className="p-1.5 text-gray-400 hover:text-[#C8A951] hover:bg-amber-50 rounded"
+                            title="คัดลอก"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                          <button
                             onClick={() => handleDelete(inv)}
                             className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
                             title="ลบ"
@@ -183,9 +197,10 @@ export default function InvoicesPage() {
       {showModal && (
         <InvoiceModal
           editing={editing}
+          duplicateFrom={duplicateFrom}
           customers={customers}
-          onClose={() => { setShowModal(false); setEditing(null); }}
-          onSaved={() => { setShowModal(false); setEditing(null); fetchInvoices(); }}
+          onClose={() => { setShowModal(false); setEditing(null); setDuplicateFrom(null); }}
+          onSaved={() => { setShowModal(false); setEditing(null); setDuplicateFrom(null); fetchInvoices(); }}
           onCustomerCreated={(c) => setCustomers((prev) => [...prev, c])}
           onCustomerUpdated={(c) => setCustomers((prev) => prev.map((x) => x.id === c.id ? c : x))}
         />
@@ -196,6 +211,7 @@ export default function InvoicesPage() {
 
 function InvoiceModal({
   editing,
+  duplicateFrom,
   customers,
   onClose,
   onSaved,
@@ -203,21 +219,35 @@ function InvoiceModal({
   onCustomerUpdated,
 }: {
   editing: Invoice | null;
+  duplicateFrom?: Invoice | null;
   customers: Customer[];
   onClose: () => void;
   onSaved: () => void;
   onCustomerCreated: (c: Customer) => void;
   onCustomerUpdated: (c: Customer) => void;
 }) {
+  // Duplicating prefills everything from the source invoice except the
+  // date/due date, which reset to a fresh cycle starting today — the
+  // source's own date/dueDate belong to that (already-issued) document.
+  const prefill = editing ?? duplicateFrom ?? null;
   const today = new Date().toISOString().split("T")[0];
   const [date, setDate] = useState(editing ? editing.date.split("T")[0] : today);
-  const [dueDate, setDueDate] = useState(editing?.dueDate ? editing.dueDate.split("T")[0] : "");
-  const [creditTerm, setCreditTerm] = useState(editing?.creditTerm ?? "");
-  const [customerId, setCustomerId] = useState(editing ? String(editing.customerId) : "");
-  const [vatRate, setVatRate] = useState(editing ? Number(editing.vatRate) : 7);
-  const [note, setNote] = useState(editing?.note ?? "");
+  const [dueDate, setDueDate] = useState(() => {
+    if (editing?.dueDate) return editing.dueDate.split("T")[0];
+    const days = parseInt(duplicateFrom?.creditTerm ?? "", 10);
+    if (duplicateFrom && !isNaN(days)) {
+      const d = new Date(today);
+      d.setDate(d.getDate() + days);
+      return d.toISOString().split("T")[0];
+    }
+    return "";
+  });
+  const [creditTerm, setCreditTerm] = useState(prefill?.creditTerm ?? "");
+  const [customerId, setCustomerId] = useState(prefill ? String(prefill.customerId) : "");
+  const [vatRate, setVatRate] = useState(prefill ? Number(prefill.vatRate) : 7);
+  const [note, setNote] = useState(prefill?.note ?? "");
   const [items, setItems] = useState<AccItem[]>(
-    editing?.items?.length ? editing.items : [{ ...EMPTY_ITEM }]
+    prefill?.items?.length ? prefill.items.map((it) => ({ ...it })) : [{ ...EMPTY_ITEM }]
   );
   const [saving, setSaving] = useState(false);
 
@@ -286,6 +316,11 @@ function InvoiceModal({
             <FileText className="w-5 h-5 text-[#C8A951]" />
             <h3 className="font-bold text-gray-900">
               {editing ? "แก้ไขใบแจ้งหนี้" : "สร้างใบแจ้งหนี้"}
+              {duplicateFrom && (
+                <span className="ml-2 text-xs font-normal text-gray-400">
+                  (คัดลอกจาก {duplicateFrom.docNumber})
+                </span>
+              )}
             </h3>
           </div>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
