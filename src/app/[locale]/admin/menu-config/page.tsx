@@ -20,6 +20,7 @@ const MENU_ITEMS = [
   { key: "agent-dashboard",        labelTh: "ภาพรวม (Agent Dashboard)",     labelEn: "Agent Dashboard",      group: "shared" },
   { key: "properties",             labelTh: "ทรัพย์สิน",                     labelEn: "Properties",           group: "shared" },
   { key: "projects",               labelTh: "โครงการ",                       labelEn: "Projects",             group: "shared" },
+  { key: "customer-leads",         labelTh: "Matching ลูกค้า",               labelEn: "Customer Matching",    group: "shared" },
   { key: "contracts",              labelTh: "สัญญาเช่า",                     labelEn: "Contracts",            group: "shared" },
   { key: "closed-contracts",       labelTh: "สัญญาที่ปิดแล้ว",               labelEn: "Closed Contracts",     group: "shared" },
   { key: "electricity-calculator", labelTh: "คำนวณค่าไฟ",                   labelEn: "Electricity Calc",     group: "shared" },
@@ -34,8 +35,8 @@ const ALL_KEYS = [...new Set(MENU_ITEMS.map((m) => m.key))];
 
 const DEFAULT_CONFIG: Record<Tier, string[]> = {
   STANDARD: ["agent-dashboard", "properties"],
-  PRO:      ["agent-dashboard", "properties", "projects", "contracts", "electricity-calculator", "accounting"],
-  ELITE:    ["agent-dashboard", "properties", "projects", "contracts", "closed-contracts", "electricity-calculator", "accounting", "messages", "reviews"],
+  PRO:      ["agent-dashboard", "properties", "projects", "customer-leads", "contracts", "electricity-calculator", "accounting"],
+  ELITE:    ["agent-dashboard", "properties", "projects", "customer-leads", "contracts", "closed-contracts", "electricity-calculator", "accounting", "messages", "reviews"],
   ADMIN:    ALL_KEYS,
 };
 

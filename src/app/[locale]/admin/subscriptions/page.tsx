@@ -78,7 +78,7 @@ export default function SubscriptionsPage({ params }: { params: Promise<{ locale
     setEditingId(agent.id);
     setEditForm({
       tier: agent.subscriptionTier,
-      expiry: agent.tierExpiredAt ? agent.tierExpiredAt.slice(0, 10) : "",
+      expiry: agent.tierExpiredAt ? agent.tierExpiredAt.slice(0, 10) : "__LIFETIME__",
     });
   };
 
@@ -91,7 +91,7 @@ export default function SubscriptionsPage({ params }: { params: Promise<{ locale
         body: JSON.stringify({
           userId: agentId,
           tier: editForm.tier,
-          tierExpiredAt: editForm.expiry || null,
+          tierExpiredAt: editForm.expiry && editForm.expiry !== "__LIFETIME__" ? editForm.expiry : null,
         }),
       });
     } catch (e) {
@@ -243,12 +243,23 @@ export default function SubscriptionsPage({ params }: { params: Promise<{ locale
                       {/* Expiry */}
                       <td className="py-3 px-4 text-center">
                         {isEditing ? (
-                          <input
-                            type="date"
-                            value={editForm.expiry}
-                            onChange={(e) => setEditForm({ ...editForm, expiry: e.target.value })}
-                            className="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400/30"
-                          />
+                          <div className="flex flex-col items-center gap-1.5">
+                            <input
+                              type="date"
+                              value={editForm.expiry}
+                              onChange={(e) => setEditForm({ ...editForm, expiry: e.target.value })}
+                              disabled={editForm.expiry === "__LIFETIME__"}
+                              className="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400/30 disabled:bg-gray-50 disabled:text-gray-300"
+                            />
+                            <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={editForm.expiry === "__LIFETIME__"}
+                                onChange={(e) => setEditForm({ ...editForm, expiry: e.target.checked ? "__LIFETIME__" : "" })}
+                              />
+                              {locale === "th" ? "ไม่จำกัด (Lifetime)" : "Lifetime (no expiry)"}
+                            </label>
+                          </div>
                         ) : (
                           <span className={`text-xs ${expired ? "text-red-500 font-medium" : "text-gray-600"}`}>
                             {agent.tierExpiredAt ? (
