@@ -27,8 +27,6 @@ export async function POST(req: NextRequest) {
 
 {
   "facilities": ["เลือกจาก: ${FACILITY_KEYS.join(", ")}"],
-  "latitude": "ละติจูดของโครงการ (number หรือ null)",
-  "longitude": "ลองจิจูดของโครงการ (number หรือ null)",
   "address": "ที่อยู่โครงการ (string หรือ null)"
 }
 
@@ -36,7 +34,6 @@ export async function POST(req: NextRequest) {
 - facilities ให้เลือกเฉพาะที่โครงการนี้มีจริงๆ ตามความรู้ของคุณ
 - ถ้าเป็นคอนโดทั่วไปมักมี: parking, security24h, fitnessGym, swimmingPool, garden
 - ถ้าเป็น High-Rise ให้เลือก highRise, ถ้า Low-Rise ให้เลือก lowRise
-- latitude/longitude ให้ใส่พิกัดของโครงการให้แม่นยำที่สุด
 - ถ้าไม่แน่ใจข้อมูลให้ใส่ null
 - ตอบ JSON เท่านั้น ห้ามมี markdown`;
 
@@ -69,28 +66,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "ไม่สามารถวิเคราะห์ข้อมูลได้" });
     }
 
-    // Use Google Maps Geocoding API for accurate coordinates
+    // The LLM's own lat/long is a guess from training data, not a real
+    // lookup — it's frequently off by kilometers for anything but the most
+    // famous projects. Discard it and only trust coordinates that come back
+    // from an actual place search; a blank map (manual pin needed) beats a
+    // confident-looking wrong pin.
+    result.latitude = null;
+    result.longitude = null;
+
+    // Places Text Search matches named buildings/projects far better than
+    // the Geocoding API, which is tuned for structured street addresses,
+    // not business/POI names — this is what was producing wrong coordinates.
     const googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
     if (googleApiKey) {
       try {
-        const searchQuery = encodeURIComponent(`${projectName} condo Thailand`);
+        const searchQuery = encodeURIComponent(`${projectName} คอนโด`);
         const geoRes = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?address=${searchQuery}&language=th&region=th&key=${googleApiKey}`
+          `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchQuery}&region=th&language=th&key=${googleApiKey}`
         );
         if (geoRes.ok) {
           const geoData = await geoRes.json();
           if (geoData.status === "OK" && geoData.results?.length > 0) {
-            const loc = geoData.results[0].geometry.location;
-            result.latitude = loc.lat;
-            result.longitude = loc.lng;
-            // Also update address from Google if available
-            if (geoData.results[0].formatted_address) {
-              result.address = geoData.results[0].formatted_address;
+            const top = geoData.results[0];
+            result.latitude = top.geometry.location.lat;
+            result.longitude = top.geometry.location.lng;
+            if (top.formatted_address) {
+              result.address = top.formatted_address;
             }
           }
         }
       } catch {
-        // Keep AI coordinates as fallback
+        // Leave latitude/longitude null — better than a wrong guess
       }
     }
 
