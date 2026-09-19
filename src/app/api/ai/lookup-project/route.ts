@@ -101,9 +101,10 @@ export async function POST(req: NextRequest) {
       }
 
       // Once we have real coordinates, look up real nearby places too —
-      // same API, same trust level, no extra AI call needed.
-      if (result.latitude && result.longitude) {
-        result.nearbyPlaces = await findNearbyPlaces(result.latitude, result.longitude, googleApiKey);
+      // via Geoapify (free, unlike Google Places Nearby Search).
+      const geoapifyApiKey = process.env.GEOAPIFY_API_KEY;
+      if (result.latitude && result.longitude && geoapifyApiKey) {
+        result.nearbyPlaces = await findNearbyPlaces(result.latitude, result.longitude, geoapifyApiKey);
       }
     }
 
