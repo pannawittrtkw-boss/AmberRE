@@ -172,7 +172,30 @@ export async function GET(req: NextRequest) {
         })),
       })).sort((a, b) => b.monthKey.localeCompare(a.monthKey));
 
-      commission = { currentMonth, allTimeClosedCount, allTimeEarned, allTimePaid, allTimePending, history };
+      // Year-over-year monthly trend for the "Commission performance" chart
+      // and stat-card sparklines — earnedCommission/closedCount per calendar
+      // month for this year and last, filling months with no activity as 0.
+      const commissionByMonthKey = new Map(commissionMonths.map((m) => [m.monthKey, m]));
+      const closedByMonthKey = new Map(closedMonths.map((m) => [m.monthKey, m]));
+      const buildYear = (year: number) =>
+        Array.from({ length: 12 }, (_, i) => {
+          const monthKey = `${year}-${String(i + 1).padStart(2, "0")}`;
+          return {
+            monthKey,
+            month: i + 1,
+            earnedCommission: commissionByMonthKey.get(monthKey)?.earnedCommission ?? 0,
+            closedCount: closedByMonthKey.get(monthKey)?.closedCount ?? 0,
+          };
+        });
+      const thisYear = now.getFullYear();
+      const yearlySeries = {
+        currentYear: thisYear,
+        previousYear: thisYear - 1,
+        current: buildYear(thisYear),
+        previous: buildYear(thisYear - 1),
+      };
+
+      commission = { currentMonth, allTimeClosedCount, allTimeEarned, allTimePaid, allTimePending, history, yearlySeries };
     }
 
     let agentName: string | null = null;

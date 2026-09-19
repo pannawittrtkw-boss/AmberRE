@@ -1,7 +1,33 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronRight, ChevronDown, Home, Percent, PiggyBank, Clock, ExternalLink } from "lucide-react";
+import { ChevronRight, ChevronDown, Home, Percent, PiggyBank, Clock, ExternalLink, TrendingUp } from "lucide-react";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts";
+import Sparkline from "./Sparkline";
+
+const TH_MONTHS_SHORT = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+
+export interface YearlyMonth {
+  monthKey: string;
+  month: number;
+  earnedCommission: number;
+  closedCount: number;
+}
+
+export interface YearlySeries {
+  currentYear: number;
+  previousYear: number;
+  current: YearlyMonth[];
+  previous: YearlyMonth[];
+}
 
 export interface CommissionMonth {
   monthKey: string;
@@ -42,6 +68,7 @@ export interface AgentCommission {
   allTimePaid: number;
   allTimePending: number;
   history: MonthHistory[];
+  yearlySeries: YearlySeries;
 }
 
 function fmtMoney(n: number) {
@@ -70,6 +97,26 @@ export default function AgentCommissionPanel({
   });
 
   const cm = commission.currentMonth;
+  const { yearlySeries } = commission;
+
+  // Trend of earned commission for the elapsed months of the current year,
+  // used for the hero card's inline sparkline (last up to 6 months).
+  const elapsedMonths = new Date().getMonth() + 1;
+  const sparklineData = yearlySeries.current
+    .slice(0, elapsedMonths)
+    .slice(-6)
+    .map((m) => m.earnedCommission);
+
+  // Year-over-year chart data — only the months that have actually
+  // happened this year (no forecasted/future months plotted).
+  const chartData = yearlySeries.current.slice(0, elapsedMonths).map((m, i) => ({
+    label: TH_MONTHS_SHORT[m.month - 1],
+    current: m.earnedCommission,
+    previous: yearlySeries.previous[i]?.earnedCommission ?? 0,
+  }));
+  const ytdEarned = chartData.reduce((sum, d) => sum + d.current, 0);
+  const ytdClosed = yearlySeries.current.slice(0, elapsedMonths).reduce((sum, m) => sum + m.closedCount, 0);
+  const avgPerDeal = ytdClosed > 0 ? ytdEarned / ytdClosed : 0;
 
   return (
     <div className="mb-8">
@@ -78,12 +125,19 @@ export default function AgentCommissionPanel({
       {/* Hero: current month */}
       <div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50/70 via-white to-white p-6">
         <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-          <div>
-            <div className="text-xs font-medium text-gray-500 mb-1">
-              {fmtMonthKey(cm.monthKey)} · ยอดค่าคอมมิชชั่นที่ได้รับ
+          <div className="flex items-end gap-5 flex-1 min-w-[220px]">
+            <div>
+              <div className="text-xs font-medium text-gray-500 mb-1">
+                {fmtMonthKey(cm.monthKey)} · ยอดค่าคอมมิชชั่นที่ได้รับ
+              </div>
+              <div className="text-4xl font-bold text-gray-900">฿{fmtMoney(cm.earnedCommission)}</div>
+              <div className="text-xs text-gray-400 mt-1.5">จากยอดค่าคอมรวม ฿{fmtMoney(cm.revenue)}</div>
             </div>
-            <div className="text-4xl font-bold text-gray-900">฿{fmtMoney(cm.earnedCommission)}</div>
-            <div className="text-xs text-gray-400 mt-1.5">จากยอดค่าคอมรวม ฿{fmtMoney(cm.revenue)}</div>
+            {sparklineData.length > 1 && (
+              <div className="hidden sm:block w-32 h-12 mb-1 shrink-0">
+                <Sparkline data={sparklineData} color="#C8A951" />
+              </div>
+            )}
           </div>
           {cm.tierPercent != null && (
             <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-amber-100 text-amber-700 font-bold text-sm shrink-0">
@@ -121,6 +175,74 @@ export default function AgentCommissionPanel({
           </div>
         </div>
       </div>
+
+      {/* Commission performance — this year vs last year, by month */}
+      {chartData.length > 1 && (
+        <div className="mt-4 rounded-2xl border border-gray-100 bg-white p-6">
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
+                <TrendingUp className="w-4 h-4 text-gray-400" /> ค่าคอมมิชชั่นรายเดือน
+              </h3>
+              <p className="text-xs text-gray-400 mt-0.5">เทียบปีนี้กับปีก่อน</p>
+            </div>
+            <div className="flex items-center gap-3 text-xs text-gray-500">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#C8A951]" /> {yearlySeries.currentYear}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-gray-300" /> {yearlySeries.previousYear}
+              </span>
+            </div>
+          </div>
+          <div className="h-64 w-full mt-3 -ml-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="currentYearFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#C8A951" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#C8A951" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="previousYearFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#cbd5e1" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#cbd5e1" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#64748b" }} axisLine={{ stroke: "#e2e8f0" }} />
+                <YAxis
+                  tick={{ fontSize: 11, fill: "#64748b" }}
+                  axisLine={{ stroke: "#e2e8f0" }}
+                  tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toString())}
+                />
+                <Tooltip
+                  formatter={(value, name) => [
+                    `฿${Number(value ?? 0).toLocaleString("th-TH")}`,
+                    name === "current" ? String(yearlySeries.currentYear) : String(yearlySeries.previousYear),
+                  ]}
+                  contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }}
+                />
+                <Area type="monotone" dataKey="previous" stroke="#94a3b8" strokeWidth={2} fill="url(#previousYearFill)" />
+                <Area type="monotone" dataKey="current" stroke="#C8A951" strokeWidth={2.5} fill="url(#currentYearFill)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-100">
+            <div>
+              <div className="text-xs text-gray-500 mb-1">ค่าคอมสะสมปีนี้ (YTD)</div>
+              <div className="text-lg font-bold text-gray-800">฿{fmtMoney(ytdEarned)}</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500 mb-1">สัญญาปิดได้ปีนี้</div>
+              <div className="text-lg font-bold text-gray-800">{ytdClosed}</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500 mb-1">เฉลี่ยค่าคอมต่อสัญญา</div>
+              <div className="text-lg font-bold text-gray-800">฿{fmtMoney(Math.round(avgPerDeal))}</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* All-time */}
       <div className="mt-4 grid grid-cols-3 gap-4">
