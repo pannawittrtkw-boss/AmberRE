@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { findNearbyPlaces } from "@/lib/nearby-places";
 
 const FACILITY_KEYS = [
   "petFriendly", "convenienceStore", "coWorkingSpace", "evCharger",
@@ -97,6 +98,12 @@ export async function POST(req: NextRequest) {
         }
       } catch {
         // Leave latitude/longitude null — better than a wrong guess
+      }
+
+      // Once we have real coordinates, look up real nearby places too —
+      // same API, same trust level, no extra AI call needed.
+      if (result.latitude && result.longitude) {
+        result.nearbyPlaces = await findNearbyPlaces(result.latitude, result.longitude, googleApiKey);
       }
     }
 

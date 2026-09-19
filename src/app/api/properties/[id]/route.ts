@@ -142,6 +142,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (stationIds !== undefined) {
       updateData.nearbyStations = Array.isArray(stationIds) ? JSON.stringify(stationIds) : stationIds;
     }
+    if (rawData.nearbyPlaces !== undefined) {
+      updateData.nearbyPlaces = Array.isArray(rawData.nearbyPlaces)
+        ? JSON.stringify(rawData.nearbyPlaces)
+        : rawData.nearbyPlaces;
+    }
 
     const property = await prisma.property.update({
       where: { id: parseInt(id) },

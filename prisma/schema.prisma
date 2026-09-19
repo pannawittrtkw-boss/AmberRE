@@ -290,6 +290,7 @@ model Property {
   furnitureDetails    String?  @db.Text
   electricalAppliances String? @db.Text
   nearbyStations      String?  @db.Text
+  nearbyPlaces        String?  @db.Text
   facilities          String?  @db.Text
   ownerName           String?  @db.VarChar(200)
   ownerPhone          String?  @db.VarChar(50)

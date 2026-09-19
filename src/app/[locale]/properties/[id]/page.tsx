@@ -17,6 +17,11 @@ import {
   Edit3,
   Sparkles,
   ArrowRight,
+  GraduationCap,
+  ShoppingBag,
+  HeartPulse,
+  Plane,
+  Bus,
 } from "lucide-react";
 import InvestmentAnalysis from "@/components/property/InvestmentAnalysis";
 import prisma from "@/lib/prisma";
@@ -32,6 +37,7 @@ import ContactUnlockCard from "@/components/property/ContactUnlockCard";
 import PropertyInquiryForm from "@/components/property/PropertyInquiryForm";
 import MarketingDescription from "@/components/property/MarketingDescription";
 import SectionTitle from "@/components/ui/SectionTitle";
+import { NEARBY_CATEGORY_LABEL_TH, NEARBY_CATEGORY_LABEL_EN, type NearbyPlace } from "@/lib/nearby-places";
 import StatTile from "@/components/ui/StatTile";
 import { buildMarketingDescription } from "@/lib/marketing-description";
 
@@ -236,6 +242,23 @@ export default async function PropertyDetailPage({
   const appliances = parseJson(property.electricalAppliances);
   const facilities = parseJson(property.facilities);
   const stations = parseJson(property.nearbyStations);
+  const nearbyPlaces: NearbyPlace[] = (() => {
+    if (!property.nearbyPlaces) return [];
+    try {
+      const parsed = JSON.parse(property.nearbyPlaces);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  })();
+  const NEARBY_CATEGORY_ICON: Record<string, typeof Train> = {
+    transit: Train,
+    busTerminal: Bus,
+    airport: Plane,
+    school: GraduationCap,
+    mall: ShoppingBag,
+    hospital: HeartPulse,
+  };
   const price = Number(property.price);
   const salePrice = Number(property.salePrice);
   const lat = property.latitude ? Number(property.latitude) : null;
@@ -601,6 +624,43 @@ export default async function PropertyDetailPage({
                       >
                         <Train className="w-4 h-4" />
                         {fullName}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* Nearby Places (transit, schools, malls, hospitals, etc.) */}
+            {nearbyPlaces.length > 0 && (
+              <section>
+                <SectionTitle
+                  badge={locale === "th" ? "ทำเล" : "Location"}
+                  title={
+                    locale === "th"
+                      ? "สถานที่ใกล้เคียง"
+                      : "Nearby Places"
+                  }
+                  className="mb-5"
+                />
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {nearbyPlaces.map((np) => {
+                    const Icon = NEARBY_CATEGORY_ICON[np.category] || MapPin;
+                    const label =
+                      locale === "th"
+                        ? NEARBY_CATEGORY_LABEL_TH[np.category] || np.category
+                        : NEARBY_CATEGORY_LABEL_EN[np.category] || np.category;
+                    return (
+                      <div
+                        key={np.category}
+                        className="flex items-start gap-2.5 px-4 py-3 bg-white rounded-xl shadow-sm"
+                      >
+                        <Icon className="w-4 h-4 text-[#C8A951] shrink-0 mt-0.5" />
+                        <div className="min-w-0">
+                          <div className="text-[11px] text-stone-400">{label}</div>
+                          <div className="text-sm font-medium text-stone-800 truncate">{np.name}</div>
+                          <div className="text-xs text-stone-500">{np.distanceKm} km</div>
+                        </div>
                       </div>
                     );
                   })}

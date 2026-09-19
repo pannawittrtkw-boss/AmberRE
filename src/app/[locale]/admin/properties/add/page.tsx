@@ -21,6 +21,10 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import StationMapSelector, { LINES } from "@/components/admin/StationMapSelector";
 import ThaiAddressFields from "@/components/admin/ThaiAddressFields";
+import {
+  NEARBY_CATEGORY_LABEL_TH,
+  type NearbyPlace,
+} from "@/lib/nearby-places";
 
 const DraggableMapPreview = dynamic(() => import("@/components/admin/DraggableMapPreview"), { ssr: false });
 
@@ -168,6 +172,7 @@ export default function AddPropertyPage({
   const [selectedAppliances, setSelectedAppliances] = useState<string[]>([]);
   const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
   const [selectedStations, setSelectedStations] = useState<string[]>([]);
+  const [nearbyPlaces, setNearbyPlaces] = useState<NearbyPlace[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
 
   // Investment analysis fields
@@ -205,6 +210,7 @@ export default function AddPropertyPage({
         if (d.latitude) updateForm("latitude", String(d.latitude));
         if (d.longitude) updateForm("longitude", String(d.longitude));
         if (d.address) updateForm("address", d.address);
+        if (d.nearbyPlaces?.length) setNearbyPlaces(d.nearbyPlaces);
       } else {
         setAiError(data.error || "ไม่พบข้อมูลโครงการ");
       }
@@ -294,6 +300,12 @@ export default function AddPropertyPage({
         try {
           const st = p.nearbyStations ? JSON.parse(p.nearbyStations) : [];
           if (Array.isArray(st)) setSelectedStations(st);
+        } catch {}
+
+        // Load nearby places (schools, malls, hospitals, etc.) JSON
+        try {
+          const np = p.nearbyPlaces ? JSON.parse(p.nearbyPlaces) : [];
+          if (Array.isArray(np)) setNearbyPlaces(np);
         } catch {}
 
         // Load existing images as previews
@@ -549,6 +561,7 @@ export default function AddPropertyPage({
         subdistrict: form.subdistrict || null,
         imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
         stationIds,
+        nearbyPlaces,
         // Investment fields (only include if purchasePrice is filled)
         ...(invForm.invPurchasePrice ? {
           invPurchasePrice: parseFloat(invForm.invPurchasePrice) || null,
@@ -1209,6 +1222,25 @@ export default function AddPropertyPage({
                   >
                     เปิดใน Google Maps
                   </a>
+                </div>
+              )}
+              {/* Nearby Places (from Google Places, not editable — refresh via the AI lookup button) */}
+              {nearbyPlaces.length > 0 && (
+                <div className="col-span-2">
+                  <label className="block text-sm font-semibold mb-2">
+                    สถานที่ใกล้เคียง <span className="font-normal text-gray-400">(จาก Google Places)</span>
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {nearbyPlaces.map((np) => (
+                      <div key={np.category} className="border rounded-lg px-3 py-2 text-sm bg-gray-50">
+                        <div className="text-xs text-gray-400">
+                          {NEARBY_CATEGORY_LABEL_TH[np.category] || np.category}
+                        </div>
+                        <div className="font-medium text-gray-800 truncate">{np.name}</div>
+                        <div className="text-xs text-gray-500">{np.distanceKm} กม.</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
