@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronRight, ChevronDown, Home, Wallet, Percent, PiggyBank, Clock, ExternalLink } from "lucide-react";
+import { ChevronRight, ChevronDown, Home, Percent, PiggyBank, Clock, ExternalLink } from "lucide-react";
 
 export interface CommissionMonth {
   monthKey: string;
@@ -69,58 +69,71 @@ export default function AgentCommissionPanel({
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   });
 
+  const cm = commission.currentMonth;
+
   return (
     <div className="mb-8">
       <h2 className="text-sm font-semibold text-gray-800 mb-3">{title}</h2>
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="rounded-xl border p-5 bg-gray-50 border-gray-200">
-          <div className="p-2 rounded-lg bg-white/70 text-gray-500 w-fit mb-3">
-            <Home className="w-5 h-5" />
+
+      {/* Hero: current month */}
+      <div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50/70 via-white to-white p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+          <div>
+            <div className="text-xs font-medium text-gray-500 mb-1">
+              {fmtMonthKey(cm.monthKey)} · ยอดค่าคอมมิชชั่นที่ได้รับ
+            </div>
+            <div className="text-4xl font-bold text-gray-900">฿{fmtMoney(cm.earnedCommission)}</div>
+            <div className="text-xs text-gray-400 mt-1.5">จากยอดค่าคอมรวม ฿{fmtMoney(cm.revenue)}</div>
           </div>
-          <div className="text-3xl font-bold mb-1 text-gray-800">{commission.currentMonth.closedCount}</div>
-          <div className="text-sm font-semibold text-gray-700">ทรัพย์ที่ปิดได้เดือนนี้</div>
+          {cm.tierPercent != null && (
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-amber-100 text-amber-700 font-bold text-sm shrink-0">
+              <Percent className="w-4 h-4" /> Tier {cm.tierPercent}%
+            </span>
+          )}
         </div>
-        <div className="rounded-xl border p-5 bg-blue-50 border-blue-200">
-          <div className="p-2 rounded-lg bg-white/70 text-blue-600 w-fit mb-3">
-            <Wallet className="w-5 h-5" />
+        <div className="grid grid-cols-3 gap-4 pt-5 border-t border-amber-100/70">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-white text-gray-500 shrink-0">
+              <Home className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-lg font-bold text-gray-800">{cm.closedCount}</div>
+              <div className="text-xs text-gray-500">ทรัพย์ที่ปิดได้</div>
+            </div>
           </div>
-          <div className="text-2xl font-bold mb-1 text-blue-700">฿{fmtMoney(commission.currentMonth.revenue)}</div>
-          <div className="text-sm font-semibold text-gray-700">ยอดค่าคอมเดือนนี้</div>
-        </div>
-        <div className="rounded-xl border p-5 bg-amber-50 border-amber-200">
-          <div className="p-2 rounded-lg bg-white/70 text-amber-600 w-fit mb-3">
-            <Percent className="w-5 h-5" />
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-white text-orange-500 shrink-0">
+              <Clock className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-lg font-bold text-orange-600">฿{fmtMoney(cm.pendingCommission)}</div>
+              <div className="text-xs text-gray-500">รอจ่าย</div>
+            </div>
           </div>
-          <div className="text-3xl font-bold mb-1 text-amber-700">{commission.currentMonth.tierPercent ?? "-"}%</div>
-          <div className="text-sm font-semibold text-gray-700">Tier เดือนนี้</div>
-        </div>
-        <div className="rounded-xl border p-5 bg-orange-50 border-orange-200">
-          <div className="p-2 rounded-lg bg-white/70 text-orange-600 w-fit mb-3">
-            <Clock className="w-5 h-5" />
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-white text-emerald-600 shrink-0">
+              <PiggyBank className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-lg font-bold text-emerald-600">฿{fmtMoney(cm.paidCommission)}</div>
+              <div className="text-xs text-gray-500">จ่ายแล้ว</div>
+            </div>
           </div>
-          <div className="text-2xl font-bold mb-1 text-orange-700">฿{fmtMoney(commission.currentMonth.pendingCommission)}</div>
-          <div className="text-sm font-semibold text-gray-700">รอจ่ายเดือนนี้</div>
-        </div>
-        <div className="rounded-xl border p-5 bg-green-50 border-green-200">
-          <div className="p-2 rounded-lg bg-white/70 text-green-600 w-fit mb-3">
-            <PiggyBank className="w-5 h-5" />
-          </div>
-          <div className="text-2xl font-bold mb-1 text-green-700">฿{fmtMoney(commission.currentMonth.paidCommission)}</div>
-          <div className="text-sm font-semibold text-gray-700">จ่ายแล้วเดือนนี้</div>
         </div>
       </div>
 
+      {/* All-time */}
       <div className="mt-4 grid grid-cols-3 gap-4">
         <div className="rounded-xl border border-gray-200 bg-white px-5 py-4">
-          <div className="text-sm font-semibold text-gray-700 mb-1">ทรัพย์ที่ปิดได้สะสม</div>
+          <div className="text-xs font-medium text-gray-500 mb-1">ทรัพย์ที่ปิดได้สะสม</div>
           <div className="text-xl font-bold text-gray-800">{commission.allTimeClosedCount}</div>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white px-5 py-4">
-          <div className="text-sm font-semibold text-gray-700 mb-1">รอจ่ายสะสม</div>
+          <div className="text-xs font-medium text-gray-500 mb-1">รอจ่ายสะสม</div>
           <div className="text-xl font-bold text-orange-600">฿{fmtMoney(commission.allTimePending)}</div>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white px-5 py-4">
-          <div className="text-sm font-semibold text-gray-700 mb-1">จ่ายแล้วสะสม</div>
+          <div className="text-xs font-medium text-gray-500 mb-1">จ่ายแล้วสะสม</div>
           <div className="text-xl font-bold text-[#C8A951]">฿{fmtMoney(commission.allTimePaid)}</div>
         </div>
       </div>
@@ -143,6 +156,9 @@ export default function AgentCommissionPanel({
                     <span className="text-sm font-medium text-gray-800">{fmtMonthKey(h.monthKey)}</span>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-gray-500">{h.closedCount} สัญญา</span>
+                      <span className="text-xs font-semibold text-gray-700">
+                        ฿{fmtMoney(h.contracts.reduce((sum, c) => sum + c.commissionAmount, 0))}
+                      </span>
                       {isOpen ? (
                         <ChevronDown className="w-4 h-4 text-gray-400" />
                       ) : (
@@ -159,7 +175,12 @@ export default function AgentCommissionPanel({
                           ? `/${locale}/contracts/share/${c.shareToken}`
                           : null;
                         return (
-                          <div key={c.id} className="flex items-center gap-4 px-5 py-3 pl-8">
+                          <div key={c.id} className="flex items-center gap-3 px-5 py-3 pl-8">
+                            <span
+                              className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                                c.commissionPaid ? "bg-emerald-500" : c.commissionReceived ? "bg-orange-400" : "bg-gray-300"
+                              }`}
+                            />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium text-gray-800 truncate">{c.contractNumber}</span>

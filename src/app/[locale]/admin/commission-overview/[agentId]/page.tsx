@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Loader2, RefreshCw, ArrowLeft, FileText, CheckCircle2, Clock, XCircle, TrendingUp } from "lucide-react";
+import { Loader2, RefreshCw, ArrowLeft, FileText, CheckCircle2, Clock, XCircle } from "lucide-react";
 import AgentCommissionPanel, { type AgentCommission } from "@/components/admin/AgentCommissionPanel";
+import { avatarColor, initials } from "@/lib/avatar";
 
 interface Stats {
   draft: number;
@@ -54,13 +55,22 @@ export default function AgentCommissionDetailPage() {
         <div>
           <Link
             href={`/${locale}/admin/commission-overview`}
-            className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 mb-1.5"
+            className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 mb-2"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> กลับไปภาพรวม
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {stats?.agentName || "รายละเอียด Agent"}
-          </h1>
+          <div className="flex items-center gap-3">
+            {stats?.agentName && (
+              <div
+                className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-bold shrink-0 ${avatarColor(stats.agentName)}`}
+              >
+                {initials(stats.agentName)}
+              </div>
+            )}
+            <h1 className="text-2xl font-bold text-gray-900">
+              {stats?.agentName || "รายละเอียด Agent"}
+            </h1>
+          </div>
         </div>
         <button
           onClick={fetchStats}
@@ -84,14 +94,12 @@ export default function AgentCommissionDetailPage() {
         </div>
       ) : stats ? (
         <>
+          <h2 className="text-sm font-semibold text-gray-800 mb-3">สถานะสัญญา</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {cards.map((card) => (
               <div key={card.titleTh} className={`rounded-xl border p-5 ${card.bg} ${card.border}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`p-2 rounded-lg bg-white/70 ${card.iconColor}`}>
-                    <card.icon className="w-5 h-5" />
-                  </div>
-                  <TrendingUp className="w-4 h-4 text-gray-300" />
+                <div className={`inline-flex p-2 rounded-lg bg-white/70 mb-3 ${card.iconColor}`}>
+                  <card.icon className="w-5 h-5" />
                 </div>
                 <div className={`text-3xl font-bold mb-1 ${card.valueColor}`}>{card.value}</div>
                 <div className="text-sm font-semibold text-gray-700">{card.titleTh}</div>
