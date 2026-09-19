@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { summarizeAgentCommissionByMonth, summarizeClosedCountByMonth } from "@/lib/commission";
+import { summarizeAgentCommissionByMonth, summarizeClosedCountByMonth, calcContractCommission } from "@/lib/commission";
 
 export async function GET() {
   try {
@@ -69,11 +69,28 @@ export async function GET() {
     if (role === "CO_AGENT") {
       const [rentTiers, allAgentContracts, commissionContracts] = await Promise.all([
         prisma.commissionTier.findMany({ where: { dealCategory: "RENT" } }),
-        // "Closed" count is independent of payment status — every contract
-        // credited to this agent, by the month it was signed.
+        // "Closed" count/history is independent of payment status — every
+        // contract credited to this agent, by the month it was signed.
         prisma.contract.findMany({
           where: { agentId: userId },
-          select: { contractDate: true },
+          orderBy: { contractDate: "desc" },
+          select: {
+            id: true,
+            contractNumber: true,
+            contractDate: true,
+            contractType: true,
+            dealType: true,
+            projectName: true,
+            unitNumber: true,
+            lesseeName: true,
+            monthlyRent: true,
+            termMonths: true,
+            commissionReceived: true,
+            commissionReceivedDate: true,
+            commissionPaid: true,
+            shareToken: true,
+            signedPdfUrl: true,
+          },
         }),
         prisma.contract.findMany({
           where: { agentId: userId, commissionReceived: true },
@@ -112,7 +129,38 @@ export async function GET() {
       const allTimePaid = commissionMonths.reduce((sum, m) => sum + m.paidCommission, 0);
       const allTimePending = commissionMonths.reduce((sum, m) => sum + m.pendingCommission, 0);
 
-      commission = { currentMonth, allTimeClosedCount, allTimeEarned, allTimePaid, allTimePending };
+      // Per-contract history grouped by the month it was signed — answers
+      // "how many, and which ones" behind the closed-count numbers, with a
+      // link to the signed contract for each.
+      const historyByMonth = new Map<string, typeof allAgentContracts>();
+      for (const c of allAgentContracts) {
+        const d = new Date(c.contractDate);
+        const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        const list = historyByMonth.get(monthKey) ?? [];
+        list.push(c);
+        historyByMonth.set(monthKey, list);
+      }
+      const history = Array.from(historyByMonth, ([monthKey, list]) => ({
+        monthKey,
+        closedCount: list.length,
+        contracts: list.map((c) => ({
+          id: c.id,
+          contractNumber: c.contractNumber,
+          contractType: c.contractType,
+          projectName: c.projectName,
+          unitNumber: c.unitNumber,
+          lesseeName: c.lesseeName,
+          monthlyRent: Number(c.monthlyRent),
+          commissionAmount: calcContractCommission({ ...c, monthlyRent: Number(c.monthlyRent) }),
+          commissionReceived: c.commissionReceived,
+          commissionReceivedDate: c.commissionReceivedDate,
+          commissionPaid: c.commissionPaid,
+          shareToken: c.shareToken,
+          signedPdfUrl: c.signedPdfUrl,
+        })),
+      })).sort((a, b) => b.monthKey.localeCompare(a.monthKey));
+
+      commission = { currentMonth, allTimeClosedCount, allTimeEarned, allTimePaid, allTimePending, history };
     }
 
     return NextResponse.json({

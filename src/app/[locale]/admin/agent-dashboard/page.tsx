@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   Loader2, FileText, CheckCircle2, Clock, XCircle,
-  TrendingUp, RefreshCw, ChevronRight, Home, Wallet, Percent, PiggyBank,
+  TrendingUp, RefreshCw, ChevronRight, ChevronDown, Home, Wallet, Percent, PiggyBank, ExternalLink,
 } from "lucide-react";
 
 interface CommissionMonth {
@@ -17,6 +17,28 @@ interface CommissionMonth {
   earnedCommission: number;
   paidCommission: number;
   pendingCommission: number;
+}
+
+interface HistoryContract {
+  id: number;
+  contractNumber: string;
+  contractType: string;
+  projectName: string;
+  unitNumber: string;
+  lesseeName: string;
+  monthlyRent: number;
+  commissionAmount: number;
+  commissionReceived: boolean;
+  commissionReceivedDate: string | null;
+  commissionPaid: boolean;
+  shareToken: string | null;
+  signedPdfUrl: string | null;
+}
+
+interface MonthHistory {
+  monthKey: string;
+  closedCount: number;
+  contracts: HistoryContract[];
 }
 
 interface Stats {
@@ -40,6 +62,7 @@ interface Stats {
     allTimeEarned: number;
     allTimePaid: number;
     allTimePending: number;
+    history: MonthHistory[];
   } | null;
 }
 
@@ -56,6 +79,10 @@ function fmtDate(d: string) {
 function fmtMoney(n: number) {
   return n?.toLocaleString("th-TH") ?? "-";
 }
+function fmtMonthKey(monthKey: string) {
+  const [y, m] = monthKey.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString("th-TH", { month: "long", year: "numeric" });
+}
 
 export default function AgentDashboardPage() {
   const { data: session } = useSession();
@@ -65,6 +92,10 @@ export default function AgentDashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedMonth, setExpandedMonth] = useState<string | null>(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
 
   const fetchStats = useCallback(async () => {
     setLoading(true);
@@ -253,6 +284,92 @@ export default function AgentDashboardPage() {
                   <div className="text-xl font-bold text-[#C8A951]">฿{fmtMoney(stats.commission.allTimePaid)}</div>
                 </div>
               </div>
+
+              {/* Monthly history — which contracts closed each month, with a link to the signed contract */}
+              {stats.commission.history.length > 0 && (
+                <div className="mt-6 bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="px-5 py-4 border-b border-gray-100">
+                    <h3 className="text-sm font-semibold text-gray-800">ประวัติย้อนหลังรายเดือน</h3>
+                  </div>
+                  <div className="divide-y divide-gray-100">
+                    {stats.commission.history.map((h) => {
+                      const isOpen = expandedMonth === h.monthKey;
+                      return (
+                        <div key={h.monthKey}>
+                          <button
+                            onClick={() => setExpandedMonth(isOpen ? null : h.monthKey)}
+                            className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors"
+                          >
+                            <span className="text-sm font-medium text-gray-800">{fmtMonthKey(h.monthKey)}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs text-gray-500">{h.closedCount} สัญญา</span>
+                              {isOpen ? (
+                                <ChevronDown className="w-4 h-4 text-gray-400" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4 text-gray-400" />
+                              )}
+                            </div>
+                          </button>
+                          {isOpen && (
+                            <div className="divide-y divide-gray-50 bg-gray-50/40">
+                              {h.contracts.map((c) => {
+                                const signedUrl = c.signedPdfUrl
+                                  ? c.signedPdfUrl
+                                  : c.shareToken
+                                  ? `/${locale}/contracts/share/${c.shareToken}`
+                                  : null;
+                                return (
+                                  <div key={c.id} className="flex items-center gap-4 px-5 py-3 pl-8">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium text-gray-800 truncate">
+                                          {c.contractNumber}
+                                        </span>
+                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">
+                                          {c.contractType === "RENEW" ? "ต่อสัญญา" : "สัญญาใหม่"}
+                                        </span>
+                                      </div>
+                                      <div className="text-xs text-gray-500 truncate mt-0.5">
+                                        {c.projectName} #{c.unitNumber} · {c.lesseeName}
+                                      </div>
+                                    </div>
+                                    <div className="text-right flex-shrink-0 hidden sm:block">
+                                      <div className="text-xs text-gray-600 font-medium">
+                                        ค่าคอม ฿{fmtMoney(c.commissionAmount)}
+                                      </div>
+                                      <div className="text-[11px] mt-0.5">
+                                        {c.commissionPaid ? (
+                                          <span className="text-green-600">จ่ายแล้ว</span>
+                                        ) : c.commissionReceived ? (
+                                          <span className="text-orange-600">รอจ่าย</span>
+                                        ) : (
+                                          <span className="text-gray-400">ยังไม่รับเงิน</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {signedUrl ? (
+                                      <a
+                                        href={signedUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium flex-shrink-0"
+                                      >
+                                        ดูสัญญา <ExternalLink className="w-3.5 h-3.5" />
+                                      </a>
+                                    ) : (
+                                      <span className="text-xs text-gray-300 flex-shrink-0">ยังไม่มีลิงก์</span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
