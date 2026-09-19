@@ -15,6 +15,8 @@ interface CommissionMonth {
   revenue: number;
   tierPercent: number | null;
   earnedCommission: number;
+  paidCommission: number;
+  pendingCommission: number;
 }
 
 interface Stats {
@@ -34,7 +36,10 @@ interface Stats {
   }[];
   commission: {
     currentMonth: CommissionMonth;
+    allTimeClosedCount: number;
     allTimeEarned: number;
+    allTimePaid: number;
+    allTimePending: number;
   } | null;
 }
 
@@ -187,7 +192,7 @@ export default function AgentDashboardPage() {
           {stats?.commission && (
             <div className="mb-8">
               <h2 className="text-sm font-semibold text-gray-800 mb-3">ค่าคอมมิชชั่นของฉัน</h2>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="rounded-xl border p-5 bg-gray-50 border-gray-200">
                   <div className="p-2 rounded-lg bg-white/70 text-gray-500 w-fit mb-3">
                     <Home className="w-5 h-5" />
@@ -215,19 +220,38 @@ export default function AgentDashboardPage() {
                   </div>
                   <div className="text-sm font-semibold text-gray-700">Tier เดือนนี้</div>
                 </div>
+                <div className="rounded-xl border p-5 bg-orange-50 border-orange-200">
+                  <div className="p-2 rounded-lg bg-white/70 text-orange-600 w-fit mb-3">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <div className="text-2xl font-bold mb-1 text-orange-700">
+                    ฿{fmtMoney(stats.commission.currentMonth.pendingCommission)}
+                  </div>
+                  <div className="text-sm font-semibold text-gray-700">รอจ่ายเดือนนี้</div>
+                </div>
                 <div className="rounded-xl border p-5 bg-green-50 border-green-200">
                   <div className="p-2 rounded-lg bg-white/70 text-green-600 w-fit mb-3">
                     <PiggyBank className="w-5 h-5" />
                   </div>
                   <div className="text-2xl font-bold mb-1 text-green-700">
-                    ฿{fmtMoney(stats.commission.currentMonth.earnedCommission)}
+                    ฿{fmtMoney(stats.commission.currentMonth.paidCommission)}
                   </div>
-                  <div className="text-sm font-semibold text-gray-700">ได้รับเดือนนี้</div>
+                  <div className="text-sm font-semibold text-gray-700">จ่ายแล้วเดือนนี้</div>
                 </div>
               </div>
-              <div className="mt-4 rounded-xl border border-gray-200 bg-white px-5 py-4 flex items-center justify-between">
-                <span className="text-sm font-semibold text-gray-700">ยอดค่าคอมสะสมทั้งหมด</span>
-                <span className="text-xl font-bold text-[#C8A951]">฿{fmtMoney(stats.commission.allTimeEarned)}</span>
+              <div className="mt-4 grid grid-cols-3 gap-4">
+                <div className="rounded-xl border border-gray-200 bg-white px-5 py-4">
+                  <div className="text-sm font-semibold text-gray-700 mb-1">ทรัพย์ที่ปิดได้สะสม</div>
+                  <div className="text-xl font-bold text-gray-800">{stats.commission.allTimeClosedCount}</div>
+                </div>
+                <div className="rounded-xl border border-gray-200 bg-white px-5 py-4">
+                  <div className="text-sm font-semibold text-gray-700 mb-1">รอจ่ายสะสม</div>
+                  <div className="text-xl font-bold text-orange-600">฿{fmtMoney(stats.commission.allTimePending)}</div>
+                </div>
+                <div className="rounded-xl border border-gray-200 bg-white px-5 py-4">
+                  <div className="text-sm font-semibold text-gray-700 mb-1">จ่ายแล้วสะสม</div>
+                  <div className="text-xl font-bold text-[#C8A951]">฿{fmtMoney(stats.commission.allTimePaid)}</div>
+                </div>
               </div>
             </div>
           )}

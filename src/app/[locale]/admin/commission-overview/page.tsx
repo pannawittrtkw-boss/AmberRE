@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Loader2, RefreshCw, Users, Home, Wallet, PiggyBank } from "lucide-react";
+import { Loader2, RefreshCw, Users, Home, Wallet, PiggyBank, Clock } from "lucide-react";
 
 interface Row {
   agentId: number;
@@ -12,14 +12,27 @@ interface Row {
     revenue: number;
     tierPercent: number | null;
     earnedCommission: number;
+    paidCommission: number;
+    pendingCommission: number;
   };
+  allTimeClosedCount: number;
   allTimeEarned: number;
+  allTimePaid: number;
+  allTimePending: number;
 }
 
 interface Overview {
   monthKey: string;
   rows: Row[];
-  totals: { closedCount: number; revenue: number; earnedCommission: number; allTimeEarned: number };
+  totals: {
+    closedCount: number;
+    revenue: number;
+    earnedCommission: number;
+    allTimeClosedCount: number;
+    allTimeEarned: number;
+    allTimePaid: number;
+    allTimePending: number;
+  };
 }
 
 function fmtMoney(n: number) {
@@ -123,12 +136,19 @@ export default function CommissionOverviewPage() {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b">
                     <tr>
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">Agent</th>
-                      <th className="text-center py-3 px-4 font-medium text-gray-600">ทรัพย์ที่ปิดได้</th>
-                      <th className="text-right py-3 px-4 font-medium text-gray-600">ยอดค่าคอมเดือนนี้</th>
-                      <th className="text-center py-3 px-4 font-medium text-gray-600">Tier</th>
-                      <th className="text-right py-3 px-4 font-medium text-gray-600">Agent ได้เดือนนี้</th>
-                      <th className="text-right py-3 px-4 font-medium text-gray-600">สะสมทั้งหมด</th>
+                      <th rowSpan={2} className="text-left py-3 px-4 font-medium text-gray-600 align-bottom">Agent</th>
+                      <th rowSpan={2} className="text-center py-3 px-4 font-medium text-gray-600 align-bottom">ทรัพย์ที่ปิดได้<br />เดือนนี้</th>
+                      <th rowSpan={2} className="text-right py-3 px-4 font-medium text-gray-600 align-bottom">ยอดค่าคอม<br />เดือนนี้</th>
+                      <th rowSpan={2} className="text-center py-3 px-4 font-medium text-gray-600 align-bottom">Tier</th>
+                      <th colSpan={2} className="text-center py-2 px-4 font-medium text-gray-600 border-b">Agent ได้เดือนนี้</th>
+                      <th rowSpan={2} className="text-center py-3 px-4 font-medium text-gray-600 align-bottom">ปิดได้<br />สะสม</th>
+                      <th colSpan={2} className="text-center py-2 px-4 font-medium text-gray-600 border-b">สะสมทั้งหมด</th>
+                    </tr>
+                    <tr>
+                      <th className="text-right py-2 px-4 font-medium text-amber-600">รอจ่าย</th>
+                      <th className="text-right py-2 px-4 font-medium text-green-600">จ่ายแล้ว</th>
+                      <th className="text-right py-2 px-4 font-medium text-amber-600">รอจ่าย</th>
+                      <th className="text-right py-2 px-4 font-medium text-green-600">จ่ายแล้ว</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -146,12 +166,11 @@ export default function CommissionOverviewPage() {
                             <span className="text-gray-300">-</span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-right font-medium text-green-700">
-                          ฿{fmtMoney(r.selectedMonth.earnedCommission)}
-                        </td>
-                        <td className="py-3 px-4 text-right font-bold text-[#C8A951]">
-                          ฿{fmtMoney(r.allTimeEarned)}
-                        </td>
+                        <td className="py-3 px-4 text-right text-amber-600">฿{fmtMoney(r.selectedMonth.pendingCommission)}</td>
+                        <td className="py-3 px-4 text-right text-green-700">฿{fmtMoney(r.selectedMonth.paidCommission)}</td>
+                        <td className="py-3 px-4 text-center font-medium text-gray-700">{r.allTimeClosedCount}</td>
+                        <td className="py-3 px-4 text-right font-medium text-amber-600">฿{fmtMoney(r.allTimePending)}</td>
+                        <td className="py-3 px-4 text-right font-bold text-[#C8A951]">฿{fmtMoney(r.allTimePaid)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -159,6 +178,10 @@ export default function CommissionOverviewPage() {
               </div>
             )}
           </div>
+          <p className="text-xs text-gray-400 mt-3 flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5" />
+            &ldquo;รอจ่าย&rdquo; = ค่าคอมที่รับจากเจ้าของแล้วแต่ยังไม่ได้จ่ายให้ Agent · &ldquo;จ่ายแล้ว&rdquo; = โอนให้ Agent เรียบร้อยแล้ว
+          </p>
         </>
       ) : null}
     </div>

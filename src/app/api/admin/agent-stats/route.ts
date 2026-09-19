@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { summarizeAgentCommissionByMonth } from "@/lib/commission";
+import { summarizeAgentCommissionByMonth, summarizeClosedCountByMonth } from "@/lib/commission";
 
 export async function GET() {
   try {
@@ -67,8 +67,14 @@ export async function GET() {
     // has the commission-overview dashboard for the all-agents view.
     let commission = null;
     if (role === "CO_AGENT") {
-      const [rentTiers, commissionContracts] = await Promise.all([
+      const [rentTiers, allAgentContracts, commissionContracts] = await Promise.all([
         prisma.commissionTier.findMany({ where: { dealCategory: "RENT" } }),
+        // "Closed" count is independent of payment status — every contract
+        // credited to this agent, by the month it was signed.
+        prisma.contract.findMany({
+          where: { agentId: userId },
+          select: { contractDate: true },
+        }),
         prisma.contract.findMany({
           where: { agentId: userId, commissionReceived: true },
           select: {
@@ -77,6 +83,7 @@ export async function GET() {
             termMonths: true,
             dealType: true,
             commissionReceivedDate: true,
+            commissionPaid: true,
           },
         }),
       ]);
@@ -86,18 +93,26 @@ export async function GET() {
         maxAmount: t.maxAmount != null ? Number(t.maxAmount) : null,
         agentPercent: Number(t.agentPercent),
       }));
-      const months = summarizeAgentCommissionByMonth(
+      const closedMonths = summarizeClosedCountByMonth(allAgentContracts);
+      const commissionMonths = summarizeAgentCommissionByMonth(
         commissionContracts.map((c) => ({ ...c, monthlyRent: Number(c.monthlyRent) })),
         tiers
       );
 
       const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-      const currentMonth =
-        months.find((m) => m.monthKey === currentMonthKey) ??
-        { monthKey: currentMonthKey, closedCount: 0, revenue: 0, tierPercent: null, earnedCommission: 0 };
-      const allTimeEarned = months.reduce((sum, m) => sum + m.earnedCommission, 0);
+      const currentClosedCount =
+        closedMonths.find((m) => m.monthKey === currentMonthKey)?.closedCount ?? 0;
+      const currentCommissionMonth =
+        commissionMonths.find((m) => m.monthKey === currentMonthKey) ??
+        { monthKey: currentMonthKey, revenue: 0, tierPercent: null, earnedCommission: 0, paidCommission: 0, pendingCommission: 0 };
 
-      commission = { currentMonth, allTimeEarned, months };
+      const currentMonth = { ...currentCommissionMonth, closedCount: currentClosedCount };
+      const allTimeClosedCount = closedMonths.reduce((sum, m) => sum + m.closedCount, 0);
+      const allTimeEarned = commissionMonths.reduce((sum, m) => sum + m.earnedCommission, 0);
+      const allTimePaid = commissionMonths.reduce((sum, m) => sum + m.paidCommission, 0);
+      const allTimePending = commissionMonths.reduce((sum, m) => sum + m.pendingCommission, 0);
+
+      commission = { currentMonth, allTimeClosedCount, allTimeEarned, allTimePaid, allTimePending };
     }
 
     return NextResponse.json({

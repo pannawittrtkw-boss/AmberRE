@@ -41,19 +41,48 @@ export function getTierForAmount<T extends CommissionTierLike>(
   );
 }
 
-export interface AgentCommissionMonth {
+export interface MonthlyClosedCount {
   monthKey: string; // "YYYY-MM"
   closedCount: number;
+}
+
+// "ทรัพย์ที่ปิดได้" is tracked independently of the money — a signed
+// contract counts as closed the month it was made (contractDate),
+// whether or not commission has been collected yet. RENEW contracts
+// count too, per the confirmed rule.
+export function summarizeClosedCountByMonth(
+  contracts: Array<{ contractDate: Date | string }>
+): MonthlyClosedCount[] {
+  const byMonth = new Map<string, number>();
+  for (const c of contracts) {
+    const d = new Date(c.contractDate);
+    const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    byMonth.set(monthKey, (byMonth.get(monthKey) ?? 0) + 1);
+  }
+  return Array.from(byMonth, ([monthKey, closedCount]) => ({ monthKey, closedCount })).sort(
+    (a, b) => b.monthKey.localeCompare(a.monthKey)
+  );
+}
+
+export interface AgentCommissionMonth {
+  monthKey: string; // "YYYY-MM"
   revenue: number;
   tierPercent: number | null;
   earnedCommission: number;
+  paidCommission: number;
+  pendingCommission: number;
 }
 
-// Buckets an agent's commission-received contracts by the month they were
-// received in (per the confirmed rule: tiers are evaluated on money
-// actually collected, keyed by commissionReceivedDate — not contractDate
-// or startDate). Each month's whole revenue total determines a single
-// tier bracket, applied to that whole total (non-graduated).
+// Buckets an agent's commission-received contracts by the month the money
+// was received in (commissionReceivedDate — not contractDate/startDate;
+// see summarizeClosedCountByMonth for the separate, status-independent
+// "closed" count). Each month's whole revenue total determines a single
+// tier bracket (non-graduated), applied to that whole total. Because the
+// same percentage applies uniformly, each contract's own slice of the
+// month's earned commission is its own revenue x that percentage — which
+// is then bucketed into "paid" or "pending" per that contract's own
+// commissionPaid flag, so the two halves always add up to the month's
+// earnedCommission exactly.
 export function summarizeAgentCommissionByMonth(
   contracts: Array<{
     monthlyRent: number | string;
@@ -61,31 +90,43 @@ export function summarizeAgentCommissionByMonth(
     termMonths: number;
     dealType: string;
     commissionReceivedDate: Date | string | null;
+    commissionPaid: boolean;
   }>,
   rentTiers: CommissionTierLike[]
 ): AgentCommissionMonth[] {
-  const byMonth = new Map<string, { count: number; revenue: number }>();
+  const byMonth = new Map<string, Array<{ amount: number; paid: boolean }>>();
 
   for (const c of contracts) {
     if (!c.commissionReceivedDate) continue;
     const d = new Date(c.commissionReceivedDate);
     const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     const amount = calcContractCommission(c);
-    const bucket = byMonth.get(monthKey) ?? { count: 0, revenue: 0 };
-    bucket.count += 1;
-    bucket.revenue += amount;
-    byMonth.set(monthKey, bucket);
+    const list = byMonth.get(monthKey) ?? [];
+    list.push({ amount, paid: c.commissionPaid });
+    byMonth.set(monthKey, list);
   }
 
   const result: AgentCommissionMonth[] = [];
-  for (const [monthKey, { count, revenue }] of byMonth) {
+  for (const [monthKey, items] of byMonth) {
+    const revenue = items.reduce((sum, i) => sum + i.amount, 0);
     const tier = getTierForAmount(rentTiers, revenue);
+    const percent = tier ? Number(tier.agentPercent) : 0;
+
+    let paidCommission = 0;
+    let pendingCommission = 0;
+    for (const i of items) {
+      const share = (i.amount * percent) / 100;
+      if (i.paid) paidCommission += share;
+      else pendingCommission += share;
+    }
+
     result.push({
       monthKey,
-      closedCount: count,
       revenue,
-      tierPercent: tier ? Number(tier.agentPercent) : null,
-      earnedCommission: tier ? (revenue * Number(tier.agentPercent)) / 100 : 0,
+      tierPercent: tier ? percent : null,
+      earnedCommission: paidCommission + pendingCommission,
+      paidCommission,
+      pendingCommission,
     });
   }
 
