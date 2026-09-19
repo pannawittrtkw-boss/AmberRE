@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { summarizeAgentCommissionByMonth, summarizeClosedCountByMonth, calcContractCommission } from "@/lib/commission";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -18,13 +18,25 @@ export async function GET() {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
+    // ADMIN can drill into a specific agent's numbers via ?agentId= (used
+    // by the commission-overview detail page) — CO_AGENT can only ever see
+    // their own, regardless of what's passed.
+    const requestedAgentId = req.nextUrl.searchParams.get("agentId");
+    const targetAgentId =
+      role === "ADMIN" && requestedAgentId ? Number(requestedAgentId) : userId;
+    const viewingOtherAgent = role === "ADMIN" && requestedAgentId != null;
+
     const now = new Date();
     const in45Days = new Date(now.getTime() + 45 * 24 * 60 * 60 * 1000);
 
-    // For CO_AGENT: scope to their properties; for ADMIN: all contracts
-    const agentFilter = role === "CO_AGENT"
-      ? { property: { agentId: userId } }
-      : {};
+    // For CO_AGENT: scope to their properties; for ADMIN viewing a specific
+    // agent: scope to that agent; for ADMIN's own overview: all contracts.
+    const agentFilter =
+      role === "CO_AGENT"
+        ? { property: { agentId: userId } }
+        : viewingOtherAgent
+        ? { property: { agentId: targetAgentId } }
+        : {};
 
     const [draft, active, expiringSoon, expired, recentContracts] = await Promise.all([
       prisma.contract.count({
@@ -66,13 +78,13 @@ export async function GET() {
     // their own numbers — an ADMIN isn't personally credited on deals, and
     // has the commission-overview dashboard for the all-agents view.
     let commission = null;
-    if (role === "CO_AGENT") {
+    if (role === "CO_AGENT" || viewingOtherAgent) {
       const [rentTiers, allAgentContracts, commissionContracts] = await Promise.all([
         prisma.commissionTier.findMany({ where: { dealCategory: "RENT" } }),
         // "Closed" count/history is independent of payment status — every
         // contract credited to this agent, by the month it was signed.
         prisma.contract.findMany({
-          where: { agentId: userId },
+          where: { agentId: targetAgentId },
           orderBy: { contractDate: "desc" },
           select: {
             id: true,
@@ -93,7 +105,7 @@ export async function GET() {
           },
         }),
         prisma.contract.findMany({
-          where: { agentId: userId, commissionReceived: true },
+          where: { agentId: targetAgentId, commissionReceived: true },
           select: {
             monthlyRent: true,
             contractType: true,
@@ -163,9 +175,18 @@ export async function GET() {
       commission = { currentMonth, allTimeClosedCount, allTimeEarned, allTimePaid, allTimePending, history };
     }
 
+    let agentName: string | null = null;
+    if (viewingOtherAgent) {
+      const agent = await prisma.user.findUnique({
+        where: { id: targetAgentId },
+        select: { firstName: true, lastName: true },
+      });
+      agentName = agent ? `${agent.firstName} ${agent.lastName}` : null;
+    }
+
     return NextResponse.json({
       success: true,
-      data: { draft, active, expiringSoon, expired, recentContracts, commission },
+      data: { draft, active, expiringSoon, expired, recentContracts, commission, agentName },
     });
   } catch (err: any) {
     console.error("Agent stats GET error:", err);

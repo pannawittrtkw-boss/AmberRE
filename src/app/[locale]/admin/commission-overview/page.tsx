@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Loader2, RefreshCw, Users, Home, Wallet, PiggyBank, Clock, CalendarRange } from "lucide-react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { Loader2, RefreshCw, Users, Home, Wallet, PiggyBank, Clock, CalendarRange, ChevronRight } from "lucide-react";
 
 interface Row {
   agentId: number;
@@ -93,6 +95,9 @@ function SummaryCard({
 
 
 export default function CommissionOverviewPage() {
+  const params = useParams();
+  const router = useRouter();
+  const locale = (params?.locale as string) || "th";
   const [month, setMonth] = useState(currentMonthKey());
   const [data, setData] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -198,6 +203,7 @@ export default function CommissionOverviewPage() {
                       <th colSpan={3} className="py-2.5 px-4 text-center font-semibold text-amber-700 text-xs bg-amber-50/60 border-b border-amber-100 border-l border-gray-100">
                         สะสมทั้งหมด
                       </th>
+                      <th rowSpan={2} className="w-8 border-b border-gray-100" />
                     </tr>
                     <tr className="text-[11px] text-gray-400">
                       <th className="py-2 px-4 text-center font-medium bg-indigo-50/30">ปิดได้</th>
@@ -214,15 +220,20 @@ export default function CommissionOverviewPage() {
                     {data.rows.map((r, idx) => (
                       <tr
                         key={r.agentId}
-                        className={`border-b border-gray-50 last:border-0 hover:bg-gray-50/70 transition-colors ${idx % 2 === 1 ? "bg-gray-50/30" : ""}`}
+                        onClick={() => router.push(`/${locale}/admin/commission-overview/${r.agentId}`)}
+                        className={`border-b border-gray-50 last:border-0 hover:bg-gray-50/70 transition-colors cursor-pointer ${idx % 2 === 1 ? "bg-gray-50/30" : ""}`}
                       >
                         <td className="py-3.5 px-5">
-                          <div className="flex items-center gap-2.5">
+                          <Link
+                            href={`/${locale}/admin/commission-overview/${r.agentId}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center gap-2.5 hover:underline w-fit"
+                          >
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 ${avatarColor(r.name)}`}>
                               {initials(r.name)}
                             </div>
                             <span className="font-medium text-gray-800 whitespace-nowrap">{r.name}</span>
-                          </div>
+                          </Link>
                         </td>
                         <td className="py-3.5 px-4 text-center text-gray-700">{r.selectedMonth.closedCount}</td>
                         <td className="py-3.5 px-4 text-right text-gray-700">฿{fmtMoney(r.selectedMonth.revenue)}</td>
@@ -240,6 +251,9 @@ export default function CommissionOverviewPage() {
                         <td className="py-3.5 px-4 text-center text-gray-700 border-l border-gray-50">{r.allTimeClosedCount}</td>
                         <td className="py-3.5 px-4 text-right font-medium text-orange-600">฿{fmtMoney(r.allTimePending)}</td>
                         <td className="py-3.5 px-4 text-right font-bold text-[#C8A951]">฿{fmtMoney(r.allTimePaid)}</td>
+                        <td className="pr-4">
+                          <ChevronRight className="w-4 h-4 text-gray-300" />
+                        </td>
                       </tr>
                     ))}
                   </tbody>
