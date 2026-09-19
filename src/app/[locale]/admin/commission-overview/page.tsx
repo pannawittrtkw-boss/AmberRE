@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Loader2, RefreshCw, Users, Home, Wallet, PiggyBank, Clock, CheckCircle2, CalendarRange } from "lucide-react";
+import { Loader2, RefreshCw, Users, Home, Wallet, PiggyBank, Clock, CalendarRange } from "lucide-react";
 
 interface Row {
   agentId: number;
@@ -91,17 +91,6 @@ function SummaryCard({
   );
 }
 
-function MiniStat({ icon, value, label, valueClass }: { icon: React.ReactNode; value: string; label: string; valueClass?: string }) {
-  return (
-    <div className="rounded-xl bg-gray-50 px-3 py-2.5">
-      <div className="flex items-center gap-1.5 text-gray-400 mb-1">
-        {icon}
-        <span className="text-[11px] font-medium">{label}</span>
-      </div>
-      <div className={`text-sm font-bold ${valueClass ?? "text-gray-800"}`}>{value}</div>
-    </div>
-  );
-}
 
 export default function CommissionOverviewPage() {
   const [month, setMonth] = useState(currentMonthKey());
@@ -191,58 +180,73 @@ export default function CommissionOverviewPage() {
             />
           </div>
 
-          {/* Per-agent cards */}
-          {data.rows.length === 0 ? (
-            <div className="text-center py-16 text-gray-400 text-sm bg-white rounded-2xl border border-gray-100">
-              ยังไม่มี Agent ในระบบ
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              {data.rows.map((r) => (
-                <div key={r.agentId} className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
-                  {/* Header */}
-                  <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0 ${avatarColor(r.name)}`}>
-                        {initials(r.name)}
-                      </div>
-                      <span className="font-semibold text-gray-900">{r.name}</span>
-                    </div>
-                    {r.selectedMonth.tierPercent != null ? (
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
-                        Tier {r.selectedMonth.tierPercent}%
-                      </span>
-                    ) : (
-                      <span className="text-xs text-gray-300">ยังไม่มี Tier</span>
-                    )}
-                  </div>
-
-                  {/* This month */}
-                  <div className="px-5 pt-4 pb-2">
-                    <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                      {fmtMonthLabel(r.selectedMonth.monthKey)}
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      <MiniStat icon={<Home className="w-3.5 h-3.5" />} label="ปิดได้" value={String(r.selectedMonth.closedCount)} />
-                      <MiniStat icon={<Wallet className="w-3.5 h-3.5" />} label="ยอดค่าคอม" value={`฿${fmtMoney(r.selectedMonth.revenue)}`} />
-                      <MiniStat icon={<Clock className="w-3.5 h-3.5" />} label="รอจ่าย" value={`฿${fmtMoney(r.selectedMonth.pendingCommission)}`} valueClass="text-orange-600" />
-                      <MiniStat icon={<CheckCircle2 className="w-3.5 h-3.5" />} label="จ่ายแล้ว" value={`฿${fmtMoney(r.selectedMonth.paidCommission)}`} valueClass="text-emerald-600" />
-                    </div>
-                  </div>
-
-                  {/* All-time */}
-                  <div className="px-5 pt-2 pb-4">
-                    <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2">สะสมทั้งหมด</div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <MiniStat icon={<Home className="w-3.5 h-3.5" />} label="ปิดได้" value={String(r.allTimeClosedCount)} />
-                      <MiniStat icon={<Clock className="w-3.5 h-3.5" />} label="รอจ่าย" value={`฿${fmtMoney(r.allTimePending)}`} valueClass="text-orange-600" />
-                      <MiniStat icon={<PiggyBank className="w-3.5 h-3.5" />} label="จ่ายแล้ว" value={`฿${fmtMoney(r.allTimePaid)}`} valueClass="text-[#C8A951]" />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Per-agent table */}
+          <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+            {data.rows.length === 0 ? (
+              <div className="text-center py-16 text-gray-400 text-sm">ยังไม่มี Agent ในระบบ</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr>
+                      <th rowSpan={2} className="text-left py-3 px-5 font-semibold text-gray-500 text-xs align-bottom border-b border-gray-100">
+                        Agent
+                      </th>
+                      <th colSpan={5} className="py-2.5 px-4 text-center font-semibold text-indigo-600 text-xs bg-indigo-50/60 border-b border-indigo-100">
+                        {fmtMonthLabel(month)}
+                      </th>
+                      <th colSpan={3} className="py-2.5 px-4 text-center font-semibold text-amber-700 text-xs bg-amber-50/60 border-b border-amber-100 border-l border-gray-100">
+                        สะสมทั้งหมด
+                      </th>
+                    </tr>
+                    <tr className="text-[11px] text-gray-400">
+                      <th className="py-2 px-4 text-center font-medium bg-indigo-50/30">ปิดได้</th>
+                      <th className="py-2 px-4 text-right font-medium bg-indigo-50/30">ยอดค่าคอม</th>
+                      <th className="py-2 px-4 text-center font-medium bg-indigo-50/30">Tier</th>
+                      <th className="py-2 px-4 text-right font-medium bg-indigo-50/30 text-orange-500">รอจ่าย</th>
+                      <th className="py-2 px-4 text-right font-medium bg-indigo-50/30 text-emerald-600">จ่ายแล้ว</th>
+                      <th className="py-2 px-4 text-center font-medium bg-amber-50/30 border-l border-gray-100">ปิดได้</th>
+                      <th className="py-2 px-4 text-right font-medium bg-amber-50/30 text-orange-500">รอจ่าย</th>
+                      <th className="py-2 px-4 text-right font-medium bg-amber-50/30 text-[#C8A951]">จ่ายแล้ว</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.rows.map((r, idx) => (
+                      <tr
+                        key={r.agentId}
+                        className={`border-b border-gray-50 last:border-0 hover:bg-gray-50/70 transition-colors ${idx % 2 === 1 ? "bg-gray-50/30" : ""}`}
+                      >
+                        <td className="py-3.5 px-5">
+                          <div className="flex items-center gap-2.5">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 ${avatarColor(r.name)}`}>
+                              {initials(r.name)}
+                            </div>
+                            <span className="font-medium text-gray-800 whitespace-nowrap">{r.name}</span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 text-center text-gray-700">{r.selectedMonth.closedCount}</td>
+                        <td className="py-3.5 px-4 text-right text-gray-700">฿{fmtMoney(r.selectedMonth.revenue)}</td>
+                        <td className="py-3.5 px-4 text-center">
+                          {r.selectedMonth.tierPercent != null ? (
+                            <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                              {r.selectedMonth.tierPercent}%
+                            </span>
+                          ) : (
+                            <span className="text-gray-300">-</span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-medium text-orange-600">฿{fmtMoney(r.selectedMonth.pendingCommission)}</td>
+                        <td className="py-3.5 px-4 text-right font-medium text-emerald-600">฿{fmtMoney(r.selectedMonth.paidCommission)}</td>
+                        <td className="py-3.5 px-4 text-center text-gray-700 border-l border-gray-50">{r.allTimeClosedCount}</td>
+                        <td className="py-3.5 px-4 text-right font-medium text-orange-600">฿{fmtMoney(r.allTimePending)}</td>
+                        <td className="py-3.5 px-4 text-right font-bold text-[#C8A951]">฿{fmtMoney(r.allTimePaid)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
 
           <p className="text-xs text-gray-400 mt-5 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
