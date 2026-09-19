@@ -39,14 +39,15 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
   const [now] = useState(() => Date.now());
   const listedDate = new Date(property.listedAt || property.createdAt);
   const daysPosted = Math.max(0, Math.floor((now - listedDate.getTime()) / 86400000));
-  const daysBadge =
+  const daysLabel = `${daysPosted} ${locale === "th" ? "วัน" : "d"}`;
+  const daysBadgeCls =
     daysPosted <= 7
-      ? { label: locale === "th" ? "ใหม่" : "New", cls: "bg-emerald-500 text-white" }
+      ? "bg-emerald-500 text-white"
       : daysPosted <= 30
-      ? { label: `${daysPosted} ${locale === "th" ? "วัน" : "d"}`, cls: "bg-gray-400 text-white" }
+      ? "bg-gray-400 text-white"
       : daysPosted <= 90
-      ? { label: `${daysPosted} ${locale === "th" ? "วัน" : "d"}`, cls: "bg-amber-500 text-white" }
-      : { label: `${daysPosted} ${locale === "th" ? "วัน" : "d"}`, cls: "bg-red-500 text-white" };
+      ? "bg-amber-500 text-white"
+      : "bg-red-500 text-white";
 
   const isSold = property.isSold || property.status === "SOLD";
   const isRented = property.status === "RENTED";
@@ -76,6 +77,11 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
             className="w-full h-full"
             imageClassName="group-hover:scale-105"
           />
+
+          {/* Days on market */}
+          <div className={`absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded ${daysBadgeCls}`}>
+            {daysLabel}
+          </div>
 
           {/* SOLD OUT / RENTED watermark */}
           {isSoldOrRented && (
@@ -116,11 +122,6 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
 
         {/* Tags */}
         <div className="px-3 pt-2.5 pb-1 flex flex-wrap items-center gap-1.5">
-          {/* Days on market */}
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${daysBadge.cls}`}>
-            {daysBadge.label}
-          </span>
-
           {/* Ready / Available date */}
           {isReady ? (
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-teal-600 text-white">
