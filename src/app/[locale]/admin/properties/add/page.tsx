@@ -1228,7 +1228,7 @@ export default function AddPropertyPage({
               {nearbyPlaces.length > 0 && (
                 <div className="col-span-2">
                   <label className="block text-sm font-semibold mb-2">
-                    สถานที่ใกล้เคียง <span className="font-normal text-gray-400">(จาก Google Places)</span>
+                    สถานที่ใกล้เคียง <span className="font-normal text-gray-400">(ดึงอัตโนมัติ)</span>
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {nearbyPlaces.map((np) => (

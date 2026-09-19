@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import PropertyCard from "@/components/property/PropertyCard";
+import FeaturedPropertyCard from "@/components/property/FeaturedPropertyCard";
 import PropertyFilter from "@/components/property/PropertyFilter";
 import { Loader2, Home, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -260,7 +260,7 @@ export default function PropertiesPage({
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {properties.map((property: any) => (
-                    <PropertyCard
+                    <FeaturedPropertyCard
                       key={property.id}
                       property={property}
                       locale={locale}
