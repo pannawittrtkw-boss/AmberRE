@@ -132,6 +132,7 @@ export default function ContractForm({
     securityDeposit: initialData?.securityDeposit || "",
 
     contractType: initialData?.contractType || "NEW",
+    agentId: initialData?.agentId || null,
     dealType: initialData?.dealType || "DIRECT_OWNER",
     coAgentName: initialData?.coAgentName || "",
     coAgentPhone: initialData?.coAgentPhone || "",
@@ -195,6 +196,20 @@ export default function ContractForm({
   // merged into the contract's own snapshot.
   // Skipped when editing an existing contract — that contract already
   // holds its own self-contained snapshot.
+  // Internal agents (User.role === "CO_AGENT") for the commission-credit
+  // dropdown — distinct from the free-text external co-agent fields below.
+  const [agents, setAgents] = useState<{ id: number; firstName: string; lastName: string }[]>([]);
+  useEffect(() => {
+    fetch("/api/admin/users")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.success) {
+          setAgents(data.data.filter((u: { role: string }) => u.role === "CO_AGENT"));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (isEdit) return;
     if (initialData?.customClauses || initialData?.clauseOverrides) return;
@@ -463,6 +478,24 @@ export default function ContractForm({
                 Co-Agent
               </button>
             </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-stone-700">
+              {locale === "th" ? "ตัวแทน (Agent)" : "Agent"}
+            </span>
+            <select
+              value={form.agentId ?? ""}
+              onChange={(e) => update("agentId", e.target.value ? Number(e.target.value) : null)}
+              className={`${inputCls} w-56`}
+            >
+              <option value="">{locale === "th" ? "— ไม่ระบุ —" : "— None —"}</option>
+              {agents.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.firstName} {a.lastName}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 

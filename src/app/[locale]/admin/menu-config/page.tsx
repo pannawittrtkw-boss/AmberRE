@@ -13,6 +13,8 @@ const MENU_ITEMS = [
   { key: "dashboard",              labelTh: "Dashboard (Admin)",            labelEn: "Dashboard (Admin)",    group: "admin" },
   { key: "users",                  labelTh: "จัดการผู้ใช้",                  labelEn: "User Management",      group: "admin" },
   { key: "subscriptions",          labelTh: "จัดการ Package",               labelEn: "Subscriptions",        group: "admin" },
+  { key: "commission-tiers",       labelTh: "ตั้งค่าค่าคอมมิชชั่น",           labelEn: "Commission Tiers",     group: "admin" },
+  { key: "commission-overview",    labelTh: "ภาพรวมค่าคอม Agent",           labelEn: "Commission Overview",  group: "admin" },
   { key: "menu-config",            labelTh: "เมนูตาม Package",              labelEn: "Menu Config",          group: "admin" },
   { key: "settings",               labelTh: "ตั้งค่า",                       labelEn: "Settings",             group: "admin" },
   { key: "languages",              labelTh: "ตั้งค่าภาษา",                  labelEn: "Language Settings",    group: "admin" },

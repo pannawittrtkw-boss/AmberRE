@@ -120,6 +120,13 @@ export async function PUT(
         clauseOverrides: body.clauseOverrides || null,
 
         contractType: body.contractType || undefined,
+        ...(body.agentId !== undefined
+          ? {
+              agent: body.agentId
+                ? { connect: { id: Number(body.agentId) } }
+                : { disconnect: true },
+            }
+          : {}),
         dealType: body.dealType || undefined,
         coAgentName: body.dealType === "CO_AGENT" ? (body.coAgentName || null) : null,
         coAgentPhone: body.dealType === "CO_AGENT" ? (body.coAgentPhone || null) : null,

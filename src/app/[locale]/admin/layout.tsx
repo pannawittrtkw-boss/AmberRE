@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Building2, Users, FileText, Star, Loader2, Settings,
   Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature, Lock, Crown, LayoutList, UserSearch, CalendarDays,
-  Receipt, ClipboardList, Building, Bot, CloudUpload,
+  Receipt, ClipboardList, Building, Bot, CloudUpload, Percent, BarChart3,
 } from "lucide-react";
 
 // Full list of every menu item a CO_AGENT can ever be given access to.
@@ -47,6 +47,8 @@ const ALL_ADMIN_NAV = [
   { key: "contract-calendar",     icon: CalendarDays,    hrefSuffix: "/calendar",                 labelKey: null, labelFallback: { th: "ปฏิทินสัญญา", en: "Contract Calendar" } },
   { key: "closed-contracts",       icon: Lock,            hrefSuffix: "/closed-contracts",         labelKey: null, labelFallback: { th: "Closed Contracts", en: "Closed Contracts" } },
   { key: "subscriptions",          icon: Crown,           hrefSuffix: "/subscriptions",            labelKey: null, labelFallback: { th: "จัดการ Package", en: "Subscriptions" } },
+  { key: "commission-tiers",       icon: Percent,         hrefSuffix: "/commission-tiers",         labelKey: null, labelFallback: { th: "ตั้งค่าค่าคอมมิชชั่น", en: "Commission Tiers" } },
+  { key: "commission-overview",    icon: BarChart3,       hrefSuffix: "/commission-overview",      labelKey: null, labelFallback: { th: "ภาพรวมค่าคอม Agent", en: "Commission Overview" } },
   { key: "menu-config",            icon: LayoutList,      hrefSuffix: "/menu-config",              labelKey: null, labelFallback: { th: "เมนูตาม Package", en: "Menu Config" } },
   { key: "reviews",                icon: Star,            hrefSuffix: "/reviews",                  labelKey: "reviewModeration" },
   { key: "settings",               icon: Settings,        hrefSuffix: "/settings",                 labelKey: "settings", fallback: "Settings" },

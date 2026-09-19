@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { summarizeAgentCommissionByMonth } from "@/lib/commission";
 
 export async function GET() {
   try {
@@ -61,9 +62,47 @@ export async function GET() {
       }),
     ]);
 
+    // Commission tier breakdown is only meaningful for the agent viewing
+    // their own numbers — an ADMIN isn't personally credited on deals, and
+    // has the commission-overview dashboard for the all-agents view.
+    let commission = null;
+    if (role === "CO_AGENT") {
+      const [rentTiers, commissionContracts] = await Promise.all([
+        prisma.commissionTier.findMany({ where: { dealCategory: "RENT" } }),
+        prisma.contract.findMany({
+          where: { agentId: userId, commissionReceived: true },
+          select: {
+            monthlyRent: true,
+            contractType: true,
+            termMonths: true,
+            dealType: true,
+            commissionReceivedDate: true,
+          },
+        }),
+      ]);
+
+      const tiers = rentTiers.map((t) => ({
+        minAmount: Number(t.minAmount),
+        maxAmount: t.maxAmount != null ? Number(t.maxAmount) : null,
+        agentPercent: Number(t.agentPercent),
+      }));
+      const months = summarizeAgentCommissionByMonth(
+        commissionContracts.map((c) => ({ ...c, monthlyRent: Number(c.monthlyRent) })),
+        tiers
+      );
+
+      const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      const currentMonth =
+        months.find((m) => m.monthKey === currentMonthKey) ??
+        { monthKey: currentMonthKey, closedCount: 0, revenue: 0, tierPercent: null, earnedCommission: 0 };
+      const allTimeEarned = months.reduce((sum, m) => sum + m.earnedCommission, 0);
+
+      commission = { currentMonth, allTimeEarned, months };
+    }
+
     return NextResponse.json({
       success: true,
-      data: { draft, active, expiringSoon, expired, recentContracts },
+      data: { draft, active, expiringSoon, expired, recentContracts, commission },
     });
   } catch (err: any) {
     console.error("Agent stats GET error:", err);

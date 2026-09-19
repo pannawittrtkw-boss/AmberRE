@@ -12,10 +12,12 @@ export async function GET() {
 
   const userId = Number((session.user as any).id);
 
-  // CO_AGENT sees only contracts linked to properties they own (agentId = them)
+  // CO_AGENT sees contracts directly credited to them, or (for older
+  // records predating the direct agentId field) linked via the property
+  // they own.
   const where =
     role === "CO_AGENT"
-      ? { property: { agentId: userId } }
+      ? { OR: [{ agentId: userId }, { property: { agentId: userId } }] }
       : {};
 
   const contracts = await prisma.contract.findMany({
@@ -24,6 +26,9 @@ export async function GET() {
     include: {
       property: {
         select: { id: true, titleTh: true, projectName: true },
+      },
+      agent: {
+        select: { id: true, firstName: true, lastName: true },
       },
     },
   });
@@ -186,6 +191,9 @@ export async function POST(req: NextRequest) {
         // refuses the raw `createdById` scalar at create time.
         ...(createdById
           ? { createdBy: { connect: { id: createdById } } }
+          : {}),
+        ...(body.agentId
+          ? { agent: { connect: { id: Number(body.agentId) } } }
           : {}),
       },
     });

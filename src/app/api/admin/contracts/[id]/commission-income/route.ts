@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { calcContractCommission } from "@/lib/commission";
 
 export const runtime = "nodejs";
 
@@ -13,15 +14,6 @@ const DEAL_TYPE_LABEL: Record<string, string> = {
   DIRECT_OWNER: "เจ้าของโดยตรง",
   CO_AGENT: "Co-Agent",
 };
-
-// Mirrors calcCommission() in the contracts admin page — kept in sync
-// manually since one lives client-side (for live display) and this one
-// runs server-side (so the amount can't be spoofed from the client).
-function calcCommission(monthlyRent: number, contractType: string, termMonths: number, dealType: string): number {
-  let commission = contractType === "RENEW" ? monthlyRent * (termMonths / 12) * 0.5 : monthlyRent;
-  if (dealType === "CO_AGENT") commission /= 2;
-  return commission;
-}
 
 function fmtDate(d: Date): string {
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
@@ -63,12 +55,12 @@ export async function POST(
   }
 
   const description = buildDescription(contract);
-  const amount = calcCommission(
-    Number(contract.monthlyRent),
-    contract.contractType,
-    contract.termMonths,
-    contract.dealType
-  );
+  const amount = calcContractCommission({
+    monthlyRent: Number(contract.monthlyRent),
+    contractType: contract.contractType,
+    termMonths: contract.termMonths,
+    dealType: contract.dealType,
+  });
 
   // Duplicate check is scoped to the month of the receive date, since
   // that's the field the transaction is now actually stored under.

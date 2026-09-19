@@ -56,6 +56,7 @@ model User {
   activityLogs       ActivityLog[]
   passwordResets     PasswordResetToken[]
   contracts          Contract[]
+  agentContracts     Contract[]           @relation("ContractAgent")
   contactUnlockLogs  ContactUnlockLog[]
   transactions       Transaction[]
   customerLeads      CustomerLead[]
@@ -203,10 +204,17 @@ model Contract {
   createdById Int?
   createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
+  // The internal agent (User.role == "CO_AGENT") who gets commission
+  // credit for this deal — distinct from createdById (who entered the
+  // record) and from coAgentName/Phone/LineId (an external co-broker).
+  agentId Int?
+  agent   User? @relation("ContractAgent", fields: [agentId], references: [id], onDelete: SetNull)
+
   rentPayments RentPayment[]
 
   @@index([propertyId])
   @@index([status])
+  @@index([agentId])
 }
 
 model RentPayment {
@@ -509,6 +517,24 @@ model CommissionSharing {
   agent      User     @relation("AgentCommissions", fields: [agentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   coAgentId  Int
   coAgent    User     @relation("CoAgentCommissions", fields: [coAgentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+// Agent commission-share tiers: the more commission revenue an agent
+// brings the company in a month, the higher percentage share of it they
+// keep. Non-graduated — a single bracket applies to the whole monthly
+// total. "SALE" rows exist for future use once a sale-contract flow
+// exists; only "RENT" is wired into any calculation today.
+model CommissionTier {
+  id           Int      @id @default(autoincrement())
+  dealCategory String   @db.VarChar(10) // RENT | SALE
+  minAmount    Decimal  @db.Decimal(18, 2)
+  maxAmount    Decimal? @db.Decimal(18, 2) // null = no upper bound
+  agentPercent Decimal  @db.Decimal(5, 2)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([dealCategory])
 }
 
 model ArticleCategory {

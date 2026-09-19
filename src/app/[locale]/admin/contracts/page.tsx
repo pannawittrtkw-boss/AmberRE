@@ -28,6 +28,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { getIntlLocale } from "@/lib/utils";
+import { calcContractCommission } from "@/lib/commission";
 
 type Contract = {
   id: number;
@@ -50,6 +51,7 @@ type Contract = {
   signedPdfUrl?: string | null;
   shareToken?: string | null;
   property?: { id: number; titleTh: string; projectName: string | null } | null;
+  agent?: { id: number; firstName: string; lastName: string } | null;
 };
 
 type ESignInfo = {
@@ -66,18 +68,6 @@ type ESignInfo = {
   jointLesseeSignedAt?: string | null;
   commissionSignedAt?: string | null;
 };
-
-// New contract: commission = 1 month's rent. Renewal: commission = rent
-// x half a month per year renewed (12mo → 0.5x, 6mo → 0.25x, prorated for
-// anything in between). Co-agent deals split the result in half.
-function calcCommission(c: Pick<Contract, "monthlyRent" | "contractType" | "termMonths" | "dealType">): number {
-  const rent = Number(c.monthlyRent) || 0;
-  let commission = c.contractType === "RENEW"
-    ? rent * (c.termMonths / 12) * 0.5
-    : rent;
-  if (c.dealType === "CO_AGENT") commission /= 2;
-  return commission;
-}
 
 function daysRemaining(endDate: string): number {
   const end = new Date(endDate);
@@ -1062,9 +1052,9 @@ export default function AdminContractsPage({
     return true;
   });
 
-  const totalCommission = filteredContracts.reduce((sum, c) => sum + calcCommission(c), 0);
-  const receivedCommission = filteredContracts.filter((c) => c.commissionReceived).reduce((sum, c) => sum + calcCommission(c), 0);
-  const paidCommission = filteredContracts.filter((c) => c.commissionPaid).reduce((sum, c) => sum + calcCommission(c), 0);
+  const totalCommission = filteredContracts.reduce((sum, c) => sum + calcContractCommission(c), 0);
+  const receivedCommission = filteredContracts.filter((c) => c.commissionReceived).reduce((sum, c) => sum + calcContractCommission(c), 0);
+  const paidCommission = filteredContracts.filter((c) => c.commissionPaid).reduce((sum, c) => sum + calcContractCommission(c), 0);
 
   const copyShareLink = (c: Contract) => {
     if (!c.shareToken) return;
@@ -1212,6 +1202,7 @@ export default function AdminContractsPage({
                 <th className="text-left py-3 px-4">เลขที่</th>
                 <th className="text-left py-3 px-4">{locale === "th" ? "ทรัพย์" : "Property"}</th>
                 <th className="text-left py-3 px-4">{locale === "th" ? "ผู้เช่า" : "Lessee"}</th>
+                <th className="text-left py-3 px-4">{locale === "th" ? "ตัวแทน" : "Agent"}</th>
                 <th className="text-left py-3 px-4">{locale === "th" ? "ระยะเวลา" : "Period"}</th>
                 <th className="text-right py-3 px-4">{locale === "th" ? "ค่าเช่า/เดือน" : "Rent"}</th>
                 <th className="text-right py-3 px-4">{locale === "th" ? "ค่าคอมมิชชั่น" : "Commission"}</th>
@@ -1257,6 +1248,9 @@ export default function AdminContractsPage({
                       <div className="text-xs text-gray-500">#{c.unitNumber}</div>
                     </td>
                     <td className="py-3 px-4">{c.lesseeName}</td>
+                    <td className="py-3 px-4 text-xs text-gray-600">
+                      {c.agent ? `${c.agent.firstName} ${c.agent.lastName}` : "-"}
+                    </td>
                     <td className="py-3 px-4 text-xs">
                       {new Date(c.startDate).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" })}
                       {" → "}
@@ -1266,7 +1260,7 @@ export default function AdminContractsPage({
                       ฿{Number(c.monthlyRent).toLocaleString()}
                     </td>
                     <td className="py-3 px-4 text-right font-medium text-amber-700">
-                      ฿{calcCommission(c).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                      ฿{calcContractCommission(c).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                     </td>
                     <td className="py-3 px-4 text-center">
                       <button

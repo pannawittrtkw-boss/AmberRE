@@ -6,8 +6,16 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   Loader2, FileText, CheckCircle2, Clock, XCircle,
-  TrendingUp, RefreshCw, ChevronRight,
+  TrendingUp, RefreshCw, ChevronRight, Home, Wallet, Percent, PiggyBank,
 } from "lucide-react";
+
+interface CommissionMonth {
+  monthKey: string;
+  closedCount: number;
+  revenue: number;
+  tierPercent: number | null;
+  earnedCommission: number;
+}
 
 interface Stats {
   draft: number;
@@ -24,6 +32,10 @@ interface Stats {
     status: string;
     property: { id: number; titleTh: string; projectName: string } | null;
   }[];
+  commission: {
+    currentMonth: CommissionMonth;
+    allTimeEarned: number;
+  } | null;
 }
 
 const STATUS_META: Record<string, { label: string; color: string; dot: string }> = {
@@ -170,6 +182,55 @@ export default function AgentDashboardPage() {
               </div>
             ))}
           </div>
+
+          {/* Commission this month + all-time */}
+          {stats?.commission && (
+            <div className="mb-8">
+              <h2 className="text-sm font-semibold text-gray-800 mb-3">ค่าคอมมิชชั่นของฉัน</h2>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="rounded-xl border p-5 bg-gray-50 border-gray-200">
+                  <div className="p-2 rounded-lg bg-white/70 text-gray-500 w-fit mb-3">
+                    <Home className="w-5 h-5" />
+                  </div>
+                  <div className="text-3xl font-bold mb-1 text-gray-800">
+                    {stats.commission.currentMonth.closedCount}
+                  </div>
+                  <div className="text-sm font-semibold text-gray-700">ทรัพย์ที่ปิดได้เดือนนี้</div>
+                </div>
+                <div className="rounded-xl border p-5 bg-blue-50 border-blue-200">
+                  <div className="p-2 rounded-lg bg-white/70 text-blue-600 w-fit mb-3">
+                    <Wallet className="w-5 h-5" />
+                  </div>
+                  <div className="text-2xl font-bold mb-1 text-blue-700">
+                    ฿{fmtMoney(stats.commission.currentMonth.revenue)}
+                  </div>
+                  <div className="text-sm font-semibold text-gray-700">ยอดค่าคอมเดือนนี้</div>
+                </div>
+                <div className="rounded-xl border p-5 bg-amber-50 border-amber-200">
+                  <div className="p-2 rounded-lg bg-white/70 text-amber-600 w-fit mb-3">
+                    <Percent className="w-5 h-5" />
+                  </div>
+                  <div className="text-3xl font-bold mb-1 text-amber-700">
+                    {stats.commission.currentMonth.tierPercent ?? "-"}%
+                  </div>
+                  <div className="text-sm font-semibold text-gray-700">Tier เดือนนี้</div>
+                </div>
+                <div className="rounded-xl border p-5 bg-green-50 border-green-200">
+                  <div className="p-2 rounded-lg bg-white/70 text-green-600 w-fit mb-3">
+                    <PiggyBank className="w-5 h-5" />
+                  </div>
+                  <div className="text-2xl font-bold mb-1 text-green-700">
+                    ฿{fmtMoney(stats.commission.currentMonth.earnedCommission)}
+                  </div>
+                  <div className="text-sm font-semibold text-gray-700">ได้รับเดือนนี้</div>
+                </div>
+              </div>
+              <div className="mt-4 rounded-xl border border-gray-200 bg-white px-5 py-4 flex items-center justify-between">
+                <span className="text-sm font-semibold text-gray-700">ยอดค่าคอมสะสมทั้งหมด</span>
+                <span className="text-xl font-bold text-[#C8A951]">฿{fmtMoney(stats.commission.allTimeEarned)}</span>
+              </div>
+            </div>
+          )}
 
           {/* Recent contracts */}
           <div className="bg-white rounded-xl border border-gray-200">
