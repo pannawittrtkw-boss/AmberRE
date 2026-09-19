@@ -33,9 +33,9 @@ export async function GET(req: NextRequest) {
     // agent: scope to that agent; for ADMIN's own overview: all contracts.
     const agentFilter =
       role === "CO_AGENT"
-        ? { property: { agentId: userId } }
+        ? { agentId: userId }
         : viewingOtherAgent
-        ? { property: { agentId: targetAgentId } }
+        ? { agentId: targetAgentId }
         : {};
 
     const [draft, active, expiringSoon, expired, recentContracts] = await Promise.all([
