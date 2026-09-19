@@ -25,6 +25,7 @@ import {
   Receipt,
   Lock,
   Sparkles,
+  CalendarClock,
 } from "lucide-react";
 import StationMapSelector, { LINES } from "@/components/admin/StationMapSelector";
 import BookingReceiptModal from "./BookingReceiptModal";
@@ -151,6 +152,20 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
   const deleteProperty = async (id: number) => {
     if (!confirm(locale === "th" ? "ยืนยันการลบ?" : "Confirm delete?")) return;
     await fetch(`/api/properties/${id}`, { method: "DELETE" });
+    fetchProperties();
+  };
+
+  // Resets the "days on market" baseline to today — for a unit that comes
+  // back on the market later (e.g. tenant moved out in year 2), so the
+  // public listing shows it as freshly posted instead of counting from the
+  // original record's creation date years ago.
+  const resetListedAt = async (id: number) => {
+    if (!confirm("รีเซ็ตวันที่ประกาศเป็นวันนี้?")) return;
+    await fetch(`/api/properties/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ listedAt: new Date().toISOString() }),
+    });
     fetchProperties();
   };
 
@@ -727,6 +742,9 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                   <Link href={`/${locale}/admin/properties/add?edit=${p.id}`} className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors" title="Edit">
                     <Edit3 className="w-4 h-4" />
                   </Link>
+                  <button onClick={() => resetListedAt(p.id)} className="p-2 hover:bg-teal-50 rounded-lg text-teal-600 transition-colors" title="รีเซ็ตวันที่ประกาศ (สำหรับห้องที่กลับมาว่างอีก)">
+                    <CalendarClock className="w-4 h-4" />
+                  </button>
                   <button onClick={() => deleteProperty(p.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors" title="Delete">
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -854,6 +872,9 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                     <Link href={`/${locale}/admin/properties/add?edit=${p.id}`} className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors" title="Edit">
                       <Edit3 className="w-4 h-4" />
                     </Link>
+                    <button onClick={() => resetListedAt(p.id)} className="p-2 hover:bg-teal-50 rounded-lg text-teal-600 transition-colors" title="รีเซ็ตวันที่ประกาศ (สำหรับห้องที่กลับมาว่างอีก)">
+                      <CalendarClock className="w-4 h-4" />
+                    </button>
                     <button onClick={() => deleteProperty(p.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors" title="Delete">
                       <Trash2 className="w-4 h-4" />
                     </button>

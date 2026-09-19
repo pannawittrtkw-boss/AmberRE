@@ -273,6 +273,11 @@ model Property {
   estCode           String?  @db.VarChar(50)
   availableDate     DateTime?
   addedAt           DateTime?
+  // When the listing was (re-)posted — null means "use createdAt". Admins
+  // reset this to today when a unit comes back on the market (e.g. a
+  // tenant moves out in year 2) so "days on market" restarts instead of
+  // counting from the original record's creation date years ago.
+  listedAt          DateTime?
   salePrice         Decimal? @db.Decimal(18, 2)
   projectName       String?  @db.VarChar(300)
   address           String?  @db.VarChar(500)

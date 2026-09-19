@@ -117,6 +117,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
     if (rawData.exclusiveStartDate !== undefined) updateData.exclusiveStartDate = rawData.exclusiveStartDate ? new Date(rawData.exclusiveStartDate) : null;
     if (rawData.exclusiveEndDate !== undefined) updateData.exclusiveEndDate = rawData.exclusiveEndDate ? new Date(rawData.exclusiveEndDate) : null;
+    if (rawData.listedAt !== undefined) updateData.listedAt = rawData.listedAt ? new Date(rawData.listedAt) : null;
 
     const invFields = [
       "invPurchasePrice", "invRenovationCost", "invExpectedRentPerMonth",

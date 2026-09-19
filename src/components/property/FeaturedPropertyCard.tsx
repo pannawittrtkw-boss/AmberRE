@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Heart, Camera, MapPin, Train, Bed, Bath, Maximize, Eye, Calendar, Layers, Building } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
@@ -29,6 +30,23 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
 
   const availDate = property.availableDate ? new Date(property.availableDate) : null;
   const isReady = !availDate || availDate <= new Date();
+
+  // "Days on market" counts from listedAt if an admin has reset it (e.g. a
+  // unit came back on the market in year 2), falling back to the original
+  // createdAt otherwise.
+  // Capture "now" once at mount via lazy useState init rather than calling
+  // Date.now() directly in the render body, which React's purity rules flag.
+  const [now] = useState(() => Date.now());
+  const listedDate = new Date(property.listedAt || property.createdAt);
+  const daysPosted = Math.max(0, Math.floor((now - listedDate.getTime()) / 86400000));
+  const daysBadge =
+    daysPosted <= 7
+      ? { label: locale === "th" ? "ใหม่" : "New", cls: "bg-emerald-500 text-white" }
+      : daysPosted <= 30
+      ? { label: `${daysPosted} ${locale === "th" ? "วัน" : "d"}`, cls: "bg-gray-400 text-white" }
+      : daysPosted <= 90
+      ? { label: `${daysPosted} ${locale === "th" ? "วัน" : "d"}`, cls: "bg-amber-500 text-white" }
+      : { label: `${daysPosted} ${locale === "th" ? "วัน" : "d"}`, cls: "bg-red-500 text-white" };
 
   const isSold = property.isSold || property.status === "SOLD";
   const isRented = property.status === "RENTED";
@@ -98,6 +116,11 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
 
         {/* Tags */}
         <div className="px-3 pt-2.5 pb-1 flex flex-wrap items-center gap-1.5">
+          {/* Days on market */}
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${daysBadge.cls}`}>
+            {daysBadge.label}
+          </span>
+
           {/* Ready / Available date */}
           {isReady ? (
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-teal-600 text-white">
