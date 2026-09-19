@@ -9,7 +9,7 @@ const ALL_KEYS = [
   "dashboard", "properties", "projects", "customer-leads", "users", "messages", "articles",
   "portfolio", "electricity-calculator", "accounting", "contracts", "contract-calendar",
   "closed-contracts", "subscriptions", "menu-config", "reviews", "settings", "languages",
-  "agent-dashboard",
+  "agent-dashboard", "commission-tiers", "commission-overview",
 ];
 
 export const DEFAULT_MENU_CONFIG: Record<string, string[]> = {
