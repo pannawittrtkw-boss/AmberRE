@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Building2, Users, FileText, Star, Loader2,
   Menu, X, Trophy, Zap, Wallet, Layers, Mail, FileSignature, Lock, UserSearch, CalendarDays, Percent,
-  Receipt, ClipboardList, Building, Search,
+  Receipt, ClipboardList, Building,
 } from "lucide-react";
 import { ADMIN_MENU_ITEMS, ALWAYS_VISIBLE_NAV_ITEMS, ALWAYS_VISIBLE_ADMIN_KEYS, type AdminMenuItem } from "@/lib/admin-menu";
 
@@ -17,8 +17,7 @@ import { ADMIN_MENU_ITEMS, ALWAYS_VISIBLE_NAV_ITEMS, ALWAYS_VISIBLE_ADMIN_KEYS, 
 // are intentionally excluded — the backend still enforces their own auth checks.
 const ALL_AGENT_MENU_ITEMS = [
   { key: "agent-dashboard",        href: (l: string) => `/${l}/admin/agent-dashboard`,       icon: LayoutDashboard, labelTh: "ภาพรวม",              labelEn: "Dashboard" },
-  { key: "properties",             href: (l: string) => `/${l}/admin/properties`,             icon: Building2,       labelTh: "ทรัพย์ของฉัน",        labelEn: "My Properties" },
-  { key: "property-search",        href: (l: string) => `/${l}/admin/property-search`,        icon: Search,          labelTh: "ค้นหาทรัพย์",          labelEn: "Property Search" },
+  { key: "properties",             href: (l: string) => `/${l}/admin/properties`,             icon: Building2,       labelTh: "ค้นหาทรัพย์",          labelEn: "Property Search" },
   { key: "projects",               href: (l: string) => `/${l}/admin/projects`,               icon: Layers,          labelTh: "โครงการ",              labelEn: "Projects" },
   { key: "customer-leads",         href: (l: string) => `/${l}/admin/customer-leads`,         icon: UserSearch,      labelTh: "Matching ลูกค้า",      labelEn: "Customer Matching" },
   { key: "contracts",              href: (l: string) => `/${l}/admin/contracts`,              icon: FileSignature,   labelTh: "สัญญาเช่า",            labelEn: "Contracts" },
@@ -64,7 +63,7 @@ const NAV_BADGE_KEYS = ["messages"];
 // new page just added to ADMIN_MENU_ITEMS) are appended at the end
 // automatically, so the sidebar never silently drops a page.
 const NAV_ORDER = [
-  "dashboard", "properties", "property-search", "projects", "customer-leads", "users", "messages", "articles",
+  "dashboard", "properties", "projects", "customer-leads", "users", "messages", "articles",
   "portfolio", "electricity-calculator", "accounting", "contracts", "contract-calendar",
   "closed-contracts", "subscriptions", "commission-tiers", "commission-overview", "menu-config",
   "reviews", "settings", "languages", "storage-migration", "ai-office", "scanlink",
@@ -139,7 +138,6 @@ export default function AdminLayout({
   const CO_AGENT_ALLOWED_PATHS = [
     "/admin/agent-dashboard",
     "/admin/properties",
-    "/admin/property-search",
     "/admin/projects",
     "/admin/customer-leads",
     "/admin/contracts",

@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, Building2, Users, FileText, Star, Settings, Trophy, Zap, Globe, Wallet,
   Layers, Mail, FileSignature, Lock, Crown, LayoutList, UserSearch, CalendarDays, Percent,
-  BarChart3, Bot, CloudUpload, Search,
+  BarChart3, Bot, CloudUpload,
 } from "lucide-react";
 
 export interface AdminMenuItem {
@@ -33,7 +33,6 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   // ─── Shared pages (Admin + Agent Workspace, assignable per package tier) ─
   { key: "agent-dashboard",        icon: LayoutDashboard, hrefSuffix: "/agent-dashboard",       labelTh: "ภาพรวม (Agent Dashboard)", labelEn: "Agent Dashboard",       group: "shared" },
   { key: "properties",             icon: Building2,       hrefSuffix: "/properties",            labelTh: "ทรัพย์สิน",                labelEn: "Properties",            group: "shared" },
-  { key: "property-search",        icon: Search,          hrefSuffix: "/property-search",       labelTh: "ค้นหาทรัพย์",              labelEn: "Property Search",       group: "shared" },
   { key: "projects",               icon: Layers,          hrefSuffix: "/projects",              labelTh: "โครงการ",                  labelEn: "Projects",              group: "shared" },
   { key: "customer-leads",         icon: UserSearch,      hrefSuffix: "/customer-leads",        labelTh: "Matching ลูกค้า",           labelEn: "Customer Matching",     group: "shared" },
   { key: "contracts",              icon: FileSignature,   hrefSuffix: "/contracts",             labelTh: "สัญญาเช่า",                labelEn: "Contracts",             group: "shared" },
@@ -63,8 +62,8 @@ export const ALWAYS_VISIBLE_ADMIN_KEYS = ALWAYS_VISIBLE_NAV_ITEMS.map((i) => i.k
 export const ALL_MENU_KEYS = ADMIN_MENU_ITEMS.map((m) => m.key);
 
 export const DEFAULT_MENU_CONFIG: Record<string, string[]> = {
-  STANDARD: ["agent-dashboard", "properties", "property-search"],
-  PRO:      ["agent-dashboard", "properties", "property-search", "projects", "customer-leads", "contracts", "electricity-calculator", "accounting"],
-  ELITE:    ["agent-dashboard", "properties", "property-search", "projects", "customer-leads", "contracts", "closed-contracts", "electricity-calculator", "accounting", "messages", "reviews"],
+  STANDARD: ["agent-dashboard", "properties"],
+  PRO:      ["agent-dashboard", "properties", "projects", "customer-leads", "contracts", "electricity-calculator", "accounting"],
+  ELITE:    ["agent-dashboard", "properties", "projects", "customer-leads", "contracts", "closed-contracts", "electricity-calculator", "accounting", "messages", "reviews"],
   ADMIN:    ALL_MENU_KEYS,
 };

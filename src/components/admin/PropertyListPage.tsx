@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   Plus,
   Loader2,
@@ -100,16 +101,18 @@ const PAGE_SIZE = 30;
 
 export default function PropertyListPage({
   params,
-  mode,
 }: {
   params: Promise<{ locale: string }>;
-  // "manage" = full property CRUD/bulk tools (จัดการทรัพย์สิน).
-  // "search" = read-mostly lookup for agents browsing the whole company
-  // catalog to match a client (ค้นหาทรัพย์) — hides bulk/edit actions a
-  // Co-Agent shouldn't have over properties that aren't theirs.
-  mode: "manage" | "search";
 }) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const role = (session?.user as any)?.role;
+  const userId = Number((session?.user as any)?.id);
+  // ADMIN manages everything; a Co-Agent only gets full CRUD/bulk tools on
+  // properties assigned to them (Property.agentId) — anything else in the
+  // list is search-only (browsing the whole catalog to match a client),
+  // with a "View Detail" link to the public page instead.
+  const isAdmin = role === "ADMIN";
   const [locale, setLocale] = useState("th");
   const [messages, setMessages] = useState<any>(null);
   // Lightweight (scalar-only) list of every property — used for
@@ -370,9 +373,9 @@ export default function PropertyListPage({
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
         <h1 className="text-xl sm:text-2xl font-bold">
-          {mode === "search" ? (locale === "th" ? "ค้นหาทรัพย์" : "Property Search") : messages.admin.propertyManagement}
+          {isAdmin ? messages.admin.propertyManagement : (locale === "th" ? "ค้นหาทรัพย์" : "Property Search")}
         </h1>
-        {mode === "manage" && (
+        {isAdmin && (
           <div className="flex items-center gap-2 flex-wrap">
             {/* Export Template */}
             <a
@@ -680,6 +683,7 @@ export default function PropertyListPage({
           const exclusiveDaysLeft = p.isExclusive && p.exclusiveEndDate
             ? Math.ceil((new Date(p.exclusiveEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
             : null;
+          const canManageRow = isAdmin || p.agentId === userId;
 
           return (
             <div key={p.id} className="bg-white rounded-xl border shadow-sm overflow-hidden">
@@ -687,8 +691,8 @@ export default function PropertyListPage({
               <div className="hidden sm:flex items-center gap-3 px-4 py-3">
                 <div className="w-8 text-center text-sm font-bold text-gray-400">{idx + 1}</div>
                 <div
-                  onClick={() => router.push(`/${locale}/admin/properties/add?edit=${p.id}`)}
-                  className="flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={canManageRow ? () => router.push(`/${locale}/admin/properties/add?edit=${p.id}`) : undefined}
+                  className={`flex-1 min-w-0 transition-opacity ${canManageRow ? "cursor-pointer hover:opacity-80" : ""}`}
                 >
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-semibold text-gray-900 truncate">
@@ -699,37 +703,43 @@ export default function PropertyListPage({
                         Co-Agent: {p.agent.firstName} {p.agent.lastName}
                       </span>
                     )}
-                    <select
-                      value={p.status || "PENDING"}
-                      onClick={(e) => e.stopPropagation()}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onChange={async (e) => {
-                        const newStatus = e.target.value;
-                        if (newStatus === "ADDED_PROPERTIES") {
-                          const missing: string[] = [];
-                          if (!p.images || p.images.length === 0) missing.push("รูปภาพ");
-                          if (!p.bedrooms || p.bedrooms === 0) missing.push("จำนวนห้องนอน");
-                          if (!p.bathrooms || p.bathrooms === 0) missing.push("จำนวนห้องน้ำ");
-                          if (missing.length > 0) {
-                            alert(`กรุณาเพิ่มข้อมูลก่อนเปลี่ยนสถานะเป็น Added:\n- ${missing.join("\n- ")}\n\nกด Edit เพื่อเพิ่มข้อมูล`);
-                            e.target.value = p.status || "PENDING";
-                            return;
+                    {canManageRow ? (
+                      <select
+                        value={p.status || "PENDING"}
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onChange={async (e) => {
+                          const newStatus = e.target.value;
+                          if (newStatus === "ADDED_PROPERTIES") {
+                            const missing: string[] = [];
+                            if (!p.images || p.images.length === 0) missing.push("รูปภาพ");
+                            if (!p.bedrooms || p.bedrooms === 0) missing.push("จำนวนห้องนอน");
+                            if (!p.bathrooms || p.bathrooms === 0) missing.push("จำนวนห้องน้ำ");
+                            if (missing.length > 0) {
+                              alert(`กรุณาเพิ่มข้อมูลก่อนเปลี่ยนสถานะเป็น Added:\n- ${missing.join("\n- ")}\n\nกด Edit เพื่อเพิ่มข้อมูล`);
+                              e.target.value = p.status || "PENDING";
+                              return;
+                            }
                           }
-                        }
-                        await fetch(`/api/properties/${p.id}`, {
-                          method: "PUT",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ status: newStatus }),
-                        });
-                        refreshAll();
-                      }}
-                      className={`text-[10px] px-2 py-0.5 rounded-full font-medium border-0 cursor-pointer outline-none appearance-none pr-5 ${statusInfo.color}`}
-                      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 4px center" }}
-                    >
-                      {Object.entries(STATUS_MAP).map(([val, info]) => (
-                        <option key={val} value={val}>{info.label}</option>
-                      ))}
-                    </select>
+                          await fetch(`/api/properties/${p.id}`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ status: newStatus }),
+                          });
+                          refreshAll();
+                        }}
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-medium border-0 cursor-pointer outline-none appearance-none pr-5 ${statusInfo.color}`}
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 4px center" }}
+                      >
+                        {Object.entries(STATUS_MAP).map(([val, info]) => (
+                          <option key={val} value={val}>{info.label}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusInfo.color}`}>
+                        {statusInfo.label}
+                      </span>
+                    )}
                     {p.category === "LUXURY" && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">Luxury</span>
                     )}
@@ -803,7 +813,7 @@ export default function PropertyListPage({
                     <span className="text-gray-300 text-xs">-</span>
                   )}
                 </div>
-                {mode === "search" && p.status === "ADDED_PROPERTIES" && (
+                {!canManageRow && p.status === "ADDED_PROPERTIES" && (
                   <a
                     href={`/${locale}/properties/${p.id}`}
                     target="_blank"
@@ -815,7 +825,7 @@ export default function PropertyListPage({
                   </a>
                 )}
                 <div className="flex items-center gap-1">
-                  {mode === "manage" && (
+                  {canManageRow && (
                     <>
                       <button
                         onClick={() => setExclusiveModal(p)}
@@ -855,40 +865,52 @@ export default function PropertyListPage({
               <div className="sm:hidden px-4 py-3 space-y-2">
                 {/* Title + Status */}
                 <div className="flex items-start justify-between gap-2">
-                  <Link href={`/${locale}/admin/properties/add?edit=${p.id}`} className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-gray-900 text-sm leading-tight hover:text-amber-700 transition-colors">
+                  {canManageRow ? (
+                    <Link href={`/${locale}/admin/properties/add?edit=${p.id}`} className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-gray-900 text-sm leading-tight hover:text-amber-700 transition-colors">
+                        {p.projectName || p.titleTh || "-"}
+                      </h3>
+                    </Link>
+                  ) : (
+                    <h3 className="font-semibold text-gray-900 text-sm leading-tight min-w-0 flex-1 truncate">
                       {p.projectName || p.titleTh || "-"}
                     </h3>
-                  </Link>
-                  <select
-                    value={p.status || "PENDING"}
-                    onChange={async (e) => {
-                      const newStatus = e.target.value;
-                      if (newStatus === "ADDED_PROPERTIES") {
-                        const missing: string[] = [];
-                        if (!p.images || p.images.length === 0) missing.push("รูปภาพ");
-                        if (!p.bedrooms || p.bedrooms === 0) missing.push("จำนวนห้องนอน");
-                        if (!p.bathrooms || p.bathrooms === 0) missing.push("จำนวนห้องน้ำ");
-                        if (missing.length > 0) {
-                          alert(`กรุณาเพิ่มข้อมูลก่อนเปลี่ยนสถานะเป็น Added:\n- ${missing.join("\n- ")}\n\nกด Edit เพื่อเพิ่มข้อมูล`);
-                          e.target.value = p.status || "PENDING";
-                          return;
+                  )}
+                  {canManageRow ? (
+                    <select
+                      value={p.status || "PENDING"}
+                      onChange={async (e) => {
+                        const newStatus = e.target.value;
+                        if (newStatus === "ADDED_PROPERTIES") {
+                          const missing: string[] = [];
+                          if (!p.images || p.images.length === 0) missing.push("รูปภาพ");
+                          if (!p.bedrooms || p.bedrooms === 0) missing.push("จำนวนห้องนอน");
+                          if (!p.bathrooms || p.bathrooms === 0) missing.push("จำนวนห้องน้ำ");
+                          if (missing.length > 0) {
+                            alert(`กรุณาเพิ่มข้อมูลก่อนเปลี่ยนสถานะเป็น Added:\n- ${missing.join("\n- ")}\n\nกด Edit เพื่อเพิ่มข้อมูล`);
+                            e.target.value = p.status || "PENDING";
+                            return;
+                          }
                         }
-                      }
-                      await fetch(`/api/properties/${p.id}`, {
-                        method: "PUT",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ status: newStatus }),
-                      });
-                      refreshAll();
-                    }}
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-medium border-0 cursor-pointer outline-none appearance-none pr-5 shrink-0 ${statusInfo.color}`}
-                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 4px center" }}
-                  >
-                    {Object.entries(STATUS_MAP).map(([val, info]) => (
-                      <option key={val} value={val}>{info.label}</option>
-                    ))}
-                  </select>
+                        await fetch(`/api/properties/${p.id}`, {
+                          method: "PUT",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ status: newStatus }),
+                        });
+                        refreshAll();
+                      }}
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-medium border-0 cursor-pointer outline-none appearance-none pr-5 shrink-0 ${statusInfo.color}`}
+                      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 4px center" }}
+                    >
+                      {Object.entries(STATUS_MAP).map(([val, info]) => (
+                        <option key={val} value={val}>{info.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ${statusInfo.color}`}>
+                      {statusInfo.label}
+                    </span>
+                  )}
                 </div>
 
                 {/* Details grid */}
@@ -950,7 +972,7 @@ export default function PropertyListPage({
                         <FileText className="w-4 h-4" />
                       </button>
                     )}
-                    {mode === "search" && p.status === "ADDED_PROPERTIES" && (
+                    {!canManageRow && p.status === "ADDED_PROPERTIES" && (
                       <a
                         href={`/${locale}/properties/${p.id}`}
                         target="_blank"
@@ -961,7 +983,7 @@ export default function PropertyListPage({
                         <ExternalLink className="w-4 h-4" />
                       </a>
                     )}
-                    {mode === "manage" && (
+                    {canManageRow && (
                       <>
                         <button
                           onClick={() => setExclusiveModal(p)}
