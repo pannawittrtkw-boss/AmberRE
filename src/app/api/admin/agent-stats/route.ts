@@ -191,6 +191,10 @@ export async function GET(req: NextRequest) {
           closedCount: contracts.length,
           totalContractValue: contracts.reduce((sum, c) => sum + c.monthlyRent, 0),
           totalEarnedCommission: contracts.reduce((sum, c) => sum + (c.agentEarnedCommission ?? 0), 0),
+          // Tier achieved for this calendar month (by commissionReceivedDate,
+          // same convention as "currentMonth") — null if nothing was
+          // received in this month yet.
+          tierPercent: commissionByMonthKey.get(monthKey)?.tierPercent ?? null,
           contracts,
         };
       }).sort((a, b) => b.monthKey.localeCompare(a.monthKey));

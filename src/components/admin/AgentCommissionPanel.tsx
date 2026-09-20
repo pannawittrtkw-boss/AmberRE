@@ -61,6 +61,7 @@ export interface MonthHistory {
   closedCount: number;
   totalContractValue: number;
   totalEarnedCommission: number;
+  tierPercent: number | null;
   contracts: HistoryContract[];
 }
 
@@ -282,6 +283,11 @@ export default function AgentCommissionPanel({
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-gray-500">{h.closedCount} สัญญา</span>
                       <span className="text-xs text-gray-500">มูลค่ารวม ฿{fmtMoney(h.totalContractValue)}</span>
+                      {h.tierPercent != null && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                          Tier {h.tierPercent}%
+                        </span>
+                      )}
                       <span className="text-xs font-semibold text-gray-700">
                         ค่าคอมที่ได้ ฿{fmtMoney(h.totalEarnedCommission)}
                       </span>
