@@ -7,7 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Building2, Users, FileText, Star, Loader2,
-  Menu, X, Trophy, Zap, Wallet, Layers, Mail, FileSignature, Lock, UserSearch, CalendarDays,
+  Menu, X, Trophy, Zap, Wallet, Layers, Mail, FileSignature, Lock, UserSearch, CalendarDays, Percent,
   Receipt, ClipboardList, Building,
 } from "lucide-react";
 import { ADMIN_MENU_ITEMS, ALWAYS_VISIBLE_NAV_ITEMS, ALWAYS_VISIBLE_ADMIN_KEYS, type AdminMenuItem } from "@/lib/admin-menu";
@@ -30,7 +30,13 @@ const ALL_AGENT_MENU_ITEMS = [
   { key: "portfolio",              href: (l: string) => `/${l}/admin/portfolio`,              icon: Trophy,          labelTh: "Portfolio",             labelEn: "Portfolio" },
   { key: "articles",               href: (l: string) => `/${l}/admin/articles`,               icon: FileText,        labelTh: "บทความ",               labelEn: "Articles" },
   { key: "dashboard",              href: (l: string) => `/${l}/admin`,                        icon: LayoutDashboard, labelTh: "Admin Dashboard",      labelEn: "Admin Dashboard" },
+  { key: "commission-rates",       href: (l: string) => `/${l}/admin/commission-rates`,       icon: Percent,         labelTh: "อัตราค่าคอมมิชชั่น",     labelEn: "Commission Rates" },
 ];
+
+// Always visible to every agent regardless of package tier — viewing the
+// commission conditions isn't a tier-gated feature, it's a policy every
+// agent should be able to check.
+const ALWAYS_VISIBLE_AGENT_KEYS = ["commission-rates"];
 
 // i18n overrides for nav items whose sidebar label should come from the
 // translation files instead of ADMIN_MENU_ITEMS's static Thai/English text.
@@ -143,6 +149,7 @@ export default function AdminLayout({
     "/admin/reviews",
     "/admin/portfolio",
     "/admin/articles",
+    "/admin/commission-rates",
   ];
   const isCoAgentAllowed =
     role === "CO_AGENT" &&
@@ -176,7 +183,7 @@ export default function AdminLayout({
   // CO_AGENT sidebar: filter by tier menu config
   const agentAllowedKeys: string[] = menuConfig?.[userTier] ?? ALL_AGENT_MENU_ITEMS.map((i) => i.key);
   const agentNavItems = ALL_AGENT_MENU_ITEMS
-    .filter((item) => agentAllowedKeys.includes(item.key))
+    .filter((item) => ALWAYS_VISIBLE_AGENT_KEYS.includes(item.key) || agentAllowedKeys.includes(item.key))
     .map((item) => ({
       href: item.href(locale),
       icon: item.icon,
