@@ -225,7 +225,11 @@ export default function CommissionRatesPage() {
           </div>
           <div>
             <h3 className="text-sm font-semibold text-gray-800">งานขาย (SALE)</h3>
-            <p className="text-xs text-gray-400">อัตราคงที่ ไม่ขึ้นกับยอดขาย</p>
+            <p className="text-xs text-gray-400">
+              {saleTiers.length <= 1
+                ? "อัตราคงที่ ไม่ขึ้นกับยอดขาย"
+                : "แบ่งตามยอดขายรวมทั้งเดือน — เหมือนงานเช่า ยอดทั้งเดือนอยู่ช่วงไหน ได้ % ของทั้งยอดตามช่วงนั้น"}
+            </p>
           </div>
         </div>
 
@@ -235,7 +239,16 @@ export default function CommissionRatesPage() {
           <div className="divide-y divide-gray-50">
             {saleTiers.map((t, idx) => (
               <div key={idx} className="flex items-center justify-between px-5 py-4">
-                <span className="text-sm font-medium text-gray-800">ทุกยอดขาย</span>
+                <div className="flex items-center gap-3">
+                  {saleTiers.length > 1 && (
+                    <span className="w-7 h-7 rounded-full bg-gray-100 text-gray-500 text-xs font-bold flex items-center justify-center shrink-0">
+                      {idx + 1}
+                    </span>
+                  )}
+                  <span className="text-sm font-medium text-gray-800">
+                    {saleTiers.length <= 1 ? "ทุกยอดขาย" : fmtRange(t)}
+                  </span>
+                </div>
                 <span className="text-lg font-bold text-blue-600">{t.agentPercent}%</span>
               </div>
             ))}

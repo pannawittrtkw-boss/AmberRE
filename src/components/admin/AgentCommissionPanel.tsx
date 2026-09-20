@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronRight, ChevronDown, Home, Percent, PiggyBank, Clock, ExternalLink, TrendingUp } from "lucide-react";
+import { ChevronRight, ChevronDown, Home, Percent, PiggyBank, Clock, ExternalLink, TrendingUp, Building2, Construction } from "lucide-react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -99,6 +99,12 @@ export default function AgentCommissionPanel({
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   });
+  // RENT and SALE are calculated completely differently (different tier
+  // tables, different base-amount formulas), so they're shown as separate
+  // tabs rather than mixed into one figure. SALE has no real data source
+  // yet — no Sale Contract entity exists — so its tab is a placeholder
+  // until that system is built.
+  const [category, setCategory] = useState<"RENT" | "SALE">("RENT");
 
   const cm = commission.currentMonth;
   const { yearlySeries } = commission;
@@ -124,8 +130,36 @@ export default function AgentCommissionPanel({
 
   return (
     <div className="mb-8">
-      <h2 className="text-sm font-semibold text-gray-800 mb-3">{title}</h2>
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
+        <h2 className="text-sm font-semibold text-gray-800">{title}</h2>
+        <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+          <button
+            onClick={() => setCategory("RENT")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              category === "RENT" ? "bg-white shadow-sm text-amber-700" : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <Home className="w-3.5 h-3.5" /> เช่า
+          </button>
+          <button
+            onClick={() => setCategory("SALE")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              category === "SALE" ? "bg-white shadow-sm text-blue-700" : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" /> ขาย
+          </button>
+        </div>
+      </div>
 
+      {category === "SALE" ? (
+        <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50/60 py-14 px-6 text-center">
+          <Construction className="w-8 h-8 text-gray-300 mx-auto mb-3" />
+          <p className="text-sm font-medium text-gray-500">ยังไม่มีข้อมูลค่าคอมงานขาย</p>
+          <p className="text-xs text-gray-400 mt-1">ระบบสัญญาขายยังไม่เปิดใช้งาน — จะแสดงข้อมูลที่นี่เมื่อพร้อม</p>
+        </div>
+      ) : (
+        <>
       {/* Hero: current month */}
       <div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50/70 via-white to-white p-6">
         <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
@@ -361,6 +395,8 @@ export default function AgentCommissionPanel({
             })}
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

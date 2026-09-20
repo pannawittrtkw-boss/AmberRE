@@ -106,7 +106,9 @@ export default function CommissionOverviewPage() {
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">ภาพรวมค่าคอมมิชชั่น Agent</h1>
-          <p className="text-sm text-gray-500 mt-0.5">จำนวนทรัพย์ที่ปิดได้ ยอดค่าคอม และ tier ของแต่ละ Agent รายเดือน</p>
+          <p className="text-sm text-gray-500 mt-0.5">
+            จำนวนทรัพย์ที่ปิดได้ ยอดค่าคอม และ tier ของแต่ละ Agent รายเดือน (งานเช่าเท่านั้น — งานขายยังไม่เปิดใช้งาน)
+          </p>
         </div>
         <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl p-1.5 shadow-sm">
           <CalendarRange className="w-4 h-4 text-gray-400 ml-1.5" />
@@ -179,7 +181,7 @@ export default function CommissionOverviewPage() {
                         Agent
                       </th>
                       <th colSpan={5} className="py-2.5 px-4 text-center font-semibold text-indigo-600 text-xs bg-indigo-50/60 border-b border-indigo-100">
-                        {fmtMonthLabel(month)}
+                        {fmtMonthLabel(month)} (เช่า)
                       </th>
                       <th colSpan={3} className="py-2.5 px-4 text-center font-semibold text-amber-700 text-xs bg-amber-50/60 border-b border-amber-100 border-l border-gray-100">
                         สะสมทั้งหมด
