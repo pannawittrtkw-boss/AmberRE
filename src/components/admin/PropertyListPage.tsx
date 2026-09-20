@@ -855,9 +855,11 @@ export default function PropertyListPage({
                       </button>
                     </>
                   )}
-                  <button onClick={() => setExpandedRow(isExpanded ? null : p.id)} className={`p-2 hover:bg-gray-100 rounded-lg transition-all ${isExpanded ? "rotate-180" : ""}`} title="More info">
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
-                  </button>
+                  {canManageRow && (
+                    <button onClick={() => setExpandedRow(isExpanded ? null : p.id)} className={`p-2 hover:bg-gray-100 rounded-lg transition-all ${isExpanded ? "rotate-180" : ""}`} title="More info">
+                      <ChevronDown className="w-4 h-4 text-gray-400" />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -1013,15 +1015,18 @@ export default function PropertyListPage({
                         </button>
                       </>
                     )}
-                    <button onClick={() => setExpandedRow(isExpanded ? null : p.id)} className={`p-2 hover:bg-gray-100 rounded-lg transition-all ${isExpanded ? "rotate-180" : ""}`} title="More info">
-                      <ChevronDown className="w-4 h-4 text-gray-400" />
-                    </button>
+                    {canManageRow && (
+                      <button onClick={() => setExpandedRow(isExpanded ? null : p.id)} className={`p-2 hover:bg-gray-100 rounded-lg transition-all ${isExpanded ? "rotate-180" : ""}`} title="More info">
+                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Expanded Details */}
-              {isExpanded && (
+              {/* Expanded Details — contact info + source links, so only
+                  shown to admin or the agent who owns this property */}
+              {isExpanded && canManageRow && (
                 <div className="border-t bg-gray-50 px-4 py-3">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                     {/* Location / Stations */}

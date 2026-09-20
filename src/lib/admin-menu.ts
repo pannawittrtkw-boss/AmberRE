@@ -55,6 +55,7 @@ export const ALWAYS_VISIBLE_NAV_ITEMS: AdminMenuItem[] = [
   { key: "storage-migration", icon: CloudUpload,  hrefSuffix: "/settings/storage-migration",  labelTh: "ย้ายไฟล์ไป Cloudflare",   labelEn: "Migrate to Cloudflare", group: "admin" },
   { key: "ai-office",         icon: Bot,          hrefSuffix: "/ai-office",                   labelTh: "AI Office",             labelEn: "AI Office",             group: "admin" },
   { key: "scanlink",          icon: FileText,     hrefSuffix: "/scanlink",                    labelTh: "ScanLink",              labelEn: "ScanLink",              group: "admin" },
+  { key: "commission-rates",  icon: Percent,      hrefSuffix: "/commission-rates",            labelTh: "อัตราค่าคอมมิชชั่น",       labelEn: "Commission Rates",      group: "admin" },
 ];
 
 export const ALWAYS_VISIBLE_ADMIN_KEYS = ALWAYS_VISIBLE_NAV_ITEMS.map((i) => i.key);
