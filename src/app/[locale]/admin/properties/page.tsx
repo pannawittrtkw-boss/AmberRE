@@ -289,9 +289,10 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
   });
 
   // Filter by selected status tab
-  const finalFiltered = selectedStatusTab === "all"
+  const finalFiltered = (selectedStatusTab === "all"
     ? monthFiltered
-    : monthFiltered.filter((p: any) => p.status === selectedStatusTab);
+    : monthFiltered.filter((p: any) => p.status === selectedStatusTab)
+  ).slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   if (!messages || loading) return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-amber-600" /></div>;
 
@@ -684,6 +685,7 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                     {p.addedAt && (
                       <span className="text-gray-400">Post date: {new Date(p.addedAt).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>
                     )}
+                    <span className="text-gray-400">เพิ่มเข้าระบบ: {new Date(p.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>
                   </div>
                   {(() => {
                     const stations = parseJson(p.nearbyStations);
@@ -808,6 +810,7 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                   {p.addedAt && (
                     <span className="text-gray-400 text-[10px]">Post: {new Date(p.addedAt).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>
                   )}
+                  <span className="text-gray-400 text-[10px]">เพิ่มเข้าระบบ: {new Date(p.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>
                   {p.category === "LUXURY" && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">Luxury</span>}
                   {p.priority === "URGENT" && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">Urgent</span>}
                   {p.isExclusive && (
