@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { Loader2, Home, Building2, Info, CheckCircle2, XCircle, CalendarClock } from "lucide-react";
+import { Loader2, Home, Building2, Info, CheckCircle2, XCircle, CalendarClock, Users, UserCheck } from "lucide-react";
+import { calcContractCommission } from "@/lib/commission";
 
 interface Tier {
   dealCategory: "RENT" | "SALE";
@@ -10,6 +11,29 @@ interface Tier {
   maxAmount: number | null;
   agentPercent: number;
 }
+
+const SAMPLE_RENT = 10000;
+
+// Base commission rate (% of the deal's monthly rent) that a rental
+// contract generates, before the monthly tier ladder below decides what
+// share of it the agent keeps. Computed live from the same formula the
+// system actually uses (calcContractCommission), so this table can never
+// drift out of sync with reality.
+function basePercent(contractType: "NEW" | "RENEW", termMonths: number, dealType: "DIRECT_OWNER" | "CO_AGENT") {
+  const amount = calcContractCommission({ monthlyRent: SAMPLE_RENT, contractType, termMonths, dealType });
+  return Math.round((amount / SAMPLE_RENT) * 1000) / 10;
+}
+
+function fmtPercent(p: number) {
+  return Number.isInteger(p) ? `${p}%` : `${p}%`;
+}
+
+const RENT_ROWS: { label: string; contractType: "NEW" | "RENEW"; termMonths: number }[] = [
+  { label: "สัญญาใหม่ (1 ปี)", contractType: "NEW", termMonths: 12 },
+  { label: "สัญญาใหม่ (6 เดือน)", contractType: "NEW", termMonths: 6 },
+  { label: "ต่อสัญญา (1 ปี)", contractType: "RENEW", termMonths: 12 },
+  { label: "ต่อสัญญา (6 เดือน)", contractType: "RENEW", termMonths: 6 },
+];
 
 function fmtMoney(n: number) {
   return n.toLocaleString("th-TH");
@@ -63,23 +87,104 @@ export default function CommissionRatesPage() {
   const saleTiers = tiers.filter((t) => t.dealCategory === "SALE").sort((a, b) => a.minAmount - b.minAmount);
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-4xl">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">อัตราค่าคอมมิชชั่น Agent</h1>
         <p className="text-sm text-gray-500 mt-1">
-          เงื่อนไขและสัดส่วนค่าคอมมิชชั่นที่ Agent จะได้รับในแต่ละเดือน
+          ค่าคอมมิชชั่นคำนวณเป็น 2 ขั้นตอน — 1) มูลค่าฐานของสัญญาแต่ละฉบับ 2) ส่วนแบ่งที่ Agent ได้รับจากยอดรวมทั้งเดือน
         </p>
       </div>
 
-      {/* Rent tiers */}
+      {/* ── Step 1: base commission rate per contract ────────────────────── */}
+      <div className="flex items-center gap-2 mb-3">
+        <span className="w-6 h-6 rounded-full bg-gray-800 text-white text-xs font-bold flex items-center justify-center">1</span>
+        <h2 className="text-sm font-semibold text-gray-800">มูลค่าฐานค่าคอมของสัญญา</h2>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-4">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
+          <div className="p-2 rounded-lg bg-amber-50 text-amber-600">
+            <Home className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-800">งานเช่า (RENT)</h3>
+            <p className="text-xs text-gray-400">% ของค่าเช่า/เดือน ตามประเภทสัญญาและคู่ดีล</p>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50/60 text-xs text-gray-500">
+              <tr>
+                <th className="text-left px-5 py-2.5 font-medium">ประเภทสัญญา</th>
+                <th className="px-4 py-2.5 font-medium">
+                  <span className="inline-flex items-center gap-1.5"><UserCheck className="w-3.5 h-3.5" /> ดีลตรงกับเจ้าของ</span>
+                </th>
+                <th className="px-4 py-2.5 font-medium">
+                  <span className="inline-flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> ดีลผ่าน Co-agent</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {RENT_ROWS.map((r, idx) => (
+                <tr key={r.label} className={idx !== RENT_ROWS.length - 1 ? "border-b border-gray-50" : ""}>
+                  <td className="px-5 py-3.5 font-medium text-gray-800">{r.label}</td>
+                  <td className="px-4 py-3.5 text-center">
+                    <span className="font-bold text-[#C8A951]">{fmtPercent(basePercent(r.contractType, r.termMonths, "DIRECT_OWNER"))}</span>
+                  </td>
+                  <td className="px-4 py-3.5 text-center">
+                    <span className="font-bold text-blue-600">{fmtPercent(basePercent(r.contractType, r.termMonths, "CO_AGENT"))}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="px-5 py-3 bg-gray-50/60 border-t border-gray-100 text-xs text-gray-500">
+          * คิดตามสัดส่วนจำนวนเดือนของสัญญาเทียบ 1 ปี เช่น สัญญา 9 เดือน = 9/12 ของอัตรานี้ (สูงสุดไม่เกิน 100% ต่อสัญญา แม้ระยะสัญญาจะยาวกว่า 1 ปี)
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-6">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
+          <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+            <Building2 className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-800">งานขาย (SALE)</h3>
+            <p className="text-xs text-gray-400">อัตราตกลงเป็นรายทรัพย์ — ยังไม่มีระบบสัญญาขายในแอปนี้</p>
+          </div>
+        </div>
+        <div className="divide-y divide-gray-50">
+          <div className="flex items-center justify-between px-5 py-4">
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-800">
+              <UserCheck className="w-3.5 h-3.5 text-gray-400" /> ดีลตรงกับเจ้าของ / Property
+            </span>
+            <span className="text-sm font-bold text-gray-700">100% ของอัตราที่ตกลง</span>
+          </div>
+          <div className="flex items-center justify-between px-5 py-4">
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-800">
+              <Users className="w-3.5 h-3.5 text-gray-400" /> ดีลผ่าน Co-agent
+            </span>
+            <span className="text-sm font-bold text-gray-700">อัตราที่ตกลง ÷ จำนวน Co-agent</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Step 2: monthly tier ladder ────────────────────────────────── */}
+      <div className="flex items-center gap-2 mb-3">
+        <span className="w-6 h-6 rounded-full bg-gray-800 text-white text-xs font-bold flex items-center justify-center">2</span>
+        <h2 className="text-sm font-semibold text-gray-800">ส่วนแบ่งที่ Agent ได้รับจากยอดรวมทั้งเดือน</h2>
+      </div>
+
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-6">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
           <div className="p-2 rounded-lg bg-amber-50 text-amber-600">
             <Home className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-gray-800">งานเช่า (RENT)</h2>
-            <p className="text-xs text-gray-400">แบ่งตามยอดค่าคอมรวมของบริษัทต่อเดือน — ยอดทั้งเดือนอยู่ช่วงไหน ได้ % ของทั้งยอดตามช่วงนั้น</p>
+            <h3 className="text-sm font-semibold text-gray-800">งานเช่า (RENT)</h3>
+            <p className="text-xs text-gray-400">รวมมูลค่าฐาน (ขั้นที่ 1) ของทุกสัญญาที่ปิดในเดือนนั้น แล้วดูว่าตกช่วงไหน ได้ % ของยอดรวมทั้งเดือนตามช่วงนั้น</p>
           </div>
         </div>
 
@@ -113,14 +218,13 @@ export default function CommissionRatesPage() {
         )}
       </div>
 
-      {/* Sale tiers */}
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-6">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
           <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
             <Building2 className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-gray-800">งานขาย (SALE)</h2>
+            <h3 className="text-sm font-semibold text-gray-800">งานขาย (SALE)</h3>
             <p className="text-xs text-gray-400">อัตราคงที่ ไม่ขึ้นกับยอดขาย</p>
           </div>
         </div>

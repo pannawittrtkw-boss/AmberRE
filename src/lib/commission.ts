@@ -9,12 +9,16 @@ export interface CommissionTierLike {
   agentPercent: number;
 }
 
-// The company's commission revenue for a single contract. New contract:
-// one month's rent. Renewal: rent x half a month per year renewed (12mo →
-// 0.5x, 6mo → 0.25x, prorated for anything in between). Co-agent deals
-// (an external co-broker, see Contract.coAgentName) split the result in
-// half. This formula is unchanged from the original — the agent-tier
-// system in this module sits on top of it, it doesn't replace it.
+// The company's commission revenue for a single contract — the base
+// amount that the agent-tier system (elsewhere in this module) then
+// takes a percentage of. Both NEW and RENEW scale proportionally with
+// the contract term, capped at a full year (a 2-year NEW contract earns
+// the same as a 1-year one, not double): NEW = rent x min(term/12, 1);
+// RENEW = rent x min(term/12, 1) x 0.5. Co-agent deals (an external
+// co-broker, see Contract.coAgentName) split the result in half.
+//   12mo NEW direct   = 100% · 6mo NEW direct   = 50%
+//   12mo RENEW direct = 50%  · 6mo RENEW direct = 25%
+//   (co-agent deals: half of the above)
 export function calcContractCommission(c: {
   monthlyRent: number | string;
   contractType: string;
@@ -22,8 +26,8 @@ export function calcContractCommission(c: {
   dealType: string;
 }): number {
   const rent = Number(c.monthlyRent) || 0;
-  let commission =
-    c.contractType === "RENEW" ? rent * (c.termMonths / 12) * 0.5 : rent;
+  const termFactor = Math.min(c.termMonths / 12, 1);
+  let commission = rent * termFactor * (c.contractType === "RENEW" ? 0.5 : 1);
   if (c.dealType === "CO_AGENT") commission /= 2;
   return commission;
 }
