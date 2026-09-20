@@ -26,7 +26,8 @@ export async function GET(req: NextRequest) {
     const limit = limitParam === 0 ? undefined : limitParam;
     const skip = limit ? (page - 1) * limit : 0;
 
-    // Support fetching by specific IDs (for favorites)
+    // Support fetching by specific IDs (for favorites/compare, and for the
+    // admin properties list's "current page" detail fetch)
     const idsParam = searchParams.get("ids");
     if (idsParam) {
       const ids = idsParam.split(",").map(Number).filter(Boolean);
@@ -35,7 +36,41 @@ export async function GET(req: NextRequest) {
         include: {
           images: { orderBy: { sortOrder: "asc" } },
           propertyAmenities: { include: { amenity: true } },
+          agent: { select: { id: true, firstName: true, lastName: true } },
         },
+      });
+      return NextResponse.json({ success: true, data: properties });
+    }
+
+    // Lightweight scalar-only fetch of every property — used by the admin
+    // properties list to compute search/filter results and month/status
+    // tab counts client-side without downloading full records (images,
+    // amenities, project/owner/agent) for all of them. Full details for
+    // just the currently-visible page are fetched separately via `ids=`.
+    if (searchParams.get("fields") === "meta") {
+      const properties = await prisma.property.findMany({
+        select: {
+          id: true,
+          createdAt: true,
+          projectName: true,
+          titleTh: true,
+          titleEn: true,
+          ownerName: true,
+          ownerPhone: true,
+          ownerLineId: true,
+          building: true,
+          note: true,
+          address: true,
+          nearbyStations: true,
+          status: true,
+          listingType: true,
+          priority: true,
+          category: true,
+          price: true,
+          isExclusive: true,
+          addedAt: true,
+        },
+        orderBy: { createdAt: "desc" },
       });
       return NextResponse.json({ success: true, data: properties });
     }

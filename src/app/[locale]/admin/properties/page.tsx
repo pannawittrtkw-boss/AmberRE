@@ -96,12 +96,22 @@ function renderAvailableDate(availableDate: any, size: "sm" | "xs" = "sm") {
   return <span className="text-blue-600">พร้อมเข้าอยู่ {new Date(availableDate).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>;
 }
 
+const PAGE_SIZE = 30;
+
 export default function AdminPropertiesPage({ params }: { params: Promise<{ locale: string }> }) {
   const router = useRouter();
   const [locale, setLocale] = useState("th");
   const [messages, setMessages] = useState<any>(null);
+  // Lightweight (scalar-only) list of every property — used for
+  // search/filter/tab-count logic without downloading full records
+  // (images, amenities, agent) for all of them.
   const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  // Full property records, fetched only for the page currently visible on
+  // screen (see visibleCount below) — this is what actually renders.
+  const [pageItems, setPageItems] = useState<any[]>([]);
+  const [pageLoading, setPageLoading] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [detailModal, setDetailModal] = useState<any>(null);
   const [receiptModal, setReceiptModal] = useState<any>(null);
   const [exclusiveModal, setExclusiveModal] = useState<any>(null);
@@ -140,11 +150,28 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
   const fetchProperties = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/properties?limit=0");
+      const res = await fetch("/api/properties?fields=meta");
       const data = await res.json();
       if (data.success) setProperties(data.data);
     } catch {}
     setLoading(false);
+  };
+
+  // Fetches full property records (images, agent, etc.) for exactly the
+  // ids currently being rendered — keeps the page from ever downloading
+  // (or rendering) all 1000+ properties' full details at once.
+  const fetchPageDetails = async (ids: number[]) => {
+    if (ids.length === 0) { setPageItems([]); return; }
+    setPageLoading(true);
+    try {
+      const res = await fetch(`/api/properties?ids=${ids.join(",")}`);
+      const data = await res.json();
+      if (data.success) {
+        const byId = new Map(data.data.map((p: any) => [p.id, p]));
+        setPageItems(ids.map((id) => byId.get(id)).filter(Boolean));
+      }
+    } catch {}
+    setPageLoading(false);
   };
 
   useEffect(() => { fetchProperties(); }, []);
@@ -152,7 +179,7 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
   const deleteProperty = async (id: number) => {
     if (!confirm(locale === "th" ? "ยืนยันการลบ?" : "Confirm delete?")) return;
     await fetch(`/api/properties/${id}`, { method: "DELETE" });
-    fetchProperties();
+    refreshAll();
   };
 
   // Resets the "days on market" baseline to today — for a unit that comes
@@ -166,7 +193,7 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ listedAt: new Date().toISOString() }),
     });
-    fetchProperties();
+    refreshAll();
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,7 +210,7 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
       const data = await res.json();
       if (data.success) {
         setImportResult(data.data);
-        fetchProperties();
+        refreshAll();
       } else {
         setImportResult({ error: data.error });
       }
@@ -204,7 +231,7 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
       const data = await res.json();
       if (data.success) {
         setBulkLocationResult({ updated: data.updated, skipped: data.skipped });
-        fetchProperties();
+        refreshAll();
       }
     } catch {}
     setBulkLocating(false);
@@ -293,6 +320,39 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
     ? monthFiltered
     : monthFiltered.filter((p: any) => p.status === selectedStatusTab)
   ).slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  // Only the current "page" of matches gets its full details fetched —
+  // this is what keeps the page from rendering 1000+ full property cards
+  // (and downloading their images/relations) at once.
+  const visibleIds = finalFiltered.slice(0, visibleCount).map((p: any) => p.id);
+  const visibleIdsKey = visibleIds.join(",");
+
+  useEffect(() => {
+    fetchPageDetails(visibleIds);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleIdsKey]);
+
+  // Any change to search/filters/tabs re-starts pagination from the top.
+  const filterStationsKey = filterStations.join(",");
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [
+    searchText, filterStatus, filterListing, filterPriority, filterCategory,
+    filterMinPrice, filterMaxPrice, filterStationsKey, filterExclusive,
+    filterPostDateFrom, filterPostDateTo, selectedMonth, selectedStatusTab,
+  ]);
+
+  const pageItemsById = new Map(pageItems.map((p: any) => [p.id, p]));
+  const visibleProperties = finalFiltered.slice(0, visibleCount);
+
+  // After any mutation: refresh the lightweight list (counts/filters may
+  // have changed) and re-fetch full details for whatever's on screen right
+  // now (covers edits to fields, like listedAt, that don't change which
+  // ids are visible and so wouldn't otherwise trigger a re-fetch).
+  const refreshAll = async () => {
+    await fetchProperties();
+    await fetchPageDetails(visibleIds);
+  };
 
   if (!messages || loading) return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-amber-600" /></div>;
 
@@ -590,7 +650,13 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
 
       {/* Property Cards */}
       <div className="space-y-3">
-        {finalFiltered.map((p: any, idx: number) => {
+        {visibleProperties.map((meta: any, idx: number) => {
+          const p = pageItemsById.get(meta.id);
+          if (!p) {
+            return (
+              <div key={meta.id} className="bg-white rounded-xl border shadow-sm h-20 animate-pulse" />
+            );
+          }
           const furniture = parseJson(p.furnitureDetails);
           const appliances = parseJson(p.electricalAppliances);
           const isExpanded = expandedRow === p.id;
@@ -641,7 +707,7 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({ status: newStatus }),
                         });
-                        fetchProperties();
+                        refreshAll();
                       }}
                       className={`text-[10px] px-2 py-0.5 rounded-full font-medium border-0 cursor-pointer outline-none appearance-none pr-5 ${statusInfo.color}`}
                       style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 4px center" }}
@@ -785,7 +851,7 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ status: newStatus }),
                       });
-                      fetchProperties();
+                      refreshAll();
                     }}
                     className={`text-[10px] px-2 py-0.5 rounded-full font-medium border-0 cursor-pointer outline-none appearance-none pr-5 shrink-0 ${statusInfo.color}`}
                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 4px center" }}
@@ -956,6 +1022,17 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
             ไม่มีข้อมูล
           </div>
         )}
+
+        {finalFiltered.length > visibleCount && (
+          <button
+            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+            disabled={pageLoading}
+            className="w-full py-3 rounded-xl border border-dashed border-gray-300 text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {pageLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            แสดงเพิ่ม ({visibleCount} จาก {finalFiltered.length})
+          </button>
+        )}
       </div>
 
       {/* Station filter picker */}
@@ -972,7 +1049,7 @@ export default function AdminPropertiesPage({ params }: { params: Promise<{ loca
         <ExclusiveModal
           property={exclusiveModal}
           onClose={() => setExclusiveModal(null)}
-          onSaved={fetchProperties}
+          onSaved={refreshAll}
         />
       )}
 
