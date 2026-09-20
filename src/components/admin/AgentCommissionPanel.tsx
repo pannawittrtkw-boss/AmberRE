@@ -48,6 +48,7 @@ export interface HistoryContract {
   lesseeName: string;
   monthlyRent: number;
   commissionAmount: number;
+  agentEarnedCommission: number | null;
   commissionReceived: boolean;
   commissionReceivedDate: string | null;
   commissionPaid: boolean;
@@ -58,6 +59,8 @@ export interface HistoryContract {
 export interface MonthHistory {
   monthKey: string;
   closedCount: number;
+  totalContractValue: number;
+  totalEarnedCommission: number;
   contracts: HistoryContract[];
 }
 
@@ -273,13 +276,14 @@ export default function AgentCommissionPanel({
                 <div key={h.monthKey}>
                   <button
                     onClick={() => setExpandedMonth(isOpen ? null : h.monthKey)}
-                    className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors"
+                    className="w-full flex items-center justify-between flex-wrap gap-2 px-5 py-3.5 hover:bg-gray-50 transition-colors"
                   >
                     <span className="text-sm font-medium text-gray-800">{fmtMonthKey(h.monthKey)}</span>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-gray-500">{h.closedCount} สัญญา</span>
+                      <span className="text-xs text-gray-500">มูลค่ารวม ฿{fmtMoney(h.totalContractValue)}</span>
                       <span className="text-xs font-semibold text-gray-700">
-                        ฿{fmtMoney(h.contracts.reduce((sum, c) => sum + c.commissionAmount, 0))}
+                        ค่าคอมที่ได้ ฿{fmtMoney(h.totalEarnedCommission)}
                       </span>
                       {isOpen ? (
                         <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -315,7 +319,10 @@ export default function AgentCommissionPanel({
                               </div>
                             </div>
                             <div className="text-right flex-shrink-0 hidden sm:block">
-                              <div className="text-xs text-gray-600 font-medium">ค่าคอม ฿{fmtMoney(c.commissionAmount)}</div>
+                              <div className="text-xs text-gray-500">มูลค่าสัญญา ฿{fmtMoney(c.monthlyRent)}</div>
+                              <div className="text-xs text-gray-800 font-semibold mt-0.5">
+                                ค่าคอมที่ได้ {c.agentEarnedCommission != null ? `฿${fmtMoney(c.agentEarnedCommission)}` : "-"}
+                              </div>
                               <div className="text-[11px] mt-0.5">
                                 {c.commissionPaid ? (
                                   <span className="text-green-600">จ่ายแล้ว</span>

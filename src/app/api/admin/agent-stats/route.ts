@@ -141,6 +141,13 @@ export async function GET(req: NextRequest) {
       const allTimePaid = commissionMonths.reduce((sum, m) => sum + m.paidCommission, 0);
       const allTimePending = commissionMonths.reduce((sum, m) => sum + m.pendingCommission, 0);
 
+      // Looked up by each contract's own commissionReceivedDate month (not
+      // the contractDate month used to group "history" below) — the tier
+      // bracket a contract's payout falls into depends on when the money
+      // was actually received, which can be a different month than when
+      // the contract was signed.
+      const commissionByMonthKey = new Map(commissionMonths.map((m) => [m.monthKey, m]));
+
       // Per-contract history grouped by the month it was signed — answers
       // "how many, and which ones" behind the closed-count numbers, with a
       // link to the signed contract for each.
@@ -152,30 +159,45 @@ export async function GET(req: NextRequest) {
         list.push(c);
         historyByMonth.set(monthKey, list);
       }
-      const history = Array.from(historyByMonth, ([monthKey, list]) => ({
-        monthKey,
-        closedCount: list.length,
-        contracts: list.map((c) => ({
-          id: c.id,
-          contractNumber: c.contractNumber,
-          contractType: c.contractType,
-          projectName: c.projectName,
-          unitNumber: c.unitNumber,
-          lesseeName: c.lesseeName,
-          monthlyRent: Number(c.monthlyRent),
-          commissionAmount: calcContractCommission({ ...c, monthlyRent: Number(c.monthlyRent) }),
-          commissionReceived: c.commissionReceived,
-          commissionReceivedDate: c.commissionReceivedDate,
-          commissionPaid: c.commissionPaid,
-          shareToken: c.shareToken,
-          signedPdfUrl: c.signedPdfUrl,
-        })),
-      })).sort((a, b) => b.monthKey.localeCompare(a.monthKey));
+      const history = Array.from(historyByMonth, ([monthKey, list]) => {
+        const contracts = list.map((c) => {
+          const revenueAmount = calcContractCommission({ ...c, monthlyRent: Number(c.monthlyRent) });
+          let agentEarnedCommission: number | null = null;
+          if (c.commissionReceived && c.commissionReceivedDate) {
+            const rd = new Date(c.commissionReceivedDate);
+            const receivedMonthKey = `${rd.getFullYear()}-${String(rd.getMonth() + 1).padStart(2, "0")}`;
+            const tierPercent = commissionByMonthKey.get(receivedMonthKey)?.tierPercent ?? null;
+            if (tierPercent != null) agentEarnedCommission = (revenueAmount * tierPercent) / 100;
+          }
+          return {
+            id: c.id,
+            contractNumber: c.contractNumber,
+            contractType: c.contractType,
+            projectName: c.projectName,
+            unitNumber: c.unitNumber,
+            lesseeName: c.lesseeName,
+            monthlyRent: Number(c.monthlyRent),
+            commissionAmount: revenueAmount,
+            agentEarnedCommission,
+            commissionReceived: c.commissionReceived,
+            commissionReceivedDate: c.commissionReceivedDate,
+            commissionPaid: c.commissionPaid,
+            shareToken: c.shareToken,
+            signedPdfUrl: c.signedPdfUrl,
+          };
+        });
+        return {
+          monthKey,
+          closedCount: contracts.length,
+          totalContractValue: contracts.reduce((sum, c) => sum + c.monthlyRent, 0),
+          totalEarnedCommission: contracts.reduce((sum, c) => sum + (c.agentEarnedCommission ?? 0), 0),
+          contracts,
+        };
+      }).sort((a, b) => b.monthKey.localeCompare(a.monthKey));
 
       // Year-over-year monthly trend for the "Commission performance" chart
       // and stat-card sparklines — earnedCommission/closedCount per calendar
       // month for this year and last, filling months with no activity as 0.
-      const commissionByMonthKey = new Map(commissionMonths.map((m) => [m.monthKey, m]));
       const closedByMonthKey = new Map(closedMonths.map((m) => [m.monthKey, m]));
       const buildYear = (year: number) =>
         Array.from({ length: 12 }, (_, i) => {
