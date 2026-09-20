@@ -6,10 +6,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard, Building2, Users, FileText, Star, Loader2, Settings,
-  Menu, X, Trophy, Zap, Globe, Wallet, Layers, Mail, FileSignature, Lock, Crown, LayoutList, UserSearch, CalendarDays,
-  Receipt, ClipboardList, Building, Bot, CloudUpload, Percent, BarChart3,
+  LayoutDashboard, Building2, Users, FileText, Star, Loader2,
+  Menu, X, Trophy, Zap, Wallet, Layers, Mail, FileSignature, Lock, UserSearch, CalendarDays,
+  Receipt, ClipboardList, Building,
 } from "lucide-react";
+import { ADMIN_MENU_ITEMS, ALWAYS_VISIBLE_NAV_ITEMS, ALWAYS_VISIBLE_ADMIN_KEYS, type AdminMenuItem } from "@/lib/admin-menu";
 
 // Full list of every menu item a CO_AGENT can ever be given access to.
 // Sensitive admin pages (users, settings, languages, menu-config, subscriptions)
@@ -31,31 +32,40 @@ const ALL_AGENT_MENU_ITEMS = [
   { key: "dashboard",              href: (l: string) => `/${l}/admin`,                        icon: LayoutDashboard, labelTh: "Admin Dashboard",      labelEn: "Admin Dashboard" },
 ];
 
-// All admin nav items with their config key
-const ALL_ADMIN_NAV = [
-  { key: "dashboard",              icon: LayoutDashboard, hrefSuffix: "",                         labelKey: "dashboard" },
-  { key: "properties",             icon: Building2,       hrefSuffix: "/properties",               labelKey: "propertyManagement" },
-  { key: "projects",               icon: Layers,          hrefSuffix: "/projects",                 labelKey: "projectManagement" },
-  { key: "customer-leads",         icon: UserSearch,      hrefSuffix: "/customer-leads",           labelKey: null, labelFallback: { th: "Matching ลูกค้า", en: "Customer Matching" } },
-  { key: "users",                  icon: Users,           hrefSuffix: "/users",                    labelKey: "userManagement" },
-  { key: "messages",               icon: Mail,            hrefSuffix: "/messages",                 labelKey: null, labelFallback: { th: "ข้อความติดต่อ", en: "Messages" }, badge: true },
-  { key: "articles",               icon: FileText,        hrefSuffix: "/articles",                 labelKey: "articleManagement" },
-  { key: "portfolio",              icon: Trophy,          hrefSuffix: "/portfolio",                labelKey: "portfolioManagement", fallback: "Portfolio" },
-  { key: "electricity-calculator", icon: Zap,             hrefSuffix: "/electricity-calculator",   labelKey: null, labelMsg: "electricityCalculator.navLabel", fallback: "Electricity Calc" },
-  { key: "accounting",             icon: Wallet,          hrefSuffix: "/accounting",               labelKey: "accounting", fallback: "Accounting" },
-  { key: "contracts",              icon: FileSignature,   hrefSuffix: "/contracts",                labelKey: null, labelFallback: { th: "สัญญาเช่า", en: "Contracts" } },
-  { key: "contract-calendar",     icon: CalendarDays,    hrefSuffix: "/calendar",                 labelKey: null, labelFallback: { th: "ปฏิทินสัญญา", en: "Contract Calendar" } },
-  { key: "closed-contracts",       icon: Lock,            hrefSuffix: "/closed-contracts",         labelKey: null, labelFallback: { th: "Closed Contracts", en: "Closed Contracts" } },
-  { key: "subscriptions",          icon: Crown,           hrefSuffix: "/subscriptions",            labelKey: null, labelFallback: { th: "จัดการ Package", en: "Subscriptions" } },
-  { key: "commission-tiers",       icon: Percent,         hrefSuffix: "/commission-tiers",         labelKey: null, labelFallback: { th: "ตั้งค่าค่าคอมมิชชั่น", en: "Commission Tiers" } },
-  { key: "commission-overview",    icon: BarChart3,       hrefSuffix: "/commission-overview",      labelKey: null, labelFallback: { th: "ภาพรวมค่าคอม Agent", en: "Commission Overview" } },
-  { key: "menu-config",            icon: LayoutList,      hrefSuffix: "/menu-config",              labelKey: null, labelFallback: { th: "เมนูตาม Package", en: "Menu Config" } },
-  { key: "reviews",                icon: Star,            hrefSuffix: "/reviews",                  labelKey: "reviewModeration" },
-  { key: "settings",               icon: Settings,        hrefSuffix: "/settings",                 labelKey: "settings", fallback: "Settings" },
-  { key: "languages",              icon: Globe,           hrefSuffix: "/settings/languages",       labelKey: "languageSettings", fallback: "ตั้งค่าภาษา" },
-  { key: "storage-migration",      icon: CloudUpload,     hrefSuffix: "/settings/storage-migration", labelKey: null, labelFallback: { th: "ย้ายไฟล์ไป Cloudflare", en: "Migrate to Cloudflare" } },
-  { key: "ai-office",              icon: Bot,             hrefSuffix: "/ai-office",                labelKey: null, labelFallback: { th: "AI Office", en: "AI Office" } },
-  { key: "scanlink",               icon: FileText,        hrefSuffix: "/scanlink",                 labelKey: null, labelFallback: { th: "ScanLink", en: "ScanLink" } },
+// i18n overrides for nav items whose sidebar label should come from the
+// translation files instead of ADMIN_MENU_ITEMS's static Thai/English text.
+// Anything not listed here just falls back to labelTh/labelEn — so a new
+// admin page added to ADMIN_MENU_ITEMS shows up with a sensible label
+// immediately, with no risk of being forgotten in a per-page nav list.
+const NAV_LABEL_OVERRIDES: Record<string, { labelKey?: string; labelMsg?: string; fallback?: string }> = {
+  dashboard:              { labelKey: "dashboard" },
+  properties:             { labelKey: "propertyManagement" },
+  projects:               { labelKey: "projectManagement" },
+  users:                  { labelKey: "userManagement" },
+  articles:               { labelKey: "articleManagement" },
+  portfolio:              { labelKey: "portfolioManagement", fallback: "Portfolio" },
+  "electricity-calculator": { labelMsg: "electricityCalculator.navLabel", fallback: "Electricity Calc" },
+  accounting:             { labelKey: "accounting", fallback: "Accounting" },
+  reviews:                { labelKey: "reviewModeration" },
+  settings:               { labelKey: "settings", fallback: "Settings" },
+  languages:              { labelKey: "languageSettings", fallback: "ตั้งค่าภาษา" },
+};
+const NAV_BADGE_KEYS = ["messages"];
+
+// Every configurable admin page plus the always-visible utility pages,
+// in the sidebar's display order. Keys not yet listed here (e.g. a brand
+// new page just added to ADMIN_MENU_ITEMS) are appended at the end
+// automatically, so the sidebar never silently drops a page.
+const NAV_ORDER = [
+  "dashboard", "properties", "projects", "customer-leads", "users", "messages", "articles",
+  "portfolio", "electricity-calculator", "accounting", "contracts", "contract-calendar",
+  "closed-contracts", "subscriptions", "commission-tiers", "commission-overview", "menu-config",
+  "reviews", "settings", "languages", "storage-migration", "ai-office", "scanlink",
+];
+const ALL_ADMIN_NAV_SOURCE = [...ADMIN_MENU_ITEMS, ...ALWAYS_VISIBLE_NAV_ITEMS];
+const ALL_ADMIN_NAV: AdminMenuItem[] = [
+  ...NAV_ORDER.map((k) => ALL_ADMIN_NAV_SOURCE.find((i) => i.key === k)).filter((i): i is AdminMenuItem => Boolean(i)),
+  ...ALL_ADMIN_NAV_SOURCE.filter((i) => !NAV_ORDER.includes(i.key)),
 ];
 
 export default function AdminLayout({
@@ -176,19 +186,17 @@ export default function AdminLayout({
   // Admin sidebar: filter by ADMIN menu config
   // "menu-config" is always visible to admin to prevent lockout
   const adminAllowedKeys: string[] = menuConfig?.ADMIN ?? ALL_ADMIN_NAV.map((i) => i.key);
-  const getLabel = (item: (typeof ALL_ADMIN_NAV)[number]): string => {
-    if (item.labelKey) return t[item.labelKey] || (item as any).fallback || item.key;
-    if (item.labelMsg) {
-      const parts = item.labelMsg.split(".");
-      return messages[parts[0]]?.[parts[1]] || (item as any).fallback || item.key;
+  const getLabel = (item: AdminMenuItem): string => {
+    const override = NAV_LABEL_OVERRIDES[item.key];
+    const fallback = locale === "th" ? item.labelTh : item.labelEn;
+    if (override?.labelKey) return t[override.labelKey] || override.fallback || fallback;
+    if (override?.labelMsg) {
+      const parts = override.labelMsg.split(".");
+      return messages[parts[0]]?.[parts[1]] || override.fallback || fallback;
     }
-    if ((item as any).labelFallback) {
-      return locale === "th" ? (item as any).labelFallback.th : (item as any).labelFallback.en;
-    }
-    return item.key;
+    return fallback;
   };
 
-  const ALWAYS_VISIBLE_ADMIN_KEYS = ["menu-config", "ai-office", "scanlink", "storage-migration"];
   const navItems = ALL_ADMIN_NAV
     .filter((item) => ALWAYS_VISIBLE_ADMIN_KEYS.includes(item.key) || adminAllowedKeys.includes(item.key))
     .map((item) => ({
@@ -196,7 +204,7 @@ export default function AdminLayout({
       href: `/${locale}/admin${item.hrefSuffix}`,
       icon: item.icon,
       label: getLabel(item),
-      badge: (item as any).badge ? unreadMessages : undefined,
+      badge: NAV_BADGE_KEYS.includes(item.key) ? unreadMessages : undefined,
     }));
 
   const accSubItems = [

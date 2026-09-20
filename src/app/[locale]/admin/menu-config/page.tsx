@@ -2,45 +2,17 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Loader2, Save, RotateCcw, CheckCircle2 } from "lucide-react";
+import { ADMIN_MENU_ITEMS, ALL_MENU_KEYS as ALL_KEYS, DEFAULT_MENU_CONFIG } from "@/lib/admin-menu";
 
 const TIERS = ["STANDARD", "PRO", "ELITE", "ADMIN"] as const;
 type Tier = (typeof TIERS)[number];
 
-// Two groups — "admin-only" keys can only appear in ADMIN column,
-// "shared" keys can be enabled for any role including agents.
-const MENU_ITEMS = [
-  // ─── Admin-only pages ─────────────────────────────────────────────────────
-  { key: "dashboard",              labelTh: "Dashboard (Admin)",            labelEn: "Dashboard (Admin)",    group: "admin" },
-  { key: "users",                  labelTh: "จัดการผู้ใช้",                  labelEn: "User Management",      group: "admin" },
-  { key: "subscriptions",          labelTh: "จัดการ Package",               labelEn: "Subscriptions",        group: "admin" },
-  { key: "commission-tiers",       labelTh: "ตั้งค่าค่าคอมมิชชั่น",           labelEn: "Commission Tiers",     group: "admin" },
-  { key: "commission-overview",    labelTh: "ภาพรวมค่าคอม Agent",           labelEn: "Commission Overview",  group: "admin" },
-  { key: "menu-config",            labelTh: "เมนูตาม Package",              labelEn: "Menu Config",          group: "admin" },
-  { key: "settings",               labelTh: "ตั้งค่า",                       labelEn: "Settings",             group: "admin" },
-  { key: "languages",              labelTh: "ตั้งค่าภาษา",                  labelEn: "Language Settings",    group: "admin" },
-  // ─── Shared pages (Admin + Agent Workspace) ───────────────────────────────
-  { key: "agent-dashboard",        labelTh: "ภาพรวม (Agent Dashboard)",     labelEn: "Agent Dashboard",      group: "shared" },
-  { key: "properties",             labelTh: "ทรัพย์สิน",                     labelEn: "Properties",           group: "shared" },
-  { key: "projects",               labelTh: "โครงการ",                       labelEn: "Projects",             group: "shared" },
-  { key: "customer-leads",         labelTh: "Matching ลูกค้า",               labelEn: "Customer Matching",    group: "shared" },
-  { key: "contracts",              labelTh: "สัญญาเช่า",                     labelEn: "Contracts",            group: "shared" },
-  { key: "closed-contracts",       labelTh: "สัญญาที่ปิดแล้ว",               labelEn: "Closed Contracts",     group: "shared" },
-  { key: "electricity-calculator", labelTh: "คำนวณค่าไฟ",                   labelEn: "Electricity Calc",     group: "shared" },
-  { key: "accounting",             labelTh: "งบการเงิน / บัญชี",             labelEn: "Accounting",           group: "shared" },
-  { key: "messages",               labelTh: "ข้อความติดต่อ",                  labelEn: "Messages",             group: "shared" },
-  { key: "reviews",                labelTh: "รีวิว",                         labelEn: "Reviews",              group: "shared" },
-  { key: "portfolio",              labelTh: "Portfolio",                    labelEn: "Portfolio",            group: "shared" },
-  { key: "articles",               labelTh: "บทความ",                        labelEn: "Articles",             group: "shared" },
-];
+// Every row here comes from the shared ADMIN_MENU_ITEMS list — adding a
+// new admin page there is enough for it to show up here automatically,
+// no need to remember a second list.
+const MENU_ITEMS = ADMIN_MENU_ITEMS;
 
-const ALL_KEYS = [...new Set(MENU_ITEMS.map((m) => m.key))];
-
-const DEFAULT_CONFIG: Record<Tier, string[]> = {
-  STANDARD: ["agent-dashboard", "properties"],
-  PRO:      ["agent-dashboard", "properties", "projects", "customer-leads", "contracts", "electricity-calculator", "accounting"],
-  ELITE:    ["agent-dashboard", "properties", "projects", "customer-leads", "contracts", "closed-contracts", "electricity-calculator", "accounting", "messages", "reviews"],
-  ADMIN:    ALL_KEYS,
-};
+const DEFAULT_CONFIG = DEFAULT_MENU_CONFIG as Record<Tier, string[]>;
 
 const TIER_META: Record<Tier, { color: string; badge: string; desc: string }> = {
   STANDARD: { color: "text-gray-700 bg-gray-100",   badge: "Standard", desc: "แพ็กเกจพื้นฐาน" },
@@ -134,7 +106,7 @@ export default function MenuConfigPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">จัดการเมนูตาม Package</h1>
         <p className="text-sm text-gray-500 mt-1">
-          กำหนดสิทธิ์การเข้าถึงเมนูสำหรับแต่ละ Package / Role
+          กำหนดสิทธิ์การเข้าถึงเมนูสำหรับแต่ละ Package / Role — เมนูใหม่ที่เพิ่มเข้าระบบจะปรากฏในรายการนี้ให้อัตโนมัติ
         </p>
       </div>
 

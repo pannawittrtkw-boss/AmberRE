@@ -2,22 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { ALL_MENU_KEYS as ALL_KEYS, DEFAULT_MENU_CONFIG } from "@/lib/admin-menu";
 
 const SETTING_KEY = "agent_menu_config";
-
-const ALL_KEYS = [
-  "dashboard", "properties", "projects", "customer-leads", "users", "messages", "articles",
-  "portfolio", "electricity-calculator", "accounting", "contracts", "contract-calendar",
-  "closed-contracts", "subscriptions", "menu-config", "reviews", "settings", "languages",
-  "agent-dashboard", "commission-tiers", "commission-overview",
-];
-
-export const DEFAULT_MENU_CONFIG: Record<string, string[]> = {
-  STANDARD: ["agent-dashboard", "properties"],
-  PRO:      ["agent-dashboard", "properties", "projects", "customer-leads", "contracts", "electricity-calculator", "accounting"],
-  ELITE:    ["agent-dashboard", "properties", "projects", "customer-leads", "contracts", "closed-contracts", "electricity-calculator", "accounting", "messages", "reviews"],
-  ADMIN:    ALL_KEYS,
-};
 
 export async function GET() {
   try {
