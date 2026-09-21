@@ -149,6 +149,15 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
+    // Older listings are more likely to already be rented out, so decay
+    // the score the longer a property has sat in the system unrefreshed.
+    const daysPosted = Math.floor(
+      (Date.now() - new Date(prop.listedAt || prop.createdAt).getTime()) / 86400000
+    );
+    const freshnessFactor =
+      daysPosted > 90 ? 0.7 : daysPosted > 30 ? 0.85 : daysPosted > 7 ? 0.95 : 1;
+    score = Math.round(score * freshnessFactor);
+
     return { property: prop, score, reasons };
   });
 
