@@ -84,11 +84,12 @@ const STATUS_OPTIONS = [
   { value: "WAITING", label: "2. Waiting" },
   { value: "VERIFIED", label: "3. Verified" },
   { value: "VERIFIED_OVER_10_DAYS", label: "4. Verified Over 10 days" },
-  { value: "ADDED_PROPERTIES", label: "5. Added Properties" },
-  { value: "NOT_ACCEPT", label: "6. Not Accept" },
-  { value: "NOT_AVAILABLE", label: "7. Not Available" },
-  { value: "RENTED", label: "8. Rented" },
-  { value: "SOLD", label: "9. Sold" },
+  { value: "REVIEW", label: "5. Review" },
+  { value: "ADDED_PROPERTIES", label: "6. Added Properties" },
+  { value: "NOT_ACCEPT", label: "7. Not Accept" },
+  { value: "NOT_AVAILABLE", label: "8. Not Available" },
+  { value: "RENTED", label: "9. Rented" },
+  { value: "SOLD", label: "10. Sold" },
 ];
 
 const LISTING_TYPE_OPTIONS = [
