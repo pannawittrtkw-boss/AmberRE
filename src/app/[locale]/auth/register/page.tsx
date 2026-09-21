@@ -21,7 +21,7 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
-    role: "",
+    role: "AGENT",
     firstName: "",
     lastName: "",
     email: "",

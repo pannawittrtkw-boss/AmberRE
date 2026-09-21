@@ -40,7 +40,11 @@ export default function LoginPage({
     });
 
     if (result?.error) {
-      setError(messages?.auth?.loginError || "Invalid credentials");
+      setError(
+        result.error === "PENDING_APPROVAL"
+          ? messages?.auth?.pendingApprovalError || "Your account is pending admin approval"
+          : messages?.auth?.loginError || "Invalid credentials"
+      );
       setLoading(false);
     } else {
       router.push(`/${locale}`);

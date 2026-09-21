@@ -177,6 +177,7 @@
     "noAccount": "Don't have an account?",
     "hasAccount": "Already have an account?",
     "loginError": "Invalid email or password",
+    "pendingApprovalError": "Your account is pending admin approval. Please wait for approval before logging in.",
     "registerSuccess": "Registration successful",
     "signinSubtitle": "Enter your credentials below to sign in",
     "agentRegisteredNotice": "Agent account registered! Please log in — your account will be activated after Amber Real Estate team reviews your application.",

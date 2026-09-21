@@ -18,10 +18,15 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email },
         });
 
-        if (!user || !user.isActive) return null;
+        if (!user) return null;
 
         const isValid = await bcrypt.compare(credentials.password, user.passwordHash);
         if (!isValid) return null;
+
+        // Pending co-agent applications are created inactive — distinguish
+        // this from a wrong password so the login page can show the
+        // correct message instead of "invalid credentials".
+        if (!user.isActive) throw new Error("PENDING_APPROVAL");
 
         return {
           id: String(user.id),

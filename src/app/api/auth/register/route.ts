@@ -24,7 +24,9 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Agent registers with BUYER role until admin approves the co-agent application
+    // Agent registers with BUYER role until admin approves the co-agent
+    // application — inactive in the meantime so they can't log in and land
+    // on a half-agent account before approval (see auth.ts authorize()).
     const assignedRole = role === "AGENT" ? "BUYER" : (role || "BUYER");
 
     const user = await prisma.user.create({
@@ -36,6 +38,7 @@ export async function POST(req: NextRequest) {
         phone: phone || null,
         lineId: role === "AGENT" && lineId ? lineId : null,
         role: assignedRole,
+        isActive: role !== "AGENT",
       },
     });
 

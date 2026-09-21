@@ -177,6 +177,7 @@
     "noAccount": "ยังไม่มีบัญชี?",
     "hasAccount": "มีบัญชีอยู่แล้ว?",
     "loginError": "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+    "pendingApprovalError": "บัญชีของคุณกำลังรอการอนุมัติจาก Admin กรุณารอการอนุมัติก่อนเข้าสู่ระบบ",
     "registerSuccess": "สมัครสมาชิกสำเร็จ",
     "signinSubtitle": "กรอกข้อมูลด้านล่างเพื่อเข้าสู่ระบบ",
     "agentRegisteredNotice": "สมัครสมาชิก Agent เรียบร้อยแล้ว! กรุณา Login เข้าสู่ระบบ — บัญชีของคุณจะถูก Activate หลังจากทีม Amber Real Estate อนุมัติ",

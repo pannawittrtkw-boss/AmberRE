@@ -36,11 +36,17 @@ export async function PUT(req: NextRequest) {
       data: { status, approvedBy: adminId },
     });
 
-    // If approved, update user role to CO_AGENT
+    // Reactivate the account either way — approved applicants become
+    // CO_AGENT, rejected ones can still log in and use the site as a BUYER.
     if (status === "APPROVED") {
       await prisma.user.update({
         where: { id: application.userId },
-        data: { role: "CO_AGENT" },
+        data: { role: "CO_AGENT", isActive: true },
+      });
+    } else if (status === "REJECTED") {
+      await prisma.user.update({
+        where: { id: application.userId },
+        data: { isActive: true },
       });
     }
 
