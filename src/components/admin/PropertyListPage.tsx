@@ -803,7 +803,7 @@ export default function PropertyListPage({
                   {price === 0 && salePrice === 0 && <span className="text-gray-400 text-xs">-</span>}
                 </div>
                 <div className="min-w-[70px] text-center">
-                  {(furniture.length > 0 || appliances.length > 0) ? (
+                  {canManageRow && (furniture.length > 0 || appliances.length > 0) ? (
                     <button
                       onClick={() => setDetailModal(p)}
                       className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 border border-amber-300 text-amber-700 rounded-lg text-xs font-medium hover:bg-amber-100 transition-colors"
@@ -971,7 +971,7 @@ export default function PropertyListPage({
                     )}
                   </div>
                   <div className="flex items-center gap-0.5">
-                    {(furniture.length > 0 || appliances.length > 0) && (
+                    {canManageRow && (furniture.length > 0 || appliances.length > 0) && (
                       <button onClick={() => setDetailModal(p)} className="p-2 hover:bg-amber-50 rounded-lg text-amber-600 transition-colors" title="Details">
                         <FileText className="w-4 h-4" />
                       </button>
