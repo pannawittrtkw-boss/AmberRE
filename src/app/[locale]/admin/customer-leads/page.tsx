@@ -362,9 +362,15 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                     <div className="text-center py-8 text-gray-400 text-sm">ไม่พบทรัพย์ที่ตรงกับความต้องการ</div>
                   ) : (
                     <div>
-                      <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">
+                      <p className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
                         พบ {matchMap[lead.id].length} ทรัพย์ที่ตรงกัน
                       </p>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-3 text-[11px] text-gray-500">
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />โพสต์ไม่เกิน 7 วัน</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-400" />โพสต์เกิน 8-30 วัน</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" />โพสต์เกิน 31-90 วัน</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" />โพสต์เกิน 90 วัน</span>
+                      </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {matchMap[lead.id].map((prop) => (
                           <MatchCard key={prop.id} prop={prop} locale={locale} />
