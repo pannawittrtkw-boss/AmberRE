@@ -1,7 +1,17 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ExternalLink, RefreshCw, Loader2, CheckCircle2, XCircle, Clock, PhoneOff, Ban, Trash2, Repeat } from "lucide-react";
+import { ExternalLink, RefreshCw, Loader2, CheckCircle2, XCircle, Clock, PhoneOff, Ban, Trash2, Repeat, BarChart3 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+} from "recharts";
 import { LINES } from "@/components/admin/StationMapSelector";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -33,6 +43,26 @@ interface UrlRecord {
 }
 
 interface StatItem { status: string; _count: { status: number } }
+
+interface DashboardBucket { key: string; total: number; reviewed: number; pending: number }
+interface DashboardData { daily: DashboardBucket[]; monthly: DashboardBucket[]; yearly: DashboardBucket[] }
+type DashboardView = "daily" | "monthly" | "yearly";
+
+const TH_MONTHS_SHORT = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+
+// dateKey is "YYYY-MM-DD" (daily), "YYYY-MM" (monthly), or "YYYY" (yearly) —
+// format each into a short Thai label for the chart's x-axis.
+function fmtBucketLabel(view: DashboardView, key: string): string {
+  if (view === "daily") {
+    const [, m, d] = key.split("-").map(Number);
+    return `${d} ${TH_MONTHS_SHORT[m - 1]}`;
+  }
+  if (view === "monthly") {
+    const [y, m] = key.split("-").map(Number);
+    return `${TH_MONTHS_SHORT[m - 1]} ${String(y + 543).slice(-2)}`;
+  }
+  return String(Number(key) + 543); // yearly — Buddhist era
+}
 
 const PROPERTY_TYPE_LABEL: Record<string, string> = {
   CONDO: "คอนโด",
@@ -116,6 +146,10 @@ export default function ScanlinkPage() {
   const [page,       setPage]       = useState(1);
   const limit = 100;
 
+  const [dashboard,      setDashboard]      = useState<DashboardData | null>(null);
+  const [dashboardView,  setDashboardView]  = useState<DashboardView>("daily");
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+
   const load = useCallback(async (status: string, p: number) => {
     setLoading(true);
     try {
@@ -130,7 +164,23 @@ export default function ScanlinkPage() {
     } finally { setLoading(false); }
   }, []);
 
+  const loadDashboard = useCallback(async () => {
+    setDashboardLoading(true);
+    try {
+      const res = await fetch("/api/admin/scanlink/dashboard");
+      const d = await res.json();
+      if (d.success) setDashboard(d.data);
+    } finally { setDashboardLoading(false); }
+  }, []);
+
   useEffect(() => { load(filter, page); }, [load, filter, page]);
+  useEffect(() => { loadDashboard(); }, [loadDashboard]);
+
+  // Daily view can span 100+ distinct days — cap to the most recent 30 so
+  // the chart stays readable; monthly/yearly are naturally few buckets.
+  const chartData = (dashboard?.[dashboardView] ?? [])
+    .slice(dashboardView === "daily" ? -30 : -36)
+    .map((b) => ({ ...b, label: fmtBucketLabel(dashboardView, b.key) }));
 
   const changeFilter = (key: string) => { setFilter(key); setPage(1); setSelected(new Set()); };
 
@@ -211,6 +261,54 @@ export default function ScanlinkPage() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Trend chart */}
+      <div className="bg-white rounded-2xl border shadow-sm p-5 mb-6">
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-gray-400" />
+            <h2 className="text-sm font-semibold text-gray-800">เปรียบเทียบจำนวนลิงก์ตามช่วงเวลา</h2>
+          </div>
+          <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+            {([
+              { key: "daily",   label: "รายวัน" },
+              { key: "monthly", label: "รายเดือน" },
+              { key: "yearly",  label: "รายปี" },
+            ] as { key: DashboardView; label: string }[]).map((v) => (
+              <button
+                key={v.key}
+                onClick={() => setDashboardView(v.key)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  dashboardView === v.key ? "bg-white shadow-sm text-[#112240]" : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {dashboardLoading ? (
+          <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-indigo-600" /></div>
+        ) : chartData.length === 0 ? (
+          <div className="text-center py-16 text-gray-400 text-sm">ยังไม่มีข้อมูล</div>
+        ) : (
+          <div className="h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={{ stroke: "#e2e8f0" }} />
+                <YAxis tick={{ fontSize: 11, fill: "#64748b" }} axisLine={{ stroke: "#e2e8f0" }} allowDecimals={false} />
+                <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="total" name="ส่งเข้ามา" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="reviewed" name="ตรวจสอบแล้ว" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="pending" name="ค้าง/รอตรวจสอบ" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
 
       {/* Filter tabs */}
