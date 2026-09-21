@@ -42,6 +42,8 @@ type MatchedProperty = {
   projectName: string | null;
   address: string | null;
   primaryImage: string | null;
+  createdAt: string;
+  listedAt: string | null;
   stations: { nameTh: string; nameEn: string; line: string; distanceKm: string }[];
   project: { id: number; nameTh: string; province: string | null; district: string | null } | null;
   score: number;
@@ -561,6 +563,22 @@ function MatchCard({ prop, locale }: { prop: MatchedProperty; locale: string }) 
   const listingLabel: Record<string, string> = {
     RENT: "เช่า", SALE: "ขาย", RENT_AND_SALE: "เช่า/ขาย",
   };
+
+  // "Days on market" — same rule as the public FeaturedPropertyCard: counts
+  // from listedAt if an admin has reset it (unit came back on the market),
+  // falling back to the original createdAt otherwise.
+  const [now] = useState(() => Date.now());
+  const listedDate = new Date(prop.listedAt || prop.createdAt);
+  const daysPosted = Math.max(0, Math.floor((now - listedDate.getTime()) / 86400000));
+  const daysBadgeCls =
+    daysPosted <= 7
+      ? "bg-emerald-500 text-white"
+      : daysPosted <= 30
+      ? "bg-gray-400 text-white"
+      : daysPosted <= 90
+      ? "bg-amber-500 text-white"
+      : "bg-red-500 text-white";
+
   return (
     <a
       href={`/${locale}/properties/${prop.id}`}
@@ -577,9 +595,12 @@ function MatchCard({ prop, locale }: { prop: MatchedProperty; locale: string }) 
           </div>
         )}
         <div className="absolute top-2 right-2"><ScoreBadge score={prop.score} /></div>
-        <div className="absolute top-2 left-2">
+        <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
           <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full font-medium">
             {listingLabel[prop.listingType] || prop.listingType}
+          </span>
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${daysBadgeCls}`}>
+            {daysPosted} {locale === "th" ? "วัน" : "d"}
           </span>
         </div>
       </div>

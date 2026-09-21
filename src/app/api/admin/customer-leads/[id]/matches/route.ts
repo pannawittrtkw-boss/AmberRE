@@ -171,6 +171,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       province: (property as any).province ?? null,
       district: (property as any).district ?? null,
       primaryImage: property.images[0]?.imageUrl ?? null,
+      createdAt: property.createdAt,
+      listedAt: property.listedAt,
       stations: property.propertyStations.map((ps) => ({
         nameTh: ps.station.nameTh,
         nameEn: ps.station.nameEn,
