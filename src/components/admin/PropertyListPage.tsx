@@ -113,6 +113,9 @@ export default function PropertyListPage({
   // list is search-only (browsing the whole catalog to match a client),
   // with a "View Detail" link to the public page instead.
   const isAdmin = role === "ADMIN";
+  // Lazy init so this stays fixed for the render pass instead of drifting
+  // per-row as Date.now() would if called directly during render.
+  const [now] = useState(() => Date.now());
   const [locale, setLocale] = useState("th");
   const [messages, setMessages] = useState<any>(null);
   // Lightweight (scalar-only) list of every property — used for
@@ -686,6 +689,18 @@ export default function PropertyListPage({
             ? Math.ceil((new Date(p.exclusiveEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
             : null;
           const canManageRow = isAdmin || p.agentId === userId;
+          // Same "days on market" coloring as the public FeaturedPropertyCard
+          // and the customer-lead matching cards.
+          const listedDate = new Date(p.listedAt || p.createdAt);
+          const daysPosted = Math.max(0, Math.floor((now - listedDate.getTime()) / 86400000));
+          const daysBadgeCls =
+            daysPosted <= 7
+              ? "bg-emerald-500 text-white"
+              : daysPosted <= 30
+              ? "bg-gray-400 text-white"
+              : daysPosted <= 90
+              ? "bg-amber-500 text-white"
+              : "bg-red-500 text-white";
 
           return (
             <div key={p.id} className="bg-white rounded-xl border shadow-sm overflow-hidden">
@@ -742,6 +757,9 @@ export default function PropertyListPage({
                         {statusInfo.label}
                       </span>
                     )}
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${daysBadgeCls}`}>
+                      {daysPosted} วัน
+                    </span>
                     {p.category === "LUXURY" && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">Luxury</span>
                     )}
@@ -915,6 +933,9 @@ export default function PropertyListPage({
                       {statusInfo.label}
                     </span>
                   )}
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ${daysBadgeCls}`}>
+                    {daysPosted} วัน
+                  </span>
                 </div>
 
                 {/* Details grid */}
