@@ -252,6 +252,8 @@ export default function PropertyListPage({
 
   // Client-side filtering
   const filtered = properties.filter((p: any) => {
+    // Agents (non-admin) shouldn't see properties that are no longer available
+    if (!isAdmin && (p.status === "NOT_AVAILABLE" || p.status === "RENTED")) return false;
     // Text search
     if (searchText) {
       const q = searchText.toLowerCase();
