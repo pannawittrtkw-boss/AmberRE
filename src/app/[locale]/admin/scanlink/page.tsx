@@ -2,8 +2,22 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ExternalLink, RefreshCw, Loader2, CheckCircle2, XCircle, Clock, PhoneOff, Ban, Trash2, Repeat } from "lucide-react";
+import { LINES } from "@/components/admin/StationMapSelector";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
+// Only populated once a link has been reviewed and accepted (which creates a
+// Property linked back via sourceLink) — null for links still pending review,
+// since that data is only ever typed in at accept-time, not stored earlier.
+interface PropertySummary {
+  projectName: string | null;
+  propertyType: string;
+  listingType: string;
+  price: number;
+  salePrice: number | null;
+  nearbyStations: string | null;
+  availableDate: string | null;
+}
+
 interface UrlRecord {
   id: number;
   groupId: string;
@@ -15,9 +29,45 @@ interface UrlRecord {
   reviewedAt: string | null;
   reviewedBy: string | null;
   sentAt: string;
+  property: PropertySummary | null;
 }
 
 interface StatItem { status: string; _count: { status: number } }
+
+const PROPERTY_TYPE_LABEL: Record<string, string> = {
+  CONDO: "คอนโด",
+  HOUSE: "บ้านเดี่ยว",
+  TOWNHOUSE: "ทาวน์เฮาส์",
+  LAND: "ที่ดิน",
+};
+
+const LISTING_TYPE_LABEL: Record<string, string> = {
+  RENT: "เช่า",
+  SALE: "ขาย",
+  RENT_AND_SALE: "เช่า & ขาย",
+};
+
+function getStationName(code: string): string {
+  for (const line of LINES) {
+    const station = line.stations.find((s) => s.id === code || s.code === code);
+    if (station) return `${station.code} ${station.nameTh}`;
+  }
+  return code;
+}
+
+function parseStations(val: string | null): string[] {
+  if (!val) return [];
+  try {
+    const p = JSON.parse(val);
+    return Array.isArray(p) ? p : [];
+  } catch {
+    return [];
+  }
+}
+
+function fmtMoney(n: number) {
+  return n.toLocaleString("th-TH");
+}
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const STATUS_META: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
@@ -50,10 +100,6 @@ function StatusBadge({ status }: { status: string }) {
       {m.icon}{m.label}
     </span>
   );
-}
-
-function shortUrl(url: string, max = 70) {
-  return url.length > max ? url.slice(0, max - 2) + "…" : url;
 }
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
@@ -225,7 +271,12 @@ export default function ScanlinkPage() {
                       className="rounded" />
                   </th>
                   <th className="px-3 py-3 text-left w-12">#</th>
-                  <th className="px-3 py-3 text-left">URL</th>
+                  <th className="px-3 py-3 text-center w-28">ลิงก์</th>
+                  <th className="px-3 py-3 text-left w-40">ชื่อโครงการ</th>
+                  <th className="px-3 py-3 text-left w-32">ประเภท</th>
+                  <th className="px-3 py-3 text-left w-32">ราคา</th>
+                  <th className="px-3 py-3 text-left w-36">สถานีใกล้เคียง</th>
+                  <th className="px-3 py-3 text-left w-24">เข้าอยู่ได้</th>
                   <th className="px-3 py-3 text-left w-28">ผู้ส่ง</th>
                   <th className="px-3 py-3 text-left w-24">วันที่</th>
                   <th className="px-3 py-3 text-left w-40">สถานะ</th>
@@ -234,7 +285,10 @@ export default function ScanlinkPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {records.map(r => (
+                {records.map(r => {
+                  const p = r.property;
+                  const stations = p ? parseStations(p.nearbyStations) : [];
+                  return (
                   <tr key={r.id} className={`hover:bg-gray-50 transition-colors ${selected.has(r.id) ? "bg-indigo-50" : ""}`}>
                     <td className="pl-4 pr-2 py-3">
                       <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSelect(r.id)} className="rounded" />
@@ -242,12 +296,51 @@ export default function ScanlinkPage() {
                     <td className="px-3 py-3">
                       <span className="font-bold text-amber-600">#{r.dailySeq || r.id}</span>
                     </td>
-                    <td className="px-3 py-3 max-w-xs">
-                      <a href={r.url} target="_blank" rel="noopener noreferrer"
-                        className="flex items-start gap-1.5 text-indigo-600 hover:text-indigo-800 hover:underline break-all leading-snug group">
-                        <ExternalLink className="w-3.5 h-3.5 mt-0.5 shrink-0 opacity-50 group-hover:opacity-100" />
-                        <span className="text-xs">{shortUrl(r.url)}</span>
+                    <td className="px-3 py-3 text-center">
+                      <a href={r.url} target="_blank" rel="noopener noreferrer" title={r.url}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-lg text-xs font-medium hover:bg-indigo-100 transition-colors whitespace-nowrap">
+                        <ExternalLink className="w-3.5 h-3.5 shrink-0" />เปิดลิงก์
                       </a>
+                    </td>
+                    <td className="px-3 py-3 text-gray-700 max-w-[10rem] truncate" title={p?.projectName || undefined}>
+                      {p?.projectName || <span className="text-gray-300">—</span>}
+                    </td>
+                    <td className="px-3 py-3 text-gray-600 text-xs">
+                      {p ? (
+                        <>
+                          {PROPERTY_TYPE_LABEL[p.propertyType] || p.propertyType}
+                          <span className="text-gray-300"> · </span>
+                          {LISTING_TYPE_LABEL[p.listingType] || p.listingType}
+                        </>
+                      ) : <span className="text-gray-300">—</span>}
+                    </td>
+                    <td className="px-3 py-3 text-gray-700 text-xs">
+                      {p ? (
+                        <div className="space-y-0.5">
+                          {p.price > 0 && <div>เช่า ฿{fmtMoney(p.price)}</div>}
+                          {p.salePrice != null && p.salePrice > 0 && <div>ขาย ฿{fmtMoney(p.salePrice)}</div>}
+                          {!(p.price > 0) && !(p.salePrice != null && p.salePrice > 0) && <span className="text-gray-300">—</span>}
+                        </div>
+                      ) : <span className="text-gray-300">—</span>}
+                    </td>
+                    <td className="px-3 py-3 text-xs">
+                      {stations.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {stations.slice(0, 2).map((code) => (
+                            <span key={code} className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-medium">
+                              {getStationName(code)}
+                            </span>
+                          ))}
+                          {stations.length > 2 && (
+                            <span className="text-gray-400 text-[10px]">+{stations.length - 2}</span>
+                          )}
+                        </div>
+                      ) : <span className="text-gray-300">—</span>}
+                    </td>
+                    <td className="px-3 py-3 text-gray-500 text-xs">
+                      {p?.availableDate
+                        ? new Date(p.availableDate).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" })
+                        : p ? "พร้อมอยู่" : <span className="text-gray-300">—</span>}
                     </td>
                     <td className="px-3 py-3 text-gray-700">{r.sentBy || "—"}</td>
                     <td className="px-3 py-3 text-gray-500 text-xs">{r.dateKey}</td>
@@ -263,7 +356,8 @@ export default function ScanlinkPage() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

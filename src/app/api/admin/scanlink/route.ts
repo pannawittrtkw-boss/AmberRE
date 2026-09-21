@@ -47,9 +47,51 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
+  // Property details (project name, price, stations, etc.) only exist once
+  // a link has been reviewed and accepted via /scanlink/accept, which
+  // creates a Property with sourceLink = this record's url. Nothing is
+  // written back onto LineUrlHistory itself, so for PENDING/unreviewed
+  // links there's genuinely no such data yet — join it in here for
+  // whichever of this page's records do have a matching Property.
+  const urls = [...new Set(records.map((r) => r.url))];
+  const properties = urls.length
+    ? await prisma.property.findMany({
+        where: { sourceLink: { in: urls } },
+        select: {
+          sourceLink: true,
+          projectName: true,
+          titleTh: true,
+          propertyType: true,
+          listingType: true,
+          price: true,
+          salePrice: true,
+          nearbyStations: true,
+          availableDate: true,
+        },
+      })
+    : [];
+  const propertyByUrl = new Map(properties.map((p) => [p.sourceLink, p]));
+  const recordsWithProperty = records.map((r) => {
+    const p = propertyByUrl.get(r.url);
+    return {
+      ...r,
+      property: p
+        ? {
+            projectName: p.projectName || p.titleTh,
+            propertyType: p.propertyType,
+            listingType: p.listingType,
+            price: Number(p.price),
+            salePrice: p.salePrice != null ? Number(p.salePrice) : null,
+            nearbyStations: p.nearbyStations,
+            availableDate: p.availableDate,
+          }
+        : null,
+    };
+  });
+
   return NextResponse.json({
     success: true,
-    data: { records, total, grandTotal, page, limit, groups: groups.map(g => g.groupId), stats },
+    data: { records: recordsWithProperty, total, grandTotal, page, limit, groups: groups.map(g => g.groupId), stats },
   });
 }
 
