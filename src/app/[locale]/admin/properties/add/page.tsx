@@ -1665,11 +1665,9 @@ export default function AddPropertyPage({
 
             {/* Pet Friendly */}
             <div>
-              <label className="block text-sm font-semibold mb-2">
-                {locale === "th" ? "เลี้ยงสัตว์ได้" : "Pet Friendly"}
-              </label>
+              <label className="block text-sm font-semibold mb-2">Pet Friendly</label>
               <div className="flex items-center gap-6 mt-1">
-                {[{ val: "ACCEPT", label: locale === "th" ? "ได้" : "Allowed" }, { val: "NOT_ACCEPT", label: locale === "th" ? "ไม่ได้" : "Not Allowed" }].map(({ val, label }) => (
+                {[{ val: "ACCEPT", label: "Allowed" }, { val: "NOT_ACCEPT", label: "Not Allowed" }].map(({ val, label }) => (
                   <label key={val} className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
@@ -1687,11 +1685,9 @@ export default function AddPropertyPage({
 
             {/* Smoking Allowed */}
             <div>
-              <label className="block text-sm font-semibold mb-2">
-                {locale === "th" ? "สูบบุหรี่ได้" : "Smoking Allowed"}
-              </label>
+              <label className="block text-sm font-semibold mb-2">Smoking Allowed</label>
               <div className="flex items-center gap-6 mt-1">
-                {[{ val: "ACCEPT", label: locale === "th" ? "ได้" : "Allowed" }, { val: "NOT_ACCEPT", label: locale === "th" ? "ไม่ได้" : "Not Allowed" }].map(({ val, label }) => (
+                {[{ val: "ACCEPT", label: "Allowed" }, { val: "NOT_ACCEPT", label: "Not Allowed" }].map(({ val, label }) => (
                   <label key={val} className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
