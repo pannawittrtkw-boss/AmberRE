@@ -645,8 +645,7 @@ export function AccPdf({ data }: { data: AccPdfData }) {
 
         {/* ── Signature ── */}
         <View fixed style={s.sigBlock}>
-          {(data.docType === "INVOICE" || data.docType === "BILLING_NOTE") &&
-           (data.companyBankName || data.companyBankAccountNumber) && (
+          {(data.companyBankName || data.companyBankAccountNumber) && (
             <View style={s.bankWrap}>
               <TText style={s.bankTitle}>{bi("ช่องทางการชำระเงิน", "Payment Details", lang)}</TText>
               <View style={s.bankRow}>
