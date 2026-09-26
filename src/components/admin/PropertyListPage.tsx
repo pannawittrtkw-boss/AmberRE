@@ -79,10 +79,10 @@ function parseJson(val: string | null | undefined): string[] {
   try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; }
 }
 
-function getStationName(code: string): string {
+function getStationName(code: string, locale: string): string {
   for (const line of LINES) {
     const station = line.stations.find((s) => s.id === code || s.code === code);
-    if (station) return `${station.code} ${station.nameTh}`;
+    if (station) return `${station.code} ${locale === "th" ? station.nameTh : (station.nameEn || station.nameTh)}`;
   }
   return code;
 }
@@ -262,7 +262,7 @@ export default function PropertyListPage({
     if (searchText) {
       const q = searchText.toLowerCase();
       // Convert station codes to names for searching
-      const stationNames = parseJson(p.nearbyStations).map((c: string) => getStationName(c)).join(" ");
+      const stationNames = parseJson(p.nearbyStations).map((c: string) => getStationName(c, locale)).join(" ");
       const fields = [
         p.projectName, p.titleTh, p.titleEn, p.ownerName, p.ownerPhone,
         p.ownerLineId, p.building, p.note, p.address, stationNames,
@@ -580,7 +580,7 @@ export default function PropertyListPage({
                   <Train className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                   {filterStations.length > 0 ? (
                     <span className="flex-1 truncate">
-                      {filterStations.slice(0, 2).map((c) => getStationName(c)).join(", ")}
+                      {filterStations.slice(0, 2).map((c) => getStationName(c, locale)).join(", ")}
                       {filterStations.length > 2 ? ` +${filterStations.length - 2}` : ""}
                     </span>
                   ) : (
@@ -824,7 +824,7 @@ export default function PropertyListPage({
                         <Train className="w-3 h-3 text-blue-600 flex-shrink-0" />
                         {stations.map((code: string) => (
                           <span key={code} className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded text-[10px] font-medium">
-                            {getStationName(code)}
+                            {getStationName(code, locale)}
                           </span>
                         ))}
                       </div>
@@ -994,7 +994,7 @@ export default function PropertyListPage({
                       <Train className="w-3 h-3 text-blue-600 flex-shrink-0" />
                       {stations.map((code: string) => (
                         <span key={code} className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-[10px] font-medium">
-                          {getStationName(code)}
+                          {getStationName(code, locale)}
                         </span>
                       ))}
                     </div>
@@ -1083,7 +1083,7 @@ export default function PropertyListPage({
                           <div className="flex flex-wrap gap-1">
                             {stations.map((code: string) => (
                               <span key={code} className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-[10px] font-medium">
-                                {getStationName(code)}
+                                {getStationName(code, locale)}
                               </span>
                             ))}
                           </div>

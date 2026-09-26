@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCompare } from "@/lib/compare";
-import { getStationThaiName } from "@/lib/stations";
+import { getStationName } from "@/lib/stations";
 import { formatNumber } from "@/lib/utils";
 
 function parseJson(val: string | null | undefined): string[] {
@@ -528,7 +528,7 @@ export default function ComparePage() {
                   <CompareRow label={l.nearStation} gridCols={gridCols} last>
                     {properties.map((p) => {
                       const codes = parseJson(p.nearbyStations);
-                      const names = codes.map(getStationThaiName);
+                      const names = codes.map((code: string) => getStationName(code, locale));
                       return (
                         <CompareCell key={p.id}>
                           {names.length > 0 ? (

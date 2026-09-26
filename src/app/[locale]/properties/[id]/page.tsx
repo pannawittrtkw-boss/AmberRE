@@ -29,7 +29,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getIntlLocale } from "@/lib/utils";
-import { getStationFullName } from "@/lib/stations";
+import { getStationFullName, getStationName } from "@/lib/stations";
 import ImageGallery from "@/components/property/ImageGallery";
 import FeaturedPropertyCard from "@/components/property/FeaturedPropertyCard";
 import AdminEditButton from "@/components/property/AdminEditButton";
@@ -94,7 +94,6 @@ function parseJson(val: string | null): string[] {
   try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; }
 }
 
-import { getStationThaiName } from "@/lib/stations";
 
 async function getMessages(locale: string) {
   return (await import(`@/messages/${locale}.json`)).default;
@@ -495,7 +494,7 @@ export default async function PropertyDetailPage({
               {stations.length > 0 && (
                 <p className="flex items-center gap-2 text-sm text-white/70 mt-1.5">
                   <Train className="w-4 h-4 text-[#E8C97A]" />
-                  {stations.map(getStationThaiName).join(" • ")}
+                  {stations.map((code) => getStationName(code, locale)).join(" • ")}
                 </p>
               )}
             </div>

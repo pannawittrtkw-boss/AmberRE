@@ -141,6 +141,14 @@ export function getStationFullName(code: string): string {
   return `${linePrefix(code)} ${name}`;
 }
 
+// Locale-aware station name — use this instead of getStationThaiName
+// directly anywhere the UI is shown in more than one language, so English
+// (and other non-Thai locales) get the English station name instead of
+// always showing Thai regardless of the selected language.
+export function getStationName(code: string, locale: string): string {
+  return locale === "th" ? getStationThaiName(code) : getStationEnName(code);
+}
+
 export function getStationThaiFullName(code: string): string {
   const name = getStationThaiName(code);
   return `${linePrefix(code)} ${name}`;

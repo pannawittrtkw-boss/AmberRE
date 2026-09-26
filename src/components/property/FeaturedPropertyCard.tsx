@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Heart, Camera, MapPin, Train, Bed, Bath, Maximize, Eye, Calendar, Layers, Building } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
-import { getStationThaiName } from "@/lib/stations";
+import { getStationName } from "@/lib/stations";
 import { useFavorites } from "@/lib/favorites";
 import { useCompare } from "@/lib/compare";
 import PropertyImageCarousel from "./PropertyImageCarousel";
@@ -56,7 +56,7 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
 
   // Get stations from nearbyStations JSON field
   const stationCodes = parseJson(property.nearbyStations);
-  const stationLabels = stationCodes.map(getStationThaiName);
+  const stationLabels = stationCodes.map((code: string) => getStationName(code, locale));
 
   const { toggleFavorite, isFavorite } = useFavorites();
   const { toggleCompare, isCompared } = useCompare();
