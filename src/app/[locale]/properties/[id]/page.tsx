@@ -74,6 +74,20 @@ const FACILITY_MAP: Record<string, { en: string; th: string }> = {
   bedroomPartition: { en: "Bedroom Partition", th: "ฉากกั้นห้องนอน" }, kitchenPartition: { en: "Kitchen Partition", th: "ฉากกั้นห้องครัว" },
 };
 
+// Same status colors as PropertyListPage's STATUS_MAP / admin add-property page.
+const STATUS_BADGE: Record<string, { label: string; color: string }> = {
+  PENDING: { label: "Pending", color: "bg-yellow-500" },
+  WAITING: { label: "Waiting", color: "bg-blue-500" },
+  VERIFIED: { label: "Verified", color: "bg-green-600" },
+  VERIFIED_OVER_10_DAYS: { label: "Verified 10d+", color: "bg-orange-500" },
+  REVIEW: { label: "Review", color: "bg-cyan-500" },
+  ADDED_PROPERTIES: { label: "Added", color: "bg-purple-500" },
+  NOT_ACCEPT: { label: "Not Accept", color: "bg-red-500" },
+  NOT_AVAILABLE: { label: "Not Available", color: "bg-gray-500" },
+  RENTED: { label: "Rented", color: "bg-teal-500" },
+  SOLD: { label: "Sold", color: "bg-rose-500" },
+};
+
 function parseJson(val: string | null): string[] {
   if (!val) return [];
   try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; }
@@ -312,6 +326,7 @@ export default async function PropertyDetailPage({
     : daysPosted <= 30 ? "bg-gray-400"
     : daysPosted <= 90 ? "bg-amber-500"
     : "bg-red-500";
+  const statusInfo = STATUS_BADGE[property.status || "PENDING"] || STATUS_BADGE.PENDING;
 
   const hasInvestmentData = !!property.invPurchasePrice;
   const invDefaults = hasInvestmentData ? {
@@ -450,6 +465,9 @@ export default async function PropertyDetailPage({
                 )}
                 <span className={`${daysBadgeCls} text-white text-[11px] font-semibold px-3 py-1 rounded-full`}>
                   {locale === "th" ? `โพสต์มา ${daysPosted} วัน` : `Posted ${daysPosted}d ago`}
+                </span>
+                <span className={`${statusInfo.color} text-white text-[11px] font-semibold uppercase tracking-widest px-3 py-1 rounded-full`}>
+                  {statusInfo.label}
                 </span>
               </div>
 
