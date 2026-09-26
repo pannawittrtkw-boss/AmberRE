@@ -153,6 +153,8 @@
     "writeReview": "撰写评价",
     "reviewSubmitted": "评价已提交，等待审核",
     "loginToReview": "登录后撰写评价",
+    "noReviewsYet": "此房产暂无评价",
+    "commentPlaceholder": "分享您对此房产的看法（选填）",
     "exclusive_contact": "此为独家房源，请联系代理",
     "investmentAnalysis": "投资回报分析",
     "forInvestors": "适合投资者",

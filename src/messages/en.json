@@ -153,6 +153,8 @@
     "writeReview": "Write a Review",
     "reviewSubmitted": "Review submitted, pending approval",
     "loginToReview": "Login to write a review",
+    "noReviewsYet": "No reviews yet for this property",
+    "commentPlaceholder": "Share your thoughts about this property (optional)",
     "exclusive_contact": "This is an exclusive listing. Please contact the agent.",
     "investmentAnalysis": "Investment Analysis",
     "forInvestors": "For Investors",

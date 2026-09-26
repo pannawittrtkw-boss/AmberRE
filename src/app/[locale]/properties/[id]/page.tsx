@@ -37,6 +37,7 @@ import AgentContactButtons from "@/components/property/AgentContactButtons";
 import ContactUnlockCard from "@/components/property/ContactUnlockCard";
 import PropertyInquiryForm from "@/components/property/PropertyInquiryForm";
 import MarketingDescription from "@/components/property/MarketingDescription";
+import PropertyReviews from "@/components/property/PropertyReviews";
 import SectionTitle from "@/components/ui/SectionTitle";
 import { NEARBY_CATEGORY_LABEL_TH, NEARBY_CATEGORY_LABEL_EN, type NearbyPlace } from "@/lib/nearby-places";
 import { hasNoBedrooms } from "@/lib/property-constants";
@@ -848,6 +849,19 @@ export default async function PropertyDetailPage({
             {hasInvestmentData && isSale && invDefaults && (
               <InvestmentAnalysis locale={locale} defaults={invDefaults} />
             )}
+
+            {/* Reviews */}
+            <PropertyReviews
+              propertyId={property.id}
+              locale={locale}
+              initialReviews={property.reviews.map((r) => ({
+                id: r.id,
+                rating: r.rating,
+                comment: r.comment,
+                createdAt: r.createdAt.toISOString(),
+                user: r.user,
+              }))}
+            />
 
             {/* Metadata */}
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-stone-400 pt-6 border-t border-stone-200">
