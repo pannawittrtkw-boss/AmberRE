@@ -213,8 +213,8 @@ function ScanlinkAcceptForm() {
             { key: "furnished", label: "🛋 Fully Furnished", value: furnished, set: setFurnished },
             { key: "electric", label: "⚡ Fully Electric", value: electric, set: setElectric },
             { key: "ready", label: "✅ Ready to move in", value: ready, set: setReady },
-            { key: "petFriendly", label: "🐾 เลี้ยงสัตว์ได้", value: petFriendly, set: setPetFriendly },
-            { key: "smokingAllowed", label: "🚬 สูบบุหรี่ได้", value: smokingAllowed, set: setSmokingAllowed },
+            { key: "petFriendly", label: "🐾 Pet Friendly", value: petFriendly, set: setPetFriendly },
+            { key: "smokingAllowed", label: "🚬 Smoking Allowed", value: smokingAllowed, set: setSmokingAllowed },
           ] as const).map((opt) => (
             <div
               key={opt.key}

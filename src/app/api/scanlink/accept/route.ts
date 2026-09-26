@@ -91,8 +91,8 @@ export async function POST(req: NextRequest) {
       `🛋 Fully Furnished: ${fullyFurnished ? yes : no}`,
       `⚡ Fully Electric: ${fullyElectric   ? yes : no}`,
       readyLine,
-      `🐾 เลี้ยงสัตว์ได้: ${petFriendly    ? yes : no}`,
-      `🚬 สูบบุหรี่ได้: ${smokingAllowed  ? yes : no}`,
+      `🐾 Pet Friendly: ${petFriendly    ? yes : no}`,
+      `🚬 Smoking Allowed: ${smokingAllowed  ? yes : no}`,
       remark ? `📝 Remark: ${remark}` : null,
     ].filter(Boolean).join("\n");
 
