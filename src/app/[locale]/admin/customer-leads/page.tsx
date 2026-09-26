@@ -346,7 +346,7 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                       )}
                       {lead.bedrooms !== null && (
                         <span className="flex items-center gap-1 text-xs bg-pink-50 text-pink-700 px-2 py-0.5 rounded-full">
-                          <BedDouble className="w-3 h-3" />{lead.bedrooms === 0 ? "สตูดิโอ" : `${lead.bedrooms}${lead.bedrooms >= 4 ? "+" : ""} ห้องนอน`}
+                          <BedDouble className="w-3 h-3" />{lead.bedrooms}{lead.bedrooms >= 4 ? "+" : ""} ห้องนอน
                         </span>
                       )}
                       {lead.minSizeSqm !== null && (
@@ -559,7 +559,6 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     >
                       <option value="">ไม่ระบุ</option>
-                      <option value="0">สตูดิโอ</option>
                       <option value="1">1 ห้องนอน</option>
                       <option value="2">2 ห้องนอน</option>
                       <option value="3">3 ห้องนอน</option>
