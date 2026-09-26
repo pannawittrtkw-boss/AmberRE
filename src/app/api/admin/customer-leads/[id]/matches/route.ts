@@ -60,6 +60,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
   }
 
+  // Each agent only manages their own customers — an admin can view anyone's.
+  const isAdmin = (session.user as any).role === "ADMIN";
+  const userId = parseInt((session.user as any).id);
+  if (!isAdmin && lead.createdById !== userId) {
+    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+  }
+
   // Fetch properties that have actually passed verification — never
   // recommend a lead something still pending/under review, rejected,
   // unavailable, or already rented/sold.

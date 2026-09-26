@@ -12,6 +12,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const leadId = parseInt(id);
 
+  const isAdmin = (session.user as any).role === "ADMIN";
+  const userId = parseInt((session.user as any).id);
+  if (!isAdmin) {
+    const existing = await prisma.customerLead.findUnique({ where: { id: leadId }, select: { createdById: true } });
+    if (!existing || existing.createdById !== userId) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+  }
+
   try {
     const body = await req.json();
     const {
@@ -60,6 +69,15 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   const { id } = await params;
   const leadId = parseInt(id);
+
+  const isAdmin = (session.user as any).role === "ADMIN";
+  const userId = parseInt((session.user as any).id);
+  if (!isAdmin) {
+    const existing = await prisma.customerLead.findUnique({ where: { id: leadId }, select: { createdById: true } });
+    if (!existing || existing.createdById !== userId) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+  }
 
   try {
     await prisma.customerLead.delete({ where: { id: leadId } });

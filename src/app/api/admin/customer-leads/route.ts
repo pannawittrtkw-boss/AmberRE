@@ -9,7 +9,12 @@ export async function GET() {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 
+  const isAdmin = (session.user as any).role === "ADMIN";
+  const userId = parseInt((session.user as any).id);
+
   const leads = await prisma.customerLead.findMany({
+    // Each agent only manages their own customers — an admin sees everyone's.
+    where: isAdmin ? undefined : { createdById: userId },
     orderBy: { createdAt: "desc" },
     include: {
       createdBy: { select: { id: true, firstName: true, lastName: true } },
