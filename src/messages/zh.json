@@ -47,8 +47,7 @@
     "linkCopied": "链接已复制！",
     "savedItems": "已保存项目",
     "itemsSelected": "项已选择",
-    "satisfactionSurvey": "满意度调查",
-    "reviews": "评价"
+    "teamReview": "Team Review"
   },
   "home": {
     "heroTitle": "找到您理想的房产",
@@ -250,7 +249,7 @@
     "userManagement": "用户管理",
     "articleManagement": "文章管理",
     "coAgentApproval": "合作代理审批",
-    "reviewModeration": "评论审核",
+    "reviewModeration": "Room Review 审核",
     "totalProperties": "总房产数",
     "totalUsers": "总用户数",
     "totalViews": "总浏览量",
@@ -436,7 +435,7 @@
     "reviews": "条评价"
   },
   "satisfaction": {
-    "pageTitle": "满意度调查",
+    "pageTitle": "Team Review",
     "pageSubtitle": "告诉我们您对我们服务的满意程度",
     "yourRating": "您的评分",
     "nameLabel": "您的姓名（可选）",

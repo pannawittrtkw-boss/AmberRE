@@ -47,8 +47,7 @@
     "linkCopied": "လင့် ကူးပြီ!",
     "savedItems": "သိမ်းဆည်းထားသော အရာများ",
     "itemsSelected": "ရွေးချယ်ထားသောအရာများ",
-    "satisfactionSurvey": "စိတ်ကျေနပ်မှု စစ်တမ်း",
-    "reviews": "သုံးသပ်ချက်များ"
+    "teamReview": "Team Review"
   },
   "home": {
     "heroTitle": "သင့်အိပ်မက်အိမ်ခြံမြေကို ရှာဖွေပါ",
@@ -250,7 +249,7 @@
     "userManagement": "အသုံးပြုသူ စီမံခန့်ခွဲ",
     "articleManagement": "ဆောင်းပါး စီမံခန့်ခွဲ",
     "coAgentApproval": "ပူးတွဲကိုယ်စားလှယ် ခွင့်ပြု",
-    "reviewModeration": "သုံးသပ်ချက် စစ်ဆေး",
+    "reviewModeration": "Room Review စစ်ဆေး",
     "totalProperties": "စုစုပေါင်း အိမ်ခြံမြေ",
     "totalUsers": "စုစုပေါင်း အသုံးပြုသူ",
     "totalViews": "စုစုပေါင်း ကြည့်ရှုမှု",
@@ -436,7 +435,7 @@
     "reviews": "သုံးသပ်ချက်"
   },
   "satisfaction": {
-    "pageTitle": "စိတ်ကျေနပ်မှု စစ်တမ်း",
+    "pageTitle": "Team Review",
     "pageSubtitle": "ကျွန်ုပ်တို့၏ဝန်ဆောင်မှုကို မည်မျှစိတ်ကျေနပ်ကြောင်း ပြောပြပါ",
     "yourRating": "သင့်ရမှတ်",
     "nameLabel": "သင့်အမည် (ရွေးချယ်နိုင်သည်)",

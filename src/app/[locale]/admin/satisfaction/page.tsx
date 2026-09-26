@@ -67,7 +67,7 @@ export default function AdminSatisfactionPage({ params }: { params: Promise<{ lo
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-1">{isTh ? "แบบประเมินความพึงพอใจ" : "Satisfaction Survey"}</h1>
+      <h1 className="text-2xl font-bold mb-1">Team Review</h1>
       <p className="text-sm text-gray-500 mb-6">
         {isTh ? "ดูและอนุมัติความคิดเห็นของลูกค้าก่อนแสดงต่อสาธารณะ" : "Review and approve customer feedback before it appears publicly"}
       </p>

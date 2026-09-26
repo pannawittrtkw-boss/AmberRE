@@ -48,7 +48,7 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
     { href: `/${locale}/co-agent`, label: t.coAgent },
     { href: `/${locale}/articles`, label: t.articles },
     { href: `/${locale}/portfolio`, label: t.portfolio },
-    { href: `/${locale}/satisfaction`, label: t.reviews || "Reviews" },
+    { href: `/${locale}/satisfaction`, label: t.teamReview || "Team Review" },
     { href: `/${locale}/contact`, label: t.contact },
   ];
 

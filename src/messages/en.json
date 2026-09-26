@@ -47,8 +47,7 @@
     "linkCopied": "Link copied!",
     "savedItems": "Saved Items",
     "itemsSelected": "items selected",
-    "satisfactionSurvey": "Satisfaction Survey",
-    "reviews": "Reviews"
+    "teamReview": "Team Review"
   },
   "home": {
     "heroTitle": "Find Your Perfect Property",
@@ -250,7 +249,7 @@
     "userManagement": "User Management",
     "articleManagement": "Article Management",
     "coAgentApproval": "Co-Agent Approval",
-    "reviewModeration": "Review Moderation",
+    "reviewModeration": "Room Review Moderation",
     "totalProperties": "Total Properties",
     "totalUsers": "Total Users",
     "totalViews": "Total Views",
@@ -436,7 +435,7 @@
     "reviews": "reviews"
   },
   "satisfaction": {
-    "pageTitle": "Satisfaction Survey",
+    "pageTitle": "Team Review",
     "pageSubtitle": "Tell us how satisfied you are with our service",
     "yourRating": "Your rating",
     "nameLabel": "Your name (optional)",

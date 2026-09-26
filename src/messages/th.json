@@ -47,8 +47,7 @@
     "linkCopied": "คัดลอกลิงก์แล้ว",
     "savedItems": "บันทึกไว้ดูภายหลัง",
     "itemsSelected": "รายการที่เลือก",
-    "satisfactionSurvey": "แบบประเมินความพึงพอใจ",
-    "reviews": "รีวิว"
+    "teamReview": "Team Review"
   },
   "home": {
     "heroTitle": "ค้นหาอสังหาริมทรัพย์ในฝัน",
@@ -250,7 +249,7 @@
     "userManagement": "จัดการผู้ใช้",
     "articleManagement": "จัดการบทความ",
     "coAgentApproval": "อนุมัติตัวแทนร่วม",
-    "reviewModeration": "ตรวจสอบรีวิว",
+    "reviewModeration": "ตรวจสอบ Room Review",
     "totalProperties": "ทรัพย์สินทั้งหมด",
     "totalUsers": "สมาชิกทั้งหมด",
     "totalViews": "การเข้าชมทั้งหมด",
@@ -436,7 +435,7 @@
     "reviews": "รีวิว"
   },
   "satisfaction": {
-    "pageTitle": "แบบประเมินความพึงพอใจ",
+    "pageTitle": "Team Review",
     "pageSubtitle": "บอกเราหน่อยว่าคุณพอใจกับบริการของเรามากแค่ไหน",
     "yourRating": "ให้คะแนนความพึงพอใจ",
     "nameLabel": "ชื่อของคุณ (ไม่บังคับ)",

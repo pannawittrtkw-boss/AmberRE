@@ -30,7 +30,7 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   { key: "commission-overview",    icon: BarChart3,       hrefSuffix: "/commission-overview",   labelTh: "ภาพรวมค่าคอม Agent",       labelEn: "Commission Overview",   group: "admin" },
   { key: "settings",               icon: Settings,        hrefSuffix: "/settings",              labelTh: "ตั้งค่า",                  labelEn: "Settings",              group: "admin" },
   { key: "languages",              icon: Globe,           hrefSuffix: "/settings/languages",    labelTh: "ตั้งค่าภาษา",              labelEn: "Language Settings",     group: "admin" },
-  { key: "satisfaction",           icon: Smile,           hrefSuffix: "/satisfaction",          labelTh: "แบบประเมินความพึงพอใจ",     labelEn: "Satisfaction Survey",   group: "admin" },
+  { key: "satisfaction",           icon: Smile,           hrefSuffix: "/satisfaction",          labelTh: "Team Review",              labelEn: "Team Review",           group: "admin" },
   // ─── Shared pages (Admin + Agent Workspace, assignable per package tier) ─
   { key: "agent-dashboard",        icon: LayoutDashboard, hrefSuffix: "/agent-dashboard",       labelTh: "ภาพรวม (Agent Dashboard)", labelEn: "Agent Dashboard",       group: "shared" },
   { key: "properties",             icon: Building2,       hrefSuffix: "/properties",            labelTh: "ทรัพย์สิน",                labelEn: "Properties",            group: "shared" },
@@ -42,7 +42,7 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   { key: "electricity-calculator", icon: Zap,             hrefSuffix: "/electricity-calculator",labelTh: "คำนวณค่าไฟ",               labelEn: "Electricity Calc",      group: "shared" },
   { key: "accounting",             icon: Wallet,          hrefSuffix: "/accounting",            labelTh: "งบการเงิน / บัญชี",         labelEn: "Accounting",            group: "shared" },
   { key: "messages",               icon: Mail,            hrefSuffix: "/messages",              labelTh: "ข้อความติดต่อ",             labelEn: "Messages",              group: "shared" },
-  { key: "reviews",                icon: Star,            hrefSuffix: "/reviews",               labelTh: "รีวิว",                    labelEn: "Reviews",               group: "shared" },
+  { key: "reviews",                icon: Star,            hrefSuffix: "/reviews",               labelTh: "Room Review",              labelEn: "Room Review",           group: "shared" },
   { key: "portfolio",              icon: Trophy,          hrefSuffix: "/portfolio",             labelTh: "Portfolio",                labelEn: "Portfolio",             group: "shared" },
   { key: "articles",               icon: FileText,        hrefSuffix: "/articles",              labelTh: "บทความ",                   labelEn: "Articles",              group: "shared" },
 ];
