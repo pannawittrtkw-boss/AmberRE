@@ -44,7 +44,7 @@ type MatchedProperty = {
   primaryImage: string | null;
   createdAt: string;
   listedAt: string | null;
-  stations: { nameTh: string; nameEn: string; line: string; distanceKm: string }[];
+  stations: { code: string; nameTh: string; nameEn: string }[];
   project: { id: number; nameTh: string; province: string | null; district: string | null } | null;
   score: number;
   reasons: string[];

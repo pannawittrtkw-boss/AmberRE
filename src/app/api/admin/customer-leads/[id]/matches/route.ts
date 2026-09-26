@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { getStationThaiName, getStationEnName } from "@/lib/stations";
 
 // Scoring weights (total possible = 100)
 const SCORE = {
@@ -28,6 +29,19 @@ function resolvePropLocation(own: string | null, projField: string | null | unde
   return own || projField || address || "";
 }
 
+// nearbyStations is a JSON array of station codes (e.g. ["E13","E14"]) — the
+// PropertyStation relation table it used to read from is never populated in
+// practice, so station data has to come from here instead.
+function parseStationCodes(json: string | null): string[] {
+  if (!json) return [];
+  try {
+    const arr = JSON.parse(json);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session?.user || !["ADMIN", "CO_AGENT"].includes((session.user as any).role)) {
@@ -47,7 +61,6 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     where: { isSold: false },
     include: {
       images: { where: { isPrimary: true }, take: 1 },
-      propertyStations: { include: { station: true } },
       project: {
         select: { id: true, nameTh: true, nameEn: true, province: true, district: true },
       },
@@ -134,13 +147,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     // 6. BTS/MRT station match (10pts)
-    if (lead.btsStation && prop.propertyStations.length > 0) {
+    const propStationCodes = parseStationCodes(prop.nearbyStations);
+    if (lead.btsStation && propStationCodes.length > 0) {
       const stationNames = lead.btsStation.split(",").map((s) => s.trim()).filter(Boolean);
-      const matched = prop.propertyStations.some((ps) =>
+      const matched = propStationCodes.some((code) =>
         stationNames.some(
           (name) =>
-            textMatches(ps.station.nameTh, name) ||
-            textMatches(ps.station.nameEn, name)
+            textMatches(getStationThaiName(code), name) ||
+            textMatches(getStationEnName(code), name)
         )
       );
       if (matched) {
@@ -182,11 +196,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       primaryImage: property.images[0]?.imageUrl ?? null,
       createdAt: property.createdAt,
       listedAt: property.listedAt,
-      stations: property.propertyStations.map((ps) => ({
-        nameTh: ps.station.nameTh,
-        nameEn: ps.station.nameEn,
-        line: ps.station.line,
-        distanceKm: ps.distanceKm,
+      stations: parseStationCodes(property.nearbyStations).map((code) => ({
+        code,
+        nameTh: getStationThaiName(code),
+        nameEn: getStationEnName(code),
       })),
       project: property.project
         ? { id: property.project.id, nameTh: property.project.nameTh, province: property.project.province, district: property.project.district }
