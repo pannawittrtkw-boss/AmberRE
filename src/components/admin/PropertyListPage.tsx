@@ -956,6 +956,17 @@ export default function PropertyListPage({
                 <div className="flex items-center gap-1">
                   {canManageRow && (
                     <>
+                      {p.sourceLink && (
+                        <a
+                          href={p.sourceLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 hover:bg-amber-50 rounded-lg text-amber-600 transition-colors"
+                          title={locale === "th" ? "เปิดลิงก์ต้นทาง" : "Open source link"}
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      )}
                       <button
                         onClick={() => setExclusiveModal(p)}
                         className={`p-2 rounded-lg transition-colors ${p.isExclusive ? "text-amber-600 bg-amber-50 hover:bg-amber-100" : "hover:bg-gray-100 text-gray-400"}`}
@@ -1121,6 +1132,17 @@ export default function PropertyListPage({
                     )}
                     {canManageRow && (
                       <>
+                        {p.sourceLink && (
+                          <a
+                            href={p.sourceLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 hover:bg-amber-50 rounded-lg text-amber-600 transition-colors"
+                            title={locale === "th" ? "เปิดลิงก์ต้นทาง" : "Open source link"}
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        )}
                         <button
                           onClick={() => setExclusiveModal(p)}
                           className={`p-2 rounded-lg transition-colors ${p.isExclusive ? "text-amber-600 bg-amber-50 hover:bg-amber-100" : "hover:bg-gray-100 text-gray-400"}`}
