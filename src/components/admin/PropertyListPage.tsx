@@ -956,7 +956,7 @@ export default function PropertyListPage({
                     <span className="text-gray-300 text-xs">-</span>
                   )}
                 </div>
-                {!canManageRow && p.status === "ADDED_PROPERTIES" && (
+                {(!canManageRow || isAdmin) && p.status === "ADDED_PROPERTIES" && (
                   <a
                     href={`/${locale}/properties/${p.id}`}
                     target="_blank"
@@ -964,7 +964,7 @@ export default function PropertyListPage({
                     className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 border border-blue-300 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors shrink-0"
                   >
                     <ExternalLink className="w-3 h-3" />
-                    View Detail
+                    {locale === "th" ? "ดูบนเว็บ" : "View on web"}
                   </a>
                 )}
                 <div className="flex items-center gap-1">
@@ -1133,13 +1133,13 @@ export default function PropertyListPage({
                         <FileText className="w-4 h-4" />
                       </button>
                     )}
-                    {!canManageRow && p.status === "ADDED_PROPERTIES" && (
+                    {(!canManageRow || isAdmin) && p.status === "ADDED_PROPERTIES" && (
                       <a
                         href={`/${locale}/properties/${p.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors"
-                        title="View Detail"
+                        title={locale === "th" ? "ดูบนเว็บ" : "View on web"}
                       >
                         <ExternalLink className="w-4 h-4" />
                       </a>
