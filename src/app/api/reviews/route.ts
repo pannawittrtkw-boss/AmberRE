@@ -29,12 +29,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await req.json();
-    const { propertyId, rating, comment } = body;
+    const { propertyId, rating, comment, name, anonymous } = body;
 
     if (!propertyId || !rating || rating < 1 || rating > 5) {
       return NextResponse.json({ success: false, error: "Invalid data" }, { status: 400 });
@@ -43,9 +39,10 @@ export async function POST(req: NextRequest) {
     const review = await prisma.review.create({
       data: {
         propertyId,
-        userId: Number((session.user as any).id),
+        userId: session?.user ? Number((session.user as any).id) : null,
         rating,
         comment: comment || null,
+        name: anonymous ? null : (typeof name === "string" && name.trim() ? name.trim().slice(0, 200) : null),
       },
     });
 

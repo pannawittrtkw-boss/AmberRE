@@ -54,7 +54,9 @@ export default function AdminReviewsPage({ params }: { params: Promise<{ locale:
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium">{review.user.firstName} {review.user.lastName}</span>
+                  <span className="font-medium">
+                    {review.name || (review.user ? `${review.user.firstName} ${review.user.lastName}` : (locale === "th" ? "ไม่ระบุชื่อ" : "Anonymous"))}
+                  </span>
                   <div className="flex gap-0.5">
                     {[1,2,3,4,5].map(s => <Star key={s} className={`w-4 h-4 ${s <= review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />)}
                   </div>

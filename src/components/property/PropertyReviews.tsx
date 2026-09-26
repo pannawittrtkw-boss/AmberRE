@@ -1,17 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Star, Loader2, MessageSquare } from "lucide-react";
 
 interface ReviewEntry {
   id: number;
   rating: number;
   comment: string | null;
+  name: string | null;
   createdAt: string;
-  user: { firstName: string; lastName: string };
+  user: { firstName: string; lastName: string } | null;
 }
 
 interface Props {
@@ -21,12 +19,12 @@ interface Props {
 }
 
 export default function PropertyReviews({ propertyId, locale, initialReviews }: Props) {
-  const { data: session } = useSession();
-  const pathname = usePathname();
   const [messages, setMessages] = useState<any>(null);
   const [reviews] = useState<ReviewEntry[]>(initialReviews);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
+  const [name, setName] = useState("");
+  const [anonymous, setAnonymous] = useState(false);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -40,9 +38,12 @@ export default function PropertyReviews({ propertyId, locale, initialReviews }: 
     reviews: "Reviews",
     writeReview: "Write a Review",
     reviewSubmitted: "Review submitted, pending approval",
-    loginToReview: "Login to write a review",
     noReviewsYet: "No reviews yet for this property",
     commentPlaceholder: "Share your thoughts about this property (optional)",
+    reviewerNameLabel: "Your name (optional)",
+    reviewerNamePlaceholder: "Enter your name...",
+    reviewAnonymousToggle: "Submit anonymously",
+    reviewAnonymousLabel: "Anonymous",
   };
   const commonT = messages?.common ?? { submit: "Submit", sending: "Sending..." };
 
@@ -57,7 +58,13 @@ export default function PropertyReviews({ propertyId, locale, initialReviews }: 
       const res = await fetch("/api/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ propertyId, rating, comment: comment.trim() || undefined }),
+        body: JSON.stringify({
+          propertyId,
+          rating,
+          comment: comment.trim() || undefined,
+          name: anonymous ? undefined : name,
+          anonymous,
+        }),
       });
       const data = await res.json();
       if (!data.success) {
@@ -67,6 +74,8 @@ export default function PropertyReviews({ propertyId, locale, initialReviews }: 
       }
       setSubmitted(true);
       setRating(0);
+      setName("");
+      setAnonymous(false);
       setComment("");
       setSubmitting(false);
     } catch {
@@ -96,7 +105,7 @@ export default function PropertyReviews({ propertyId, locale, initialReviews }: 
             <div key={r.id} className="bg-white rounded-2xl shadow-sm p-5">
               <div className="flex items-center gap-2 mb-1">
                 <span className="font-medium text-stone-800 text-sm">
-                  {r.user.firstName} {r.user.lastName}
+                  {r.name || (r.user ? `${r.user.firstName} ${r.user.lastName}` : T.reviewAnonymousLabel)}
                 </span>
                 <div className="flex gap-0.5">
                   {[1, 2, 3, 4, 5].map((s) => (
@@ -121,14 +130,7 @@ export default function PropertyReviews({ propertyId, locale, initialReviews }: 
       )}
 
       <div className="bg-white rounded-2xl shadow-sm p-5">
-        {!session ? (
-          <Link
-            href={`/${locale}/auth/login?callbackUrl=${encodeURIComponent(pathname || "")}`}
-            className="text-sm font-medium text-[#C8A951] hover:underline"
-          >
-            {T.loginToReview}
-          </Link>
-        ) : submitted ? (
+        {submitted ? (
           <p className="text-sm text-green-600 font-medium">{T.reviewSubmitted}</p>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
@@ -150,6 +152,25 @@ export default function PropertyReviews({ propertyId, locale, initialReviews }: 
                   />
                 </button>
               ))}
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={T.reviewerNamePlaceholder}
+                disabled={anonymous}
+                className="flex-1 rounded-xl border border-stone-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8A951]/40 disabled:bg-stone-50 disabled:text-stone-400"
+              />
+              <label className="flex items-center gap-1.5 text-xs text-stone-500 shrink-0">
+                <input
+                  type="checkbox"
+                  checked={anonymous}
+                  onChange={(e) => setAnonymous(e.target.checked)}
+                  className="rounded border-stone-300"
+                />
+                {T.reviewAnonymousToggle}
+              </label>
             </div>
             <textarea
               value={comment}

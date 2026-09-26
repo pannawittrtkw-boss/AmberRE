@@ -858,6 +858,7 @@ export default async function PropertyDetailPage({
                 id: r.id,
                 rating: r.rating,
                 comment: r.comment,
+                name: r.name,
                 createdAt: r.createdAt.toISOString(),
                 user: r.user,
               }))}

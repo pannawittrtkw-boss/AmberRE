@@ -577,13 +577,14 @@ model Review {
   id         Int      @id @default(autoincrement())
   rating     Int      @db.SmallInt
   comment    String?  @db.Text
+  name       String?  @db.VarChar(200) // guest-entered display name; null = anonymous or use user's account name
   isApproved Boolean  @default(false)
   createdAt  DateTime @default(now())
 
   propertyId Int
   property   Property @relation(fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  userId     Int
-  user       User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId     Int?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model Survey {
