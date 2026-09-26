@@ -46,7 +46,8 @@
     "changePassword": "เปลี่ยนรหัสผ่าน",
     "linkCopied": "คัดลอกลิงก์แล้ว",
     "savedItems": "บันทึกไว้ดูภายหลัง",
-    "itemsSelected": "รายการที่เลือก"
+    "itemsSelected": "รายการที่เลือก",
+    "satisfactionSurvey": "แบบประเมินความพึงพอใจ"
   },
   "home": {
     "heroTitle": "ค้นหาอสังหาริมทรัพย์ในฝัน",
@@ -430,6 +431,25 @@
   "survey": {
     "customerReviews": "ผลรีวิวจากลูกค้า",
     "reviews": "รีวิว"
+  },
+  "satisfaction": {
+    "pageTitle": "แบบประเมินความพึงพอใจ",
+    "pageSubtitle": "บอกเราหน่อยว่าคุณพอใจกับบริการของเรามากแค่ไหน",
+    "yourRating": "ให้คะแนนความพึงพอใจ",
+    "feedbackLabel": "ความคิดเห็นเพิ่มเติม (ถ้ามี)",
+    "feedbackPlaceholder": "บอกเราว่าเราทำได้ดีตรงไหน หรือควรปรับปรุงอะไร...",
+    "submit": "ส่งแบบประเมิน",
+    "submitting": "กำลังส่ง...",
+    "thankYou": "ขอบคุณสำหรับความคิดเห็นของคุณ!",
+    "thankYouNote": "ความคิดเห็นของคุณจะแสดงต่อสาธารณะหลังผ่านการตรวจสอบจากทีมงาน",
+    "submitAnother": "ส่งอีกครั้ง",
+    "loginRequiredTitle": "กรุณาเข้าสู่ระบบ",
+    "loginRequiredNote": "เข้าสู่ระบบเพื่อส่งแบบประเมินความพึงพอใจ",
+    "loginCta": "เข้าสู่ระบบ",
+    "avgRatingLabel": "คะแนนเฉลี่ยจากผู้ใช้งาน",
+    "submissionsLabel": "ความคิดเห็น",
+    "noFeedbackYet": "ยังไม่มีความคิดเห็นที่แสดง",
+    "errorGeneric": "เกิดข้อผิดพลาด กรุณาลองใหม่"
   },
   "properties": {
     "badge": "อสังหาริมทรัพย์",

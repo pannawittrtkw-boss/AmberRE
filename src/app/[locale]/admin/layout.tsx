@@ -66,7 +66,7 @@ const NAV_ORDER = [
   "dashboard", "properties", "projects", "customer-leads", "users", "messages", "articles",
   "portfolio", "electricity-calculator", "accounting", "contracts", "contract-calendar",
   "closed-contracts", "subscriptions", "commission-tiers", "commission-overview", "commission-rates", "menu-config",
-  "reviews", "settings", "languages", "storage-migration", "ai-office", "scanlink",
+  "reviews", "satisfaction", "settings", "languages", "storage-migration", "ai-office", "scanlink",
 ];
 const ALL_ADMIN_NAV_SOURCE = [...ADMIN_MENU_ITEMS, ...ALWAYS_VISIBLE_NAV_ITEMS];
 const ALL_ADMIN_NAV: AdminMenuItem[] = [

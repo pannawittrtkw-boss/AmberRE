@@ -46,7 +46,8 @@
     "changePassword": "修改密码",
     "linkCopied": "链接已复制！",
     "savedItems": "已保存项目",
-    "itemsSelected": "项已选择"
+    "itemsSelected": "项已选择",
+    "satisfactionSurvey": "满意度调查"
   },
   "home": {
     "heroTitle": "找到您理想的房产",
@@ -430,6 +431,25 @@
   "survey": {
     "customerReviews": "客户评价",
     "reviews": "条评价"
+  },
+  "satisfaction": {
+    "pageTitle": "满意度调查",
+    "pageSubtitle": "告诉我们您对我们服务的满意程度",
+    "yourRating": "您的评分",
+    "feedbackLabel": "补充意见（可选）",
+    "feedbackPlaceholder": "告诉我们哪里做得好，或需要改进的地方...",
+    "submit": "提交",
+    "submitting": "提交中...",
+    "thankYou": "感谢您的反馈！",
+    "thankYouNote": "您的反馈经团队审核后将公开显示",
+    "submitAnother": "再次提交",
+    "loginRequiredTitle": "请先登录",
+    "loginRequiredNote": "登录后即可提交满意度调查",
+    "loginCta": "登录",
+    "avgRatingLabel": "用户平均评分",
+    "submissionsLabel": "条反馈",
+    "noFeedbackYet": "暂无反馈",
+    "errorGeneric": "出现错误，请重试"
   },
   "properties": {
     "badge": "房产",

@@ -46,7 +46,8 @@
     "changePassword": "Change Password",
     "linkCopied": "Link copied!",
     "savedItems": "Saved Items",
-    "itemsSelected": "items selected"
+    "itemsSelected": "items selected",
+    "satisfactionSurvey": "Satisfaction Survey"
   },
   "home": {
     "heroTitle": "Find Your Perfect Property",
@@ -430,6 +431,25 @@
   "survey": {
     "customerReviews": "Customer Reviews",
     "reviews": "reviews"
+  },
+  "satisfaction": {
+    "pageTitle": "Satisfaction Survey",
+    "pageSubtitle": "Tell us how satisfied you are with our service",
+    "yourRating": "Your rating",
+    "feedbackLabel": "Additional feedback (optional)",
+    "feedbackPlaceholder": "Tell us what we did well or what we could improve...",
+    "submit": "Submit",
+    "submitting": "Submitting...",
+    "thankYou": "Thank you for your feedback!",
+    "thankYouNote": "Your feedback will appear publicly after our team reviews it",
+    "submitAnother": "Submit another",
+    "loginRequiredTitle": "Please log in",
+    "loginRequiredNote": "Log in to submit a satisfaction survey",
+    "loginCta": "Log in",
+    "avgRatingLabel": "Average rating from users",
+    "submissionsLabel": "responses",
+    "noFeedbackYet": "No feedback yet",
+    "errorGeneric": "Something went wrong, please try again"
   },
   "properties": {
     "badge": "Listings",

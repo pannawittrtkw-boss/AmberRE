@@ -587,13 +587,16 @@ model Review {
 }
 
 model Survey {
-  id        Int      @id @default(autoincrement())
-  rating    Int      @db.SmallInt
-  feedback  String?  @db.Text
-  createdAt DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  rating     Int      @db.SmallInt
+  feedback   String?  @db.Text
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
 
   userId Int
   user   User @relation(fields: [userId], references: [id])
+
+  @@index([isApproved])
 }
 
 model ContactMessage {

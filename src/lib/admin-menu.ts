@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, Building2, Users, FileText, Star, Settings, Trophy, Zap, Globe, Wallet,
   Layers, Mail, FileSignature, Lock, Crown, LayoutList, UserSearch, CalendarDays, Percent,
-  BarChart3, Bot, CloudUpload,
+  BarChart3, Bot, CloudUpload, Smile,
 } from "lucide-react";
 
 export interface AdminMenuItem {
@@ -30,6 +30,7 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   { key: "commission-overview",    icon: BarChart3,       hrefSuffix: "/commission-overview",   labelTh: "ภาพรวมค่าคอม Agent",       labelEn: "Commission Overview",   group: "admin" },
   { key: "settings",               icon: Settings,        hrefSuffix: "/settings",              labelTh: "ตั้งค่า",                  labelEn: "Settings",              group: "admin" },
   { key: "languages",              icon: Globe,           hrefSuffix: "/settings/languages",    labelTh: "ตั้งค่าภาษา",              labelEn: "Language Settings",     group: "admin" },
+  { key: "satisfaction",           icon: Smile,           hrefSuffix: "/satisfaction",          labelTh: "แบบประเมินความพึงพอใจ",     labelEn: "Satisfaction Survey",   group: "admin" },
   // ─── Shared pages (Admin + Agent Workspace, assignable per package tier) ─
   { key: "agent-dashboard",        icon: LayoutDashboard, hrefSuffix: "/agent-dashboard",       labelTh: "ภาพรวม (Agent Dashboard)", labelEn: "Agent Dashboard",       group: "shared" },
   { key: "properties",             icon: Building2,       hrefSuffix: "/properties",            labelTh: "ทรัพย์สิน",                labelEn: "Properties",            group: "shared" },
