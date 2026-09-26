@@ -689,6 +689,7 @@ model CustomerLead {
   district    String?  @db.VarChar(100)
   subdistrict String?  @db.VarChar(100)
   btsStation  String?  @db.VarChar(200)
+  dealType    String   @default("RENT") @db.VarChar(10) // RENT | SALE — what the customer wants
   budgetMin   Decimal? @db.Decimal(18, 2)
   budgetMax   Decimal? @db.Decimal(18, 2)
   bedrooms    Int?
@@ -696,6 +697,7 @@ model CustomerLead {
   // null = don't care, true = required
   wantPetFriendly    Boolean?
   wantSmokingAllowed Boolean?
+  wantReadyToMoveIn  Boolean?
   note        String?  @db.Text
   status      String   @default("ACTIVE") @db.VarChar(20)
   createdAt   DateTime @default(now())

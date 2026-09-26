@@ -20,12 +20,14 @@ type CustomerLead = {
   district: string | null;
   subdistrict: string | null;
   btsStation: string | null;
+  dealType: string;
   budgetMin: string | null;
   budgetMax: string | null;
   bedrooms: number | null;
   minSizeSqm: string | null;
   wantPetFriendly: boolean | null;
   wantSmokingAllowed: boolean | null;
+  wantReadyToMoveIn: boolean | null;
   note: string | null;
   status: string;
   createdAt: string;
@@ -58,8 +60,8 @@ type MatchedProperty = {
 const EMPTY_FORM = {
   name: "", phone: "", lineId: "", facebook: "",
   projectName: "", province: "", district: "", subdistrict: "",
-  btsStation: "", budgetMin: "", budgetMax: "", bedrooms: "",
-  minSizeSqm: "", wantPetFriendly: false, wantSmokingAllowed: false,
+  btsStation: "", dealType: "RENT", budgetMin: "", budgetMax: "", bedrooms: "",
+  minSizeSqm: "", wantPetFriendly: false, wantSmokingAllowed: false, wantReadyToMoveIn: false,
   note: "", status: "ACTIVE",
 };
 
@@ -169,10 +171,12 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
       btsStation: lead.btsStation || "",
       budgetMin: lead.budgetMin || "",
       budgetMax: lead.budgetMax || "",
+      dealType: lead.dealType === "SALE" ? "SALE" : "RENT",
       bedrooms: lead.bedrooms !== null ? String(lead.bedrooms) : "",
       minSizeSqm: lead.minSizeSqm || "",
       wantPetFriendly: lead.wantPetFriendly === true,
       wantSmokingAllowed: lead.wantSmokingAllowed === true,
+      wantReadyToMoveIn: lead.wantReadyToMoveIn === true,
       note: lead.note || "",
       status: lead.status,
     });
@@ -325,6 +329,11 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                           <Train className="w-3 h-3" />{lead.btsStation}
                         </span>
                       )}
+                      <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
+                        lead.dealType === "SALE" ? "bg-indigo-50 text-indigo-700" : "bg-teal-50 text-teal-700"
+                      }`}>
+                        {lead.dealType === "SALE" ? "ซื้อ" : "เช่า"}
+                      </span>
                       {(lead.budgetMin || lead.budgetMax) && (
                         <span className="flex items-center gap-1 text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">
                           <Wallet className="w-3 h-3" />
@@ -337,7 +346,7 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                       )}
                       {lead.bedrooms !== null && (
                         <span className="flex items-center gap-1 text-xs bg-pink-50 text-pink-700 px-2 py-0.5 rounded-full">
-                          <BedDouble className="w-3 h-3" />{lead.bedrooms} ห้องนอน
+                          <BedDouble className="w-3 h-3" />{lead.bedrooms === 0 ? "สตูดิโอ" : `${lead.bedrooms}${lead.bedrooms >= 4 ? "+" : ""} ห้องนอน`}
                         </span>
                       )}
                       {lead.minSizeSqm !== null && (
@@ -353,6 +362,11 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                       {lead.wantSmokingAllowed && (
                         <span className="flex items-center gap-1 text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">
                           🚬 สูบบุหรี่ได้
+                        </span>
+                      )}
+                      {lead.wantReadyToMoveIn && (
+                        <span className="flex items-center gap-1 text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">
+                          ✅ พร้อมเข้าอยู่ทันที
                         </span>
                       )}
                     </div>
@@ -502,11 +516,66 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
               {/* Requirements section */}
               <div>
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">ความต้องการ</h3>
+
+                {/* Deal type — drives which budget scale to show */}
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">ประเภท</label>
+                  <div className="grid grid-cols-2 gap-1 p-1 bg-gray-100 rounded-lg max-w-xs">
+                    {([
+                      { value: "RENT", label: "เช่า" },
+                      { value: "SALE", label: "ซื้อ" },
+                    ] as const).map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setForm({ ...form, dealType: opt.value })}
+                        className={`py-1.5 rounded text-sm font-medium transition-colors ${
+                          form.dealType === opt.value ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:bg-white/50"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <FormField label="งบประมาณต่ำสุด (บาท)" value={form.budgetMin} onChange={(v) => setForm({ ...form, budgetMin: v })} placeholder="1000000" type="number" />
-                  <FormField label="งบประมาณสูงสุด (บาท)" value={form.budgetMax} onChange={(v) => setForm({ ...form, budgetMax: v })} placeholder="5000000" type="number" />
-                  <FormField label="จำนวนห้องนอน" value={form.bedrooms} onChange={(v) => setForm({ ...form, bedrooms: v })} placeholder="2" type="number" />
+                  {form.dealType === "SALE" ? (
+                    <>
+                      <FormField label="งบประมาณต่ำสุด (บาท)" value={form.budgetMin} onChange={(v) => setForm({ ...form, budgetMin: v })} placeholder="1000000" type="number" />
+                      <FormField label="งบประมาณสูงสุด (บาท)" value={form.budgetMax} onChange={(v) => setForm({ ...form, budgetMax: v })} placeholder="5000000" type="number" />
+                    </>
+                  ) : (
+                    <>
+                      <FormField label="งบประมาณต่ำสุด (บาท/เดือน)" value={form.budgetMin} onChange={(v) => setForm({ ...form, budgetMin: v })} placeholder="15000" type="number" />
+                      <FormField label="งบประมาณสูงสุด (บาท/เดือน)" value={form.budgetMax} onChange={(v) => setForm({ ...form, budgetMax: v })} placeholder="30000" type="number" />
+                    </>
+                  )}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">จำนวนห้องนอน</label>
+                    <select
+                      value={form.bedrooms}
+                      onChange={(e) => setForm({ ...form, bedrooms: e.target.value })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="">ไม่ระบุ</option>
+                      <option value="0">สตูดิโอ</option>
+                      <option value="1">1 ห้องนอน</option>
+                      <option value="2">2 ห้องนอน</option>
+                      <option value="3">3 ห้องนอน</option>
+                      <option value="4">4+ ห้องนอน</option>
+                    </select>
+                  </div>
                   <FormField label="ขนาดห้องขั้นต่ำ (ตร.ม.)" value={form.minSizeSqm} onChange={(v) => setForm({ ...form, minSizeSqm: v })} placeholder="30" type="number" />
+                  <label className="flex items-center justify-between gap-2 border border-gray-300 rounded-lg px-3 py-2 cursor-pointer select-none">
+                    <span className="text-sm text-gray-700">✅ พร้อมเข้าอยู่ทันที</span>
+                    <div
+                      onClick={() => setForm({ ...form, wantReadyToMoveIn: !form.wantReadyToMoveIn })}
+                      className={`relative w-10 h-5 rounded-full transition-colors ${form.wantReadyToMoveIn ? "bg-emerald-500" : "bg-gray-300"}`}
+                    >
+                      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.wantReadyToMoveIn ? "translate-x-5" : "translate-x-0.5"}`} />
+                    </div>
+                  </label>
                   <label className="flex items-center justify-between gap-2 border border-gray-300 rounded-lg px-3 py-2 cursor-pointer select-none">
                     <span className="text-sm text-gray-700">🐾 ต้องเลี้ยงสัตว์ได้</span>
                     <div

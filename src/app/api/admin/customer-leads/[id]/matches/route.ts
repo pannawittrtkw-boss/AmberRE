@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getStationThaiName, getStationEnName } from "@/lib/stations";
 
-// Scoring weights (total possible = 120)
+// Scoring weights (total possible = 125)
 const SCORE = {
   PROJECT_NAME: 25,
   BUDGET: 25,
@@ -15,6 +15,7 @@ const SCORE = {
   SIZE: 10,
   PET_FRIENDLY: 5,
   SMOKING_ALLOWED: 5,
+  READY_TO_MOVE_IN: 5,
 };
 
 function normalizeText(s: string) {
@@ -76,6 +77,15 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     let score = 0;
     const reasons: string[] = [];
 
+    // 0. Deal type — hard filter. A property listed as RENT_AND_SALE is
+    // genuinely available either way, so it matches a lead wanting either.
+    if (
+      (lead.dealType === "RENT" && prop.listingType !== "RENT" && prop.listingType !== "RENT_AND_SALE") ||
+      (lead.dealType === "SALE" && prop.listingType !== "SALE" && prop.listingType !== "RENT_AND_SALE")
+    ) {
+      return { property: prop, score: -1, reasons: [] };
+    }
+
     // 1. Project name match (25pts)
     if (lead.projectName) {
       const propProject = prop.projectName || prop.project?.nameTh || prop.project?.nameEn || "";
@@ -103,9 +113,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
-    // 3. Bedrooms — exact match required when specified
+    // 3. Bedrooms — exact match required when specified; the "4" option in
+    // the form means "4+" (matches the same convention used elsewhere in
+    // the app, e.g. the co-agent portal's bedroom filter).
     if (lead.bedrooms !== null && lead.bedrooms !== undefined) {
-      if (prop.bedrooms === lead.bedrooms) {
+      const bedroomsMatch =
+        lead.bedrooms >= 4 ? prop.bedrooms >= 4 : prop.bedrooms === lead.bedrooms;
+      if (bedroomsMatch) {
         score += SCORE.BEDROOMS;
         reasons.push("จำนวนห้องนอนตรงกัน");
       } else {
@@ -183,7 +197,17 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
-    // 9. BTS/MRT station match (10pts)
+    // 9. Ready to move in — hard requirement when set. No availableDate on
+    // the property means it's already listed as available now.
+    if (lead.wantReadyToMoveIn) {
+      if (prop.availableDate && new Date(prop.availableDate).getTime() > Date.now()) {
+        return { property: prop, score: -1, reasons: [] };
+      }
+      score += SCORE.READY_TO_MOVE_IN;
+      reasons.push("พร้อมเข้าอยู่ทันที");
+    }
+
+    // 10. BTS/MRT station match (10pts)
     const propStationCodes = parseStationCodes(prop.nearbyStations);
     if (lead.btsStation && propStationCodes.length > 0) {
       const stationNames = lead.btsStation.split(",").map((s) => s.trim()).filter(Boolean);
