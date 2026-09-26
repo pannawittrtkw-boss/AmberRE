@@ -266,8 +266,11 @@ export default function PropertyListPage({
 
   // Client-side filtering
   const filtered = properties.filter((p: any) => {
-    // Agents (non-admin) shouldn't see properties that are no longer available
-    if (!isAdmin && (p.status === "NOT_AVAILABLE" || p.status === "RENTED")) return false;
+    // Agents (non-admin) should only browse catalog-ready listings (Verified/Added)
+    // — internal workflow states (Pending/Waiting/Review/etc.) aren't meaningful to
+    // show a client. Their own properties stay visible regardless of status so they
+    // can still track/manage what they've submitted.
+    if (!isAdmin && p.agentId !== userId && p.status !== "VERIFIED" && p.status !== "ADDED_PROPERTIES") return false;
     // Text search
     if (searchText) {
       const q = searchText.toLowerCase();
@@ -556,9 +559,11 @@ export default function PropertyListPage({
                 <label className="block text-xs font-medium text-gray-500 mb-1">{locale === "th" ? "สถานะ" : "Status"}</label>
                 <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm bg-white">
                   <option value="">{locale === "th" ? "ทั้งหมด" : "All"}</option>
-                  {Object.entries(STATUS_MAP).map(([k, v]) => (
-                    <option key={k} value={k}>{v.label}</option>
-                  ))}
+                  {Object.entries(STATUS_MAP)
+                    .filter(([k]) => isAdmin || k === "VERIFIED" || k === "ADDED_PROPERTIES")
+                    .map(([k, v]) => (
+                      <option key={k} value={k}>{v.label}</option>
+                    ))}
                 </select>
               </div>
               <div>

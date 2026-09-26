@@ -76,6 +76,7 @@ export async function GET(req: NextRequest) {
           petFriendly: true,
           smokingAllowed: true,
           availableDate: true,
+          agentId: true,
         },
         orderBy: { createdAt: "desc" },
       });
