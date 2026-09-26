@@ -14,7 +14,7 @@ function getStationLabel(code: string): string {
   return code;
 }
 
-const PROPERTY_TYPE_LABEL: Record<string, string> = { CONDO: "Condo", HOUSE: "House", TOWNHOUSE: "Townhome", LAND: "Land" };
+const PROPERTY_TYPE_LABEL: Record<string, string> = { CONDO: "Condo", HOUSE: "House", TOWNHOUSE: "Townhome", LAND: "Land", OFFICE: "Office", WAREHOUSE: "Warehouse" };
 const LISTING_TYPE_LABEL: Record<string, string> = { RENT: "เช่า", SALE: "ขาย", RENT_AND_SALE: "เช่าและขาย" };
 
 interface FieldValues {

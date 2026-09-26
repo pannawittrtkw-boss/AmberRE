@@ -161,6 +161,8 @@ export default function AgentPropertyNewPage({ params }: { params: Promise<{ loc
                   <option value="HOUSE">บ้านเดี่ยว</option>
                   <option value="TOWNHOUSE">ทาวน์เฮ้าส์</option>
                   <option value="LAND">ที่ดิน</option>
+                  <option value="OFFICE">สำนักงาน</option>
+                  <option value="WAREHOUSE">โกดัง/คลังสินค้า</option>
                   <option value="COMMERCIAL">เชิงพาณิชย์</option>
                 </select>
               </div>

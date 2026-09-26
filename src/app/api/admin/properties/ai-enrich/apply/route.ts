@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
-const PROPERTY_TYPES = ["CONDO", "HOUSE", "TOWNHOUSE", "LAND"];
+const PROPERTY_TYPES = ["CONDO", "HOUSE", "TOWNHOUSE", "LAND", "OFFICE", "WAREHOUSE"];
 const LISTING_TYPES = ["RENT", "SALE", "RENT_AND_SALE"];
 
 interface UpdatePayload {

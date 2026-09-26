@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Missing rent price or sale price" }, { status: 400 });
     }
 
-    const PROPERTY_TYPES = ["CONDO", "HOUSE", "TOWNHOUSE", "LAND"];
+    const PROPERTY_TYPES = ["CONDO", "HOUSE", "TOWNHOUSE", "LAND", "OFFICE", "WAREHOUSE"];
     const LISTING_TYPES = ["RENT", "SALE", "RENT_AND_SALE"];
     const safePropertyType = PROPERTY_TYPES.includes(propertyType) ? propertyType : "CONDO";
     const safeListingType = LISTING_TYPES.includes(listingType) ? listingType : "RENT";

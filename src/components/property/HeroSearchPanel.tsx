@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Search, ChevronLeft, ChevronRight, Train } from "lucide-react";
 import { localeText } from "@/lib/utils";
+import { getPriceRanges } from "@/lib/property-constants";
 
 const StationMapSelector = dynamic(
   () => import("@/components/admin/StationMapSelector"),
@@ -54,7 +55,7 @@ export default function HeroSearchPanel({ locale, messages }: HeroSearchPanelPro
   const tp = messages.property;
   const tc = messages.common;
 
-  const [listingType, setListingType] = useState<"all" | "rent" | "sale">("all");
+  const [listingType, setListingType] = useState<"rent" | "sale">("rent");
   const [hideSold, setHideSold] = useState(false);
   const [keyword, setKeyword] = useState("");
   const [propertyType, setPropertyType] = useState("");
@@ -84,7 +85,7 @@ export default function HeroSearchPanel({ locale, messages }: HeroSearchPanelPro
   const handleSearch = () => {
     const params = new URLSearchParams();
     if (keyword) params.set("keyword", keyword);
-    if (listingType !== "all") params.set("listingType", listingType === "rent" ? "RENT" : "SALE");
+    params.set("listingType", listingType === "rent" ? "RENT" : "SALE");
     if (hideSold) params.set("hideSold", "true");
     if (propertyType) params.set("propertyType", propertyType);
     if (bedrooms) params.set("bedrooms", bedrooms);
@@ -121,10 +122,11 @@ export default function HeroSearchPanel({ locale, messages }: HeroSearchPanelPro
   };
 
   const tabs = [
-    { key: "all" as const, label: t.rentAndSale },
     { key: "rent" as const, label: t.forRent },
     { key: "sale" as const, label: t.forSale },
   ];
+
+  const priceRanges = getPriceRanges(listingType === "rent" ? "RENT" : "SALE");
 
   return (
     <div className="w-full max-w-4xl mx-auto px-2 sm:px-0">
@@ -135,7 +137,10 @@ export default function HeroSearchPanel({ locale, messages }: HeroSearchPanelPro
             {tabs.map((tab) => (
               <button
                 key={tab.key}
-                onClick={() => setListingType(tab.key)}
+                onClick={() => {
+                  setListingType(tab.key);
+                  setPriceRange("");
+                }}
                 className={`shrink-0 px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
                   listingType === tab.key
                     ? "border-[#C8A951] text-[#C8A951]"
@@ -219,6 +224,8 @@ export default function HeroSearchPanel({ locale, messages }: HeroSearchPanelPro
               <option value="HOUSE">{tp.house}</option>
               <option value="TOWNHOUSE">{tp.townhouse}</option>
               <option value="LAND">{tp.land || "Land"}</option>
+              <option value="OFFICE">{tp.office || "Office"}</option>
+              <option value="WAREHOUSE">{tp.warehouse || "Warehouse"}</option>
             </select>
 
             {/* Price Range */}
@@ -228,11 +235,11 @@ export default function HeroSearchPanel({ locale, messages }: HeroSearchPanelPro
               className="px-2 sm:px-3 py-2 rounded-lg border border-gray-200 text-xs sm:text-sm text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-[#C8A951]"
             >
               <option value="">{t.anyPrice}</option>
-              <option value="0-1000000">0 - 1M</option>
-              <option value="1000000-3000000">1M - 3M</option>
-              <option value="3000000-5000000">3M - 5M</option>
-              <option value="5000000-10000000">5M - 10M</option>
-              <option value="10000000-">10M+</option>
+              {priceRanges.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {localeText(locale, r.labelTh, r.labelEn)}
+                </option>
+              ))}
             </select>
 
             {/* Bedrooms */}

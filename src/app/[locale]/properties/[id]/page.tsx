@@ -39,6 +39,7 @@ import PropertyInquiryForm from "@/components/property/PropertyInquiryForm";
 import MarketingDescription from "@/components/property/MarketingDescription";
 import SectionTitle from "@/components/ui/SectionTitle";
 import { NEARBY_CATEGORY_LABEL_TH, NEARBY_CATEGORY_LABEL_EN, type NearbyPlace } from "@/lib/nearby-places";
+import { hasNoBedrooms } from "@/lib/property-constants";
 import StatTile from "@/components/ui/StatTile";
 import { buildMarketingDescription } from "@/lib/marketing-description";
 
@@ -531,6 +532,29 @@ export default async function PropertyDetailPage({
                 value={
                   property.landSizeWa
                     ? Number(property.landSizeWa).toString()
+                    : "—"
+                }
+              />
+            </div>
+          ) : hasNoBedrooms(property.propertyType) ? (
+            <div className="grid grid-cols-2 divide-x divide-stone-100">
+              <StatTile
+                icon={<Maximize className="w-5 h-5" />}
+                label={t.size}
+                value={
+                  property.sizeSqm
+                    ? `${Number(property.sizeSqm)} ${t.sqm}`
+                    : "—"
+                }
+              />
+              <StatTile
+                icon={<Layers className="w-5 h-5" />}
+                label={t.floor}
+                value={
+                  property.floor
+                    ? `${property.floor}${
+                        property.building ? ` / ${property.building}` : ""
+                      }`
                     : "—"
                 }
               />

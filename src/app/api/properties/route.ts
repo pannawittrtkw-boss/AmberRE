@@ -21,6 +21,8 @@ export async function GET(req: NextRequest) {
     const featured = searchParams.get("featured") === "true";
     const popular = searchParams.get("popular") === "true";
     const status = searchParams.get("status") || "";
+    const minPriceParam = searchParams.get("minPrice");
+    const maxPriceParam = searchParams.get("maxPrice");
     const page = parseInt(searchParams.get("page") || "1");
     const limitParam = parseInt(searchParams.get("limit") || "12");
     const limit = limitParam === 0 ? undefined : limitParam;
@@ -94,11 +96,22 @@ export async function GET(req: NextRequest) {
         { project: { is: { projectArea: { contains: keyword, mode: "insensitive" } } } },
       ];
     }
-    if (listingType) where.listingType = listingType;
+    if (listingType === "RENT" || listingType === "SALE") {
+      // A property listed as RENT_AND_SALE is genuinely available either
+      // way, so it should surface under a Rent-only or Sale-only search too.
+      where.listingType = { in: [listingType, "RENT_AND_SALE"] };
+    } else if (listingType) {
+      where.listingType = listingType;
+    }
     if (propertyType) where.propertyType = propertyType;
     if (buildingType) where.buildingType = buildingType;
     if (condition) where.condition = condition;
     if (hideSold) where.isSold = false;
+    if (minPriceParam || maxPriceParam) {
+      where.price = {};
+      if (minPriceParam) where.price.gte = Number(minPriceParam);
+      if (maxPriceParam) where.price.lte = Number(maxPriceParam);
+    }
     if (kitchenPartition) where.kitchenPartition = true;
     if (bedroomPartition) where.bedroomPartition = true;
     if (featured) where.isFeatured = true;

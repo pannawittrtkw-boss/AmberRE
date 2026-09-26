@@ -25,6 +25,7 @@ import {
   NEARBY_CATEGORY_LABEL_TH,
   type NearbyPlace,
 } from "@/lib/nearby-places";
+import { hasNoBedrooms } from "@/lib/property-constants";
 
 const DraggableMapPreview = dynamic(() => import("@/components/admin/DraggableMapPreview"), { ssr: false });
 
@@ -545,17 +546,18 @@ export default function AddPropertyPage({
       const stationIds = selectedStations;
 
       const isLand = form.propertyType === "LAND";
+      const noBedroom = hasNoBedrooms(form.propertyType);
       const payload = {
         titleTh: form.projectName || "Property",
         propertyType: form.propertyType,
         listingType: form.listingType,
-        condition: isLand ? null : form.condition,
+        condition: noBedroom ? null : form.condition,
         price: parseFloat(form.price) || 0,
         salePrice: form.salePrice ? parseFloat(form.salePrice) : null,
         sizeSqm: form.sizeSqm ? parseFloat(form.sizeSqm) : null,
         floor: isLand ? null : (form.floor ? parseInt(form.floor) : null),
-        bedrooms: isLand ? 0 : (form.bedrooms ? parseInt(form.bedrooms) : 0),
-        bathrooms: isLand ? 0 : (form.bathrooms ? parseInt(form.bathrooms) : 0),
+        bedrooms: noBedroom ? 0 : (form.bedrooms ? parseInt(form.bedrooms) : 0),
+        bathrooms: noBedroom ? 0 : (form.bathrooms ? parseInt(form.bathrooms) : 0),
         landSizeRai: isLand && form.landSizeRai ? parseFloat(form.landSizeRai) : null,
         landSizeNgan: isLand && form.landSizeNgan ? parseFloat(form.landSizeNgan) : null,
         landSizeWa: isLand && form.landSizeWa ? parseFloat(form.landSizeWa) : null,
@@ -1104,12 +1106,14 @@ export default function AddPropertyPage({
             {/* Property Type */}
             <div>
               <label className="block text-sm font-semibold mb-2">Property Type / ประเภท</label>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {[
                   { value: "CONDO", label: "Condo" },
                   { value: "HOUSE", label: "House" },
                   { value: "TOWNHOUSE", label: "Townhouse" },
                   { value: "LAND", label: "Land" },
+                  { value: "OFFICE", label: "Office" },
+                  { value: "WAREHOUSE", label: "Warehouse" },
                 ].map((opt) => (
                   <button
                     key={opt.value}
@@ -1143,8 +1147,8 @@ export default function AddPropertyPage({
               </select>
             </div>
 
-            {/* Condition (1st/2nd hand) — hidden for LAND */}
-            {form.propertyType !== "LAND" && (
+            {/* Condition (1st/2nd hand) — hidden for LAND / OFFICE / WAREHOUSE */}
+            {!hasNoBedrooms(form.propertyType) && (
               <div>
                 <label className="block text-sm font-semibold mb-2">Condition / สภาพ</label>
                 <div className="grid grid-cols-2 gap-2">

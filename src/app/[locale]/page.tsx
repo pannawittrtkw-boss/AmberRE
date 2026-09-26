@@ -9,6 +9,8 @@ import {
   Star,
   ArrowRight,
   Trees,
+  Briefcase,
+  Warehouse,
 } from "lucide-react";
 import HeroSearchPanel from "@/components/property/HeroSearchPanel";
 import FeaturedPropertiesGrid from "@/components/property/FeaturedPropertiesGrid";
@@ -53,12 +55,16 @@ export default async function HomePage({
     HOUSE: Home,
     TOWNHOUSE: Building,
     LAND: Trees,
+    OFFICE: Briefcase,
+    WAREHOUSE: Warehouse,
   };
   const typeLabels: Record<string, string> = {
     CONDO: tp.condo,
     HOUSE: tp.house,
     TOWNHOUSE: tp.townhouse,
     LAND: tp.land || "Land",
+    OFFICE: tp.office || "Office",
+    WAREHOUSE: tp.warehouse || "Warehouse",
   };
 
   return (
@@ -125,8 +131,8 @@ export default async function HomePage({
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#C8A951]/60 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#C8A951]/60 to-transparent" />
 
-            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-[#C8A951]/15">
-              {["CONDO", "HOUSE", "TOWNHOUSE", "LAND"].map((type) => {
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y lg:divide-y-0 divide-[#C8A951]/15">
+              {["CONDO", "HOUSE", "TOWNHOUSE", "LAND", "OFFICE", "WAREHOUSE"].map((type) => {
                 const Icon = typeIcons[type];
                 const count =
                   propertyCounts.find((c) => c.propertyType === type)?._count

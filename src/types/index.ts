@@ -1,9 +1,9 @@
 import { User, Property, PropertyImage, Amenity, BTSMRTStation, Article, ArticleCategory, Review, Project } from "@prisma/client";
 
 export type UserRole = "BUYER" | "OWNER" | "AGENT" | "CO_AGENT" | "ADMIN";
-export type PropertyType = "CONDO" | "HOUSE" | "TOWNHOUSE";
+export type PropertyType = "CONDO" | "HOUSE" | "TOWNHOUSE" | "LAND" | "OFFICE" | "WAREHOUSE";
 export type BuildingType = "LOW_RISE" | "HIGH_RISE" | "NONE";
-export type ListingType = "RENT" | "SALE";
+export type ListingType = "RENT" | "SALE" | "RENT_AND_SALE";
 
 export interface PropertyWithRelations extends Property {
   images: PropertyImage[];

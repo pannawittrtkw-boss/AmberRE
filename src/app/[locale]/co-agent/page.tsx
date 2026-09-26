@@ -18,6 +18,7 @@ import {
   Search,
   SlidersHorizontal,
 } from "lucide-react";
+import { getPriceRanges, parsePriceRangeValue } from "@/lib/property-constants";
 
 function parseJson(val: string | null | undefined): string[] {
   if (!val) return [];
@@ -52,11 +53,10 @@ export default function CoAgentPage({
 
   // Filter state for the listings table
   const [filterKeyword, setFilterKeyword] = useState("");
-  const [filterListing, setFilterListing] = useState(""); // "" | RENT | SALE
-  const [filterPropertyType, setFilterPropertyType] = useState(""); // "" | CONDO | HOUSE | TOWNHOUSE | LAND
+  const [filterListing, setFilterListing] = useState<"RENT" | "SALE">("RENT");
+  const [filterPropertyType, setFilterPropertyType] = useState(""); // "" | CONDO | HOUSE | TOWNHOUSE | LAND | OFFICE | WAREHOUSE
   const [filterBedrooms, setFilterBedrooms] = useState<string>(""); // "" | 0 | 1 | 2 | 3
-  const [filterPriceMin, setFilterPriceMin] = useState("");
-  const [filterPriceMax, setFilterPriceMax] = useState("");
+  const [filterPriceRange, setFilterPriceRange] = useState("");
   const [filterSort, setFilterSort] = useState("newest"); // newest | price_asc | price_desc | size_desc
 
   useEffect(() => {
@@ -103,8 +103,7 @@ export default function CoAgentPage({
 
   const filteredProperties = useMemo(() => {
     const kw = filterKeyword.trim().toLowerCase();
-    const min = filterPriceMin ? Number(filterPriceMin) : null;
-    const max = filterPriceMax ? Number(filterPriceMax) : null;
+    const { min, max } = parsePriceRangeValue(filterPriceRange);
     const beds = filterBedrooms === "" ? null : Number(filterBedrooms);
 
     let list = properties.filter((p: any) => {
@@ -115,20 +114,18 @@ export default function CoAgentPage({
           .toLowerCase();
         if (!hay.includes(kw)) return false;
       }
-      if (filterListing) {
-        if (
-          filterListing === "RENT" &&
-          p.listingType !== "RENT" &&
-          p.listingType !== "RENT_AND_SALE"
-        )
-          return false;
-        if (
-          filterListing === "SALE" &&
-          p.listingType !== "SALE" &&
-          p.listingType !== "RENT_AND_SALE"
-        )
-          return false;
-      }
+      if (
+        filterListing === "RENT" &&
+        p.listingType !== "RENT" &&
+        p.listingType !== "RENT_AND_SALE"
+      )
+        return false;
+      if (
+        filterListing === "SALE" &&
+        p.listingType !== "SALE" &&
+        p.listingType !== "RENT_AND_SALE"
+      )
+        return false;
       if (filterPropertyType && p.propertyType !== filterPropertyType)
         return false;
       if (beds != null) {
@@ -161,28 +158,25 @@ export default function CoAgentPage({
     filterListing,
     filterPropertyType,
     filterBedrooms,
-    filterPriceMin,
-    filterPriceMax,
+    filterPriceRange,
     filterSort,
   ]);
 
   const resetFilters = () => {
     setFilterKeyword("");
-    setFilterListing("");
+    setFilterListing("RENT");
     setFilterPropertyType("");
     setFilterBedrooms("");
-    setFilterPriceMin("");
-    setFilterPriceMax("");
+    setFilterPriceRange("");
     setFilterSort("newest");
   };
 
   const hasActiveFilters =
     filterKeyword ||
-    filterListing ||
+    filterListing !== "RENT" ||
     filterPropertyType ||
     filterBedrooms ||
-    filterPriceMin ||
-    filterPriceMax ||
+    filterPriceRange ||
     filterSort !== "newest";
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -350,17 +344,19 @@ export default function CoAgentPage({
             </div>
 
             {/* Listing type */}
-            <div className="grid grid-cols-3 gap-1 p-1 bg-stone-100 rounded-lg">
+            <div className="grid grid-cols-2 gap-1 p-1 bg-stone-100 rounded-lg">
               {(
                 [
-                  ["", locale === "th" ? "ทั้งหมด" : "All"],
                   ["RENT", locale === "th" ? "เช่า" : "Rent"],
                   ["SALE", locale === "th" ? "ขาย" : "Sale"],
                 ] as [string, string][]
               ).map(([v, lbl]) => (
                 <button
                   key={v}
-                  onClick={() => setFilterListing(v)}
+                  onClick={() => {
+                    setFilterListing(v as "RENT" | "SALE");
+                    setFilterPriceRange("");
+                  }}
                   className={`py-1.5 rounded text-xs font-medium transition-colors ${
                     filterListing === v
                       ? "bg-white text-[#C8A951] shadow-sm"
@@ -407,6 +403,8 @@ export default function CoAgentPage({
                 {locale === "th" ? "ทาวน์เฮ้าส์" : "Townhouse"}
               </option>
               <option value="LAND">{locale === "th" ? "ที่ดิน" : "Land"}</option>
+              <option value="OFFICE">{locale === "th" ? "สำนักงาน" : "Office"}</option>
+              <option value="WAREHOUSE">{locale === "th" ? "โกดัง/คลังสินค้า" : "Warehouse"}</option>
             </select>
 
             {/* Bedrooms */}
@@ -432,24 +430,21 @@ export default function CoAgentPage({
               </option>
             </select>
 
-            {/* Price range */}
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                value={filterPriceMin}
-                onChange={(e) => setFilterPriceMin(e.target.value)}
-                placeholder={locale === "th" ? "ราคาต่ำสุด" : "Min price"}
-                className="w-1/2 border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30"
-              />
-              <span className="text-stone-400 text-xs">—</span>
-              <input
-                type="number"
-                value={filterPriceMax}
-                onChange={(e) => setFilterPriceMax(e.target.value)}
-                placeholder={locale === "th" ? "ราคาสูงสุด" : "Max price"}
-                className="w-1/2 border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30"
-              />
-            </div>
+            {/* Price range — brackets differ between rent and sale */}
+            <select
+              value={filterPriceRange}
+              onChange={(e) => setFilterPriceRange(e.target.value)}
+              className="border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30"
+            >
+              <option value="">
+                {locale === "th" ? "ช่วงราคา — ทั้งหมด" : "Price range — All"}
+              </option>
+              {getPriceRanges(filterListing).map((r) => (
+                <option key={r.value} value={r.value}>
+                  {locale === "th" ? r.labelTh : r.labelEn}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Result count */}

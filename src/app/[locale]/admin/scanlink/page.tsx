@@ -73,6 +73,8 @@ const PROPERTY_TYPE_LABEL: Record<string, string> = {
   HOUSE: "บ้านเดี่ยว",
   TOWNHOUSE: "ทาวน์เฮาส์",
   LAND: "ที่ดิน",
+  OFFICE: "สำนักงาน",
+  WAREHOUSE: "โกดัง/คลังสินค้า",
 };
 
 const LISTING_TYPE_LABEL: Record<string, string> = {

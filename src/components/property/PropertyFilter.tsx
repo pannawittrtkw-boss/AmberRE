@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { Search, SlidersHorizontal, X, ChevronDown, Train } from "lucide-react";
+import { getPriceRanges, hasNoBedrooms, parsePriceRangeValue } from "@/lib/property-constants";
 
 const StationMapSelector = dynamic(
   () => import("@/components/admin/StationMapSelector"),
@@ -65,8 +66,9 @@ export default function PropertyFilter({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [filters, setFilters] = useState({
     keyword: "",
-    listingType: "",
+    listingType: "RENT",
     propertyType: "",
+    priceRange: "",
     condition: "",
     buildingType: "",
     hideSold: false,
@@ -78,11 +80,26 @@ export default function PropertyFilter({
   });
   const [showStationModal, setShowStationModal] = useState(false);
 
+  const toApiPayload = (f: typeof filters) => {
+    const { priceRange, ...rest } = f;
+    const { min, max } = parsePriceRangeValue(priceRange);
+    return { ...rest, minPrice: min, maxPrice: max };
+  };
+
   const updateFilter = (key: string, value: any) => {
     const updated = { ...filters, [key]: value };
     setFilters(updated);
-    onFilter(updated);
+    onFilter(toApiPayload(updated));
   };
+
+  // Fire once on mount so the initial (unfiltered) fetch the parent page
+  // does before this component renders gets replaced with one that
+  // respects the default Rent selection, instead of silently showing
+  // Sale listings too until the visitor touches a filter.
+  useEffect(() => {
+    onFilter(toApiPayload(filters));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const toggleAmenity = (id: number) => {
     const ids = filters.amenityIds.includes(id)
@@ -94,8 +111,9 @@ export default function PropertyFilter({
   const resetFilters = () => {
     const reset = {
       keyword: "",
-      listingType: "",
+      listingType: "RENT",
       propertyType: "",
+      priceRange: "",
       condition: "",
       buildingType: "",
       hideSold: false,
@@ -106,13 +124,14 @@ export default function PropertyFilter({
       bedroomPartition: false,
     };
     setFilters(reset);
-    onFilter(reset);
+    onFilter(toApiPayload(reset));
   };
 
   const hasFilters =
     filters.keyword ||
-    filters.listingType ||
+    filters.listingType !== "RENT" ||
     filters.propertyType ||
+    filters.priceRange ||
     filters.condition ||
     filters.buildingType ||
     filters.hideSold ||
@@ -121,6 +140,8 @@ export default function PropertyFilter({
     filters.amenityIds.length > 0 ||
     filters.kitchenPartition ||
     filters.bedroomPartition;
+
+  const priceRanges = getPriceRanges(filters.listingType === "SALE" ? "SALE" : "RENT");
 
   return (
     <>
@@ -147,18 +168,47 @@ export default function PropertyFilter({
         <label className={`block ${labelCls}`}>
           {t.listingTypeLabel}
         </label>
-        <div className={`grid grid-cols-3 gap-1 p-1 rounded-xl ${segGroupCls}`}>
-          {["", "RENT", "SALE"].map((type) => (
+        <div className={`grid grid-cols-2 gap-1 p-1 rounded-xl ${segGroupCls}`}>
+          {["RENT", "SALE"].map((type) => (
             <button
               key={type}
-              onClick={() => updateFilter("listingType", type)}
+              onClick={() => {
+                const updated = { ...filters, listingType: type, priceRange: "" };
+                setFilters(updated);
+                onFilter(toApiPayload(updated));
+              }}
               className={`py-2 rounded-lg text-xs font-semibold transition-all ${
                 filters.listingType === type
                   ? segItemActiveCls
                   : segItemInactiveCls
               }`}
             >
-              {type === "" ? tc.all : type === "RENT" ? tc.rent : tc.sale}
+              {type === "RENT" ? tc.rent : tc.sale}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Price Range — brackets differ between rent and sale */}
+      <div>
+        <label className={`block ${labelCls}`}>
+          {t.priceRangeLabel || "Price Range"}
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {priceRanges.map((r) => (
+            <button
+              key={r.value}
+              onClick={() =>
+                updateFilter(
+                  "priceRange",
+                  filters.priceRange === r.value ? "" : r.value
+                )
+              }
+              className={`py-2.5 rounded-xl text-xs font-medium transition-all ${
+                filters.priceRange === r.value ? pillActiveCls : pillInactiveCls
+              }`}
+            >
+              {locale === "th" ? r.labelTh : r.labelEn}
             </button>
           ))}
         </div>
@@ -170,7 +220,7 @@ export default function PropertyFilter({
           {t.propertyTypeLabel}
         </label>
         <div className="grid grid-cols-2 gap-2">
-          {["CONDO", "HOUSE", "TOWNHOUSE", "LAND"].map((type) => (
+          {["CONDO", "HOUSE", "TOWNHOUSE", "LAND", "OFFICE", "WAREHOUSE"].map((type) => (
             <button
               key={type}
               onClick={() =>
@@ -189,14 +239,18 @@ export default function PropertyFilter({
                 ? t.house
                 : type === "TOWNHOUSE"
                 ? t.townhouse
-                : t.land || "Land"}
+                : type === "LAND"
+                ? t.land || "Land"
+                : type === "OFFICE"
+                ? t.office || "Office"
+                : t.warehouse || "Warehouse"}
             </button>
           ))}
         </div>
       </div>
 
       {/* Condition (1st/2nd hand) — hide when LAND is selected */}
-      {filters.propertyType !== "LAND" && (
+      {!hasNoBedrooms(filters.propertyType) && (
         <div>
           <label className={`block ${labelCls}`}>
             {t.condition}

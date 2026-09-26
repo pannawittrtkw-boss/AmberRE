@@ -8,6 +8,7 @@ import { getStationThaiName } from "@/lib/stations";
 import { useFavorites } from "@/lib/favorites";
 import { useCompare } from "@/lib/compare";
 import PropertyImageCarousel from "./PropertyImageCarousel";
+import { hasNoBedrooms } from "@/lib/property-constants";
 
 function parseJson(val: string | null | undefined): string[] {
   if (!val) return [];
@@ -186,7 +187,7 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
 
           {/* Specs */}
           <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 mt-2">
-            {property.propertyType !== "LAND" && (
+            {!hasNoBedrooms(property.propertyType) && (
               <span className="flex items-center gap-0.5">
                 <Bed className="w-3.5 h-3.5" />{" "}
                 {property.bedrooms === 0
@@ -194,7 +195,7 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
                   : `${property.bedrooms} ${messages.property.beds}`}
               </span>
             )}
-            {property.propertyType !== "LAND" && property.bathrooms > 0 && (
+            {!hasNoBedrooms(property.propertyType) && property.bathrooms > 0 && (
               <span className="flex items-center gap-0.5">
                 <Bath className="w-3.5 h-3.5" /> {property.bathrooms}{" "}
                 {messages.property.baths}
@@ -205,7 +206,7 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
                 <Maximize className="w-3.5 h-3.5" /> {sizeSqm} {messages.property.sqm}
               </span>
             )}
-            {property.propertyType !== "LAND" &&
+            {!hasNoBedrooms(property.propertyType) &&
               property.floor != null &&
               Number(property.floor) > 0 && (
                 <span className="flex items-center gap-0.5">

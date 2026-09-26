@@ -201,6 +201,8 @@ export default function ComparePage() {
     HOUSE: tp.house || "House",
     TOWNHOUSE: tp.townhouse || "Townhouse",
     LAND: tp.land || "Land",
+    OFFICE: tp.office || "Office",
+    WAREHOUSE: tp.warehouse || "Warehouse",
   };
 
   const buildingLabels: Record<string, string> = {

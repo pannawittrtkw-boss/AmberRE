@@ -134,6 +134,8 @@ function ScanlinkAcceptForm() {
               <option value="HOUSE">House</option>
               <option value="TOWNHOUSE">Townhome</option>
               <option value="LAND">Land</option>
+              <option value="OFFICE">Office</option>
+              <option value="WAREHOUSE">Warehouse</option>
             </select>
           </div>
           <div>

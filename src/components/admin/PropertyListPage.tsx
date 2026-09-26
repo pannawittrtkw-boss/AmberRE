@@ -31,6 +31,7 @@ import {
 import StationMapSelector, { LINES } from "@/components/admin/StationMapSelector";
 import BookingReceiptModal from "@/app/[locale]/admin/properties/BookingReceiptModal";
 import ExclusiveModal from "@/app/[locale]/admin/properties/ExclusiveModal";
+import { getPriceRanges, parsePriceRangeValue } from "@/lib/property-constants";
 
 const FURNITURE_ITEMS: Record<string, { en: string; th: string }> = {
   bed: { en: "Bed", th: "เตียง" },
@@ -146,11 +147,10 @@ export default function PropertyListPage({
   const [searchText, setSearchText] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [filterStatus, setFilterStatus] = useState("");
-  const [filterListing, setFilterListing] = useState("");
+  const [filterListing, setFilterListing] = useState<"RENT" | "SALE">("RENT");
   const [filterPriority, setFilterPriority] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
-  const [filterMinPrice, setFilterMinPrice] = useState("");
-  const [filterMaxPrice, setFilterMaxPrice] = useState("");
+  const [filterPriceRange, setFilterPriceRange] = useState("");
   const [filterStations, setFilterStations] = useState<string[]>([]);
   const [showStationFilterModal, setShowStationFilterModal] = useState(false);
   const [filterExclusive, setFilterExclusive] = useState(false);
@@ -271,16 +271,29 @@ export default function PropertyListPage({
     }
     // Status
     if (filterStatus && p.status !== filterStatus) return false;
-    // Listing type
-    if (filterListing && p.listingType !== filterListing) return false;
+    // Listing type — a RENT_AND_SALE property is genuinely available
+    // either way, so it should show up under either filter.
+    if (
+      filterListing === "RENT" &&
+      p.listingType !== "RENT" &&
+      p.listingType !== "RENT_AND_SALE"
+    )
+      return false;
+    if (
+      filterListing === "SALE" &&
+      p.listingType !== "SALE" &&
+      p.listingType !== "RENT_AND_SALE"
+    )
+      return false;
     // Priority
     if (filterPriority && p.priority !== filterPriority) return false;
     // Category
     if (filterCategory && p.category !== filterCategory) return false;
     // Price range
     const price = Number(p.price) || 0;
-    if (filterMinPrice && price < Number(filterMinPrice)) return false;
-    if (filterMaxPrice && price > Number(filterMaxPrice)) return false;
+    const { min: filterMinPrice, max: filterMaxPrice } = parsePriceRangeValue(filterPriceRange);
+    if (filterMinPrice != null && price < filterMinPrice) return false;
+    if (filterMaxPrice != null && price > filterMaxPrice) return false;
     // Station - matches if this property has any of the selected stations
     if (filterStations.length > 0) {
       const codes = parseJson(p.nearbyStations);
@@ -300,12 +313,12 @@ export default function PropertyListPage({
     return true;
   });
 
-  const hasActiveFilters = filterStatus || filterListing || filterPriority || filterCategory || filterMinPrice || filterMaxPrice || filterStations.length > 0 || filterExclusive || filterPostDateFrom || filterPostDateTo;
+  const hasActiveFilters = filterStatus || filterListing !== "RENT" || filterPriority || filterCategory || filterPriceRange || filterStations.length > 0 || filterExclusive || filterPostDateFrom || filterPostDateTo;
 
   const clearFilters = () => {
-    setSearchText(""); setFilterStatus(""); setFilterListing("");
+    setSearchText(""); setFilterStatus(""); setFilterListing("RENT");
     setFilterPriority(""); setFilterCategory("");
-    setFilterMinPrice(""); setFilterMaxPrice(""); setFilterStations([]);
+    setFilterPriceRange(""); setFilterStations([]);
     setFilterExclusive(false); setFilterPostDateFrom(""); setFilterPostDateTo("");
   };
 
@@ -357,7 +370,7 @@ export default function PropertyListPage({
     setVisibleCount(PAGE_SIZE);
   }, [
     searchText, filterStatus, filterListing, filterPriority, filterCategory,
-    filterMinPrice, filterMaxPrice, filterStationsKey, filterExclusive,
+    filterPriceRange, filterStationsKey, filterExclusive,
     filterPostDateFrom, filterPostDateTo, selectedMonth, selectedStatusTab,
   ]);
 
@@ -520,11 +533,16 @@ export default function PropertyListPage({
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">ประเภท</label>
-                <select value={filterListing} onChange={(e) => setFilterListing(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm bg-white">
-                  <option value="">ทั้งหมด</option>
+                <select
+                  value={filterListing}
+                  onChange={(e) => {
+                    setFilterListing(e.target.value as "RENT" | "SALE");
+                    setFilterPriceRange("");
+                  }}
+                  className="w-full border rounded-lg px-3 py-2 text-sm bg-white"
+                >
                   <option value="RENT">เช่า</option>
                   <option value="SALE">ขาย</option>
-                  <option value="RENT_AND_SALE">เช่า&ขาย</option>
                 </select>
               </div>
               <div>
@@ -544,12 +562,13 @@ export default function PropertyListPage({
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">ราคาขั้นต่ำ</label>
-                <input type="number" value={filterMinPrice} onChange={(e) => setFilterMinPrice(e.target.value)} placeholder="0" className="w-full border rounded-lg px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">ราคาสูงสุด</label>
-                <input type="number" value={filterMaxPrice} onChange={(e) => setFilterMaxPrice(e.target.value)} placeholder="999,999" className="w-full border rounded-lg px-3 py-2 text-sm" />
+                <label className="block text-xs font-medium text-gray-500 mb-1">ช่วงราคา</label>
+                <select value={filterPriceRange} onChange={(e) => setFilterPriceRange(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm bg-white">
+                  <option value="">ทั้งหมด</option>
+                  {getPriceRanges(filterListing).map((r) => (
+                    <option key={r.value} value={r.value}>{r.labelTh}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">สถานี BTS/MRT</label>
