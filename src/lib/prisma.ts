@@ -1,18 +1,15 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 
-// Use Neon's HTTP-based serverless driver in production (Vercel) so each
-// invocation skips the TCP connection setup that caused 1-2s cold latency.
-// In dev (no Vercel) fall back to the default TCP-based PrismaClient.
+// The schema's generator uses engineType = "client" (Rust-free), which has
+// no query engine of its own — a driver adapter is required in every
+// environment now, not just on Vercel like before.
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 function createPrismaClient(): PrismaClient {
-  const connectionString = process.env.DATABASE_URL;
-  if (process.env.VERCEL && connectionString) {
-    const adapter = new PrismaNeon({ connectionString });
-    return new PrismaClient({ adapter });
-  }
-  return new PrismaClient();
+  const connectionString = process.env.DATABASE_URL!;
+  const adapter = new PrismaNeon({ connectionString });
+  return new PrismaClient({ adapter });
 }
 
 export const prisma = globalForPrisma.prisma || createPrismaClient();
