@@ -40,6 +40,7 @@ type MatchedProperty = {
   titleEn: string | null;
   propertyType: string;
   listingType: string;
+  status: string;
   price: string;
   bedrooms: number;
   bathrooms: number;
@@ -677,10 +678,17 @@ function FormField({
   );
 }
 
+const STATUS_BADGE: Record<string, { label: string; color: string }> = {
+  VERIFIED: { label: "Verified", color: "bg-green-500" },
+  VERIFIED_OVER_10_DAYS: { label: "Verified 10+d", color: "bg-orange-500" },
+  ADDED_PROPERTIES: { label: "Added", color: "bg-purple-600" },
+};
+
 function MatchCard({ prop, locale }: { prop: MatchedProperty; locale: string }) {
   const listingLabel: Record<string, string> = {
     RENT: "เช่า", SALE: "ขาย", RENT_AND_SALE: "เช่า/ขาย",
   };
+  const statusInfo = STATUS_BADGE[prop.status] || { label: prop.status, color: "bg-gray-500" };
 
   // "Days on market" — same rule as the public FeaturedPropertyCard: counts
   // from listedAt if an admin has reset it (unit came back on the market),
@@ -719,6 +727,9 @@ function MatchCard({ prop, locale }: { prop: MatchedProperty; locale: string }) 
           </span>
           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${daysBadgeCls}`}>
             {daysPosted} {locale === "th" ? "วัน" : "d"}
+          </span>
+          <span className={`text-[10px] font-semibold text-white px-2 py-0.5 rounded ${statusInfo.color}`}>
+            {statusInfo.label}
           </span>
         </div>
       </div>

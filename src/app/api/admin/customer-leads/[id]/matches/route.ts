@@ -60,9 +60,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
   }
 
-  // Fetch all active properties with related data
+  // Fetch properties that have actually passed verification — never
+  // recommend a lead something still pending/under review, rejected,
+  // unavailable, or already rented/sold.
   const properties = await prisma.property.findMany({
-    where: { isSold: false },
+    where: {
+      isSold: false,
+      status: { in: ["VERIFIED", "VERIFIED_OVER_10_DAYS", "ADDED_PROPERTIES"] },
+    },
     include: {
       images: { where: { isPrimary: true }, take: 1 },
       project: {
@@ -246,6 +251,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       titleEn: property.titleEn,
       propertyType: property.propertyType,
       listingType: property.listingType,
+      status: property.status,
       price: property.price,
       bedrooms: property.bedrooms,
       bathrooms: property.bathrooms,
