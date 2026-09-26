@@ -42,6 +42,7 @@ export default function AdminUsersPage({ params }: { params: Promise<{ locale: s
   const [showPending, setShowPending] = useState(true);
 
   const [searchText, setSearchText] = useState("");
+  const [filterRole, setFilterRole] = useState("");
   const [filterAgentStatus, setFilterAgentStatus] = useState("");
   const [filterActive, setFilterActive] = useState("");
 
@@ -136,6 +137,7 @@ export default function AdminUsersPage({ params }: { params: Promise<{ locale: s
       const name = `${u.firstName} ${u.lastName}`.toLowerCase();
       if (!name.includes(q) && !u.email.toLowerCase().includes(q)) return false;
     }
+    if (filterRole && (ROLE_LABEL[u.role] ?? u.role) !== filterRole) return false;
     if (filterAgentStatus) {
       const appStatus = u.coAgentApplication?.status || "NONE";
       if (appStatus !== filterAgentStatus) return false;
@@ -251,6 +253,14 @@ export default function AdminUsersPage({ params }: { params: Promise<{ locale: s
               className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm"
             />
           </div>
+          <select
+            value={filterRole}
+            onChange={(e) => setFilterRole(e.target.value)}
+            className="border rounded-lg px-3 py-2 text-sm bg-white"
+          >
+            <option value="">{locale === "th" ? "Role: ทั้งหมด" : "Role: All"}</option>
+            {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+          </select>
           <select
             value={filterAgentStatus}
             onChange={(e) => setFilterAgentStatus(e.target.value)}
