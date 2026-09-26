@@ -23,6 +23,7 @@ function ScanlinkAcceptForm() {
   const [listingType, setListingType] = useState("RENT");
   const [price, setPrice] = useState("");
   const [salePrice, setSalePrice] = useState("");
+  const [bedrooms, setBedrooms] = useState("");
   const [furnished, setFurnished] = useState(false);
   const [electric, setElectric] = useState(false);
   const [ready, setReady] = useState(false);
@@ -74,6 +75,7 @@ function ScanlinkAcceptForm() {
           listingType,
           price: Number(price),
           salePrice: Number(salePrice),
+          bedrooms: bedrooms || null,
           stationIds: selectedStations,
         }),
       });
@@ -150,6 +152,24 @@ function ScanlinkAcceptForm() {
               <option value="RENT_AND_SALE">เช่าและขาย</option>
             </select>
           </div>
+        </div>
+
+        {/* Bedrooms */}
+        <div className="px-5 pt-3 pb-2 border-t border-gray-100">
+          <label className="block text-sm font-semibold text-gray-700 mb-2">🛏 จำนวนห้องนอน</label>
+          <select
+            value={bedrooms}
+            onChange={(e) => setBedrooms(e.target.value)}
+            className="w-full border border-gray-200 rounded-[10px] px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-[#C8A951] bg-white"
+          >
+            <option value="">ไม่ระบุ</option>
+            <option value="0">0 ห้องนอน</option>
+            <option value="1">1 ห้องนอน</option>
+            <option value="2">2 ห้องนอน</option>
+            <option value="3">3 ห้องนอน</option>
+            <option value="4">4 ห้องนอน</option>
+            <option value="5">5+ ห้องนอน</option>
+          </select>
         </div>
 
         {/* Rent price & Sale price */}

@@ -5,7 +5,7 @@ import { pushMessage, STATUS_LABEL } from "@/app/api/line/url-checker/route";
 
 export async function POST(req: NextRequest) {
   try {
-    const { urlId, status, fullyFurnished, fullyElectric, readyToMoveIn, petFriendly, smokingAllowed, availableDate, remark, seq, by, condoName, propertyType, listingType, price, salePrice, stationIds } = await req.json();
+    const { urlId, status, fullyFurnished, fullyElectric, readyToMoveIn, petFriendly, smokingAllowed, availableDate, remark, seq, by, condoName, propertyType, listingType, price, salePrice, bedrooms, stationIds } = await req.json();
 
     if (!urlId || !status) {
       return NextResponse.json({ success: false, error: "Missing params" }, { status: 400 });
@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
       smokingAllowed:  smokingAllowed  ? "ACCEPT" : "NOT_ACCEPT",
       fullyFurnished:  fullyFurnished ?? false,
       fullyElectric:   fullyElectric  ?? false,
+      bedrooms:        bedrooms !== undefined && bedrooms !== null && bedrooms !== "" ? parseInt(bedrooms) : undefined,
       availableDate:   readyToMoveIn ? new Date() : availableDate ? new Date(availableDate) : undefined,
       note:            remark || undefined,
       nearbyStations:  Array.isArray(stationIds) && stationIds.length ? JSON.stringify(stationIds) : undefined,
@@ -75,6 +76,7 @@ export async function POST(req: NextRequest) {
     const infoLines = [
       condoName ? `Name : ${condoName}` : null,
       `Type : ${safePropertyType} (${safeListingType})`,
+      bedrooms !== undefined && bedrooms !== null && bedrooms !== "" ? `Bedrooms : ${bedrooms}` : null,
       price != null ? `Rent Price : ${price}` : null,
       salePrice != null ? `Sale Price : ${salePrice}` : null,
       Array.isArray(stationIds) && stationIds.length ? `Stations : ${stationIds.join(", ")}` : null,
