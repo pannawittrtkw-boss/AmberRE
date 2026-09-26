@@ -5,7 +5,7 @@ import { pushMessage, STATUS_LABEL } from "@/app/api/line/url-checker/route";
 
 export async function POST(req: NextRequest) {
   try {
-    const { urlId, status, fullyFurnished, fullyElectric, readyToMoveIn, availableDate, remark, seq, by, condoName, propertyType, listingType, price, salePrice, stationIds } = await req.json();
+    const { urlId, status, fullyFurnished, fullyElectric, readyToMoveIn, petFriendly, smokingAllowed, availableDate, remark, seq, by, condoName, propertyType, listingType, price, salePrice, stationIds } = await req.json();
 
     if (!urlId || !status) {
       return NextResponse.json({ success: false, error: "Missing params" }, { status: 400 });
@@ -49,6 +49,8 @@ export async function POST(req: NextRequest) {
       sourceLink:      urlRecord.url,
       status:          "VERIFIED",
       foreignerAccept: status === "ACCEPT_ALL" ? "ACCEPT" : "NOT_ACCEPT",
+      petFriendly:     petFriendly     ? "ACCEPT" : "NOT_ACCEPT",
+      smokingAllowed:  smokingAllowed  ? "ACCEPT" : "NOT_ACCEPT",
       fullyFurnished:  fullyFurnished ?? false,
       fullyElectric:   fullyElectric  ?? false,
       availableDate:   readyToMoveIn ? new Date() : availableDate ? new Date(availableDate) : undefined,
@@ -89,6 +91,8 @@ export async function POST(req: NextRequest) {
       `🛋 Fully Furnished: ${fullyFurnished ? yes : no}`,
       `⚡ Fully Electric: ${fullyElectric   ? yes : no}`,
       readyLine,
+      `🐾 เลี้ยงสัตว์ได้: ${petFriendly    ? yes : no}`,
+      `🚬 สูบบุหรี่ได้: ${smokingAllowed  ? yes : no}`,
       remark ? `📝 Remark: ${remark}` : null,
     ].filter(Boolean).join("\n");
 

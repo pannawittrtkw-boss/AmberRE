@@ -26,6 +26,8 @@ function ScanlinkAcceptForm() {
   const [furnished, setFurnished] = useState(false);
   const [electric, setElectric] = useState(false);
   const [ready, setReady] = useState(false);
+  const [petFriendly, setPetFriendly] = useState(false);
+  const [smokingAllowed, setSmokingAllowed] = useState(false);
   const [availDate, setAvailDate] = useState("");
   const [remark, setRemark] = useState("");
   const [selectedStations, setSelectedStations] = useState<string[]>([]);
@@ -63,6 +65,8 @@ function ScanlinkAcceptForm() {
           fullyFurnished: furnished,
           fullyElectric: electric,
           readyToMoveIn: ready,
+          petFriendly,
+          smokingAllowed,
           availableDate: ready ? null : (availDate || null),
           remark,
           condoName: condoName.trim(),
@@ -209,6 +213,8 @@ function ScanlinkAcceptForm() {
             { key: "furnished", label: "🛋 Fully Furnished", value: furnished, set: setFurnished },
             { key: "electric", label: "⚡ Fully Electric", value: electric, set: setElectric },
             { key: "ready", label: "✅ Ready to move in", value: ready, set: setReady },
+            { key: "petFriendly", label: "🐾 เลี้ยงสัตว์ได้", value: petFriendly, set: setPetFriendly },
+            { key: "smokingAllowed", label: "🚬 สูบบุหรี่ได้", value: smokingAllowed, set: setSmokingAllowed },
           ] as const).map((opt) => (
             <div
               key={opt.key}
