@@ -317,6 +317,8 @@ model Property {
   category            String?  @default("NORMAL") @db.VarChar(20)
   priority            String?  @default("NORMAL") @db.VarChar(20)
   foreignerAccept     String?  @default("ACCEPT") @db.VarChar(20)
+  petFriendly         String?  @default("NOT_ACCEPT") @db.VarChar(20)
+  smokingAllowed      String?  @default("NOT_ACCEPT") @db.VarChar(20)
   note                String?  @db.Text
   province            String?  @db.VarChar(100)
   district            String?  @db.VarChar(100)

@@ -92,6 +92,20 @@ const STATUS_OPTIONS = [
   { value: "SOLD", label: "10. Sold" },
 ];
 
+// Same status colors as PropertyListPage's STATUS_MAP, for the header summary badge.
+const STATUS_BADGE: Record<string, { label: string; color: string }> = {
+  PENDING: { label: "Pending", color: "bg-yellow-100 text-yellow-800" },
+  WAITING: { label: "Waiting", color: "bg-blue-100 text-blue-800" },
+  VERIFIED: { label: "Verified", color: "bg-green-100 text-green-800" },
+  VERIFIED_OVER_10_DAYS: { label: "Verified 10d+", color: "bg-orange-100 text-orange-800" },
+  REVIEW: { label: "Review", color: "bg-cyan-100 text-cyan-800" },
+  ADDED_PROPERTIES: { label: "Added", color: "bg-purple-100 text-purple-800" },
+  NOT_ACCEPT: { label: "Not Accept", color: "bg-red-100 text-red-800" },
+  NOT_AVAILABLE: { label: "Not Available", color: "bg-gray-100 text-gray-800" },
+  RENTED: { label: "Rented", color: "bg-teal-100 text-teal-800" },
+  SOLD: { label: "Sold", color: "bg-rose-100 text-rose-800" },
+};
+
 const LISTING_TYPE_OPTIONS = [
   { value: "RENT", label: "Rent" },
   { value: "SALE", label: "Sale" },
@@ -162,6 +176,8 @@ export default function AddPropertyPage({
     category: "NORMAL",
     priority: "NORMAL",
     foreignerAccept: "ACCEPT",
+    petFriendly: "NOT_ACCEPT",
+    smokingAllowed: "NOT_ACCEPT",
     note: "",
     availableDate: new Date().toISOString().split("T")[0],
     province: "",
@@ -230,6 +246,13 @@ export default function AddPropertyPage({
   const [pasteText, setPasteText] = useState("");
   const [aiError, setAiError] = useState("");
 
+  // createdAt/listedAt aren't part of the editable form — kept separately
+  // just to compute "days posted" for the header summary strip.
+  const [propMeta, setPropMeta] = useState<{ createdAt: string; listedAt: string | null } | null>(null);
+  // Lazy init so this stays fixed for the render pass instead of calling
+  // the impure Date.now() directly during render.
+  const [now] = useState(() => Date.now());
+
   useEffect(() => {
     params.then(({ locale: l }) => setLocale(l));
   }, [params]);
@@ -276,12 +299,16 @@ export default function AddPropertyPage({
           category: p.category || "NORMAL",
           priority: p.priority || "NORMAL",
           foreignerAccept: (p as any).foreignerAccept || "ACCEPT",
+          petFriendly: (p as any).petFriendly || "NOT_ACCEPT",
+          smokingAllowed: (p as any).smokingAllowed || "NOT_ACCEPT",
           note: p.note || "",
           availableDate: p.availableDate ? new Date(p.availableDate).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
           province: p.province || "",
           district: p.district || "",
           subdistrict: p.subdistrict || "",
         });
+
+        setPropMeta({ createdAt: p.createdAt, listedAt: p.listedAt || null });
 
         // Parse furniture & appliances from JSON
         try {
@@ -555,6 +582,8 @@ export default function AddPropertyPage({
         category: form.category,
         priority: form.priority,
         foreignerAccept: form.foreignerAccept,
+        petFriendly: form.petFriendly,
+        smokingAllowed: form.smokingAllowed,
         note: form.note || null,
         availableDate: form.availableDate || null,
         province: form.province || null,
@@ -652,6 +681,32 @@ export default function AddPropertyPage({
             </p>
           )}
         </div>
+        {isEditMode && editId && propMeta && (() => {
+          const listedDate = new Date(propMeta.listedAt || propMeta.createdAt);
+          const daysPosted = Math.max(0, Math.floor((now - listedDate.getTime()) / 86400000));
+          const daysBadgeCls =
+            daysPosted <= 7 ? "bg-emerald-100 text-emerald-800"
+            : daysPosted <= 30 ? "bg-gray-200 text-gray-700"
+            : daysPosted <= 90 ? "bg-amber-100 text-amber-800"
+            : "bg-red-100 text-red-800";
+          const statusInfo = STATUS_BADGE[form.status] || STATUS_BADGE.PENDING;
+          return (
+            <div className="hidden sm:flex items-center gap-2 flex-wrap">
+              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${daysBadgeCls}`}>
+                {locale === "th" ? `โพสต์มา ${daysPosted} วัน` : `Posted ${daysPosted}d ago`}
+              </span>
+              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusInfo.color}`}>
+                {statusInfo.label}
+              </span>
+              {form.availableDate && (
+                <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-indigo-100 text-indigo-800">
+                  {locale === "th" ? "เข้าอยู่ได้ " : "Available "}
+                  {new Date(form.availableDate).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}
+                </span>
+              )}
+            </div>
+          );
+        })()}
         {isEditMode && editId && (
           <a
             href={`/${locale}/properties/${editId}`}
@@ -1269,19 +1324,6 @@ export default function AddPropertyPage({
                 />
               </div>
             </div>
-
-            {/* Post From */}
-            <div>
-              <label className="block text-sm font-semibold mb-2">Post From</label>
-              <select
-                value={form.postFrom}
-                onChange={(e) => updateForm("postFrom", e.target.value)}
-                className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none bg-white"
-              >
-                <option value="OWNER">Owner</option>
-                <option value="AGENT">Agent</option>
-              </select>
-            </div>
           </div>
         </div>
 
@@ -1619,6 +1661,63 @@ export default function AddPropertyPage({
                   </label>
                 ))}
               </div>
+            </div>
+
+            {/* Pet Friendly */}
+            <div>
+              <label className="block text-sm font-semibold mb-2">
+                {locale === "th" ? "เลี้ยงสัตว์ได้" : "Pet Friendly"}
+              </label>
+              <div className="flex items-center gap-6 mt-1">
+                {[{ val: "ACCEPT", label: locale === "th" ? "ได้" : "Allowed" }, { val: "NOT_ACCEPT", label: locale === "th" ? "ไม่ได้" : "Not Allowed" }].map(({ val, label }) => (
+                  <label key={val} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="petFriendly"
+                      value={val}
+                      checked={form.petFriendly === val}
+                      onChange={(e) => updateForm("petFriendly", e.target.value)}
+                      className="w-5 h-5 text-amber-600 focus:ring-amber-500"
+                    />
+                    <span className="text-sm font-medium">{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Smoking Allowed */}
+            <div>
+              <label className="block text-sm font-semibold mb-2">
+                {locale === "th" ? "สูบบุหรี่ได้" : "Smoking Allowed"}
+              </label>
+              <div className="flex items-center gap-6 mt-1">
+                {[{ val: "ACCEPT", label: locale === "th" ? "ได้" : "Allowed" }, { val: "NOT_ACCEPT", label: locale === "th" ? "ไม่ได้" : "Not Allowed" }].map(({ val, label }) => (
+                  <label key={val} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="smokingAllowed"
+                      value={val}
+                      checked={form.smokingAllowed === val}
+                      onChange={(e) => updateForm("smokingAllowed", e.target.value)}
+                      className="w-5 h-5 text-amber-600 focus:ring-amber-500"
+                    />
+                    <span className="text-sm font-medium">{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Post From */}
+            <div>
+              <label className="block text-sm font-semibold mb-2">Post From</label>
+              <select
+                value={form.postFrom}
+                onChange={(e) => updateForm("postFrom", e.target.value)}
+                className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none bg-white"
+              >
+                <option value="OWNER">Owner</option>
+                <option value="AGENT">Agent</option>
+              </select>
             </div>
 
             {/* Note */}
