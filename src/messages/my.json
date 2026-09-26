@@ -180,6 +180,7 @@
     "noAccount": "အကောင့်မရှိသေးဘူးလား?",
     "hasAccount": "အကောင့်ရှိပြီးသားလား?",
     "loginError": "အီးမေးလ် သို့မဟုတ် စကားဝှက် မှားယွင်းနေသည်",
+    "pendingApprovalError": "သင့်အကောင့်ကို အက်ဒမင်မှ အတည်ပြုရန် စောင့်ဆိုင်းနေပါသည်။ ကျေးဇူးပြု၍ အတည်ပြုပြီးမှ ဝင်ရောက်ပါ။",
     "registerSuccess": "စာရင်းသွင်းခြင်း အောင်မြင်ပါသည်",
     "signinSubtitle": "အောက်ပါအချက်အလက်များဖြည့်၍ ဝင်ရောက်ပါ",
     "agentRegisteredNotice": "Agent အကောင့် မှတ်ပုံတင်ပြီးပါပြီ! ဝင်ရောက်ပါ — Amber Real Estate အဖွဲ့ စစ်ဆေးပြီးနောက် သင့်အကောင့်ကို အတည်ပြုမည်ဖြစ်သည်။",
@@ -328,6 +329,8 @@
     "headerHint": "Facebook / LINE တင်ရန် အဆင်သင့်ဖြစ်သည်",
     "copy": "စာသားကူးပါ",
     "copied": "ကူးပြီးပါပြီ",
+    "copyLink": "လင့်ခ်ကူးယူရန်",
+    "linkCopied": "လင့်ခ်ကူးယူပြီးပါပြီ",
     "download": "ပုံအားလုံးဒေါင်းပါ",
     "shareFb": "Facebook သို့ မျှဝေပါ",
     "shareLine": "LINE သို့ မျှဝေပါ",
@@ -339,7 +342,10 @@
     "openLine": "LINE Desktop ရယူပါ",
     "close": "ပိတ်ပါ",
     "fbHint": "✓ စာသားကူးပြီးပါပြီ — \"Say something about this...\" အကွက်တွင် ကူးထည့်ပါ (Cmd/Ctrl + V)\n✓ Dialog တွင် \"Share to > Group\" ကိုနှိပ်ပါ\n• Preview ပုံနှင့်ခေါင်းစဉ်သည် ဝဘ်ဆိုဒ်မှ ဆွဲသည် — မပေါ်ပါက Facebook cache ရှင်းရန် Sharing Debugger သုံးပါ",
-    "lineHint": "✓ စာသားကူးပြီးပါပြီ — LINE Desktop app ဖွင့်၍ chat သို့မဟုတ် group ရွေးပါ၊ ကူးထည့်ပါ (Cmd/Ctrl + V)\n✓ ပုံများဒေါင်းပြီးပါပြီ — Downloads folder မှ LINE chat သို့ ဆွဲထည့်ပါ\n• LINE တွင် browser မှ group သို့ ကောင်းမွန်သော web-share API မရှိ — LINE Desktop app လိုသည်"
+    "lineHint": "✓ စာသားကူးပြီးပါပြီ — LINE Desktop app ဖွင့်၍ chat သို့မဟုတ် group ရွေးပါ၊ ကူးထည့်ပါ (Cmd/Ctrl + V)\n✓ ပုံများဒေါင်းပြီးပါပြီ — Downloads folder မှ LINE chat သို့ ဆွဲထည့်ပါ\n• LINE တွင် browser မှ group သို့ ကောင်းမွန်သော web-share API မရှိ — LINE Desktop app လိုသည်",
+    "lineMobileFilesHint": "✓ ဓာတ်ပုံများကို LINE သို့ ပို့ပြီးပါပြီ\n• ဒီဖုန်းက ဓာတ်ပုံနှင့် စာသားကို တစ်ပြိုင်နက် ပို့လို့မရပါ — စာသားကို ကူးယူပြီးပါပြီ၊ ဓာတ်ပုံပို့ထားသော chat ထဲတွင်ပင် ကပ်ပါ",
+    "lineMobileTextOnlyHint": "✓ စာသားပို့ပြီးပါပြီ\n✓ ဓာတ်ပုံအားလုံးကို ဤစက်ထဲတွင် သိမ်းထားပါပြီ — LINE chat ကိုဖွင့်ပြီး သိမ်းထားသောနေရာမှ ပူးတွဲပါ",
+    "downloadMobileHint": "✓ ပုံများ အသင့်ဖြစ်ပါပြီ — ဖွင့်လာသော မီနူးထဲတွင် \"Save Image\" (သို့) \"Add to Photos\" ကိုရွေးပြီး သင့်ဖုန်းရှိ ဓာတ်ပုံအယ်လဘမ်သို့ သိမ်းဆည်းပါ"
   },
   "investment": {
     "badge": "ရင်းနှီးမြုပ်နှံမှု",

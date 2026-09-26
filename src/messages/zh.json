@@ -180,6 +180,7 @@
     "noAccount": "还没有账号？",
     "hasAccount": "已有账号？",
     "loginError": "邮箱或密码不正确",
+    "pendingApprovalError": "您的账户正在等待管理员审核，请等待审核通过后再登录。",
     "registerSuccess": "注册成功",
     "signinSubtitle": "填写以下信息以登录",
     "agentRegisteredNotice": "Agent账号注册成功！请登录 — 您的账号将在Amber Real Estate团队审核后激活。",
@@ -328,6 +329,8 @@
     "headerHint": "准备发布到 Facebook / LINE",
     "copy": "复制文字",
     "copied": "已复制",
+    "copyLink": "复制链接",
+    "linkCopied": "已复制链接",
     "download": "下载所有图片",
     "shareFb": "分享到 Facebook",
     "shareLine": "分享到 LINE",
@@ -339,7 +342,10 @@
     "openLine": "获取 LINE Desktop",
     "close": "关闭",
     "fbHint": "✓ 文字已复制 — 粘贴 (Cmd/Ctrl + V) 到 \"说点什么...\" 输入框\n✓ 在弹窗中选择 \"分享到 > 群组\" 选择要发布的群组\n• 预览图片和标题来自网页；如未显示，Facebook 可能已缓存 — 可用 Sharing Debugger 刷新",
-    "lineHint": "✓ 文字已复制 — 打开 LINE 桌面应用，选择聊天或群组，然后粘贴 (Cmd/Ctrl + V)\n✓ 所有图片已下载 — 从下载文件夹拖入 LINE 聊天窗口\n• LINE 不支持从浏览器直接分享到群组 — 需要使用 LINE Desktop 应用"
+    "lineHint": "✓ 文字已复制 — 打开 LINE 桌面应用，选择聊天或群组，然后粘贴 (Cmd/Ctrl + V)\n✓ 所有图片已下载 — 从下载文件夹拖入 LINE 聊天窗口\n• LINE 不支持从浏览器直接分享到群组 — 需要使用 LINE Desktop 应用",
+    "lineMobileFilesHint": "✓ 照片已发送到 LINE\n• 此手机无法同时发送照片和文字——文字已复制，请粘贴到刚才发送照片的同一个聊天中",
+    "lineMobileTextOnlyHint": "✓ 文字已发送\n✓ 所有照片已保存到此设备——打开 LINE 聊天并从相册中添加照片",
+    "downloadMobileHint": "✓ 图片已准备好——在弹出的菜单中选择「保存图片」(Save Image / Add to Photos) 以保存到相册"
   },
   "investment": {
     "badge": "投资",
