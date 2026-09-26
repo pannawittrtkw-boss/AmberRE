@@ -15,6 +15,7 @@ import {
   Building2,
   Calendar,
   Edit3,
+  ExternalLink,
   Sparkles,
   ArrowRight,
   GraduationCap,
@@ -303,6 +304,15 @@ export default async function PropertyDetailPage({
   const isSold = property.isSold || property.status === "SOLD";
   const isRented = property.status === "RENTED";
 
+  // Same "days on market" coloring as FeaturedPropertyCard / admin lists.
+  const listedDate = new Date(property.listedAt || property.createdAt);
+  const daysPosted = Math.max(0, Math.floor((new Date().getTime() - listedDate.getTime()) / 86400000));
+  const daysBadgeCls =
+    daysPosted <= 7 ? "bg-emerald-500"
+    : daysPosted <= 30 ? "bg-gray-400"
+    : daysPosted <= 90 ? "bg-amber-500"
+    : "bg-red-500";
+
   const hasInvestmentData = !!property.invPurchasePrice;
   const invDefaults = hasInvestmentData ? {
     purchasePrice: Number(property.invPurchasePrice),
@@ -391,7 +401,20 @@ export default async function PropertyDetailPage({
                 <ChevronLeft className="w-4 h-4" />
                 {messages.common.back}
               </Link>
-              <AdminEditButton propertyId={property.id} locale={locale} variant="top" />
+              <div className="inline-flex items-center gap-2">
+                {viewerRole === "ADMIN" && property.sourceLink && (
+                  <a
+                    href={property.sourceLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md text-white rounded-lg font-medium hover:bg-white/20 transition-colors text-sm border border-white/20"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    เปิดลิงก์
+                  </a>
+                )}
+                <AdminEditButton propertyId={property.id} locale={locale} variant="top" />
+              </div>
             </div>
           </div>
 
@@ -425,6 +448,9 @@ export default async function PropertyDetailPage({
                     {locale === "th" ? "ที่ดิน" : "Land"}
                   </span>
                 )}
+                <span className={`${daysBadgeCls} text-white text-[11px] font-semibold px-3 py-1 rounded-full`}>
+                  {locale === "th" ? `โพสต์มา ${daysPosted} วัน` : `Posted ${daysPosted}d ago`}
+                </span>
               </div>
 
               {/* Project link badge */}
