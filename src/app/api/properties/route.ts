@@ -66,6 +66,7 @@ export async function GET(req: NextRequest) {
           nearbyStations: true,
           status: true,
           listingType: true,
+          propertyType: true,
           priority: true,
           category: true,
           price: true,

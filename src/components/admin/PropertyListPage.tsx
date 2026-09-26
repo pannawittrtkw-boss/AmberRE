@@ -31,7 +31,7 @@ import {
 import StationMapSelector, { LINES } from "@/components/admin/StationMapSelector";
 import BookingReceiptModal from "@/app/[locale]/admin/properties/BookingReceiptModal";
 import ExclusiveModal from "@/app/[locale]/admin/properties/ExclusiveModal";
-import { getPriceRanges, parsePriceRangeValue } from "@/lib/property-constants";
+import { getPriceRanges, parsePriceRangeValue, PROPERTY_TYPES, PROPERTY_TYPE_LABEL_TH, PROPERTY_TYPE_LABEL_EN } from "@/lib/property-constants";
 
 const FURNITURE_ITEMS: Record<string, { en: string; th: string }> = {
   bed: { en: "Bed", th: "เตียง" },
@@ -153,6 +153,7 @@ export default function PropertyListPage({
   const [showFilters, setShowFilters] = useState(false);
   const [filterStatus, setFilterStatus] = useState("");
   const [filterListing, setFilterListing] = useState<"RENT" | "SALE">("RENT");
+  const [filterPropertyType, setFilterPropertyType] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [filterPriceRange, setFilterPriceRange] = useState("");
@@ -298,6 +299,8 @@ export default function PropertyListPage({
       p.listingType !== "RENT_AND_SALE"
     )
       return false;
+    // Property type
+    if (filterPropertyType && p.propertyType !== filterPropertyType) return false;
     // Priority
     if (filterPriority && p.priority !== filterPriority) return false;
     // Category
@@ -343,10 +346,10 @@ export default function PropertyListPage({
     return true;
   });
 
-  const hasActiveFilters = filterStatus || filterListing !== "RENT" || filterPriority || filterCategory || filterPriceRange || filterStations.length > 0 || filterExclusive || filterPostDateFrom || filterPostDateTo || filterBedrooms || filterMinSize || filterReadyToMoveIn || filterPetFriendly || filterSmokingAllowed;
+  const hasActiveFilters = filterStatus || filterListing !== "RENT" || filterPropertyType || filterPriority || filterCategory || filterPriceRange || filterStations.length > 0 || filterExclusive || filterPostDateFrom || filterPostDateTo || filterBedrooms || filterMinSize || filterReadyToMoveIn || filterPetFriendly || filterSmokingAllowed;
 
   const clearFilters = () => {
-    setSearchText(""); setFilterStatus(""); setFilterListing("RENT");
+    setSearchText(""); setFilterStatus(""); setFilterListing("RENT"); setFilterPropertyType("");
     setFilterPriority(""); setFilterCategory("");
     setFilterPriceRange(""); setFilterStations([]);
     setFilterExclusive(false); setFilterPostDateFrom(""); setFilterPostDateTo("");
@@ -401,7 +404,7 @@ export default function PropertyListPage({
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
   }, [
-    searchText, filterStatus, filterListing, filterPriority, filterCategory,
+    searchText, filterStatus, filterListing, filterPropertyType, filterPriority, filterCategory,
     filterPriceRange, filterStationsKey, filterExclusive,
     filterPostDateFrom, filterPostDateTo, selectedMonth, selectedStatusTab,
     filterBedrooms, filterMinSize, filterReadyToMoveIn, filterPetFriendly, filterSmokingAllowed,
@@ -578,6 +581,17 @@ export default function PropertyListPage({
                 >
                   <option value="RENT">{locale === "th" ? "เช่า" : "Rent"}</option>
                   <option value="SALE">{locale === "th" ? "ขาย" : "Sale"}</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{locale === "th" ? "ประเภททรัพย์" : "Property Type"}</label>
+                <select value={filterPropertyType} onChange={(e) => setFilterPropertyType(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm bg-white">
+                  <option value="">{locale === "th" ? "ทั้งหมด" : "All"}</option>
+                  {PROPERTY_TYPES.map((pt) => (
+                    <option key={pt} value={pt}>
+                      {locale === "th" ? PROPERTY_TYPE_LABEL_TH[pt] : PROPERTY_TYPE_LABEL_EN[pt]}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
