@@ -209,32 +209,34 @@ function ScanlinkAcceptForm() {
           <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2">
             ระบุสถานะห้อง
           </div>
-          {([
-            { key: "furnished", label: "🛋 Fully Furnished", value: furnished, set: setFurnished },
-            { key: "electric", label: "⚡ Fully Electric", value: electric, set: setElectric },
-            { key: "ready", label: "✅ Ready to move in", value: ready, set: setReady },
-            { key: "petFriendly", label: "🐾 Pet Friendly", value: petFriendly, set: setPetFriendly },
-            { key: "smokingAllowed", label: "🚬 Smoking Allowed", value: smokingAllowed, set: setSmokingAllowed },
-          ] as const).map((opt) => (
-            <div
-              key={opt.key}
-              onClick={() => opt.set(!opt.value)}
-              className="flex items-center justify-between py-4 border-b border-gray-100 last:border-0 cursor-pointer select-none"
-            >
-              <span className="text-base font-medium text-gray-800">{opt.label}</span>
+          <div className="grid grid-cols-2 gap-x-4">
+            {([
+              { key: "furnished", label: "🛋 Fully Furnished", value: furnished, set: setFurnished },
+              { key: "electric", label: "⚡ Fully Electric", value: electric, set: setElectric },
+              { key: "ready", label: "✅ Ready to move in", value: ready, set: setReady },
+              { key: "petFriendly", label: "🐾 Pet Friendly", value: petFriendly, set: setPetFriendly },
+              { key: "smokingAllowed", label: "🚬 Smoking Allowed", value: smokingAllowed, set: setSmokingAllowed },
+            ] as const).map((opt) => (
               <div
-                className={`w-14 h-[30px] rounded-full relative border-2 transition-colors ${
-                  opt.value ? "bg-green-600 border-green-600" : "bg-gray-200 border-gray-300"
-                }`}
+                key={opt.key}
+                onClick={() => opt.set(!opt.value)}
+                className="flex items-center justify-between gap-2 py-4 border-b border-gray-100 cursor-pointer select-none"
               >
+                <span className="text-sm font-medium text-gray-800 leading-tight">{opt.label}</span>
                 <div
-                  className={`absolute top-0.5 w-[22px] h-[22px] rounded-full bg-white shadow transition-all ${
-                    opt.value ? "left-7" : "left-0.5"
+                  className={`w-11 h-6 rounded-full relative border-2 shrink-0 transition-colors ${
+                    opt.value ? "bg-green-600 border-green-600" : "bg-gray-200 border-gray-300"
                   }`}
-                />
+                >
+                  <div
+                    className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${
+                      opt.value ? "left-6" : "left-1"
+                    }`}
+                  />
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         {/* Available date — hidden once "ready to move in" is on */}
