@@ -326,6 +326,8 @@
     "headerHint": "Share",
     "copy": "Copy text",
     "copied": "Copied",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied",
     "download": "Download all images",
     "shareFb": "Share to Facebook",
     "shareLine": "Share to LINE",

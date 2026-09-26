@@ -326,6 +326,8 @@
     "headerHint": "ข้อความพร้อมโพสต์ Facebook / LINE",
     "copy": "คัดลอกข้อความ",
     "copied": "คัดลอกแล้ว",
+    "copyLink": "คัดลอกลิงก์",
+    "linkCopied": "คัดลอกลิงก์แล้ว",
     "download": "โหลดรูปทั้งหมด",
     "shareFb": "แชร์ Facebook",
     "shareLine": "แชร์ LINE",

@@ -10,6 +10,7 @@ import {
   ExternalLink,
   MessageCircle,
   Download,
+  Link2,
 } from "lucide-react";
 
 interface Props {
@@ -79,6 +80,7 @@ export default function MarketingDescription({
 }: Props) {
   const [messages, setMessages] = useState<any>(null);
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [shareStatus, setShareStatus] = useState<ShareStatus>("idle");
   const [activeTarget, setActiveTarget] = useState<ShareTarget | null>(null);
   const [shareProgress, setShareProgress] = useState({ done: 0, total: 0 });
@@ -95,6 +97,8 @@ export default function MarketingDescription({
     headerHint: "Share",
     copy: "Copy text",
     copied: "Copied",
+    copyLink: "Copy link",
+    linkCopied: "Link copied",
     download: "Download all images",
     shareFb: "Share to Facebook",
     shareLine: "Share to LINE",
@@ -127,6 +131,16 @@ export default function MarketingDescription({
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       }
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(propertyUrl);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch {
+      /* clipboard unavailable — silently ignore, same as other copy paths */
     }
   };
 
@@ -372,6 +386,23 @@ export default function MarketingDescription({
               <>
                 <Copy className="w-3.5 h-3.5" />
                 {T.copy}
+              </>
+            )}
+          </button>
+          <button
+            onClick={handleCopyLink}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-stone-200 hover:bg-stone-300 text-stone-700 transition-colors disabled:opacity-60"
+            disabled={linkCopied}
+          >
+            {linkCopied ? (
+              <>
+                <Check className="w-3.5 h-3.5" />
+                {T.linkCopied}
+              </>
+            ) : (
+              <>
+                <Link2 className="w-3.5 h-3.5" />
+                {T.copyLink}
               </>
             )}
           </button>
