@@ -71,6 +71,11 @@ export async function GET(req: NextRequest) {
           price: true,
           isExclusive: true,
           addedAt: true,
+          bedrooms: true,
+          sizeSqm: true,
+          petFriendly: true,
+          smokingAllowed: true,
+          availableDate: true,
         },
         orderBy: { createdAt: "desc" },
       });

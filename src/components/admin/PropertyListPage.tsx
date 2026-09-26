@@ -161,6 +161,11 @@ export default function PropertyListPage({
   const [filterExclusive, setFilterExclusive] = useState(false);
   const [filterPostDateFrom, setFilterPostDateFrom] = useState("");
   const [filterPostDateTo, setFilterPostDateTo] = useState("");
+  const [filterBedrooms, setFilterBedrooms] = useState("");
+  const [filterMinSize, setFilterMinSize] = useState("");
+  const [filterReadyToMoveIn, setFilterReadyToMoveIn] = useState(false);
+  const [filterPetFriendly, setFilterPetFriendly] = useState(false);
+  const [filterSmokingAllowed, setFilterSmokingAllowed] = useState(false);
 
   useEffect(() => {
     params.then(({ locale: l }) => {
@@ -315,16 +320,35 @@ export default function PropertyListPage({
       if (String(p.addedAt).slice(0, 10) > filterPostDateTo) return false;
     }
     if (filterPostDateFrom && !p.addedAt) return false;
+    // Bedrooms — "4" means "4+", same convention used elsewhere in the app
+    if (filterBedrooms) {
+      const wanted = parseInt(filterBedrooms);
+      const bedroomsMatch = wanted >= 4 ? (p.bedrooms ?? 0) >= 4 : p.bedrooms === wanted;
+      if (!bedroomsMatch) return false;
+    }
+    // Minimum room size
+    if (filterMinSize) {
+      const size = p.sizeSqm ? Number(p.sizeSqm) : null;
+      if (size === null || size < Number(filterMinSize)) return false;
+    }
+    // Ready to move in — no availableDate means it's available now
+    if (filterReadyToMoveIn) {
+      if (p.availableDate && new Date(p.availableDate).getTime() > now) return false;
+    }
+    if (filterPetFriendly && p.petFriendly !== "ACCEPT") return false;
+    if (filterSmokingAllowed && p.smokingAllowed !== "ACCEPT") return false;
     return true;
   });
 
-  const hasActiveFilters = filterStatus || filterListing !== "RENT" || filterPriority || filterCategory || filterPriceRange || filterStations.length > 0 || filterExclusive || filterPostDateFrom || filterPostDateTo;
+  const hasActiveFilters = filterStatus || filterListing !== "RENT" || filterPriority || filterCategory || filterPriceRange || filterStations.length > 0 || filterExclusive || filterPostDateFrom || filterPostDateTo || filterBedrooms || filterMinSize || filterReadyToMoveIn || filterPetFriendly || filterSmokingAllowed;
 
   const clearFilters = () => {
     setSearchText(""); setFilterStatus(""); setFilterListing("RENT");
     setFilterPriority(""); setFilterCategory("");
     setFilterPriceRange(""); setFilterStations([]);
     setFilterExclusive(false); setFilterPostDateFrom(""); setFilterPostDateTo("");
+    setFilterBedrooms(""); setFilterMinSize("");
+    setFilterReadyToMoveIn(false); setFilterPetFriendly(false); setFilterSmokingAllowed(false);
   };
 
   // Generate month tabs from properties
@@ -377,6 +401,7 @@ export default function PropertyListPage({
     searchText, filterStatus, filterListing, filterPriority, filterCategory,
     filterPriceRange, filterStationsKey, filterExclusive,
     filterPostDateFrom, filterPostDateTo, selectedMonth, selectedStatusTab,
+    filterBedrooms, filterMinSize, filterReadyToMoveIn, filterPetFriendly, filterSmokingAllowed,
   ]);
 
   const pageItemsById = new Map(pageItems.map((p: any) => [p.id, p]));
@@ -601,6 +626,53 @@ export default function PropertyListPage({
                 <label className="block text-xs font-medium text-gray-500 mb-1">{locale === "th" ? "Post date ถึง" : "Post date to"}</label>
                 <input type="date" value={filterPostDateTo} onChange={(e) => setFilterPostDateTo(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
               </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{locale === "th" ? "จำนวนห้องนอน" : "Bedrooms"}</label>
+                <select value={filterBedrooms} onChange={(e) => setFilterBedrooms(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm bg-white">
+                  <option value="">{locale === "th" ? "ทั้งหมด" : "All"}</option>
+                  <option value="1">1 {locale === "th" ? "ห้อง" : "bed"}</option>
+                  <option value="2">2 {locale === "th" ? "ห้อง" : "bed"}</option>
+                  <option value="3">3 {locale === "th" ? "ห้อง" : "bed"}</option>
+                  <option value="4">4+ {locale === "th" ? "ห้อง" : "bed"}</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{locale === "th" ? "ขนาดห้องขั้นต่ำ (ตร.ม.)" : "Min. Room Size (sqm)"}</label>
+                <input
+                  type="number"
+                  value={filterMinSize}
+                  onChange={(e) => setFilterMinSize(e.target.value)}
+                  placeholder="30"
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <label className="flex items-center justify-between gap-2 border rounded-lg px-3 py-2 cursor-pointer select-none">
+                <span className="text-sm text-gray-700">✅ {locale === "th" ? "พร้อมเข้าอยู่ทันที" : "Ready to move in"}</span>
+                <div
+                  onClick={() => setFilterReadyToMoveIn(!filterReadyToMoveIn)}
+                  className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${filterReadyToMoveIn ? "bg-emerald-500" : "bg-gray-300"}`}
+                >
+                  <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${filterReadyToMoveIn ? "translate-x-5" : "translate-x-0.5"}`} />
+                </div>
+              </label>
+              <label className="flex items-center justify-between gap-2 border rounded-lg px-3 py-2 cursor-pointer select-none">
+                <span className="text-sm text-gray-700">🐾 {locale === "th" ? "เลี้ยงสัตว์ได้" : "Pet friendly"}</span>
+                <div
+                  onClick={() => setFilterPetFriendly(!filterPetFriendly)}
+                  className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${filterPetFriendly ? "bg-amber-500" : "bg-gray-300"}`}
+                >
+                  <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${filterPetFriendly ? "translate-x-5" : "translate-x-0.5"}`} />
+                </div>
+              </label>
+              <label className="flex items-center justify-between gap-2 border rounded-lg px-3 py-2 cursor-pointer select-none">
+                <span className="text-sm text-gray-700">🚬 {locale === "th" ? "สูบบุหรี่ได้" : "Smoking allowed"}</span>
+                <div
+                  onClick={() => setFilterSmokingAllowed(!filterSmokingAllowed)}
+                  className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${filterSmokingAllowed ? "bg-slate-600" : "bg-gray-300"}`}
+                >
+                  <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${filterSmokingAllowed ? "translate-x-5" : "translate-x-0.5"}`} />
+                </div>
+              </label>
               <div className="flex items-end gap-2">
                 <label className="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 hover:bg-amber-100 transition-colors">
                   <input
