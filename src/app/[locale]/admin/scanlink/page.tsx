@@ -11,6 +11,7 @@ import {
   YAxis,
   Tooltip,
   Legend,
+  LabelList,
 } from "recharts";
 import { LINES } from "@/components/admin/StationMapSelector";
 
@@ -46,13 +47,16 @@ interface StatItem { status: string; _count: { status: number } }
 
 interface DashboardBucket { key: string; total: number; reviewed: number; pending: number }
 interface DashboardData { daily: DashboardBucket[]; monthly: DashboardBucket[]; yearly: DashboardBucket[] }
-type DashboardView = "daily" | "monthly" | "yearly";
+type DashboardView = "daily" | "weekly" | "monthly" | "yearly";
+// "weekly" reuses the same daily buckets from the API, just sliced to the
+// last 7 instead of 1 (daily) or 36 (monthly) — see bucketKey below.
+type BucketSource = "daily" | "monthly" | "yearly";
 
 const TH_MONTHS_SHORT = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
 
 // dateKey is "YYYY-MM-DD" (daily), "YYYY-MM" (monthly), or "YYYY" (yearly) —
 // format each into a short Thai label for the chart's x-axis.
-function fmtBucketLabel(view: DashboardView, key: string): string {
+function fmtBucketLabel(view: BucketSource, key: string): string {
   if (view === "daily") {
     const [, m, d] = key.split("-").map(Number);
     return `${d} ${TH_MONTHS_SHORT[m - 1]}`;
@@ -176,11 +180,14 @@ export default function ScanlinkPage() {
   useEffect(() => { load(filter, page); }, [load, filter, page]);
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
 
-  // Daily view can span 100+ distinct days — cap to the most recent 30 so
-  // the chart stays readable; monthly/yearly are naturally few buckets.
-  const chartData = (dashboard?.[dashboardView] ?? [])
-    .slice(dashboardView === "daily" ? -30 : -36)
-    .map((b) => ({ ...b, label: fmtBucketLabel(dashboardView, b.key) }));
+  // "Daily" now means just today's single bucket; "weekly" reuses the same
+  // per-day data from the API but shows the last 7 days as a trend.
+  const bucketKey: BucketSource = dashboardView === "weekly" ? "daily" : dashboardView;
+  const sliceCount =
+    dashboardView === "daily" ? -1 : dashboardView === "weekly" ? -7 : dashboardView === "monthly" ? -36 : undefined;
+  const chartData = (dashboard?.[bucketKey] ?? [])
+    .slice(sliceCount)
+    .map((b) => ({ ...b, label: fmtBucketLabel(bucketKey, b.key) }));
 
   const changeFilter = (key: string) => { setFilter(key); setPage(1); setSelected(new Set()); };
 
@@ -273,6 +280,7 @@ export default function ScanlinkPage() {
           <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
             {([
               { key: "daily",   label: "รายวัน" },
+              { key: "weekly",  label: "รายสัปดาห์" },
               { key: "monthly", label: "รายเดือน" },
               { key: "yearly",  label: "รายปี" },
             ] as { key: DashboardView; label: string }[]).map((v) => (
@@ -302,9 +310,15 @@ export default function ScanlinkPage() {
                 <YAxis tick={{ fontSize: 11, fill: "#64748b" }} axisLine={{ stroke: "#e2e8f0" }} allowDecimals={false} />
                 <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="total" name="ส่งเข้ามา" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="reviewed" name="ตรวจสอบแล้ว" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="pending" name="ค้าง/รอตรวจสอบ" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="total" name="ส่งเข้ามา" fill="#6366f1" radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey="total" position="top" style={{ fontSize: 11, fill: "#6366f1", fontWeight: 600 }} />
+                </Bar>
+                <Bar dataKey="reviewed" name="ตรวจสอบแล้ว" fill="#10b981" radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey="reviewed" position="top" style={{ fontSize: 11, fill: "#10b981", fontWeight: 600 }} />
+                </Bar>
+                <Bar dataKey="pending" name="ค้าง/รอตรวจสอบ" fill="#f59e0b" radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey="pending" position="top" style={{ fontSize: 11, fill: "#f59e0b", fontWeight: 600 }} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
