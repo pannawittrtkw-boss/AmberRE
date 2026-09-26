@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { pushMessage, STATUS_LABEL } from "@/app/api/line/url-checker/route";
+import { getStationFullName } from "@/lib/stations";
 
 export async function POST(req: NextRequest) {
   try {
@@ -79,7 +80,9 @@ export async function POST(req: NextRequest) {
       bedrooms !== undefined && bedrooms !== null && bedrooms !== "" ? `Bedrooms : ${bedrooms}` : null,
       price != null ? `Rent Price : ${price}` : null,
       salePrice != null ? `Sale Price : ${salePrice}` : null,
-      Array.isArray(stationIds) && stationIds.length ? `Stations : ${stationIds.join(", ")}` : null,
+      Array.isArray(stationIds) && stationIds.length
+        ? `Stations : ${stationIds.map((code: string) => getStationFullName(code)).join(", ")}`
+        : null,
     ].filter(Boolean).join("\n");
 
     const fmtDate = (s: string) => { const d = new Date(s); return `${d.getUTCDate()}/${d.getUTCMonth()+1}/${String(d.getUTCFullYear()).slice(-2)}`; };
