@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Loader2, Plus, Pencil, Trash2, X, Search, Phone, MessageSquare,
   Facebook, MapPin, Train, Wallet, BedDouble, ChevronDown, ChevronUp,
-  Building2, CheckCircle2, User, Maximize,
+  Building2, CheckCircle2, User, Maximize, Calendar,
 } from "lucide-react";
 import ThaiAddressFields from "@/components/admin/ThaiAddressFields";
 import StationMapSelector, { LINES } from "@/components/admin/StationMapSelector";
@@ -52,6 +52,7 @@ type MatchedProperty = {
   primaryImage: string | null;
   createdAt: string;
   listedAt: string | null;
+  availableDate: string | null;
   stations: { code: string; nameTh: string; nameEn: string }[];
   project: { id: number; nameTh: string; province: string | null; district: string | null } | null;
   score: number;
@@ -745,6 +746,12 @@ function MatchCard({ prop, locale }: { prop: MatchedProperty; locale: string }) 
           {prop.stations.length > 0 && (
             <span className="flex items-center gap-0.5"><Train className="w-3 h-3" />{prop.stations[0].nameTh}</span>
           )}
+        </div>
+        <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+          <Calendar className="w-3 h-3" />
+          {!prop.availableDate || new Date(prop.availableDate).getTime() <= now
+            ? <span className="text-emerald-600 font-medium">พร้อมเข้าอยู่ทันที</span>
+            : <span>เข้าอยู่ได้ {new Date(prop.availableDate).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" })}</span>}
         </div>
         <div className="flex flex-wrap gap-1 mt-2">
           {prop.reasons.map((r) => (

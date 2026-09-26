@@ -265,6 +265,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       primaryImage: property.images[0]?.imageUrl ?? null,
       createdAt: property.createdAt,
       listedAt: property.listedAt,
+      availableDate: property.availableDate,
       stations: parseStationCodes(property.nearbyStations).map((code) => ({
         code,
         nameTh: getStationThaiName(code),
