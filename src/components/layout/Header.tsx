@@ -45,11 +45,11 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
     { href: `/${locale}/properties`, label: t.properties },
     { href: `/${locale}/projects`, label: t.projects || "Projects" },
     { href: `/${locale}/map-search`, label: t.mapSearch },
+    { href: `/${locale}/co-agent`, label: t.coAgent },
     { href: `/${locale}/articles`, label: t.articles },
     { href: `/${locale}/portfolio`, label: t.portfolio },
-    { href: `/${locale}/co-agent`, label: t.coAgent },
+    { href: `/${locale}/satisfaction`, label: t.reviews || "Reviews" },
     { href: `/${locale}/contact`, label: t.contact },
-    { href: `/${locale}/satisfaction`, label: t.satisfactionSurvey || "Satisfaction Survey" },
   ];
 
   return (
@@ -69,12 +69,12 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden lg:flex items-center gap-6">
+          <nav className="hidden lg:flex items-center gap-4 xl:gap-6">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-sm font-medium transition-colors hover:text-[#C8A951] ${
+                className={`whitespace-nowrap text-sm font-medium transition-colors hover:text-[#C8A951] ${
                   pathname === link.href ? "text-[#C8A951] font-semibold" : "text-gray-700"
                 }`}
               >

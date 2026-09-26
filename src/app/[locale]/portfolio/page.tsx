@@ -86,9 +86,6 @@ export default async function PortfolioPage({
 
             {/* Stats / subtitle */}
             <p className="mt-4 inline-flex items-center gap-1.5 text-xs sm:text-sm text-[#E8C97A] uppercase tracking-[0.2em] font-semibold">
-              <span className="font-bold text-white">
-                {total.toLocaleString()}
-              </span>
               {tp.successfulDeals}
               <Key className="w-3.5 h-3.5 text-[#E8C97A]" />
               <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400" />
