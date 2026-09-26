@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import {
   Loader2, Plus, Pencil, Trash2, KeyRound, X, Copy, Check,
-  CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, Phone, MessageSquare,
+  CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, Phone, MessageSquare, Search,
 } from "lucide-react";
 import { getIntlLocale } from "@/lib/utils";
 
@@ -40,6 +40,10 @@ export default function AdminUsersPage({ params }: { params: Promise<{ locale: s
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPending, setShowPending] = useState(true);
+
+  const [searchText, setSearchText] = useState("");
+  const [filterAgentStatus, setFilterAgentStatus] = useState("");
+  const [filterActive, setFilterActive] = useState("");
 
   const [showAdd, setShowAdd] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -125,6 +129,21 @@ export default function AdminUsersPage({ params }: { params: Promise<{ locale: s
 
   const myId = Number((session?.user as any)?.id);
   const pendingAgents = users.filter((u) => u.coAgentApplication?.status === "PENDING");
+
+  const filteredUsers = users.filter((u) => {
+    if (searchText) {
+      const q = searchText.toLowerCase();
+      const name = `${u.firstName} ${u.lastName}`.toLowerCase();
+      if (!name.includes(q) && !u.email.toLowerCase().includes(q)) return false;
+    }
+    if (filterAgentStatus) {
+      const appStatus = u.coAgentApplication?.status || "NONE";
+      if (appStatus !== filterAgentStatus) return false;
+    }
+    if (filterActive === "active" && !u.isActive) return false;
+    if (filterActive === "disabled" && u.isActive) return false;
+    return true;
+  });
 
   return (
     <div className="space-y-6">
@@ -222,6 +241,38 @@ export default function AdminUsersPage({ params }: { params: Promise<{ locale: s
           </button>
         </div>
 
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              placeholder={locale === "th" ? "ค้นหาชื่อหรืออีเมล..." : "Search name or email..."}
+              className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm"
+            />
+          </div>
+          <select
+            value={filterAgentStatus}
+            onChange={(e) => setFilterAgentStatus(e.target.value)}
+            className="border rounded-lg px-3 py-2 text-sm bg-white"
+          >
+            <option value="">{locale === "th" ? "Agent Status: ทั้งหมด" : "Agent Status: All"}</option>
+            <option value="PENDING">PENDING</option>
+            <option value="APPROVED">APPROVED</option>
+            <option value="REJECTED">REJECTED</option>
+            <option value="NONE">{locale === "th" ? "ไม่มีใบสมัคร" : "No application"}</option>
+          </select>
+          <select
+            value={filterActive}
+            onChange={(e) => setFilterActive(e.target.value)}
+            className="border rounded-lg px-3 py-2 text-sm bg-white"
+          >
+            <option value="">{locale === "th" ? "สถานะ: ทั้งหมด" : "Status: All"}</option>
+            <option value="active">{locale === "th" ? "เปิดใช้" : "Active"}</option>
+            <option value="disabled">{locale === "th" ? "ปิด" : "Disabled"}</option>
+          </select>
+        </div>
+
         <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] text-sm">
@@ -239,7 +290,14 @@ export default function AdminUsersPage({ params }: { params: Promise<{ locale: s
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => {
+                {filteredUsers.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="py-8 text-center text-gray-400 text-sm">
+                      {locale === "th" ? "ไม่พบผู้ใช้ที่ตรงกับตัวกรอง" : "No users match the filters"}
+                    </td>
+                  </tr>
+                )}
+                {filteredUsers.map((u) => {
                   const app = u.coAgentApplication;
                   return (
                     <tr key={u.id} className="border-t hover:bg-gray-50">
