@@ -49,7 +49,9 @@ export default async function SatisfactionPage({ params }: { params: Promise<{ l
           {surveys.filter((s) => s.feedback).map((survey) => (
             <div key={survey.id} className="bg-white rounded-xl shadow-sm border p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-medium">{survey.user.firstName} {survey.user.lastName}</span>
+                <span className="font-medium">
+                  {survey.name || (survey.user ? `${survey.user.firstName} ${survey.user.lastName}` : ts.anonymousLabel)}
+                </span>
                 <div className="flex gap-0.5">
                   {[1, 2, 3, 4, 5].map((s) => (
                     <Star key={s} className={`w-4 h-4 ${s <= survey.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />

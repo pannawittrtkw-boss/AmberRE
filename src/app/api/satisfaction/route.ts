@@ -21,16 +21,14 @@ export async function GET() {
   }
 }
 
-// Any logged-in user can submit a satisfaction rating — new submission each
-// time, no restriction to once (matches the original Survey model's design).
+// Open to anyone, logged in or not — new submission each time, no
+// restriction to once (matches the original Survey model's design). A
+// logged-in submitter is still linked via userId for admin's reference,
+// but the display name is whatever they typed (or blank for anonymous).
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { rating, feedback } = await req.json();
+    const { rating, feedback, name, anonymous } = await req.json();
 
     if (!rating || rating < 1 || rating > 5) {
       return NextResponse.json({ success: false, error: "Invalid data" }, { status: 400 });
@@ -38,9 +36,10 @@ export async function POST(req: NextRequest) {
 
     const survey = await prisma.survey.create({
       data: {
-        userId: Number((session.user as any).id),
+        userId: session?.user ? Number((session.user as any).id) : null,
         rating,
         feedback: feedback || null,
+        name: anonymous ? null : (typeof name === "string" && name.trim() ? name.trim().slice(0, 200) : null),
       },
     });
 

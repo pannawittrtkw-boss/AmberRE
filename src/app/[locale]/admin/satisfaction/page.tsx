@@ -7,9 +7,10 @@ type SurveyEntry = {
   id: number;
   rating: number;
   feedback: string | null;
+  name: string | null;
   isApproved: boolean;
   createdAt: string;
-  user: { firstName: string; lastName: string; email: string };
+  user: { firstName: string; lastName: string; email: string } | null;
 };
 
 export default function AdminSatisfactionPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -98,7 +99,9 @@ export default function AdminSatisfactionPage({ params }: { params: Promise<{ lo
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <User className="w-4 h-4 text-gray-400" />
-                    <span className="font-medium">{survey.user.firstName} {survey.user.lastName}</span>
+                    <span className="font-medium">
+                      {survey.name || (survey.user ? `${survey.user.firstName} ${survey.user.lastName}` : (isTh ? "ไม่ระบุชื่อ" : "Anonymous"))}
+                    </span>
                     <div className="flex gap-0.5">
                       {[1, 2, 3, 4, 5].map((s) => (
                         <Star key={s} className={`w-4 h-4 ${s <= survey.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />

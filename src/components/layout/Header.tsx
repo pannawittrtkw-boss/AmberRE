@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Menu, X, Globe, User, LogOut, ChevronDown, Heart, Layers, KeyRound, Smile } from "lucide-react";
+import { Menu, X, Globe, User, LogOut, ChevronDown, Heart, Layers, KeyRound } from "lucide-react";
 import { useFavorites } from "@/lib/favorites";
 import { useCompare } from "@/lib/compare";
 
@@ -49,6 +49,7 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
     { href: `/${locale}/portfolio`, label: t.portfolio },
     { href: `/${locale}/co-agent`, label: t.coAgent },
     { href: `/${locale}/contact`, label: t.contact },
+    { href: `/${locale}/satisfaction`, label: t.satisfactionSurvey || "Satisfaction Survey" },
   ];
 
   return (
@@ -185,14 +186,6 @@ export default function Header({ locale, messages, logoUrl }: HeaderProps) {
                     >
                       <KeyRound className="w-3.5 h-3.5" />
                       {messages?.common?.changePassword || "Change Password"}
-                    </Link>
-                    <Link
-                      href={`/${locale}/satisfaction`}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-yellow-50 hover:text-[#C8A951]"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <Smile className="w-3.5 h-3.5" />
-                      {t.satisfactionSurvey || "Satisfaction Survey"}
                     </Link>
                     <button
                       onClick={() => signOut()}

@@ -590,11 +590,13 @@ model Survey {
   id         Int      @id @default(autoincrement())
   rating     Int      @db.SmallInt
   feedback   String?  @db.Text
+  name       String?  @db.VarChar(200) // guest-entered display name; null = anonymous or use user's account name
   isApproved Boolean  @default(false)
   createdAt  DateTime @default(now())
 
-  userId Int
-  user   User @relation(fields: [userId], references: [id])
+  // Nullable — the survey is open to logged-out visitors too, not just accounts.
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id])
 
   @@index([isApproved])
 }
