@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import {
   Loader2, Plus, Pencil, Trash2, X, Search, Phone, MessageSquare,
   Facebook, MapPin, Train, Wallet, BedDouble, ChevronDown, ChevronUp,
@@ -117,6 +118,8 @@ function ScoreBadge({ score }: { score: number }) {
 }
 
 export default function CustomerLeadsPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { data: session } = useSession();
+  const isAdmin = (session?.user as any)?.role === "ADMIN";
   const [locale, setLocale] = useState("th");
   const [leads, setLeads] = useState<CustomerLead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -149,6 +152,7 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
     noCustomersYet: isTh ? "ยังไม่มีข้อมูลลูกค้า กด \"เพิ่มลูกค้า\" เพื่อเริ่มต้น" : "No customers yet — click \"Add Customer\" to get started",
     active: isTh ? "ใช้งาน" : "Active",
     closed: isTh ? "ปิด" : "Closed",
+    createdByLabel: isTh ? "โดย" : "by",
     rent: isTh ? "เช่า" : "Rent",
     buy: isTh ? "ซื้อ" : "Buy",
     bedroomsSuffix: isTh ? "ห้องนอน" : "bed",
@@ -368,6 +372,11 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                       }`}>
                         {lead.status === "ACTIVE" ? T.active : T.closed}
                       </span>
+                      {isAdmin && lead.createdBy && (
+                        <span className="text-xs text-gray-400">
+                          {T.createdByLabel} {lead.createdBy.firstName} {lead.createdBy.lastName}
+                        </span>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-3 mt-1.5 text-xs text-gray-500">
                       {lead.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{lead.phone}</span>}
