@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getStationThaiName, getStationEnName } from "@/lib/stations";
 
-// Scoring weights (total possible = 100)
+// Scoring weights (total possible = 120)
 const SCORE = {
   PROJECT_NAME: 25,
   BUDGET: 25,
@@ -12,6 +12,9 @@ const SCORE = {
   PROVINCE: 10,
   DISTRICT: 10,
   BTS_STATION: 10,
+  SIZE: 10,
+  PET_FRIENDLY: 5,
+  SMOKING_ALLOWED: 5,
 };
 
 function normalizeText(s: string) {
@@ -146,7 +149,41 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       // No district data on property → don't disqualify, give 0 pts
     }
 
-    // 6. BTS/MRT station match (10pts)
+    // 6. Minimum room size — disqualify only when property HAS size data
+    // that falls short; unknown size doesn't disqualify.
+    if (lead.minSizeSqm) {
+      const size = prop.sizeSqm ? Number(prop.sizeSqm) : null;
+      if (size !== null) {
+        if (size >= Number(lead.minSizeSqm)) {
+          score += SCORE.SIZE;
+          reasons.push("ขนาดห้องตรงตามที่ต้องการ");
+        } else {
+          return { property: prop, score: -1, reasons: [] };
+        }
+      }
+    }
+
+    // 7. Pet friendly requirement — hard requirement when set
+    if (lead.wantPetFriendly) {
+      if (prop.petFriendly === "ACCEPT") {
+        score += SCORE.PET_FRIENDLY;
+        reasons.push("รับเลี้ยงสัตว์");
+      } else {
+        return { property: prop, score: -1, reasons: [] };
+      }
+    }
+
+    // 8. Smoking allowed requirement — hard requirement when set
+    if (lead.wantSmokingAllowed) {
+      if (prop.smokingAllowed === "ACCEPT") {
+        score += SCORE.SMOKING_ALLOWED;
+        reasons.push("สูบบุหรี่ได้");
+      } else {
+        return { property: prop, score: -1, reasons: [] };
+      }
+    }
+
+    // 9. BTS/MRT station match (10pts)
     const propStationCodes = parseStationCodes(prop.nearbyStations);
     if (lead.btsStation && propStationCodes.length > 0) {
       const stationNames = lead.btsStation.split(",").map((s) => s.trim()).filter(Boolean);
@@ -189,6 +226,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       bedrooms: property.bedrooms,
       bathrooms: property.bathrooms,
       sizeSqm: property.sizeSqm,
+      petFriendly: property.petFriendly,
+      smokingAllowed: property.smokingAllowed,
       projectName: property.projectName,
       address: property.address,
       province: (property as any).province ?? null,

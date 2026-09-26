@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Loader2, Plus, Pencil, Trash2, X, Search, Phone, MessageSquare,
   Facebook, MapPin, Train, Wallet, BedDouble, ChevronDown, ChevronUp,
-  Building2, CheckCircle2, User,
+  Building2, CheckCircle2, User, Maximize,
 } from "lucide-react";
 import ThaiAddressFields from "@/components/admin/ThaiAddressFields";
 import StationMapSelector, { LINES } from "@/components/admin/StationMapSelector";
@@ -23,6 +23,9 @@ type CustomerLead = {
   budgetMin: string | null;
   budgetMax: string | null;
   bedrooms: number | null;
+  minSizeSqm: string | null;
+  wantPetFriendly: boolean | null;
+  wantSmokingAllowed: boolean | null;
   note: string | null;
   status: string;
   createdAt: string;
@@ -39,6 +42,8 @@ type MatchedProperty = {
   bedrooms: number;
   bathrooms: number;
   sizeSqm: string | null;
+  petFriendly: string | null;
+  smokingAllowed: string | null;
   projectName: string | null;
   address: string | null;
   primaryImage: string | null;
@@ -53,7 +58,9 @@ type MatchedProperty = {
 const EMPTY_FORM = {
   name: "", phone: "", lineId: "", facebook: "",
   projectName: "", province: "", district: "", subdistrict: "",
-  btsStation: "", budgetMin: "", budgetMax: "", bedrooms: "", note: "", status: "ACTIVE",
+  btsStation: "", budgetMin: "", budgetMax: "", bedrooms: "",
+  minSizeSqm: "", wantPetFriendly: false, wantSmokingAllowed: false,
+  note: "", status: "ACTIVE",
 };
 
 // Map station IDs (comma-sep) → display names
@@ -163,6 +170,9 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
       budgetMin: lead.budgetMin || "",
       budgetMax: lead.budgetMax || "",
       bedrooms: lead.bedrooms !== null ? String(lead.bedrooms) : "",
+      minSizeSqm: lead.minSizeSqm || "",
+      wantPetFriendly: lead.wantPetFriendly === true,
+      wantSmokingAllowed: lead.wantSmokingAllowed === true,
       note: lead.note || "",
       status: lead.status,
     });
@@ -330,6 +340,21 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                           <BedDouble className="w-3 h-3" />{lead.bedrooms} ห้องนอน
                         </span>
                       )}
+                      {lead.minSizeSqm !== null && (
+                        <span className="flex items-center gap-1 text-xs bg-cyan-50 text-cyan-700 px-2 py-0.5 rounded-full">
+                          <Maximize className="w-3 h-3" />≥ {lead.minSizeSqm} ตร.ม.
+                        </span>
+                      )}
+                      {lead.wantPetFriendly && (
+                        <span className="flex items-center gap-1 text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">
+                          🐾 เลี้ยงสัตว์ได้
+                        </span>
+                      )}
+                      {lead.wantSmokingAllowed && (
+                        <span className="flex items-center gap-1 text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">
+                          🚬 สูบบุหรี่ได้
+                        </span>
+                      )}
                     </div>
                     {lead.note && <p className="mt-2 text-xs text-gray-500 italic line-clamp-2">{lead.note}</p>}
                   </div>
@@ -481,6 +506,25 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                   <FormField label="งบประมาณต่ำสุด (บาท)" value={form.budgetMin} onChange={(v) => setForm({ ...form, budgetMin: v })} placeholder="1000000" type="number" />
                   <FormField label="งบประมาณสูงสุด (บาท)" value={form.budgetMax} onChange={(v) => setForm({ ...form, budgetMax: v })} placeholder="5000000" type="number" />
                   <FormField label="จำนวนห้องนอน" value={form.bedrooms} onChange={(v) => setForm({ ...form, bedrooms: v })} placeholder="2" type="number" />
+                  <FormField label="ขนาดห้องขั้นต่ำ (ตร.ม.)" value={form.minSizeSqm} onChange={(v) => setForm({ ...form, minSizeSqm: v })} placeholder="30" type="number" />
+                  <label className="flex items-center justify-between gap-2 border border-gray-300 rounded-lg px-3 py-2 cursor-pointer select-none">
+                    <span className="text-sm text-gray-700">🐾 ต้องเลี้ยงสัตว์ได้</span>
+                    <div
+                      onClick={() => setForm({ ...form, wantPetFriendly: !form.wantPetFriendly })}
+                      className={`relative w-10 h-5 rounded-full transition-colors ${form.wantPetFriendly ? "bg-amber-500" : "bg-gray-300"}`}
+                    >
+                      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.wantPetFriendly ? "translate-x-5" : "translate-x-0.5"}`} />
+                    </div>
+                  </label>
+                  <label className="flex items-center justify-between gap-2 border border-gray-300 rounded-lg px-3 py-2 cursor-pointer select-none">
+                    <span className="text-sm text-gray-700">🚬 ต้องสูบบุหรี่ได้</span>
+                    <div
+                      onClick={() => setForm({ ...form, wantSmokingAllowed: !form.wantSmokingAllowed })}
+                      className={`relative w-10 h-5 rounded-full transition-colors ${form.wantSmokingAllowed ? "bg-slate-600" : "bg-gray-300"}`}
+                    >
+                      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.wantSmokingAllowed ? "translate-x-5" : "translate-x-0.5"}`} />
+                    </div>
+                  </label>
                 </div>
               </div>
 
@@ -617,6 +661,8 @@ function MatchCard({ prop, locale }: { prop: MatchedProperty; locale: string }) 
         <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-500">
           <span className="flex items-center gap-0.5"><BedDouble className="w-3 h-3" /> {prop.bedrooms}</span>
           {prop.sizeSqm && <span>{Number(prop.sizeSqm).toFixed(0)} ตร.ม.</span>}
+          {prop.petFriendly === "ACCEPT" && <span title="เลี้ยงสัตว์ได้">🐾</span>}
+          {prop.smokingAllowed === "ACCEPT" && <span title="สูบบุหรี่ได้">🚬</span>}
           {prop.stations.length > 0 && (
             <span className="flex items-center gap-0.5"><Train className="w-3 h-3" />{prop.stations[0].nameTh}</span>
           )}

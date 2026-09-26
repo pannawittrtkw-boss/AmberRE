@@ -17,7 +17,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const {
       name, phone, lineId, facebook, projectName,
       province, district, subdistrict, btsStation,
-      budgetMin, budgetMax, bedrooms, note, status,
+      budgetMin, budgetMax, bedrooms, minSizeSqm,
+      wantPetFriendly, wantSmokingAllowed, note, status,
     } = body;
 
     const lead = await prisma.customerLead.update({
@@ -35,6 +36,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         budgetMin: budgetMin !== undefined ? (budgetMin ? parseFloat(budgetMin) : null) : undefined,
         budgetMax: budgetMax !== undefined ? (budgetMax ? parseFloat(budgetMax) : null) : undefined,
         bedrooms: bedrooms !== undefined ? (bedrooms ? parseInt(bedrooms) : null) : undefined,
+        minSizeSqm: minSizeSqm !== undefined ? (minSizeSqm ? parseFloat(minSizeSqm) : null) : undefined,
+        wantPetFriendly: wantPetFriendly !== undefined ? (wantPetFriendly === true ? true : null) : undefined,
+        wantSmokingAllowed: wantSmokingAllowed !== undefined ? (wantSmokingAllowed === true ? true : null) : undefined,
         note: note !== undefined ? (note || null) : undefined,
         status: status || undefined,
       },

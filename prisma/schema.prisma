@@ -692,6 +692,10 @@ model CustomerLead {
   budgetMin   Decimal? @db.Decimal(18, 2)
   budgetMax   Decimal? @db.Decimal(18, 2)
   bedrooms    Int?
+  minSizeSqm  Decimal? @db.Decimal(10, 2)
+  // null = don't care, true = required
+  wantPetFriendly    Boolean?
+  wantSmokingAllowed Boolean?
   note        String?  @db.Text
   status      String   @default("ACTIVE") @db.VarChar(20)
   createdAt   DateTime @default(now())

@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
     const {
       name, phone, lineId, facebook, projectName,
       province, district, subdistrict, btsStation,
-      budgetMin, budgetMax, bedrooms, note, status,
+      budgetMin, budgetMax, bedrooms, minSizeSqm,
+      wantPetFriendly, wantSmokingAllowed, note, status,
     } = body;
 
     const lead = await prisma.customerLead.create({
@@ -47,6 +48,9 @@ export async function POST(req: NextRequest) {
         budgetMin: budgetMin ? parseFloat(budgetMin) : null,
         budgetMax: budgetMax ? parseFloat(budgetMax) : null,
         bedrooms: bedrooms ? parseInt(bedrooms) : null,
+        minSizeSqm: minSizeSqm ? parseFloat(minSizeSqm) : null,
+        wantPetFriendly: wantPetFriendly === true ? true : null,
+        wantSmokingAllowed: wantSmokingAllowed === true ? true : null,
         note: note || null,
         status: status || "ACTIVE",
         createdById: parseInt((session.user as any).id) || null,
