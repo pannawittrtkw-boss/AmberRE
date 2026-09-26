@@ -139,6 +139,66 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
     params.then(({ locale: l }) => setLocale(l));
   }, [params]);
 
+  const isTh = locale === "th";
+  const T = {
+    title: isTh ? "Matching ลูกค้า" : "Customer Matching",
+    subtitle: isTh ? "บันทึกความต้องการลูกค้าและค้นหาทรัพย์ที่ตรงกัน" : "Record customer requirements and find matching properties",
+    addCustomer: isTh ? "เพิ่มลูกค้า" : "Add Customer",
+    searchPlaceholder: isTh ? "ค้นหาชื่อ, เบอร์โทร, โครงการ, จังหวัด..." : "Search name, phone, project, province...",
+    noSearchResults: isTh ? "ไม่พบลูกค้าที่ค้นหา" : "No matching customers found",
+    noCustomersYet: isTh ? "ยังไม่มีข้อมูลลูกค้า กด \"เพิ่มลูกค้า\" เพื่อเริ่มต้น" : "No customers yet — click \"Add Customer\" to get started",
+    active: isTh ? "ใช้งาน" : "Active",
+    closed: isTh ? "ปิด" : "Closed",
+    rent: isTh ? "เช่า" : "Rent",
+    buy: isTh ? "ซื้อ" : "Buy",
+    bedroomsSuffix: isTh ? "ห้องนอน" : "bed",
+    sqmSuffix: isTh ? "ตร.ม." : "sqm",
+    petFriendlyBadge: isTh ? "เลี้ยงสัตว์ได้" : "Pet friendly",
+    smokingBadge: isTh ? "สูบบุหรี่ได้" : "Smoking allowed",
+    readyBadge: isTh ? "พร้อมเข้าอยู่ทันที" : "Ready to move in",
+    hide: isTh ? "ซ่อน" : "Hide",
+    viewMatches: isTh ? "ดูทรัพย์ที่ตรงกัน" : "View matches",
+    noNameSpecified: isTh ? "(ไม่ระบุชื่อ)" : "(No name)",
+    noMatchesFound: isTh ? "ไม่พบทรัพย์ที่ตรงกับความต้องการ" : "No properties match this customer's requirements",
+    foundMatchesLabel: (n: number) => isTh ? `พบ ${n} ทรัพย์ที่ตรงกัน` : `${n} matching ${n === 1 ? "property" : "properties"} found`,
+    legendFresh: isTh ? "โพสต์ไม่เกิน 7 วัน" : "Posted within 7 days",
+    legendGray: isTh ? "โพสต์เกิน 8-30 วัน" : "Posted 8-30 days ago",
+    legendAmber: isTh ? "โพสต์เกิน 31-90 วัน" : "Posted 31-90 days ago",
+    legendRed: isTh ? "โพสต์เกิน 90 วัน" : "Posted over 90 days ago",
+    editCustomer: isTh ? "แก้ไขข้อมูลลูกค้า" : "Edit Customer",
+    addNewCustomer: isTh ? "เพิ่มลูกค้าใหม่" : "Add New Customer",
+    contactInfo: isTh ? "ข้อมูลติดต่อ" : "Contact Information",
+    customerName: isTh ? "ชื่อลูกค้า" : "Customer Name",
+    namePlaceholder: isTh ? "ชื่อ-สกุล" : "Full name",
+    phoneLabel: isTh ? "เบอร์โทร" : "Phone",
+    facebookPlaceholder: isTh ? "ลิงก์หรือชื่อ Facebook" : "Facebook link or name",
+    interestedLocation: isTh ? "ทำเลที่สนใจ" : "Location of Interest",
+    projectNameLabel: isTh ? "ชื่อโครงการ" : "Project Name",
+    projectNamePlaceholder: isTh ? "ชื่อโครงการที่สนใจ" : "Project of interest",
+    stationLabel: isTh ? "สถานี BTS/MRT" : "BTS/MRT Station",
+    stationPlaceholder: isTh ? "คลิกเพื่อเลือกสถานี BTS/MRT..." : "Click to select BTS/MRT station...",
+    requirements: isTh ? "ความต้องการ" : "Requirements",
+    dealTypeLabel: isTh ? "ประเภท" : "Type",
+    budgetMinSale: isTh ? "งบประมาณต่ำสุด (บาท)" : "Min Budget (THB)",
+    budgetMaxSale: isTh ? "งบประมาณสูงสุด (บาท)" : "Max Budget (THB)",
+    budgetMinRent: isTh ? "งบประมาณต่ำสุด (บาท/เดือน)" : "Min Budget (THB/month)",
+    budgetMaxRent: isTh ? "งบประมาณสูงสุด (บาท/เดือน)" : "Max Budget (THB/month)",
+    bedroomsLabel: isTh ? "จำนวนห้องนอน" : "Bedrooms",
+    notSpecified: isTh ? "ไม่ระบุ" : "Not specified",
+    minSizeLabel: isTh ? "ขนาดห้องขั้นต่ำ (ตร.ม.)" : "Min. Room Size (sqm)",
+    readyToMoveInToggle: isTh ? "พร้อมเข้าอยู่ทันที" : "Ready to move in",
+    petFriendlyToggle: isTh ? "ต้องเลี้ยงสัตว์ได้" : "Must allow pets",
+    smokingToggle: isTh ? "ต้องสูบบุหรี่ได้" : "Must allow smoking",
+    statusLabel: isTh ? "สถานะ" : "Status",
+    noteLabel: isTh ? "หมายเหตุ" : "Note",
+    notePlaceholder: isTh ? "บันทึกเพิ่มเติม..." : "Additional notes...",
+    cancel: isTh ? "ยกเลิก" : "Cancel",
+    saving: isTh ? "กำลังบันทึก..." : "Saving...",
+    save: isTh ? "บันทึก" : "Save",
+    deleteConfirm: isTh ? "ลบข้อมูลลูกค้ารายนี้?" : "Delete this customer?",
+    genericError: isTh ? "เกิดข้อผิดพลาด" : "An error occurred",
+  };
+
   const refresh = useCallback(async () => {
     const res = await fetch("/api/admin/customer-leads");
     const data = await res.json();
@@ -214,7 +274,7 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
         body: JSON.stringify(form),
       });
       const data = await res.json();
-      if (!data.success) throw new Error(data.error || "เกิดข้อผิดพลาด");
+      if (!data.success) throw new Error(data.error || T.genericError);
       await refresh();
       setShowForm(false);
     } catch (e: any) {
@@ -224,7 +284,7 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("ลบข้อมูลลูกค้ารายนี้?")) return;
+    if (!confirm(T.deleteConfirm)) return;
     setDeletingId(id);
     await fetch(`/api/admin/customer-leads/${id}`, { method: "DELETE" });
     setLeads((prev) => prev.filter((l) => l.id !== id));
@@ -263,14 +323,14 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Matching ลูกค้า</h1>
-          <p className="text-sm text-gray-500 mt-1">บันทึกความต้องการลูกค้าและค้นหาทรัพย์ที่ตรงกัน</p>
+          <h1 className="text-2xl font-bold text-gray-900">{T.title}</h1>
+          <p className="text-sm text-gray-500 mt-1">{T.subtitle}</p>
         </div>
         <button
           onClick={openAdd}
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         >
-          <Plus className="w-4 h-4" /> เพิ่มลูกค้า
+          <Plus className="w-4 h-4" /> {T.addCustomer}
         </button>
       </div>
 
@@ -280,7 +340,7 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
         <input
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="ค้นหาชื่อ, เบอร์โทร, โครงการ, จังหวัด..."
+          placeholder={T.searchPlaceholder}
           className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
@@ -289,7 +349,7 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
       {filteredLeads.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <User className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">{searchTerm ? "ไม่พบลูกค้าที่ค้นหา" : "ยังไม่มีข้อมูลลูกค้า กด \"เพิ่มลูกค้า\" เพื่อเริ่มต้น"}</p>
+          <p className="text-sm">{searchTerm ? T.noSearchResults : T.noCustomersYet}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -302,11 +362,11 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold text-gray-900 text-sm">{lead.name || "(ไม่ระบุชื่อ)"}</h3>
+                      <h3 className="font-semibold text-gray-900 text-sm">{lead.name || T.noNameSpecified}</h3>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                         lead.status === "ACTIVE" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
                       }`}>
-                        {lead.status === "ACTIVE" ? "ใช้งาน" : "ปิด"}
+                        {lead.status === "ACTIVE" ? T.active : T.closed}
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-3 mt-1.5 text-xs text-gray-500">
@@ -334,7 +394,7 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                       <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
                         lead.dealType === "SALE" ? "bg-indigo-50 text-indigo-700" : "bg-teal-50 text-teal-700"
                       }`}>
-                        {lead.dealType === "SALE" ? "ซื้อ" : "เช่า"}
+                        {lead.dealType === "SALE" ? T.buy : T.rent}
                       </span>
                       {(lead.budgetMin || lead.budgetMax) && (
                         <span className="flex items-center gap-1 text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">
@@ -348,27 +408,27 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                       )}
                       {lead.bedrooms !== null && (
                         <span className="flex items-center gap-1 text-xs bg-pink-50 text-pink-700 px-2 py-0.5 rounded-full">
-                          <BedDouble className="w-3 h-3" />{lead.bedrooms}{lead.bedrooms >= 4 ? "+" : ""} ห้องนอน
+                          <BedDouble className="w-3 h-3" />{lead.bedrooms}{lead.bedrooms >= 4 ? "+" : ""} {T.bedroomsSuffix}
                         </span>
                       )}
                       {lead.minSizeSqm !== null && (
                         <span className="flex items-center gap-1 text-xs bg-cyan-50 text-cyan-700 px-2 py-0.5 rounded-full">
-                          <Maximize className="w-3 h-3" />≥ {lead.minSizeSqm} ตร.ม.
+                          <Maximize className="w-3 h-3" />≥ {lead.minSizeSqm} {T.sqmSuffix}
                         </span>
                       )}
                       {lead.wantPetFriendly && (
                         <span className="flex items-center gap-1 text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">
-                          🐾 เลี้ยงสัตว์ได้
+                          🐾 {T.petFriendlyBadge}
                         </span>
                       )}
                       {lead.wantSmokingAllowed && (
                         <span className="flex items-center gap-1 text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">
-                          🚬 สูบบุหรี่ได้
+                          🚬 {T.smokingBadge}
                         </span>
                       )}
                       {lead.wantReadyToMoveIn && (
                         <span className="flex items-center gap-1 text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">
-                          ✅ พร้อมเข้าอยู่ทันที
+                          ✅ {T.readyBadge}
                         </span>
                       )}
                     </div>
@@ -381,7 +441,7 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                       className="flex items-center gap-1 text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg transition-colors"
                     >
                       <Search className="w-3 h-3" />
-                      {expandedLead === lead.id ? "ซ่อน" : "ดูทรัพย์ที่ตรงกัน"}
+                      {expandedLead === lead.id ? T.hide : T.viewMatches}
                       {expandedLead === lead.id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                     </button>
                     <button onClick={() => openEdit(lead)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
@@ -400,17 +460,17 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                   {matchLoading === lead.id ? (
                     <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>
                   ) : !matchMap[lead.id] || matchMap[lead.id].length === 0 ? (
-                    <div className="text-center py-8 text-gray-400 text-sm">ไม่พบทรัพย์ที่ตรงกับความต้องการ</div>
+                    <div className="text-center py-8 text-gray-400 text-sm">{T.noMatchesFound}</div>
                   ) : (
                     <div>
                       <p className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-                        พบ {matchMap[lead.id].length} ทรัพย์ที่ตรงกัน
+                        {T.foundMatchesLabel(matchMap[lead.id].length)}
                       </p>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-3 text-[11px] text-gray-500">
-                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />โพสต์ไม่เกิน 7 วัน</span>
-                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-400" />โพสต์เกิน 8-30 วัน</span>
-                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" />โพสต์เกิน 31-90 วัน</span>
-                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" />โพสต์เกิน 90 วัน</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />{T.legendFresh}</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-400" />{T.legendGray}</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" />{T.legendAmber}</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" />{T.legendRed}</span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {matchMap[lead.id].map((prop) => (
@@ -432,7 +492,7 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
               <h2 className="text-lg font-bold text-gray-900">
-                {editingLead ? "แก้ไขข้อมูลลูกค้า" : "เพิ่มลูกค้าใหม่"}
+                {editingLead ? T.editCustomer : T.addNewCustomer}
               </h2>
               <button onClick={() => setShowForm(false)} className="p-2 hover:bg-gray-100 rounded-lg">
                 <X className="w-5 h-5 text-gray-500" />
@@ -442,24 +502,24 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
             <div className="p-6 space-y-5">
               {/* Contact section */}
               <div>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">ข้อมูลติดต่อ</h3>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{T.contactInfo}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <FormField label="ชื่อลูกค้า" value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder="ชื่อ-สกุล" />
-                  <FormField label="เบอร์โทร" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} placeholder="0812345678" type="tel" />
+                  <FormField label={T.customerName} value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder={T.namePlaceholder} />
+                  <FormField label={T.phoneLabel} value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} placeholder="0812345678" type="tel" />
                   <FormField label="Line ID" value={form.lineId} onChange={(v) => setForm({ ...form, lineId: v })} placeholder="@lineid" />
-                  <FormField label="Facebook" value={form.facebook} onChange={(v) => setForm({ ...form, facebook: v })} placeholder="ลิงก์หรือชื่อ Facebook" />
+                  <FormField label="Facebook" value={form.facebook} onChange={(v) => setForm({ ...form, facebook: v })} placeholder={T.facebookPlaceholder} />
                 </div>
               </div>
 
               {/* Location section */}
               <div>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">ทำเลที่สนใจ</h3>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{T.interestedLocation}</h3>
                 <div className="space-y-3">
                   <FormField
-                    label="ชื่อโครงการ"
+                    label={T.projectNameLabel}
                     value={form.projectName}
                     onChange={(v) => setForm({ ...form, projectName: v })}
-                    placeholder="ชื่อโครงการที่สนใจ"
+                    placeholder={T.projectNamePlaceholder}
                   />
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <ThaiAddressFields
@@ -474,7 +534,7 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
 
                   {/* BTS Station picker */}
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">สถานี BTS/MRT</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{T.stationLabel}</label>
                     <button
                       type="button"
                       onClick={() => setShowStationSelector(true)}
@@ -482,7 +542,7 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                     >
                       <Train className="w-4 h-4 text-purple-500 flex-shrink-0" />
                       <span className={form.btsStation ? "text-gray-900 flex-1 truncate" : "text-gray-400 flex-1"}>
-                        {form.btsStation || "คลิกเพื่อเลือกสถานี BTS/MRT..."}
+                        {form.btsStation || T.stationPlaceholder}
                       </span>
                       {form.btsStation && (
                         <span
@@ -517,15 +577,15 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
 
               {/* Requirements section */}
               <div>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">ความต้องการ</h3>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{T.requirements}</h3>
 
                 {/* Deal type — drives which budget scale to show */}
                 <div className="mb-3">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">ประเภท</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{T.dealTypeLabel}</label>
                   <div className="grid grid-cols-2 gap-1 p-1 bg-gray-100 rounded-lg max-w-xs">
                     {([
-                      { value: "RENT", label: "เช่า" },
-                      { value: "SALE", label: "ซื้อ" },
+                      { value: "RENT", label: T.rent },
+                      { value: "SALE", label: T.buy },
                     ] as const).map((opt) => (
                       <button
                         key={opt.value}
@@ -544,32 +604,32 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {form.dealType === "SALE" ? (
                     <>
-                      <FormField label="งบประมาณต่ำสุด (บาท)" value={form.budgetMin} onChange={(v) => setForm({ ...form, budgetMin: v })} placeholder="1000000" type="number" />
-                      <FormField label="งบประมาณสูงสุด (บาท)" value={form.budgetMax} onChange={(v) => setForm({ ...form, budgetMax: v })} placeholder="5000000" type="number" />
+                      <FormField label={T.budgetMinSale} value={form.budgetMin} onChange={(v) => setForm({ ...form, budgetMin: v })} placeholder="1000000" type="number" />
+                      <FormField label={T.budgetMaxSale} value={form.budgetMax} onChange={(v) => setForm({ ...form, budgetMax: v })} placeholder="5000000" type="number" />
                     </>
                   ) : (
                     <>
-                      <FormField label="งบประมาณต่ำสุด (บาท/เดือน)" value={form.budgetMin} onChange={(v) => setForm({ ...form, budgetMin: v })} placeholder="15000" type="number" />
-                      <FormField label="งบประมาณสูงสุด (บาท/เดือน)" value={form.budgetMax} onChange={(v) => setForm({ ...form, budgetMax: v })} placeholder="30000" type="number" />
+                      <FormField label={T.budgetMinRent} value={form.budgetMin} onChange={(v) => setForm({ ...form, budgetMin: v })} placeholder="15000" type="number" />
+                      <FormField label={T.budgetMaxRent} value={form.budgetMax} onChange={(v) => setForm({ ...form, budgetMax: v })} placeholder="30000" type="number" />
                     </>
                   )}
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">จำนวนห้องนอน</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{T.bedroomsLabel}</label>
                     <select
                       value={form.bedrooms}
                       onChange={(e) => setForm({ ...form, bedrooms: e.target.value })}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     >
-                      <option value="">ไม่ระบุ</option>
-                      <option value="1">1 ห้องนอน</option>
-                      <option value="2">2 ห้องนอน</option>
-                      <option value="3">3 ห้องนอน</option>
-                      <option value="4">4+ ห้องนอน</option>
+                      <option value="">{T.notSpecified}</option>
+                      <option value="1">1 {T.bedroomsSuffix}</option>
+                      <option value="2">2 {T.bedroomsSuffix}</option>
+                      <option value="3">3 {T.bedroomsSuffix}</option>
+                      <option value="4">4+ {T.bedroomsSuffix}</option>
                     </select>
                   </div>
-                  <FormField label="ขนาดห้องขั้นต่ำ (ตร.ม.)" value={form.minSizeSqm} onChange={(v) => setForm({ ...form, minSizeSqm: v })} placeholder="30" type="number" />
+                  <FormField label={T.minSizeLabel} value={form.minSizeSqm} onChange={(v) => setForm({ ...form, minSizeSqm: v })} placeholder="30" type="number" />
                   <label className="flex items-center justify-between gap-2 border border-gray-300 rounded-lg px-3 py-2 cursor-pointer select-none">
-                    <span className="text-sm text-gray-700">✅ พร้อมเข้าอยู่ทันที</span>
+                    <span className="text-sm text-gray-700">✅ {T.readyToMoveInToggle}</span>
                     <div
                       onClick={() => setForm({ ...form, wantReadyToMoveIn: !form.wantReadyToMoveIn })}
                       className={`relative w-10 h-5 rounded-full transition-colors ${form.wantReadyToMoveIn ? "bg-emerald-500" : "bg-gray-300"}`}
@@ -578,7 +638,7 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                     </div>
                   </label>
                   <label className="flex items-center justify-between gap-2 border border-gray-300 rounded-lg px-3 py-2 cursor-pointer select-none">
-                    <span className="text-sm text-gray-700">🐾 ต้องเลี้ยงสัตว์ได้</span>
+                    <span className="text-sm text-gray-700">🐾 {T.petFriendlyToggle}</span>
                     <div
                       onClick={() => setForm({ ...form, wantPetFriendly: !form.wantPetFriendly })}
                       className={`relative w-10 h-5 rounded-full transition-colors ${form.wantPetFriendly ? "bg-amber-500" : "bg-gray-300"}`}
@@ -587,7 +647,7 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                     </div>
                   </label>
                   <label className="flex items-center justify-between gap-2 border border-gray-300 rounded-lg px-3 py-2 cursor-pointer select-none">
-                    <span className="text-sm text-gray-700">🚬 ต้องสูบบุหรี่ได้</span>
+                    <span className="text-sm text-gray-700">🚬 {T.smokingToggle}</span>
                     <div
                       onClick={() => setForm({ ...form, wantSmokingAllowed: !form.wantSmokingAllowed })}
                       className={`relative w-10 h-5 rounded-full transition-colors ${form.wantSmokingAllowed ? "bg-slate-600" : "bg-gray-300"}`}
@@ -601,22 +661,22 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
               {/* Status + Note */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">สถานะ</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{T.statusLabel}</label>
                   <select
                     value={form.status}
                     onChange={(e) => setForm({ ...form, status: e.target.value })}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="ACTIVE">ใช้งาน</option>
-                    <option value="CLOSED">ปิด</option>
+                    <option value="ACTIVE">{T.active}</option>
+                    <option value="CLOSED">{T.closed}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">หมายเหตุ</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{T.noteLabel}</label>
                   <textarea
                     value={form.note}
                     onChange={(e) => setForm({ ...form, note: e.target.value })}
-                    placeholder="บันทึกเพิ่มเติม..."
+                    placeholder={T.notePlaceholder}
                     rows={2}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   />
@@ -628,7 +688,7 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
 
             <div className="flex justify-end gap-3 px-6 pb-6">
               <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                ยกเลิก
+                {T.cancel}
               </button>
               <button
                 onClick={handleSave}
@@ -636,7 +696,7 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                 className="flex items-center gap-2 px-5 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-60"
               >
                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                {saving ? "กำลังบันทึก..." : "บันทึก"}
+                {saving ? T.saving : T.save}
               </button>
             </div>
           </div>
@@ -679,6 +739,20 @@ function FormField({
   );
 }
 
+const REASON_LABELS: Record<string, { th: string; en: string }> = {
+  PROJECT_NAME_MATCH: { th: "ชื่อโครงการตรงกัน", en: "Project name matches" },
+  BUDGET_MATCH: { th: "ราคาอยู่ในงบประมาณ", en: "Price within budget" },
+  BUDGET_CLOSE: { th: "ราคาใกล้เคียงงบประมาณ", en: "Price close to budget" },
+  BEDROOMS_MATCH: { th: "จำนวนห้องนอนตรงกัน", en: "Bedrooms match" },
+  PROVINCE_MATCH: { th: "จังหวัดตรงกัน", en: "Province matches" },
+  DISTRICT_MATCH: { th: "อำเภอตรงกัน", en: "District matches" },
+  SIZE_MATCH: { th: "ขนาดห้องตรงตามที่ต้องการ", en: "Room size meets requirement" },
+  PET_FRIENDLY_MATCH: { th: "รับเลี้ยงสัตว์", en: "Pet friendly" },
+  SMOKING_MATCH: { th: "สูบบุหรี่ได้", en: "Smoking allowed" },
+  READY_MATCH: { th: "พร้อมเข้าอยู่ทันที", en: "Ready to move in" },
+  STATION_MATCH: { th: "สถานี BTS/MRT ตรงกัน", en: "BTS/MRT station matches" },
+};
+
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   VERIFIED: { label: "Verified", color: "bg-green-500" },
   VERIFIED_OVER_10_DAYS: { label: "Verified 10+d", color: "bg-orange-500" },
@@ -686,10 +760,16 @@ const STATUS_BADGE: Record<string, { label: string; color: string }> = {
 };
 
 function MatchCard({ prop, locale }: { prop: MatchedProperty; locale: string }) {
-  const listingLabel: Record<string, string> = {
-    RENT: "เช่า", SALE: "ขาย", RENT_AND_SALE: "เช่า/ขาย",
-  };
+  const isTh = locale === "th";
+  const listingLabel: Record<string, string> = isTh
+    ? { RENT: "เช่า", SALE: "ขาย", RENT_AND_SALE: "เช่า/ขาย" }
+    : { RENT: "Rent", SALE: "Sale", RENT_AND_SALE: "Rent/Sale" };
   const statusInfo = STATUS_BADGE[prop.status] || { label: prop.status, color: "bg-gray-500" };
+  const sqmLabel = isTh ? "ตร.ม." : "sqm";
+  const petTitle = isTh ? "เลี้ยงสัตว์ได้" : "Pet friendly";
+  const smokingTitle = isTh ? "สูบบุหรี่ได้" : "Smoking allowed";
+  const readyNowLabel = isTh ? "พร้อมเข้าอยู่ทันที" : "Ready to move in now";
+  const availableFromLabel = isTh ? "เข้าอยู่ได้" : "Available from";
 
   // "Days on market" — same rule as the public FeaturedPropertyCard: counts
   // from listedAt if an admin has reset it (unit came back on the market),
@@ -740,23 +820,23 @@ function MatchCard({ prop, locale }: { prop: MatchedProperty; locale: string }) 
         <p className="text-sm font-bold text-blue-600 mt-1">{formatPrice(prop.price)} บาท</p>
         <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-500">
           <span className="flex items-center gap-0.5"><BedDouble className="w-3 h-3" /> {prop.bedrooms}</span>
-          {prop.sizeSqm && <span>{Number(prop.sizeSqm).toFixed(0)} ตร.ม.</span>}
-          {prop.petFriendly === "ACCEPT" && <span title="เลี้ยงสัตว์ได้">🐾</span>}
-          {prop.smokingAllowed === "ACCEPT" && <span title="สูบบุหรี่ได้">🚬</span>}
+          {prop.sizeSqm && <span>{Number(prop.sizeSqm).toFixed(0)} {sqmLabel}</span>}
+          {prop.petFriendly === "ACCEPT" && <span title={petTitle}>🐾</span>}
+          {prop.smokingAllowed === "ACCEPT" && <span title={smokingTitle}>🚬</span>}
           {prop.stations.length > 0 && (
-            <span className="flex items-center gap-0.5"><Train className="w-3 h-3" />{prop.stations[0].nameTh}</span>
+            <span className="flex items-center gap-0.5"><Train className="w-3 h-3" />{isTh ? prop.stations[0].nameTh : prop.stations[0].nameEn}</span>
           )}
         </div>
         <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
           <Calendar className="w-3 h-3" />
           {!prop.availableDate || new Date(prop.availableDate).getTime() <= now
-            ? <span className="text-emerald-600 font-medium">พร้อมเข้าอยู่ทันที</span>
-            : <span>เข้าอยู่ได้ {new Date(prop.availableDate).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" })}</span>}
+            ? <span className="text-emerald-600 font-medium">{readyNowLabel}</span>
+            : <span>{availableFromLabel} {new Date(prop.availableDate).toLocaleDateString(isTh ? "th-TH" : "en-GB", { day: "numeric", month: "short", year: "2-digit" })}</span>}
         </div>
         <div className="flex flex-wrap gap-1 mt-2">
           {prop.reasons.map((r) => (
             <span key={r} className="flex items-center gap-0.5 text-[10px] bg-green-50 text-green-700 px-1.5 py-0.5 rounded-full">
-              <CheckCircle2 className="w-2.5 h-2.5" />{r}
+              <CheckCircle2 className="w-2.5 h-2.5" />{isTh ? (REASON_LABELS[r]?.th ?? r) : (REASON_LABELS[r]?.en ?? r)}
             </span>
           ))}
         </div>

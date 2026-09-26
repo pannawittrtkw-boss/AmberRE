@@ -96,7 +96,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       const propProject = prop.projectName || prop.project?.nameTh || prop.project?.nameEn || "";
       if (propProject && textMatches(propProject, lead.projectName)) {
         score += SCORE.PROJECT_NAME;
-        reasons.push("ชื่อโครงการตรงกัน");
+        reasons.push("PROJECT_NAME_MATCH");
       }
     }
 
@@ -111,10 +111,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       }
       if (price >= min && price <= max) {
         score += SCORE.BUDGET;
-        reasons.push("ราคาอยู่ในงบประมาณ");
+        reasons.push("BUDGET_MATCH");
       } else if (lead.budgetMax && price <= Number(lead.budgetMax) * 1.2) {
         score += Math.round(SCORE.BUDGET * 0.4);
-        reasons.push("ราคาใกล้เคียงงบประมาณ");
+        reasons.push("BUDGET_CLOSE");
       }
     }
 
@@ -126,7 +126,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         lead.bedrooms >= 4 ? prop.bedrooms >= 4 : prop.bedrooms === lead.bedrooms;
       if (bedroomsMatch) {
         score += SCORE.BEDROOMS;
-        reasons.push("จำนวนห้องนอนตรงกัน");
+        reasons.push("BEDROOMS_MATCH");
       } else {
         return { property: prop, score: -1, reasons: [] };
       }
@@ -142,7 +142,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       if (propProvince) {
         if (textMatches(propProvince, lead.province)) {
           score += SCORE.PROVINCE;
-          reasons.push("จังหวัดตรงกัน");
+          reasons.push("PROVINCE_MATCH");
         } else {
           return { property: prop, score: -1, reasons: [] };
         }
@@ -160,7 +160,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       if (propDistrict) {
         if (textMatches(propDistrict, lead.district)) {
           score += SCORE.DISTRICT;
-          reasons.push("อำเภอตรงกัน");
+          reasons.push("DISTRICT_MATCH");
         } else {
           return { property: prop, score: -1, reasons: [] };
         }
@@ -175,7 +175,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       if (size !== null) {
         if (size >= Number(lead.minSizeSqm)) {
           score += SCORE.SIZE;
-          reasons.push("ขนาดห้องตรงตามที่ต้องการ");
+          reasons.push("SIZE_MATCH");
         } else {
           return { property: prop, score: -1, reasons: [] };
         }
@@ -186,7 +186,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (lead.wantPetFriendly) {
       if (prop.petFriendly === "ACCEPT") {
         score += SCORE.PET_FRIENDLY;
-        reasons.push("รับเลี้ยงสัตว์");
+        reasons.push("PET_FRIENDLY_MATCH");
       } else {
         return { property: prop, score: -1, reasons: [] };
       }
@@ -196,7 +196,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (lead.wantSmokingAllowed) {
       if (prop.smokingAllowed === "ACCEPT") {
         score += SCORE.SMOKING_ALLOWED;
-        reasons.push("สูบบุหรี่ได้");
+        reasons.push("SMOKING_MATCH");
       } else {
         return { property: prop, score: -1, reasons: [] };
       }
@@ -209,7 +209,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         return { property: prop, score: -1, reasons: [] };
       }
       score += SCORE.READY_TO_MOVE_IN;
-      reasons.push("พร้อมเข้าอยู่ทันที");
+      reasons.push("READY_MATCH");
     }
 
     // 10. BTS/MRT station match (10pts)
@@ -225,7 +225,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       );
       if (matched) {
         score += SCORE.BTS_STATION;
-        reasons.push("สถานี BTS/MRT ตรงกัน");
+        reasons.push("STATION_MATCH");
       }
     }
 

@@ -87,7 +87,7 @@ function getStationName(code: string, locale: string): string {
   return code;
 }
 
-function renderAvailableDate(availableDate: any, size: "sm" | "xs" = "sm") {
+function renderAvailableDate(availableDate: any, size: "sm" | "xs" = "sm", locale: string = "th") {
   if (!availableDate) return null;
   const availStr = String(availableDate).slice(0, 10);
   const t = new Date();
@@ -96,7 +96,12 @@ function renderAvailableDate(availableDate: any, size: "sm" | "xs" = "sm") {
     const px = size === "sm" ? "px-2 py-0.5" : "px-1.5 py-0.5";
     return <span className={`text-[10px] ${px} rounded-full bg-green-100 text-green-700 font-medium`}>Ready to movein</span>;
   }
-  return <span className="text-blue-600">พร้อมเข้าอยู่ {new Date(availableDate).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>;
+  const label = locale === "th" ? "พร้อมเข้าอยู่" : "Available from";
+  return (
+    <span className="text-blue-600">
+      {label} {new Date(availableDate).toLocaleDateString(locale === "th" ? "th-TH" : "en-GB", { day: "numeric", month: "short", year: "numeric" })}
+    </span>
+  );
 }
 
 const PAGE_SIZE = 30;
@@ -204,7 +209,7 @@ export default function PropertyListPage({
   // public listing shows it as freshly posted instead of counting from the
   // original record's creation date years ago.
   const resetListedAt = async (id: number) => {
-    if (!confirm("รีเซ็ตวันที่ประกาศเป็นวันนี้?")) return;
+    if (!confirm(locale === "th" ? "รีเซ็ตวันที่ประกาศเป็นวันนี้?" : "Reset the listing date to today?")) return;
     await fetch(`/api/properties/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -240,7 +245,7 @@ export default function PropertyListPage({
   };
 
   const handleBulkLocation = async () => {
-    if (!confirm("อัปเดตจังหวัด/อำเภอให้ทรัพย์ทั้งหมดที่ยังไม่มีข้อมูล โดยอ้างอิงจากสถานี BTS/MRT ใช่ไหม?")) return;
+    if (!confirm(locale === "th" ? "อัปเดตจังหวัด/อำเภอให้ทรัพย์ทั้งหมดที่ยังไม่มีข้อมูล โดยอ้างอิงจากสถานี BTS/MRT ใช่ไหม?" : "Update province/district for all properties missing this data, based on their BTS/MRT station?")) return;
     setBulkLocating(true);
     setBulkLocationResult(null);
     try {
@@ -327,7 +332,7 @@ export default function PropertyListPage({
   properties.forEach((p: any) => {
     const d = new Date(p.createdAt);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const label = d.toLocaleDateString("th-TH", { month: "long", year: "numeric" });
+    const label = d.toLocaleDateString(locale === "th" ? "th-TH" : "en-GB", { month: "long", year: "numeric" });
     if (!monthsSet.has(key)) monthsSet.set(key, { label, count: 0 });
     monthsSet.get(key)!.count++;
   });
@@ -418,10 +423,10 @@ export default function PropertyListPage({
               onClick={handleBulkLocation}
               disabled={bulkLocating}
               className="inline-flex items-center gap-2 px-3 py-2 border border-blue-500 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors text-sm disabled:opacity-50"
-              title="อัปเดตจังหวัด/อำเภอจากสถานี BTS/MRT"
+              title={locale === "th" ? "อัปเดตจังหวัด/อำเภอจากสถานี BTS/MRT" : "Update province/district from BTS/MRT station"}
             >
               {bulkLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Train className="w-4 h-4" />}
-              {bulkLocating ? "กำลังอัปเดต..." : "อัปเดตที่ตั้ง"}
+              {bulkLocating ? (locale === "th" ? "กำลังอัปเดต..." : "Updating...") : (locale === "th" ? "อัปเดตที่ตั้ง" : "Update Location")}
             </button>
 
             {/* AI enrich (Verified properties) */}
@@ -430,7 +435,7 @@ export default function PropertyListPage({
               className="inline-flex items-center gap-2 px-3 py-2 border border-[#C8A951] text-[#C8A951] rounded-lg hover:bg-amber-50 transition-colors text-sm"
             >
               <Sparkles className="w-4 h-4" />
-              ตรวจสอบข้อมูลอัตโนมัติ
+              {locale === "th" ? "ตรวจสอบข้อมูลอัตโนมัติ" : "Auto Data Check"}
             </Link>
 
             {/* Add Property */}
@@ -523,16 +528,16 @@ export default function PropertyListPage({
           <div className="bg-white border rounded-xl p-4 shadow-sm">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">สถานะ</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{locale === "th" ? "สถานะ" : "Status"}</label>
                 <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm bg-white">
-                  <option value="">ทั้งหมด</option>
+                  <option value="">{locale === "th" ? "ทั้งหมด" : "All"}</option>
                   {Object.entries(STATUS_MAP).map(([k, v]) => (
                     <option key={k} value={k}>{v.label}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">ประเภท</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{locale === "th" ? "ประเภท" : "Type"}</label>
                 <select
                   value={filterListing}
                   onChange={(e) => {
@@ -541,14 +546,14 @@ export default function PropertyListPage({
                   }}
                   className="w-full border rounded-lg px-3 py-2 text-sm bg-white"
                 >
-                  <option value="RENT">เช่า</option>
-                  <option value="SALE">ขาย</option>
+                  <option value="RENT">{locale === "th" ? "เช่า" : "Rent"}</option>
+                  <option value="SALE">{locale === "th" ? "ขาย" : "Sale"}</option>
                 </select>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Priority</label>
                 <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm bg-white">
-                  <option value="">ทั้งหมด</option>
+                  <option value="">{locale === "th" ? "ทั้งหมด" : "All"}</option>
                   <option value="NORMAL">Normal</option>
                   <option value="URGENT">Urgent</option>
                 </select>
@@ -556,22 +561,22 @@ export default function PropertyListPage({
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Category</label>
                 <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm bg-white">
-                  <option value="">ทั้งหมด</option>
+                  <option value="">{locale === "th" ? "ทั้งหมด" : "All"}</option>
                   <option value="NORMAL">Normal</option>
                   <option value="LUXURY">Luxury</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">ช่วงราคา</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{locale === "th" ? "ช่วงราคา" : "Price Range"}</label>
                 <select value={filterPriceRange} onChange={(e) => setFilterPriceRange(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm bg-white">
-                  <option value="">ทั้งหมด</option>
+                  <option value="">{locale === "th" ? "ทั้งหมด" : "All"}</option>
                   {getPriceRanges(filterListing).map((r) => (
-                    <option key={r.value} value={r.value}>{r.labelTh}</option>
+                    <option key={r.value} value={r.value}>{locale === "th" ? r.labelTh : r.labelEn}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">สถานี BTS/MRT</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{locale === "th" ? "สถานี BTS/MRT" : "BTS/MRT Station"}</label>
                 <button
                   type="button"
                   onClick={() => setShowStationFilterModal(true)}
@@ -584,16 +589,16 @@ export default function PropertyListPage({
                       {filterStations.length > 2 ? ` +${filterStations.length - 2}` : ""}
                     </span>
                   ) : (
-                    <span className="text-gray-400">เลือกสถานี</span>
+                    <span className="text-gray-400">{locale === "th" ? "เลือกสถานี" : "Select station"}</span>
                   )}
                 </button>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Post date ตั้งแต่</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{locale === "th" ? "Post date ตั้งแต่" : "Post date from"}</label>
                 <input type="date" value={filterPostDateFrom} onChange={(e) => setFilterPostDateFrom(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Post date ถึง</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{locale === "th" ? "Post date ถึง" : "Post date to"}</label>
                 <input type="date" value={filterPostDateTo} onChange={(e) => setFilterPostDateTo(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
               </div>
               <div className="flex items-end gap-2">
@@ -605,13 +610,13 @@ export default function PropertyListPage({
                     className="accent-amber-600"
                   />
                   <Lock className="w-3.5 h-3.5" />
-                  สัญญาปิดเท่านั้น
+                  {locale === "th" ? "สัญญาปิดเท่านั้น" : "Exclusive only"}
                 </label>
               </div>
               <div className="flex items-end">
                 {hasActiveFilters && (
                   <button onClick={clearFilters} className="text-sm text-red-500 hover:text-red-700 underline">
-                    ล้างตัวกรอง
+                    {locale === "th" ? "ล้างตัวกรอง" : "Clear filters"}
                   </button>
                 )}
               </div>
@@ -622,8 +627,11 @@ export default function PropertyListPage({
         {/* Result count */}
         {(searchText || hasActiveFilters) && (
           <p className="text-sm text-gray-500">
-            พบ <span className="font-bold text-gray-800">{filtered.length}</span> รายการ
-            {properties.length !== filtered.length && ` จากทั้งหมด ${properties.length}`}
+            {locale === "th" ? (
+              <>พบ <span className="font-bold text-gray-800">{filtered.length}</span> รายการ{properties.length !== filtered.length && ` จากทั้งหมด ${properties.length}`}</>
+            ) : (
+              <>Found <span className="font-bold text-gray-800">{filtered.length}</span> {filtered.length === 1 ? "item" : "items"}{properties.length !== filtered.length && ` out of ${properties.length}`}</>
+            )}
           </p>
         )}
       </div>
@@ -639,7 +647,7 @@ export default function PropertyListPage({
                 : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
           >
-            ทั้งหมด ({properties.length})
+            {locale === "th" ? "ทั้งหมด" : "All"} ({properties.length})
           </button>
           {months.map(([key, { label, count }]) => (
             <button
@@ -668,7 +676,7 @@ export default function PropertyListPage({
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
-            ทั้งหมด ({monthFiltered.length})
+            {locale === "th" ? "ทั้งหมด" : "All"} ({monthFiltered.length})
           </button>
           {Object.entries(STATUS_MAP).map(([key, info]) => {
             const count = statusCounts[key] || 0;
@@ -749,11 +757,13 @@ export default function PropertyListPage({
                           const newStatus = e.target.value;
                           if (newStatus === "ADDED_PROPERTIES") {
                             const missing: string[] = [];
-                            if (!p.images || p.images.length === 0) missing.push("รูปภาพ");
-                            if (!p.bedrooms || p.bedrooms === 0) missing.push("จำนวนห้องนอน");
-                            if (!p.bathrooms || p.bathrooms === 0) missing.push("จำนวนห้องน้ำ");
+                            if (!p.images || p.images.length === 0) missing.push(locale === "th" ? "รูปภาพ" : "Photos");
+                            if (!p.bedrooms || p.bedrooms === 0) missing.push(locale === "th" ? "จำนวนห้องนอน" : "Bedrooms");
+                            if (!p.bathrooms || p.bathrooms === 0) missing.push(locale === "th" ? "จำนวนห้องน้ำ" : "Bathrooms");
                             if (missing.length > 0) {
-                              alert(`กรุณาเพิ่มข้อมูลก่อนเปลี่ยนสถานะเป็น Added:\n- ${missing.join("\n- ")}\n\nกด Edit เพื่อเพิ่มข้อมูล`);
+                              alert(locale === "th"
+                                ? `กรุณาเพิ่มข้อมูลก่อนเปลี่ยนสถานะเป็น Added:\n- ${missing.join("\n- ")}\n\nกด Edit เพื่อเพิ่มข้อมูล`
+                                : `Please add this information before changing status to Added:\n- ${missing.join("\n- ")}\n\nClick Edit to add it`);
                               e.target.value = p.status || "PENDING";
                               return;
                             }
@@ -778,7 +788,7 @@ export default function PropertyListPage({
                       </span>
                     )}
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${daysBadgeCls}`}>
-                      {daysPosted} วัน
+                      {daysPosted} {locale === "th" ? "วัน" : "d"}
                     </span>
                     {p.category === "LUXURY" && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">Luxury</span>
@@ -793,9 +803,11 @@ export default function PropertyListPage({
                         "bg-amber-100 text-amber-800"
                       }`}>
                         <Lock className="w-2.5 h-2.5" />
-                        สัญญาปิด
+                        {locale === "th" ? "สัญญาปิด" : "Exclusive"}
                         {exclusiveDaysLeft !== null && (
-                          exclusiveDaysLeft < 0 ? " (หมดแล้ว)" : ` (${exclusiveDaysLeft}ว)`
+                          exclusiveDaysLeft < 0
+                            ? (locale === "th" ? " (หมดแล้ว)" : " (expired)")
+                            : ` (${exclusiveDaysLeft}${locale === "th" ? "ว" : "d"})`
                         )}
                       </span>
                     )}
@@ -804,18 +816,18 @@ export default function PropertyListPage({
                     <span className="text-gray-400 font-mono">#{p.id}</span>
                     {p.sizeSqm && <span>{Number(p.sizeSqm)} sqm</span>}
                     {(p.floor || p.building) && (
-                      <span>ชั้น {p.floor || "-"} / ตึก {p.building || "-"}</span>
+                      <span>{locale === "th" ? `ชั้น ${p.floor || "-"} / ตึก ${p.building || "-"}` : `Floor ${p.floor || "-"} / Bldg ${p.building || "-"}`}</span>
                     )}
                     {p.listingType && (
                       <span className="text-amber-700 font-medium">
-                        {p.listingType === "RENT" ? "เช่า" : p.listingType === "SALE" ? "ขาย" : "เช่า&ขาย"}
+                        {p.listingType === "RENT" ? (locale === "th" ? "เช่า" : "Rent") : p.listingType === "SALE" ? (locale === "th" ? "ขาย" : "Sale") : (locale === "th" ? "เช่า&ขาย" : "Rent & Sale")}
                       </span>
                     )}
-                    {renderAvailableDate(p.availableDate, "sm")}
+                    {renderAvailableDate(p.availableDate, "sm", locale)}
                     {p.addedAt && (
-                      <span className="text-gray-400">Post date: {new Date(p.addedAt).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>
+                      <span className="text-gray-400">Post date: {new Date(p.addedAt).toLocaleDateString(locale === "th" ? "th-TH" : "en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
                     )}
-                    <span className="text-gray-400">เพิ่มเข้าระบบ: {new Date(p.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>
+                    <span className="text-gray-400">{locale === "th" ? "เพิ่มเข้าระบบ" : "Added"}: {new Date(p.createdAt).toLocaleDateString(locale === "th" ? "th-TH" : "en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
                   </div>
                   {(() => {
                     const stations = parseJson(p.nearbyStations);
@@ -833,7 +845,7 @@ export default function PropertyListPage({
                 </div>
                 <div className="text-right min-w-[100px]">
                   {price > 0 && (
-                    <div className="text-sm font-bold text-gray-800">฿{price.toLocaleString()}<span className="text-[10px] text-gray-400 font-normal">/เดือน</span></div>
+                    <div className="text-sm font-bold text-gray-800">฿{price.toLocaleString()}<span className="text-[10px] text-gray-400 font-normal">{locale === "th" ? "/เดือน" : "/mo"}</span></div>
                   )}
                   {salePrice > 0 && (
                     <div className="text-xs text-green-700 font-medium">ขาย ฿{salePrice.toLocaleString()}</div>
@@ -870,14 +882,14 @@ export default function PropertyListPage({
                       <button
                         onClick={() => setExclusiveModal(p)}
                         className={`p-2 rounded-lg transition-colors ${p.isExclusive ? "text-amber-600 bg-amber-50 hover:bg-amber-100" : "hover:bg-gray-100 text-gray-400"}`}
-                        title="สัญญาปิด"
+                        title={locale === "th" ? "สัญญาปิด" : "Exclusive contract"}
                       >
                         <Lock className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setReceiptModal(p)}
                         className="p-2 hover:bg-green-50 rounded-lg text-green-700 transition-colors"
-                        title="Create ใบรับเงินมัดจำ"
+                        title={locale === "th" ? "สร้างใบรับเงินมัดจำ" : "Create deposit receipt"}
                       >
                         <Receipt className="w-4 h-4" />
                       </button>
@@ -887,7 +899,7 @@ export default function PropertyListPage({
                       <Link href={`/${locale}/admin/properties/add?edit=${p.id}`} className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors" title="Edit">
                         <Edit3 className="w-4 h-4" />
                       </Link>
-                      <button onClick={() => resetListedAt(p.id)} className="p-2 hover:bg-teal-50 rounded-lg text-teal-600 transition-colors" title="รีเซ็ตวันที่ประกาศ (สำหรับห้องที่กลับมาว่างอีก)">
+                      <button onClick={() => resetListedAt(p.id)} className="p-2 hover:bg-teal-50 rounded-lg text-teal-600 transition-colors" title={locale === "th" ? "รีเซ็ตวันที่ประกาศ (สำหรับห้องที่กลับมาว่างอีก)" : "Reset listing date (for a unit back on the market)"}>
                         <CalendarClock className="w-4 h-4" />
                       </button>
                       <button onClick={() => deleteProperty(p.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors" title="Delete">
@@ -925,11 +937,13 @@ export default function PropertyListPage({
                         const newStatus = e.target.value;
                         if (newStatus === "ADDED_PROPERTIES") {
                           const missing: string[] = [];
-                          if (!p.images || p.images.length === 0) missing.push("รูปภาพ");
-                          if (!p.bedrooms || p.bedrooms === 0) missing.push("จำนวนห้องนอน");
-                          if (!p.bathrooms || p.bathrooms === 0) missing.push("จำนวนห้องน้ำ");
+                          if (!p.images || p.images.length === 0) missing.push(locale === "th" ? "รูปภาพ" : "Photos");
+                          if (!p.bedrooms || p.bedrooms === 0) missing.push(locale === "th" ? "จำนวนห้องนอน" : "Bedrooms");
+                          if (!p.bathrooms || p.bathrooms === 0) missing.push(locale === "th" ? "จำนวนห้องน้ำ" : "Bathrooms");
                           if (missing.length > 0) {
-                            alert(`กรุณาเพิ่มข้อมูลก่อนเปลี่ยนสถานะเป็น Added:\n- ${missing.join("\n- ")}\n\nกด Edit เพื่อเพิ่มข้อมูล`);
+                            alert(locale === "th"
+                              ? `กรุณาเพิ่มข้อมูลก่อนเปลี่ยนสถานะเป็น Added:\n- ${missing.join("\n- ")}\n\nกด Edit เพื่อเพิ่มข้อมูล`
+                              : `Please add this information before changing status to Added:\n- ${missing.join("\n- ")}\n\nClick Edit to add it`);
                             e.target.value = p.status || "PENDING";
                             return;
                           }
@@ -954,7 +968,7 @@ export default function PropertyListPage({
                     </span>
                   )}
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ${daysBadgeCls}`}>
-                    {daysPosted} วัน
+                    {daysPosted} {locale === "th" ? "วัน" : "d"}
                   </span>
                 </div>
 
@@ -962,17 +976,17 @@ export default function PropertyListPage({
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
                   <span className="text-gray-400 font-mono">#{p.id}</span>
                   {p.sizeSqm && <span>{Number(p.sizeSqm)} sqm</span>}
-                  {(p.floor || p.building) && <span>ชั้น {p.floor || "-"} / ตึก {p.building || "-"}</span>}
+                  {(p.floor || p.building) && <span>{locale === "th" ? `ชั้น ${p.floor || "-"} / ตึก ${p.building || "-"}` : `Floor ${p.floor || "-"} / Bldg ${p.building || "-"}`}</span>}
                   {p.listingType && (
                     <span className="text-amber-700 font-medium">
-                      {p.listingType === "RENT" ? "เช่า" : p.listingType === "SALE" ? "ขาย" : "เช่า&ขาย"}
+                      {p.listingType === "RENT" ? (locale === "th" ? "เช่า" : "Rent") : p.listingType === "SALE" ? (locale === "th" ? "ขาย" : "Sale") : (locale === "th" ? "เช่า&ขาย" : "Rent & Sale")}
                     </span>
                   )}
-                  {renderAvailableDate(p.availableDate, "xs")}
+                  {renderAvailableDate(p.availableDate, "xs", locale)}
                   {p.addedAt && (
-                    <span className="text-gray-400 text-[10px]">Post: {new Date(p.addedAt).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>
+                    <span className="text-gray-400 text-[10px]">Post: {new Date(p.addedAt).toLocaleDateString(locale === "th" ? "th-TH" : "en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
                   )}
-                  <span className="text-gray-400 text-[10px]">เพิ่มเข้าระบบ: {new Date(p.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>
+                  <span className="text-gray-400 text-[10px]">{locale === "th" ? "เพิ่มเข้าระบบ" : "Added"}: {new Date(p.createdAt).toLocaleDateString(locale === "th" ? "th-TH" : "en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
                   {p.category === "LUXURY" && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">Luxury</span>}
                   {p.priority === "URGENT" && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">Urgent</span>}
                   {p.isExclusive && (
@@ -981,7 +995,7 @@ export default function PropertyListPage({
                       exclusiveDaysLeft !== null && exclusiveDaysLeft <= 45 ? "bg-yellow-100 text-yellow-700" :
                       "bg-amber-100 text-amber-800"
                     }`}>
-                      <Lock className="w-2.5 h-2.5" />สัญญาปิด
+                      <Lock className="w-2.5 h-2.5" />{locale === "th" ? "สัญญาปิด" : "Exclusive"}
                     </span>
                   )}
                 </div>
@@ -1005,7 +1019,7 @@ export default function PropertyListPage({
                 <div className="flex items-center justify-between pt-1 border-t border-gray-100">
                   <div>
                     {price > 0 && (
-                      <div className="text-sm font-bold text-gray-800">฿{price.toLocaleString()}<span className="text-[10px] text-gray-400 font-normal">/เดือน</span></div>
+                      <div className="text-sm font-bold text-gray-800">฿{price.toLocaleString()}<span className="text-[10px] text-gray-400 font-normal">{locale === "th" ? "/เดือน" : "/mo"}</span></div>
                     )}
                     {salePrice > 0 && (
                       <div className="text-xs text-green-700 font-medium">ขาย ฿{salePrice.toLocaleString()}</div>
@@ -1033,14 +1047,14 @@ export default function PropertyListPage({
                         <button
                           onClick={() => setExclusiveModal(p)}
                           className={`p-2 rounded-lg transition-colors ${p.isExclusive ? "text-amber-600 bg-amber-50 hover:bg-amber-100" : "hover:bg-gray-100 text-gray-400"}`}
-                          title="สัญญาปิด"
+                          title={locale === "th" ? "สัญญาปิด" : "Exclusive contract"}
                         >
                           <Lock className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setReceiptModal(p)}
                           className="p-2 hover:bg-green-50 rounded-lg text-green-700 transition-colors"
-                          title="Create ใบรับเงินมัดจำ"
+                          title={locale === "th" ? "สร้างใบรับเงินมัดจำ" : "Create deposit receipt"}
                         >
                           <Receipt className="w-4 h-4" />
                         </button>
@@ -1050,7 +1064,7 @@ export default function PropertyListPage({
                         <Link href={`/${locale}/admin/properties/add?edit=${p.id}`} className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors" title="Edit">
                           <Edit3 className="w-4 h-4" />
                         </Link>
-                        <button onClick={() => resetListedAt(p.id)} className="p-2 hover:bg-teal-50 rounded-lg text-teal-600 transition-colors" title="รีเซ็ตวันที่ประกาศ (สำหรับห้องที่กลับมาว่างอีก)">
+                        <button onClick={() => resetListedAt(p.id)} className="p-2 hover:bg-teal-50 rounded-lg text-teal-600 transition-colors" title={locale === "th" ? "รีเซ็ตวันที่ประกาศ (สำหรับห้องที่กลับมาว่างอีก)" : "Reset listing date (for a unit back on the market)"}>
                           <CalendarClock className="w-4 h-4" />
                         </button>
                         <button onClick={() => deleteProperty(p.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors" title="Delete">
