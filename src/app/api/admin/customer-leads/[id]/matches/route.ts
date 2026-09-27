@@ -73,6 +73,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const properties = await prisma.property.findMany({
     where: {
       isSold: false,
+      isRented: false,
       status: { in: ["VERIFIED", "VERIFIED_OVER_10_DAYS", "ADDED_PROPERTIES"] },
     },
     include: {

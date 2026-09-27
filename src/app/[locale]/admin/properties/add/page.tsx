@@ -89,8 +89,6 @@ const STATUS_OPTIONS = [
   { value: "ADDED_PROPERTIES", label: "6. Added Properties" },
   { value: "NOT_ACCEPT", label: "7. Not Accept" },
   { value: "NOT_AVAILABLE", label: "8. Not Available" },
-  { value: "RENTED", label: "9. Rented" },
-  { value: "SOLD", label: "10. Sold" },
 ];
 
 // Same status colors as PropertyListPage's STATUS_MAP, for the header summary badge.
@@ -103,8 +101,6 @@ const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   ADDED_PROPERTIES: { label: "Added", color: "bg-purple-100 text-purple-800" },
   NOT_ACCEPT: { label: "Not Accept", color: "bg-red-100 text-red-800" },
   NOT_AVAILABLE: { label: "Not Available", color: "bg-gray-100 text-gray-800" },
-  RENTED: { label: "Rented", color: "bg-teal-100 text-teal-800" },
-  SOLD: { label: "Sold", color: "bg-rose-100 text-rose-800" },
 };
 
 const LISTING_TYPE_OPTIONS = [

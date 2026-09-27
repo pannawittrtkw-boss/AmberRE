@@ -50,8 +50,9 @@ export async function GET(req: NextRequest) {
           by: ["projectId", "listingType"],
           where: {
             projectId: { in: projectIds },
-            status: { notIn: ["NOT_ACCEPT", "NOT_AVAILABLE", "PENDING", "SOLD", "RENTED"] },
+            status: { notIn: ["NOT_ACCEPT", "NOT_AVAILABLE", "PENDING"] },
             isSold: false,
+            isRented: false,
           },
           _count: { _all: true },
         })

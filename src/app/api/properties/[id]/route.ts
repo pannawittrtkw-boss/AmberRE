@@ -90,7 +90,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       "status", "category", "priority", "foreignerAccept", "petFriendly", "smokingAllowed", "note",
     ];
     const boolFields = [
-      "kitchenPartition", "bedroomPartition", "isFeatured", "isPopular", "isSold", "isExclusive",
+      "kitchenPartition", "bedroomPartition", "isFeatured", "isPopular", "isSold", "isRented", "isExclusive",
     ];
     const intFields = ["bedrooms", "bathrooms", "floor", "views", "projectId"];
 

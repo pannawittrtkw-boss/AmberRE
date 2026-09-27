@@ -71,6 +71,8 @@ export async function GET(req: NextRequest) {
           category: true,
           price: true,
           isExclusive: true,
+          isSold: true,
+          isRented: true,
           addedAt: true,
           bedrooms: true,
           sizeSqm: true,
@@ -113,7 +115,10 @@ export async function GET(req: NextRequest) {
     if (propertyType) where.propertyType = propertyType;
     if (buildingType) where.buildingType = buildingType;
     if (condition) where.condition = condition;
-    if (hideSold) where.isSold = false;
+    if (hideSold) {
+      where.isSold = false;
+      where.isRented = false;
+    }
     if (minPriceParam || maxPriceParam) {
       where.price = {};
       if (minPriceParam) where.price.gte = Number(minPriceParam);

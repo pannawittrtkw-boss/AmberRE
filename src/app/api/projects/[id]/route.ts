@@ -30,6 +30,7 @@ export async function GET(
             building: true,
             status: true,
             isSold: true,
+            isRented: true,
             estCode: true,
             createdAt: true,
             images: {

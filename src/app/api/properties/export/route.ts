@@ -84,7 +84,7 @@ export async function GET() {
       ["Airport Rail Link: A1-พญาไท ... A8-สุวรรณภูมิ"],
       [],
       ["Listing Type: RENT, SALE, RENT_AND_SALE"],
-      ["Status: PENDING, WAITING, VERIFIED, VERIFIED_OVER_10_DAYS, REVIEW, ADDED_PROPERTIES, NOT_ACCEPT, NOT_AVAILABLE, RENTED, SOLD"],
+      ["Status: PENDING, WAITING, VERIFIED, VERIFIED_OVER_10_DAYS, REVIEW, ADDED_PROPERTIES, NOT_ACCEPT, NOT_AVAILABLE"],
       ["Category: NORMAL, LUXURY"],
       ["Priority: NORMAL, URGENT"],
       ["Post From: OWNER, AGENT"],

@@ -147,8 +147,8 @@ export default function PropertyMapView({ properties, locale }: PropertyMapViewP
       const salePrice = Number(p.salePrice) || 0;
       const displayPrice = price > 0 ? price : salePrice;
       const sizeSqm = p.sizeSqm ? Number(p.sizeSqm) : null;
-      const isSold = p.isSold || p.status === "SOLD";
-      const isRented = p.status === "RENTED";
+      const isSold = p.isSold;
+      const isRented = p.isRented;
       const overlayText = isSold ? "Sold Out" : isRented ? "Rented" : "";
 
       const markerIcon = L.divIcon({

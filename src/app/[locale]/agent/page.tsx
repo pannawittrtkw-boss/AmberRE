@@ -29,6 +29,8 @@ type Property = {
   propertyType: string;
   price: number;
   status: string | null;
+  isSold: boolean;
+  isRented: boolean;
   images: { imageUrl: string }[];
   createdAt: string;
 };
@@ -36,8 +38,6 @@ type Property = {
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   PENDING:           { label: "รออนุมัติ",      cls: "bg-yellow-100 text-yellow-700" },
   ADDED_PROPERTIES:  { label: "เผยแพร่แล้ว",    cls: "bg-green-100 text-green-700" },
-  SOLD:              { label: "ขายแล้ว",         cls: "bg-red-100 text-red-700" },
-  RENTED:            { label: "ให้เช่าแล้ว",     cls: "bg-blue-100 text-blue-700" },
   REMOVED:           { label: "ถูกลบออก",        cls: "bg-gray-100 text-gray-500" },
 };
 
@@ -278,6 +278,12 @@ export default function AgentPortalPage({ params }: { params: Promise<{ locale: 
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {statusBadge(p.status)}
+                      {p.isRented && (
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">ให้เช่าแล้ว</span>
+                      )}
+                      {p.isSold && (
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-700">ขายแล้ว</span>
+                      )}
                       {p.status === "ADDED_PROPERTIES" && (
                         <Link href={`/${locale}/properties/${p.id}`} className="text-xs text-amber-600 hover:underline">ดู</Link>
                       )}

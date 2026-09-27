@@ -50,8 +50,8 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
       ? "bg-amber-500 text-white"
       : "bg-red-500 text-white";
 
-  const isSold = property.isSold || property.status === "SOLD";
-  const isRented = property.status === "RENTED";
+  const isSold = property.isSold;
+  const isRented = property.isRented;
   const isSoldOrRented = isSold || isRented;
 
   // Get stations from nearbyStations JSON field

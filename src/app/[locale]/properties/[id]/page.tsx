@@ -86,8 +86,6 @@ const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   ADDED_PROPERTIES: { label: "Added", color: "bg-purple-500" },
   NOT_ACCEPT: { label: "Not Accept", color: "bg-red-500" },
   NOT_AVAILABLE: { label: "Not Available", color: "bg-gray-500" },
-  RENTED: { label: "Rented", color: "bg-teal-500" },
-  SOLD: { label: "Sold", color: "bg-rose-500" },
 };
 
 function parseJson(val: string | null): string[] {
@@ -316,8 +314,8 @@ export default async function PropertyDetailPage({
     property.listingType === "RENT" || property.listingType === "RENT_AND_SALE";
   const isSale =
     property.listingType === "SALE" || property.listingType === "RENT_AND_SALE";
-  const isSold = property.isSold || property.status === "SOLD";
-  const isRented = property.status === "RENTED";
+  const isSold = property.isSold;
+  const isRented = property.isRented;
 
   // Same "days on market" coloring as FeaturedPropertyCard / admin lists.
   const listedDate = new Date(property.listedAt || property.createdAt);
