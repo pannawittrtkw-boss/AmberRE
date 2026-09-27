@@ -51,15 +51,21 @@ export interface MonthlyClosedCount {
 }
 
 // "ทรัพย์ที่ปิดได้" is tracked independently of the money — a signed
-// contract counts as closed the month it was made (contractDate),
-// whether or not commission has been collected yet. RENEW contracts
-// count too, per the confirmed rule.
+// contract counts as closed the month the deal was actually entered into
+// the system (createdAt), whether or not commission has been collected
+// yet. RENEW contracts count too, per the confirmed rule.
+//
+// Deliberately NOT contractDate/startDate — those mirror the tenant's
+// move-in date, which is routinely days-to-weeks after the agent actually
+// closed the deal (e.g. contract entered Sep 23 for an Oct 1 move-in), so
+// bucketing by them would delay an agent's numbers past when the work was
+// actually done.
 export function summarizeClosedCountByMonth(
-  contracts: Array<{ contractDate: Date | string }>
+  contracts: Array<{ createdAt: Date | string }>
 ): MonthlyClosedCount[] {
   const byMonth = new Map<string, number>();
   for (const c of contracts) {
-    const d = new Date(c.contractDate);
+    const d = new Date(c.createdAt);
     const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     byMonth.set(monthKey, (byMonth.get(monthKey) ?? 0) + 1);
   }
@@ -77,11 +83,13 @@ export interface AgentCommissionMonth {
   pendingCommission: number;
 }
 
-// Buckets an agent's contracts by the month they were signed in
-// (contractDate — same convention as summarizeClosedCountByMonth), so a
-// commission shows up as "pending" for the agent to see as motivation as
-// soon as the contract exists, rather than waiting on the company to
-// separately confirm it has collected the money from the owner. Whether
+// Buckets an agent's contracts by the month they were actually entered
+// into the system (createdAt — same convention as
+// summarizeClosedCountByMonth, and NOT contractDate/startDate; see that
+// function's comment for why), so a commission shows up as "pending" for
+// the agent to see as motivation as soon as the contract exists, rather
+// than waiting on the company to separately confirm it has collected the
+// money from the owner, or on the tenant's move-in date to arrive. Whether
 // the company has received that money is tracked independently via
 // Contract.commissionReceived and no longer gates this. A contract only
 // stops counting if the deal itself fell through (status TERMINATED) —
@@ -99,7 +107,7 @@ export function summarizeAgentCommissionByMonth(
     contractType: string;
     termMonths: number;
     dealType: string;
-    contractDate: Date | string;
+    createdAt: Date | string;
     commissionPaid: boolean;
   }>,
   rentTiers: CommissionTierLike[]
@@ -107,7 +115,7 @@ export function summarizeAgentCommissionByMonth(
   const byMonth = new Map<string, Array<{ amount: number; paid: boolean }>>();
 
   for (const c of contracts) {
-    const d = new Date(c.contractDate);
+    const d = new Date(c.createdAt);
     const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     const amount = calcContractCommission(c);
     const list = byMonth.get(monthKey) ?? [];

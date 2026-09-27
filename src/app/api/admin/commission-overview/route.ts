@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     // "Closed" count is independent of payment status.
     prisma.contract.findMany({
       where: { agentId: { not: null } },
-      select: { agentId: true, contractDate: true },
+      select: { agentId: true, createdAt: true },
     }),
     // "Pending" shows up for the agent as soon as the contract exists —
     // only a fallen-through deal (TERMINATED) is excluded. Whether the
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
         contractType: true,
         termMonths: true,
         dealType: true,
-        contractDate: true,
+        createdAt: true,
         commissionPaid: true,
       },
     }),

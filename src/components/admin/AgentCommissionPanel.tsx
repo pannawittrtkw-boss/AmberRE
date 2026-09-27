@@ -10,6 +10,7 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  LabelList,
 } from "recharts";
 import Sparkline from "./Sparkline";
 
@@ -124,6 +125,7 @@ export default function AgentCommissionPanel({
     label: TH_MONTHS_SHORT[m.month - 1],
     current: m.earnedCommission,
     previous: yearlySeries.previous[i]?.earnedCommission ?? 0,
+    closedCount: m.closedCount,
   }));
   const elapsedData = yearlySeries.current.slice(0, elapsedMonths);
   const ytdEarned = elapsedData.reduce((sum, m) => sum + m.earnedCommission, 0);
@@ -237,7 +239,7 @@ export default function AgentCommissionPanel({
           </div>
           <div className="h-64 w-full mt-3 -ml-2">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <AreaChart data={chartData} margin={{ top: 28, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="currentYearFill" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#C8A951" stopOpacity={0.3} />
@@ -256,14 +258,33 @@ export default function AgentCommissionPanel({
                   tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toString())}
                 />
                 <Tooltip
-                  formatter={(value, name) => [
-                    `฿${Number(value ?? 0).toLocaleString("th-TH")}`,
-                    name === "current" ? String(yearlySeries.currentYear) : String(yearlySeries.previousYear),
-                  ]}
+                  formatter={(value, name, item: any) => {
+                    const amount = `฿${Number(value ?? 0).toLocaleString("th-TH")}`;
+                    const label =
+                      name === "current"
+                        ? `${yearlySeries.currentYear} (${item?.payload?.closedCount ?? 0} สัญญา)`
+                        : String(yearlySeries.previousYear);
+                    return [amount, label];
+                  }}
                   contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }}
                 />
                 <Area type="monotone" dataKey="previous" stroke="#94a3b8" strokeWidth={2} fill="url(#previousYearFill)" />
-                <Area type="monotone" dataKey="current" stroke="#C8A951" strokeWidth={2.5} fill="url(#currentYearFill)" />
+                <Area type="monotone" dataKey="current" stroke="#C8A951" strokeWidth={2.5} fill="url(#currentYearFill)">
+                  <LabelList
+                    dataKey="current"
+                    content={(props: any) => {
+                      const { x, y, index } = props;
+                      const point = chartData[index];
+                      if (!point || point.current <= 0) return null;
+                      return (
+                        <text x={x} y={y - 22} textAnchor="middle" fontSize={10.5} fontWeight={700} fill="#9c7a1f">
+                          <tspan x={x} dy="0">฿{point.current.toLocaleString("th-TH")}</tspan>
+                          <tspan x={x} dy="12">{point.closedCount} สัญญา</tspan>
+                        </text>
+                      );
+                    }}
+                  />
+                </Area>
               </AreaChart>
             </ResponsiveContainer>
           </div>
