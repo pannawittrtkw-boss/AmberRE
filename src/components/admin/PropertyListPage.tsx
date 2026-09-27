@@ -165,6 +165,7 @@ export default function PropertyListPage({
   const [filterReadyToMoveIn, setFilterReadyToMoveIn] = useState(false);
   const [filterPetFriendly, setFilterPetFriendly] = useState(false);
   const [filterSmokingAllowed, setFilterSmokingAllowed] = useState(false);
+  const [filterHideUnavailable, setFilterHideUnavailable] = useState(false);
 
   useEffect(() => {
     params.then(({ locale: l }) => {
@@ -341,10 +342,11 @@ export default function PropertyListPage({
     }
     if (filterPetFriendly && p.petFriendly !== "ACCEPT") return false;
     if (filterSmokingAllowed && p.smokingAllowed !== "ACCEPT") return false;
+    if (filterHideUnavailable && (p.isRented || p.isSold)) return false;
     return true;
   });
 
-  const hasActiveFilters = filterStatus || filterListing !== "RENT" || filterPropertyType || filterPriority || filterCategory || filterPriceRange || filterStations.length > 0 || filterExclusive || filterPostDateFrom || filterPostDateTo || filterBedrooms || filterMinSize || filterReadyToMoveIn || filterPetFriendly || filterSmokingAllowed;
+  const hasActiveFilters = filterStatus || filterListing !== "RENT" || filterPropertyType || filterPriority || filterCategory || filterPriceRange || filterStations.length > 0 || filterExclusive || filterPostDateFrom || filterPostDateTo || filterBedrooms || filterMinSize || filterReadyToMoveIn || filterPetFriendly || filterSmokingAllowed || filterHideUnavailable;
 
   const clearFilters = () => {
     setSearchText(""); setFilterStatus(""); setFilterListing("RENT"); setFilterPropertyType("");
@@ -353,6 +355,7 @@ export default function PropertyListPage({
     setFilterExclusive(false); setFilterPostDateFrom(""); setFilterPostDateTo("");
     setFilterBedrooms(""); setFilterMinSize("");
     setFilterReadyToMoveIn(false); setFilterPetFriendly(false); setFilterSmokingAllowed(false);
+    setFilterHideUnavailable(false);
   };
 
   // Generate month tabs from properties
@@ -405,7 +408,7 @@ export default function PropertyListPage({
     searchText, filterStatus, filterListing, filterPropertyType, filterPriority, filterCategory,
     filterPriceRange, filterStationsKey, filterExclusive,
     filterPostDateFrom, filterPostDateTo, selectedMonth, selectedStatusTab,
-    filterBedrooms, filterMinSize, filterReadyToMoveIn, filterPetFriendly, filterSmokingAllowed,
+    filterBedrooms, filterMinSize, filterReadyToMoveIn, filterPetFriendly, filterSmokingAllowed, filterHideUnavailable,
   ]);
 
   const pageItemsById = new Map(pageItems.map((p: any) => [p.id, p]));
@@ -690,6 +693,15 @@ export default function PropertyListPage({
                   <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${filterSmokingAllowed ? "translate-x-5" : "translate-x-0.5"}`} />
                 </div>
               </label>
+              <label className="flex items-center justify-between gap-2 border rounded-lg px-3 py-2 cursor-pointer select-none">
+                <span className="text-sm text-gray-700">🚫 {locale === "th" ? "ซ่อนที่ให้เช่า/ขายแล้ว" : "Hide rented/sold"}</span>
+                <div
+                  onClick={() => setFilterHideUnavailable(!filterHideUnavailable)}
+                  className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${filterHideUnavailable ? "bg-red-500" : "bg-gray-300"}`}
+                >
+                  <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${filterHideUnavailable ? "translate-x-5" : "translate-x-0.5"}`} />
+                </div>
+              </label>
               <div className="flex items-end gap-2">
                 <label className="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 hover:bg-amber-100 transition-colors">
                   <input
@@ -819,8 +831,9 @@ export default function PropertyListPage({
               ? "bg-amber-500 text-white"
               : "bg-red-500 text-white";
 
+          const isUnavailable = p.isRented || p.isSold;
           return (
-            <div key={p.id} className="bg-white rounded-xl border shadow-sm overflow-hidden">
+            <div key={p.id} className={`rounded-xl border shadow-sm overflow-hidden ${isUnavailable ? "bg-red-50" : "bg-white"}`}>
               {/* Main Row - Desktop */}
               <div className="hidden sm:flex items-center gap-3 px-4 py-3">
                 <div className="w-8 text-center text-sm font-bold text-gray-400">{idx + 1}</div>
@@ -959,7 +972,7 @@ export default function PropertyListPage({
                         {p.listingType === "RENT" ? (locale === "th" ? "เช่า" : "Rent") : p.listingType === "SALE" ? (locale === "th" ? "ขาย" : "Sale") : (locale === "th" ? "เช่า&ขาย" : "Rent & Sale")}
                       </span>
                     )}
-                    {renderAvailableDate(p.availableDate, "sm", locale)}
+                    {!p.isRented && renderAvailableDate(p.availableDate, "sm", locale)}
                     {p.addedAt && (
                       <span className="text-gray-400">Post date: {new Date(p.addedAt).toLocaleDateString(locale === "th" ? "th-TH" : "en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
                     )}
@@ -1174,7 +1187,7 @@ export default function PropertyListPage({
                       {p.listingType === "RENT" ? (locale === "th" ? "เช่า" : "Rent") : p.listingType === "SALE" ? (locale === "th" ? "ขาย" : "Sale") : (locale === "th" ? "เช่า&ขาย" : "Rent & Sale")}
                     </span>
                   )}
-                  {renderAvailableDate(p.availableDate, "xs", locale)}
+                  {!p.isRented && renderAvailableDate(p.availableDate, "xs", locale)}
                   {p.addedAt && (
                     <span className="text-gray-400 text-[10px]">Post: {new Date(p.addedAt).toLocaleDateString(locale === "th" ? "th-TH" : "en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
                   )}

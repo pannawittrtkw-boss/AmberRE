@@ -123,8 +123,8 @@ export default function FeaturedPropertyCard({ property, locale, messages }: Fea
 
         {/* Tags */}
         <div className="px-3 pt-2.5 pb-1 flex flex-wrap items-center gap-1.5">
-          {/* Ready / Available date */}
-          {isReady ? (
+          {/* Ready / Available date — suppressed once actually rented out */}
+          {isRented ? null : isReady ? (
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-teal-600 text-white">
               {messages.property.readyToMove}
             </span>

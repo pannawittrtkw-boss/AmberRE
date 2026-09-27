@@ -175,6 +175,8 @@ export default function AddPropertyPage({
     foreignerAccept: "ACCEPT",
     petFriendly: "NOT_ACCEPT",
     smokingAllowed: "NOT_ACCEPT",
+    isRented: false,
+    isSold: false,
     note: "",
     availableDate: new Date().toISOString().split("T")[0],
     province: "",
@@ -298,6 +300,8 @@ export default function AddPropertyPage({
           foreignerAccept: (p as any).foreignerAccept || "ACCEPT",
           petFriendly: (p as any).petFriendly || "NOT_ACCEPT",
           smokingAllowed: (p as any).smokingAllowed || "NOT_ACCEPT",
+          isRented: (p as any).isRented || false,
+          isSold: (p as any).isSold || false,
           note: p.note || "",
           availableDate: p.availableDate ? new Date(p.availableDate).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
           province: p.province || "",
@@ -455,7 +459,7 @@ export default function AddPropertyPage({
     })
     .slice(0, 3);
 
-  const updateForm = (field: string, value: string) => {
+  const updateForm = (field: string, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -582,6 +586,8 @@ export default function AddPropertyPage({
         foreignerAccept: form.foreignerAccept,
         petFriendly: form.petFriendly,
         smokingAllowed: form.smokingAllowed,
+        isRented: form.isRented,
+        isSold: form.isSold,
         note: form.note || null,
         availableDate: form.availableDate || null,
         province: form.province || null,
@@ -1700,6 +1706,33 @@ export default function AddPropertyPage({
                     <span className="text-sm font-medium">{label}</span>
                   </label>
                 ))}
+              </div>
+            </div>
+
+            {/* Rented / Sold — quick availability flags */}
+            <div>
+              <label className="block text-sm font-semibold mb-2 text-rose-700">
+                {locale === "th" ? "สถานะใช้งาน" : "Availability"}
+              </label>
+              <div className="flex items-center gap-6 mt-1">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.isRented}
+                    onChange={(e) => updateForm("isRented", e.target.checked)}
+                    className="w-5 h-5 text-rose-600 focus:ring-rose-500 rounded"
+                  />
+                  <span className="text-sm font-medium">{locale === "th" ? "ให้เช่าแล้ว" : "Rented"}</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.isSold}
+                    onChange={(e) => updateForm("isSold", e.target.checked)}
+                    className="w-5 h-5 text-rose-600 focus:ring-rose-500 rounded"
+                  />
+                  <span className="text-sm font-medium">{locale === "th" ? "ขายแล้ว" : "Sold"}</span>
+                </label>
               </div>
             </div>
 
