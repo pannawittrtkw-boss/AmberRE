@@ -125,7 +125,7 @@ export default function MapView({
   // null while loading/unavailable, in which case a straight-line estimate
   // is shown instead (see renderDistance / the Polyline fallback below).
   const [routeData, setRouteData] = useState<{
-    coords: [number, number][];
+    coordinates: [number, number][];
     distanceMeters: number;
     durationSeconds: number;
   } | null>(null);
@@ -372,23 +372,26 @@ export default function MapView({
           </Marker>
         )}
 
-        {searchMarker && routeTarget && (
-          <Polyline
-            positions={
-              !isDraggingPin && routeData
-                ? routeData.coords
-                : [
-                    [searchMarker.lat, searchMarker.lng],
-                    [routeTarget.lat, routeTarget.lng],
-                  ]
-            }
-            pathOptions={
-              !isDraggingPin && routeData
-                ? { color: "#2563eb", weight: 4, opacity: 0.85 }
-                : { color: "#2563eb", weight: 3, opacity: 0.6, dashArray: "8 8" }
-            }
-          />
-        )}
+        {searchMarker && routeTarget && (() => {
+          const hasRealRoute = !isDraggingPin && !!routeData?.coordinates?.length;
+          return (
+            <Polyline
+              positions={
+                hasRealRoute
+                  ? routeData!.coordinates
+                  : [
+                      [searchMarker.lat, searchMarker.lng],
+                      [routeTarget.lat, routeTarget.lng],
+                    ]
+              }
+              pathOptions={
+                hasRealRoute
+                  ? { color: "#2563eb", weight: 4, opacity: 0.85 }
+                  : { color: "#2563eb", weight: 3, opacity: 0.6, dashArray: "8 8" }
+              }
+            />
+          );
+        })()}
 
         {Object.entries(
           validProperties.reduce<Record<string, MapProperty[]>>((groups, property) => {
