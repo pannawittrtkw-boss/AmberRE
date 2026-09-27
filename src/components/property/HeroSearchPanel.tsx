@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Search, ChevronLeft, ChevronRight, Train, ChevronDown, PawPrint, Cigarette } from "lucide-react";
@@ -72,18 +73,35 @@ export default function HeroSearchPanel({ locale, messages }: HeroSearchPanelPro
 
   const [amenities, setAmenities] = useState<Amenity[]>([]);
   const [stations, setStations] = useState<Station[]>([]);
+  const [typeDropdownPos, setTypeDropdownPos] = useState<{ top: number; left: number } | null>(null);
+  const [mounted, setMounted] = useState(false);
   const amenitiesRef = useRef<HTMLDivElement>(null);
-  const typeDropdownRef = useRef<HTMLDivElement>(null);
+  const typeButtonRef = useRef<HTMLButtonElement>(null);
+  const typePanelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (typeDropdownRef.current && !typeDropdownRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        typeButtonRef.current && !typeButtonRef.current.contains(target) &&
+        typePanelRef.current && !typePanelRef.current.contains(target)
+      ) {
         setShowTypeDropdown(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const toggleTypeDropdown = () => {
+    if (!showTypeDropdown && typeButtonRef.current) {
+      const rect = typeButtonRef.current.getBoundingClientRect();
+      setTypeDropdownPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setShowTypeDropdown((v) => !v);
+  };
 
   useEffect(() => {
     fetch("/api/amenities")
@@ -236,10 +254,11 @@ export default function HeroSearchPanel({ locale, messages }: HeroSearchPanelPro
         <div className="px-3 sm:px-4 pb-3 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
           <div className="flex gap-2 min-w-max sm:min-w-0 sm:flex-wrap">
             {/* Property Type (multi-select) */}
-            <div className="relative" ref={typeDropdownRef}>
+            <div className="relative">
               <button
+                ref={typeButtonRef}
                 type="button"
-                onClick={() => setShowTypeDropdown((v) => !v)}
+                onClick={toggleTypeDropdown}
                 className="px-2 sm:px-3 py-2 rounded-lg border border-gray-200 text-xs sm:text-sm text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-[#C8A951] inline-flex items-center gap-1 whitespace-nowrap"
               >
                 {propertyTypes.length > 0 ? (
@@ -253,24 +272,30 @@ export default function HeroSearchPanel({ locale, messages }: HeroSearchPanelPro
                 )}
                 <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
               </button>
-              {showTypeDropdown && (
-                <div className="absolute z-20 top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
-                  {PROPERTY_TYPES.map((type) => (
-                    <label
-                      key={type}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-50 cursor-pointer text-sm text-gray-700"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={propertyTypes.includes(type)}
-                        onChange={() => togglePropertyType(type)}
-                        className="accent-[#C8A951]"
-                      />
-                      {propertyTypeLabel(type, locale)}
-                    </label>
-                  ))}
-                </div>
-              )}
+              {showTypeDropdown && mounted && typeDropdownPos &&
+                createPortal(
+                  <div
+                    ref={typePanelRef}
+                    style={{ position: "fixed", top: typeDropdownPos.top, left: typeDropdownPos.left }}
+                    className="z-[100] w-48 bg-white border border-gray-200 rounded-lg shadow-lg p-2"
+                  >
+                    {PROPERTY_TYPES.map((type) => (
+                      <label
+                        key={type}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-50 cursor-pointer text-sm text-gray-700"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={propertyTypes.includes(type)}
+                          onChange={() => togglePropertyType(type)}
+                          className="accent-[#C8A951]"
+                        />
+                        {propertyTypeLabel(type, locale)}
+                      </label>
+                    ))}
+                  </div>,
+                  document.body
+                )}
             </div>
 
             {/* Price Range */}

@@ -279,10 +279,10 @@ export default function AgentPortalPage({ params }: { params: Promise<{ locale: 
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {statusBadge(p.status)}
                       {p.isRented && (
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">ให้เช่าแล้ว</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-red-600 text-white">ให้เช่าแล้ว</span>
                       )}
                       {p.isSold && (
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-700">ขายแล้ว</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-red-600 text-white">ขายแล้ว</span>
                       )}
                       {p.status === "ADDED_PROPERTIES" && (
                         <Link href={`/${locale}/properties/${p.id}`} className="text-xs text-amber-600 hover:underline">ดู</Link>

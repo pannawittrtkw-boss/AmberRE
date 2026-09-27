@@ -890,12 +890,12 @@ export default function PropertyListPage({
                       </span>
                     )}
                     {p.isRented && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-teal-100 text-teal-800 flex-shrink-0">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-600 text-white flex-shrink-0">
                         {locale === "th" ? "ให้เช่าแล้ว" : "Rented"}
                       </span>
                     )}
                     {p.isSold && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-rose-100 text-rose-800 flex-shrink-0">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-600 text-white flex-shrink-0">
                         {locale === "th" ? "ขายแล้ว" : "Sold"}
                       </span>
                     )}
@@ -1091,12 +1091,12 @@ export default function PropertyListPage({
                     </span>
                   )}
                   {p.isRented && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-teal-100 text-teal-800 shrink-0">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-600 text-white shrink-0">
                       {locale === "th" ? "ให้เช่าแล้ว" : "Rented"}
                     </span>
                   )}
                   {p.isSold && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-rose-100 text-rose-800 shrink-0">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-600 text-white shrink-0">
                       {locale === "th" ? "ขายแล้ว" : "Sold"}
                     </span>
                   )}

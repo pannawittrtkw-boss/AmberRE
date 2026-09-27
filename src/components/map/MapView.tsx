@@ -23,6 +23,8 @@ interface MapProperty {
   floor?: number | null;
   bedrooms?: number | null;
   sizeSqm?: number | string | null;
+  isRented?: boolean;
+  isSold?: boolean;
 }
 
 interface MapViewProps {
@@ -278,17 +280,32 @@ export default function MapView({
                         ]
                           .filter(Boolean)
                           .join(" · ");
+                        const isUnavailable = property.isRented || property.isSold;
                         return (
                           <a
                             key={property.id}
                             href={`/${locale}/properties/${property.id}`}
-                            className="flex items-center justify-between gap-2 py-2 px-1 hover:bg-gray-50 transition-colors"
+                            className={`flex items-center justify-between gap-2 py-2 px-1 transition-colors ${
+                              isUnavailable ? "bg-rose-50 hover:bg-rose-100" : "hover:bg-gray-50"
+                            }`}
                           >
                             <div className="min-w-0">
                               <div className="text-xs text-gray-700 truncate">
                                 {unitLabel || (locale !== "th" && property.titleEn ? property.titleEn : property.titleTh)}
                               </div>
-                              <div className="text-[10px] text-gray-400">{listingLabel(property.listingType)}</div>
+                              <div className="text-[10px] text-gray-400 flex items-center gap-1 flex-wrap">
+                                <span>{listingLabel(property.listingType)}</span>
+                                {property.isRented && (
+                                  <span className="px-1.5 py-0.5 rounded-full bg-red-600 text-white font-bold">
+                                    {locale === "th" ? "ให้เช่าแล้ว" : "Rented"}
+                                  </span>
+                                )}
+                                {property.isSold && (
+                                  <span className="px-1.5 py-0.5 rounded-full bg-red-600 text-white font-bold">
+                                    {locale === "th" ? "ขายแล้ว" : "Sold"}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             <span className="text-[#C8A951] font-bold text-xs shrink-0 whitespace-nowrap">
                               ฿{formatPrice(displayPrice)}
@@ -348,8 +365,18 @@ export default function MapView({
                         {formatPrice(Number(property.salePrice))}
                       </p>
                     )}
-                  <p className="text-gray-500 text-xs mt-1">
-                    {listingLabel(property.listingType)}
+                  <p className="text-gray-500 text-xs mt-1 flex items-center gap-1 flex-wrap">
+                    <span>{listingLabel(property.listingType)}</span>
+                    {property.isRented && (
+                      <span className="px-1.5 py-0.5 rounded-full bg-red-600 text-white font-bold">
+                        {locale === "th" ? "ให้เช่าแล้ว" : "Rented"}
+                      </span>
+                    )}
+                    {property.isSold && (
+                      <span className="px-1.5 py-0.5 rounded-full bg-red-600 text-white font-bold">
+                        {locale === "th" ? "ขายแล้ว" : "Sold"}
+                      </span>
+                    )}
                   </p>
                   <a
                     href={`/${locale}/properties/${property.id}`}
