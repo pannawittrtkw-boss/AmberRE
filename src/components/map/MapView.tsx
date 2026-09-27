@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Tooltip } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Tooltip, Polyline } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { getIntlLocale } from "@/lib/utils";
@@ -117,6 +117,9 @@ export default function MapView({
   const [messages, setMessages] = useState<any>(null);
   const [searchMarker, setSearchMarker] = useState<{ lat: number; lng: number; label: string } | null>(null);
   const [travelMode, setTravelMode] = useState<TravelMode>("walk");
+  // The property currently shown in an open popup — draws a line from the
+  // search pin to it. Cleared when that popup closes.
+  const [routeTarget, setRouteTarget] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     import(`@/messages/${locale}.json`).then((m) => setMessages(m.default));
@@ -293,7 +296,7 @@ export default function MapView({
             icon={buildSearchPinIcon()}
             draggable
             eventHandlers={{
-              dragend: (e) => {
+              drag: (e) => {
                 const pos = e.target.getLatLng();
                 setSearchMarker((prev) => (prev ? { ...prev, lat: pos.lat, lng: pos.lng } : null));
               },
@@ -308,6 +311,16 @@ export default function MapView({
               {locale === "th" ? "ลากเพื่อย้ายตำแหน่ง" : "Drag to move"}
             </Tooltip>
           </Marker>
+        )}
+
+        {searchMarker && routeTarget && (
+          <Polyline
+            positions={[
+              [searchMarker.lat, searchMarker.lng],
+              [routeTarget.lat, routeTarget.lng],
+            ]}
+            pathOptions={{ color: "#2563eb", weight: 3, opacity: 0.75, dashArray: "8 8" }}
+          />
         )}
 
         {Object.entries(
@@ -345,6 +358,10 @@ export default function MapView({
                 key={key}
                 position={[lat, lng]}
                 icon={buildClusterMarker(group.length)}
+                eventHandlers={{
+                  popupopen: () => setRouteTarget({ lat, lng }),
+                  popupclose: () => setRouteTarget(null),
+                }}
               >
                 <Tooltip
                   direction="top"
@@ -433,7 +450,15 @@ export default function MapView({
           const icon = buildPriceMarker(compact, isRent);
 
           return (
-            <Marker key={key} position={[lat, lng]} icon={icon}>
+            <Marker
+              key={key}
+              position={[lat, lng]}
+              icon={icon}
+              eventHandlers={{
+                popupopen: () => setRouteTarget({ lat, lng }),
+                popupclose: () => setRouteTarget(null),
+              }}
+            >
               {/* Hover label: project name */}
               <Tooltip
                 direction="top"
