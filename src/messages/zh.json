@@ -471,6 +471,7 @@
     "avgRatingLabel": "用户平均评分",
     "submissionsLabel": "条反馈",
     "noFeedbackYet": "暂无反馈",
+    "showMore": "显示更多",
     "errorGeneric": "出现错误，请重试"
   },
   "properties": {

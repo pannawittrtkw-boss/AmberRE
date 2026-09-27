@@ -471,6 +471,7 @@
     "avgRatingLabel": "คะแนนเฉลี่ยจากผู้ใช้งาน",
     "submissionsLabel": "ความคิดเห็น",
     "noFeedbackYet": "ยังไม่มีความคิดเห็นที่แสดง",
+    "showMore": "แสดงเพิ่มเติม",
     "errorGeneric": "เกิดข้อผิดพลาด กรุณาลองใหม่"
   },
   "properties": {

@@ -68,6 +68,11 @@ export default function AdminSatisfactionPage({ params }: { params: Promise<{ lo
     OWNER: isTh ? "เจ้าของทรัพย์" : "Owner",
     AGENT: isTh ? "นายหน้า" : "Agent",
   };
+  const respondentTypeStyles: Record<string, string> = {
+    OWNER: "bg-blue-100 text-blue-700",
+    TENANT_BUYER: "bg-emerald-100 text-emerald-700",
+    AGENT: "bg-purple-100 text-purple-700",
+  };
   const approvedCount = surveys.filter((s) => s.isApproved).length;
 
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
@@ -118,7 +123,7 @@ export default function AdminSatisfactionPage({ params }: { params: Promise<{ lo
                       {survey.isApproved ? (isTh ? "อนุมัติแล้ว" : "Approved") : (isTh ? "รอตรวจสอบ" : "Pending")}
                     </span>
                     {survey.respondentType && respondentTypeLabels[survey.respondentType] && (
-                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${respondentTypeStyles[survey.respondentType] || "bg-gray-100 text-gray-700"}`}>
                         {respondentTypeLabels[survey.respondentType]}
                       </span>
                     )}
