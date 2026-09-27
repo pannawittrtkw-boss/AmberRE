@@ -118,15 +118,16 @@ export default function AgentCommissionPanel({
     .slice(-6)
     .map((m) => m.earnedCommission);
 
-  // Year-over-year chart data — only the months that have actually
-  // happened this year (no forecasted/future months plotted).
-  const chartData = yearlySeries.current.slice(0, elapsedMonths).map((m, i) => ({
+  // Year-over-year chart data — spans the full 12 months so the x-axis
+  // doesn't stop mid-year; months that haven't happened yet just plot as 0.
+  const chartData = yearlySeries.current.map((m, i) => ({
     label: TH_MONTHS_SHORT[m.month - 1],
     current: m.earnedCommission,
     previous: yearlySeries.previous[i]?.earnedCommission ?? 0,
   }));
-  const ytdEarned = chartData.reduce((sum, d) => sum + d.current, 0);
-  const ytdClosed = yearlySeries.current.slice(0, elapsedMonths).reduce((sum, m) => sum + m.closedCount, 0);
+  const elapsedData = yearlySeries.current.slice(0, elapsedMonths);
+  const ytdEarned = elapsedData.reduce((sum, m) => sum + m.earnedCommission, 0);
+  const ytdClosed = elapsedData.reduce((sum, m) => sum + m.closedCount, 0);
   const avgPerDeal = ytdClosed > 0 ? ytdEarned / ytdClosed : 0;
 
   return (
