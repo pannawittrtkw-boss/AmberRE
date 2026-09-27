@@ -23,6 +23,12 @@ export default async function SatisfactionPage({ params }: { params: Promise<{ l
 
   const avgRating = surveys.length > 0 ? surveys.reduce((sum, s) => sum + s.rating, 0) / surveys.length : 0;
 
+  const respondentTypeLabels: Record<string, string> = {
+    TENANT_BUYER: ts.respondentTypeTenantBuyer,
+    OWNER: ts.respondentTypeOwner,
+    AGENT: ts.respondentTypeAgent,
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-3xl font-bold mb-1">{ts.pageTitle}</h1>
@@ -67,6 +73,11 @@ export default async function SatisfactionPage({ params }: { params: Promise<{ l
                       </div>
                     )}
                     <span className="font-medium">{displayName}</span>
+                    {survey.respondentType && respondentTypeLabels[survey.respondentType] && (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-50 text-yellow-700 border border-yellow-200">
+                        {respondentTypeLabels[survey.respondentType]}
+                      </span>
+                    )}
                   </div>
                   <div className="flex gap-0.5">
                     {[1, 2, 3, 4, 5].map((s) => (

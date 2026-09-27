@@ -3,9 +3,12 @@
 import { useState } from "react";
 import { Star, Loader2 } from "lucide-react";
 
+const RESPONDENT_TYPES = ["TENANT_BUYER", "OWNER", "AGENT"] as const;
+
 export default function SatisfactionForm({ ts }: { locale: string; ts: any }) {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
+  const [respondentType, setRespondentType] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [anonymous, setAnonymous] = useState(false);
   const [feedback, setFeedback] = useState("");
@@ -13,13 +16,19 @@ export default function SatisfactionForm({ ts }: { locale: string; ts: any }) {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
+  const respondentTypeLabels: Record<string, string> = {
+    TENANT_BUYER: ts.respondentTypeTenantBuyer,
+    OWNER: ts.respondentTypeOwner,
+    AGENT: ts.respondentTypeAgent,
+  };
+
   if (submitted) {
     return (
       <div className="bg-white rounded-xl shadow-sm border p-8 mb-8 text-center">
         <p className="font-semibold text-gray-800 mb-1">{ts.thankYou}</p>
         <p className="text-gray-500 text-sm mb-4">{ts.thankYouNote}</p>
         <button
-          onClick={() => { setSubmitted(false); setRating(0); setFeedback(""); setName(""); setAnonymous(false); }}
+          onClick={() => { setSubmitted(false); setRating(0); setFeedback(""); setName(""); setAnonymous(false); setRespondentType(null); }}
           className="text-sm text-[#C8A951] hover:underline"
         >
           {ts.submitAnother}
@@ -29,7 +38,7 @@ export default function SatisfactionForm({ ts }: { locale: string; ts: any }) {
   }
 
   const handleSubmit = async () => {
-    if (rating < 1) return;
+    if (rating < 1 || !respondentType) return;
     setSubmitting(true);
     setError("");
     try {
@@ -41,6 +50,7 @@ export default function SatisfactionForm({ ts }: { locale: string; ts: any }) {
           feedback: feedback.trim() || undefined,
           name: anonymous ? undefined : name.trim() || undefined,
           anonymous,
+          respondentType,
         }),
       });
       const data = await res.json();
@@ -77,6 +87,24 @@ export default function SatisfactionForm({ ts }: { locale: string; ts: any }) {
         ))}
       </div>
 
+      <label className="block text-sm font-medium text-gray-700 mb-2">{ts.respondentTypeLabel}</label>
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {RESPONDENT_TYPES.map((type) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => setRespondentType(type)}
+            className={`px-2 py-2 rounded-lg text-xs sm:text-sm font-medium border transition-colors ${
+              respondentType === type
+                ? "bg-[#C8A951] border-[#C8A951] text-white"
+                : "bg-white border-gray-300 text-gray-600 hover:border-[#C8A951]"
+            }`}
+          >
+            {respondentTypeLabels[type]}
+          </button>
+        ))}
+      </div>
+
       <label className="block text-sm font-medium text-gray-700 mb-1">{ts.nameLabel}</label>
       <input
         type="text"
@@ -109,7 +137,7 @@ export default function SatisfactionForm({ ts }: { locale: string; ts: any }) {
 
       <button
         onClick={handleSubmit}
-        disabled={rating < 1 || submitting}
+        disabled={rating < 1 || !respondentType || submitting}
         className="mt-4 w-full bg-[#C8A951] text-white py-2.5 rounded-lg text-sm font-medium hover:bg-[#B8993F] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}

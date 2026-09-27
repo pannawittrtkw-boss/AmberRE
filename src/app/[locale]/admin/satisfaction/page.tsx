@@ -8,6 +8,7 @@ type SurveyEntry = {
   rating: number;
   feedback: string | null;
   name: string | null;
+  respondentType: string | null;
   isApproved: boolean;
   createdAt: string;
   user: { firstName: string; lastName: string; email: string } | null;
@@ -61,6 +62,12 @@ export default function AdminSatisfactionPage({ params }: { params: Promise<{ lo
   };
 
   const avgRating = surveys.length > 0 ? surveys.reduce((sum, s) => sum + s.rating, 0) / surveys.length : 0;
+
+  const respondentTypeLabels: Record<string, string> = {
+    TENANT_BUYER: isTh ? "ผู้เช่า/ผู้ซื้อ" : "Tenant/Buyer",
+    OWNER: isTh ? "เจ้าของทรัพย์" : "Owner",
+    AGENT: isTh ? "นายหน้า" : "Agent",
+  };
   const approvedCount = surveys.filter((s) => s.isApproved).length;
 
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
@@ -110,6 +117,11 @@ export default function AdminSatisfactionPage({ params }: { params: Promise<{ lo
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${survey.isApproved ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
                       {survey.isApproved ? (isTh ? "อนุมัติแล้ว" : "Approved") : (isTh ? "รอตรวจสอบ" : "Pending")}
                     </span>
+                    {survey.respondentType && respondentTypeLabels[survey.respondentType] && (
+                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                        {respondentTypeLabels[survey.respondentType]}
+                      </span>
+                    )}
                   </div>
                   {survey.feedback && <p className="text-gray-700 text-sm mt-1">{survey.feedback}</p>}
                   <p className="text-xs text-gray-400 mt-2">

@@ -28,9 +28,12 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const { rating, feedback, name, anonymous } = await req.json();
+    const { rating, feedback, name, anonymous, respondentType } = await req.json();
 
     if (!rating || rating < 1 || rating > 5) {
+      return NextResponse.json({ success: false, error: "Invalid data" }, { status: 400 });
+    }
+    if (!["TENANT_BUYER", "OWNER", "AGENT"].includes(respondentType)) {
       return NextResponse.json({ success: false, error: "Invalid data" }, { status: 400 });
     }
 
@@ -40,6 +43,7 @@ export async function POST(req: NextRequest) {
         rating,
         feedback: feedback || null,
         name: anonymous ? null : (typeof name === "string" && name.trim() ? name.trim().slice(0, 200) : null),
+        respondentType,
       },
     });
 
