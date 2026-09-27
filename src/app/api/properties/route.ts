@@ -13,6 +13,8 @@ export async function GET(req: NextRequest) {
     const buildingType = searchParams.get("buildingType") || "";
     const condition = searchParams.get("condition") || "";
     const hideSold = searchParams.get("hideSold") === "true";
+    const petFriendly = searchParams.get("petFriendly") === "true";
+    const smokingAllowed = searchParams.get("smokingAllowed") === "true";
     const stationId = searchParams.get("stationId");
     const stationsParam = searchParams.get("stations") || "";
     const amenityIds = searchParams.get("amenityIds");
@@ -112,13 +114,18 @@ export async function GET(req: NextRequest) {
     } else if (listingType) {
       where.listingType = listingType;
     }
-    if (propertyType) where.propertyType = propertyType;
+    if (propertyType) {
+      const types = propertyType.split(",").filter(Boolean);
+      where.propertyType = types.length > 1 ? { in: types } : types[0];
+    }
     if (buildingType) where.buildingType = buildingType;
     if (condition) where.condition = condition;
     if (hideSold) {
       where.isSold = false;
       where.isRented = false;
     }
+    if (petFriendly) where.petFriendly = "ACCEPT";
+    if (smokingAllowed) where.smokingAllowed = "ACCEPT";
     if (minPriceParam || maxPriceParam) {
       where.price = {};
       if (minPriceParam) where.price.gte = Number(minPriceParam);

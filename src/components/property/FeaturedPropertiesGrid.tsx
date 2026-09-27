@@ -19,6 +19,8 @@ const FILTER_KEYS = [
   "condition",
   "buildingType",
   "hideSold",
+  "petFriendly",
+  "smokingAllowed",
   "stations",
   "amenities",
   "bedrooms",

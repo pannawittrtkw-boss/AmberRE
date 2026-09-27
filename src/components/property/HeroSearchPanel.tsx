@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { Search, ChevronLeft, ChevronRight, Train } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Train, ChevronDown, PawPrint, Cigarette } from "lucide-react";
 import { localeText } from "@/lib/utils";
-import { getPriceRanges } from "@/lib/property-constants";
+import { getPriceRanges, PROPERTY_TYPES, propertyTypeLabel } from "@/lib/property-constants";
 
 const StationMapSelector = dynamic(
   () => import("@/components/admin/StationMapSelector"),
@@ -58,7 +58,10 @@ export default function HeroSearchPanel({ locale, messages }: HeroSearchPanelPro
   const [listingType, setListingType] = useState<"rent" | "sale">("rent");
   const [hideSold, setHideSold] = useState(false);
   const [keyword, setKeyword] = useState("");
-  const [propertyType, setPropertyType] = useState("");
+  const [propertyTypes, setPropertyTypes] = useState<string[]>([]);
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const [petFriendly, setPetFriendly] = useState(false);
+  const [smokingAllowed, setSmokingAllowed] = useState(false);
   const [priceRange, setPriceRange] = useState("");
   const [bedrooms, setBedrooms] = useState("");
   const [duration, setDuration] = useState("");
@@ -70,6 +73,17 @@ export default function HeroSearchPanel({ locale, messages }: HeroSearchPanelPro
   const [amenities, setAmenities] = useState<Amenity[]>([]);
   const [stations, setStations] = useState<Station[]>([]);
   const amenitiesRef = useRef<HTMLDivElement>(null);
+  const typeDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (typeDropdownRef.current && !typeDropdownRef.current.contains(e.target as Node)) {
+        setShowTypeDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     fetch("/api/amenities")
@@ -87,7 +101,9 @@ export default function HeroSearchPanel({ locale, messages }: HeroSearchPanelPro
     if (keyword) params.set("keyword", keyword);
     params.set("listingType", listingType === "rent" ? "RENT" : "SALE");
     if (hideSold) params.set("hideSold", "true");
-    if (propertyType) params.set("propertyType", propertyType);
+    if (propertyTypes.length > 0) params.set("propertyType", propertyTypes.join(","));
+    if (petFriendly) params.set("petFriendly", "true");
+    if (smokingAllowed) params.set("smokingAllowed", "true");
     if (bedrooms) params.set("bedrooms", bedrooms);
     if (stationId) params.set("station", stationId);
     if (selectedStationCodes.length > 0)
@@ -118,6 +134,12 @@ export default function HeroSearchPanel({ locale, messages }: HeroSearchPanelPro
   const toggleAmenity = (id: number) => {
     setSelectedAmenities((prev) =>
       prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
+    );
+  };
+
+  const togglePropertyType = (type: string) => {
+    setPropertyTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
     );
   };
 
@@ -213,20 +235,43 @@ export default function HeroSearchPanel({ locale, messages }: HeroSearchPanelPro
         {/* Filter Row */}
         <div className="px-3 sm:px-4 pb-3 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
           <div className="flex gap-2 min-w-max sm:min-w-0 sm:flex-wrap">
-            {/* Property Type */}
-            <select
-              value={propertyType}
-              onChange={(e) => setPropertyType(e.target.value)}
-              className="px-2 sm:px-3 py-2 rounded-lg border border-gray-200 text-xs sm:text-sm text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-[#C8A951]"
-            >
-              <option value="">{tp.condo} / {tp.house} / {tp.townhouse} / {tp.land || "Land"}</option>
-              <option value="CONDO">{tp.condo}</option>
-              <option value="HOUSE">{tp.house}</option>
-              <option value="TOWNHOUSE">{tp.townhouse}</option>
-              <option value="LAND">{tp.land || "Land"}</option>
-              <option value="OFFICE">{tp.office || "Office"}</option>
-              <option value="WAREHOUSE">{tp.warehouse || "Warehouse"}</option>
-            </select>
+            {/* Property Type (multi-select) */}
+            <div className="relative" ref={typeDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setShowTypeDropdown((v) => !v)}
+                className="px-2 sm:px-3 py-2 rounded-lg border border-gray-200 text-xs sm:text-sm text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-[#C8A951] inline-flex items-center gap-1 whitespace-nowrap"
+              >
+                {propertyTypes.length > 0 ? (
+                  <span className="text-[#C8A951] font-semibold">
+                    {propertyTypes.length === 1
+                      ? propertyTypeLabel(propertyTypes[0], locale)
+                      : `${propertyTypes.length} ${tp.typesSelected || ""}`}
+                  </span>
+                ) : (
+                  <span>{tp.condo} / {tp.house} / {tp.townhouse} / {tp.land || "Land"}</span>
+                )}
+                <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+              </button>
+              {showTypeDropdown && (
+                <div className="absolute z-20 top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+                  {PROPERTY_TYPES.map((type) => (
+                    <label
+                      key={type}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-50 cursor-pointer text-sm text-gray-700"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={propertyTypes.includes(type)}
+                        onChange={() => togglePropertyType(type)}
+                        className="accent-[#C8A951]"
+                      />
+                      {propertyTypeLabel(type, locale)}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Price Range */}
             <select
@@ -281,6 +326,34 @@ export default function HeroSearchPanel({ locale, messages }: HeroSearchPanelPro
               ) : (
                 <span className="text-gray-700">{t.selectStations}</span>
               )}
+            </button>
+
+            {/* Pet Friendly */}
+            <button
+              type="button"
+              onClick={() => setPetFriendly((v) => !v)}
+              className={`px-2 sm:px-3 py-2 rounded-lg border text-xs sm:text-sm inline-flex items-center gap-1.5 whitespace-nowrap transition-colors ${
+                petFriendly
+                  ? "border-[#C8A951] bg-[#C8A951]/10 text-[#C8A951] font-semibold"
+                  : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <PawPrint className="w-3.5 h-3.5" />
+              {tp.petFriendly || (locale === "th" ? "เลี้ยงสัตว์ได้" : "Pet-Friendly")}
+            </button>
+
+            {/* Smoking Allowed */}
+            <button
+              type="button"
+              onClick={() => setSmokingAllowed((v) => !v)}
+              className={`px-2 sm:px-3 py-2 rounded-lg border text-xs sm:text-sm inline-flex items-center gap-1.5 whitespace-nowrap transition-colors ${
+                smokingAllowed
+                  ? "border-[#C8A951] bg-[#C8A951]/10 text-[#C8A951] font-semibold"
+                  : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <Cigarette className="w-3.5 h-3.5" />
+              {tp.smokingAllowed || (locale === "th" ? "สูบบุหรี่ได้" : "Smoking Allowed")}
             </button>
           </div>
         </div>

@@ -67,11 +67,13 @@ export default function PropertyFilter({
   const [filters, setFilters] = useState({
     keyword: "",
     listingType: "RENT",
-    propertyType: "",
+    propertyType: [] as string[],
     priceRange: "",
     condition: "",
     buildingType: "",
     hideSold: false,
+    petFriendly: false,
+    smokingAllowed: false,
     stationId: "",
     stations: [] as string[],
     amenityIds: [] as number[],
@@ -108,15 +110,24 @@ export default function PropertyFilter({
     updateFilter("amenityIds", ids);
   };
 
+  const togglePropertyType = (type: string) => {
+    const types = filters.propertyType.includes(type)
+      ? filters.propertyType.filter((t) => t !== type)
+      : [...filters.propertyType, type];
+    updateFilter("propertyType", types);
+  };
+
   const resetFilters = () => {
     const reset = {
       keyword: "",
       listingType: "RENT",
-      propertyType: "",
+      propertyType: [],
       priceRange: "",
       condition: "",
       buildingType: "",
       hideSold: false,
+      petFriendly: false,
+      smokingAllowed: false,
       stationId: "",
       stations: [],
       amenityIds: [],
@@ -130,11 +141,13 @@ export default function PropertyFilter({
   const hasFilters =
     filters.keyword ||
     filters.listingType !== "RENT" ||
-    filters.propertyType ||
+    filters.propertyType.length > 0 ||
     filters.priceRange ||
     filters.condition ||
     filters.buildingType ||
     filters.hideSold ||
+    filters.petFriendly ||
+    filters.smokingAllowed ||
     filters.stationId ||
     filters.stations.length > 0 ||
     filters.amenityIds.length > 0 ||
@@ -223,14 +236,9 @@ export default function PropertyFilter({
           {["CONDO", "HOUSE", "TOWNHOUSE", "LAND", "OFFICE", "WAREHOUSE"].map((type) => (
             <button
               key={type}
-              onClick={() =>
-                updateFilter(
-                  "propertyType",
-                  filters.propertyType === type ? "" : type
-                )
-              }
+              onClick={() => togglePropertyType(type)}
               className={`py-2.5 rounded-xl text-xs font-medium transition-all ${
-                filters.propertyType === type ? pillActiveCls : pillInactiveCls
+                filters.propertyType.includes(type) ? pillActiveCls : pillInactiveCls
               }`}
             >
               {type === "CONDO"
@@ -249,8 +257,8 @@ export default function PropertyFilter({
         </div>
       </div>
 
-      {/* Condition (1st/2nd hand) — hide when LAND is selected */}
-      {!hasNoBedrooms(filters.propertyType) && (
+      {/* Condition (1st/2nd hand) — hide when only no-bedroom types (LAND/OFFICE/WAREHOUSE) are selected */}
+      {!(filters.propertyType.length > 0 && filters.propertyType.every((t) => hasNoBedrooms(t))) && (
         <div>
           <label className={`block ${labelCls}`}>
             {t.condition}
@@ -285,6 +293,40 @@ export default function PropertyFilter({
             type="checkbox"
             checked={filters.hideSold}
             onChange={(e) => updateFilter("hideSold", e.target.checked)}
+            className="sr-only peer"
+          />
+          <div
+            className={`w-10 h-5 ${toggleBgCls} rounded-full peer peer-checked:bg-[#C8A951] transition-colors`}
+          />
+          <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5" />
+        </div>
+      </label>
+
+      {/* Pet Friendly */}
+      <label className="flex items-center justify-between cursor-pointer group">
+        <span className={toggleLabelCls}>{t.petFriendly}</span>
+        <div className="relative">
+          <input
+            type="checkbox"
+            checked={filters.petFriendly}
+            onChange={(e) => updateFilter("petFriendly", e.target.checked)}
+            className="sr-only peer"
+          />
+          <div
+            className={`w-10 h-5 ${toggleBgCls} rounded-full peer peer-checked:bg-[#C8A951] transition-colors`}
+          />
+          <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5" />
+        </div>
+      </label>
+
+      {/* Smoking Allowed */}
+      <label className="flex items-center justify-between cursor-pointer group">
+        <span className={toggleLabelCls}>{t.smokingAllowed}</span>
+        <div className="relative">
+          <input
+            type="checkbox"
+            checked={filters.smokingAllowed}
+            onChange={(e) => updateFilter("smokingAllowed", e.target.checked)}
             className="sr-only peer"
           />
           <div

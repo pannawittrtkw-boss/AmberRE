@@ -63,7 +63,7 @@ export default function PropertiesPage({
       const urlStations = searchParams.get("stations");
       if (urlKeyword && !filterParams.keyword)
         query.set("keyword", urlKeyword);
-      if (urlType && !filterParams.propertyType)
+      if (urlType && (!filterParams.propertyType || filterParams.propertyType.length === 0))
         query.set("propertyType", urlType);
       if (urlListing && !filterParams.listingType)
         query.set("listingType", urlListing);
