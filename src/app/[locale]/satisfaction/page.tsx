@@ -15,7 +15,7 @@ export default async function SatisfactionPage({ params }: { params: Promise<{ l
   const surveys = await prisma.survey.findMany({
     where: { isApproved: true },
     include: {
-      user: { select: { firstName: true, lastName: true } },
+      user: { select: { firstName: true, lastName: true, profileImage: true } },
     },
     orderBy: { createdAt: "desc" },
     take: 50,
@@ -46,24 +46,41 @@ export default async function SatisfactionPage({ params }: { params: Promise<{ l
         <div className="text-center py-16 text-gray-500">{ts.noFeedbackYet}</div>
       ) : (
         <div className="space-y-4">
-          {surveys.filter((s) => s.feedback).map((survey) => (
-            <div key={survey.id} className="bg-white rounded-xl shadow-sm border p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-medium">
-                  {survey.name || (survey.user ? `${survey.user.firstName} ${survey.user.lastName}` : ts.anonymousLabel)}
-                </span>
-                <div className="flex gap-0.5">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} className={`w-4 h-4 ${s <= survey.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
-                  ))}
+          {surveys.filter((s) => s.feedback).map((survey) => {
+            const displayName =
+              survey.name || (survey.user ? `${survey.user.firstName} ${survey.user.lastName}` : ts.anonymousLabel);
+            const initial = displayName.trim().charAt(0).toUpperCase() || "?";
+            return (
+              <div key={survey.id} className="bg-white rounded-xl shadow-sm border p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    {survey.user?.profileImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={survey.user.profileImage}
+                        alt={displayName}
+                        className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-yellow-100 border border-yellow-200 flex items-center justify-center flex-shrink-0">
+                        <span className="text-sm font-semibold text-yellow-700">{initial}</span>
+                      </div>
+                    )}
+                    <span className="font-medium">{displayName}</span>
+                  </div>
+                  <div className="flex gap-0.5">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star key={s} className={`w-4 h-4 ${s <= survey.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
+                    ))}
+                  </div>
                 </div>
+                <p className="text-gray-600 text-sm">{survey.feedback}</p>
+                <p className="text-xs text-gray-400 mt-2">
+                  {new Date(survey.createdAt).toLocaleDateString(getIntlLocale(locale))}
+                </p>
               </div>
-              <p className="text-gray-600 text-sm">{survey.feedback}</p>
-              <p className="text-xs text-gray-400 mt-2">
-                {new Date(survey.createdAt).toLocaleDateString(getIntlLocale(locale))}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
