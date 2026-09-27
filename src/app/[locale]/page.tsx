@@ -4,7 +4,8 @@ import {
   Home,
   Building,
   Map,
-  Shield,
+  Eye,
+  Key,
   Users,
   Star,
   ArrowRight,
@@ -16,6 +17,7 @@ import HeroSearchPanel from "@/components/property/HeroSearchPanel";
 import FeaturedPropertiesGrid from "@/components/property/FeaturedPropertiesGrid";
 import FeaturedProjectsGrid from "@/components/property/FeaturedProjectsGrid";
 import SectionTitle from "@/components/ui/SectionTitle";
+import AnimatedStat from "@/components/ui/AnimatedStat";
 import prisma from "@/lib/prisma";
 
 async function getMessages(locale: string) {
@@ -32,7 +34,15 @@ export default async function HomePage({
   const t = messages.home;
   const tp = messages.property;
 
-  const [propertyCounts, heroSettings] = await Promise.all([
+  const [
+    propertyCounts,
+    heroSettings,
+    agentCount,
+    propertyCount,
+    viewsAgg,
+    contractCount,
+    satisfactionAgg,
+  ] = await Promise.all([
     prisma.property.groupBy({
       by: ["propertyType"],
       _count: { _all: true },
@@ -41,7 +51,19 @@ export default async function HomePage({
     prisma.siteSetting.findMany({
       where: { key: { in: ["heroBgImage", "heroBgVideo", "whyUsImage"] } },
     }),
+    prisma.user.count({ where: { role: "CO_AGENT" } }),
+    prisma.property.count(),
+    prisma.property.aggregate({ _sum: { views: true } }),
+    prisma.contract.count(),
+    prisma.survey.aggregate({
+      where: { isApproved: true },
+      _avg: { rating: true },
+    }),
   ]);
+
+  const totalViews = viewsAgg._sum.views || 0;
+  const closedDealsCount = contractCount + 500;
+  const satisfactionScore = satisfactionAgg._avg.rating || 0;
 
   const heroBgImage =
     heroSettings.find((s) => s.key === "heroBgImage")?.valueTh || null;
@@ -228,36 +250,52 @@ export default async function HomePage({
                 {t.whyUsTitlePrefix}{" "}
                 <span className="text-[#E8C97A]">{t.whyUsTitleHighlight}</span>
               </h2>
-              <div className="space-y-8">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-8">
                 {[
+                  { icon: Users, value: agentCount, label: t.statAgents },
+                  { icon: Eye, value: totalViews, label: t.statTraffic },
                   {
-                    icon: Star,
-                    title: t.expertAgents,
-                    desc: t.expertAgentsDesc,
+                    icon: Building2,
+                    value: propertyCount,
+                    label: t.statProperties,
                   },
                   {
-                    icon: Shield,
-                    title: t.trustedByMany,
-                    desc: t.trustedByManyDesc,
-                  },
-                  {
-                    icon: Users,
-                    title: t.wideSelection,
-                    desc: t.wideSelectionDesc,
+                    icon: Key,
+                    value: closedDealsCount,
+                    label: t.statClosedDeals,
                   },
                 ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-5">
+                  <div key={i} className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-[#C8A951]/15 border border-[#C8A951]/30 flex items-center justify-center flex-shrink-0">
                       <item.icon className="w-5 h-5 text-[#E8C97A]" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold mb-1">{item.title}</h3>
-                      <p className="text-stone-400 text-sm leading-relaxed">
-                        {item.desc}
+                      <div className="text-2xl lg:text-3xl font-bold text-[#E8C97A] tabular-nums">
+                        <AnimatedStat value={item.value} suffix="+" />
+                      </div>
+                      <p className="text-stone-400 text-xs sm:text-sm mt-0.5">
+                        {item.label}
                       </p>
                     </div>
                   </div>
                 ))}
+              </div>
+
+              <div className="flex items-center gap-4 mt-8 pt-8 border-t border-white/10">
+                <div className="w-12 h-12 rounded-2xl bg-[#C8A951]/15 border border-[#C8A951]/30 flex items-center justify-center flex-shrink-0">
+                  <Star className="w-5 h-5 text-[#E8C97A] fill-[#E8C97A]" />
+                </div>
+                <div>
+                  <div className="text-2xl lg:text-3xl font-bold text-[#E8C97A] tabular-nums">
+                    <AnimatedStat value={satisfactionScore} decimals={1} />
+                    <span className="text-stone-500 text-base font-medium">
+                      /5
+                    </span>
+                  </div>
+                  <p className="text-stone-400 text-xs sm:text-sm mt-0.5">
+                    {t.statSatisfaction}
+                  </p>
+                </div>
               </div>
 
               <Link
