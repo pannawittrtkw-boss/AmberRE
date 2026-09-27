@@ -5,7 +5,7 @@ import {
   Building,
   Map,
   Eye,
-  Key,
+  Handshake,
   Users,
   Star,
   ArrowRight,
@@ -260,7 +260,7 @@ export default async function HomePage({
                     label: t.statProperties,
                   },
                   {
-                    icon: Key,
+                    icon: Handshake,
                     value: closedDealsCount,
                     label: t.statClosedDeals,
                   },
