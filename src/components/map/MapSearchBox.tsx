@@ -15,9 +15,10 @@ interface GeoResult {
 interface MapSearchBoxProps {
   map: LeafletMap | null;
   locale: string;
+  onSelect?: (r: { lat: number; lng: number; displayName: string }) => void;
 }
 
-export default function MapSearchBox({ map, locale }: MapSearchBoxProps) {
+export default function MapSearchBox({ map, locale, onSelect }: MapSearchBoxProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GeoResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -89,6 +90,7 @@ export default function MapSearchBox({ map, locale }: MapSearchBoxProps) {
     } else {
       map.flyTo([r.lat, r.lng], 15, { duration: 1.0 });
     }
+    onSelect?.({ lat: r.lat, lng: r.lng, displayName: r.displayName });
     setOpen(false);
   };
 

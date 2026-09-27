@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, Tooltip } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { getIntlLocale } from "@/lib/utils";
+import { haversineDistanceKm, estimateTravel, type TravelMode } from "@/lib/geo";
 import MapSearchBox from "./MapSearchBox";
 
 interface MapProperty {
@@ -79,6 +80,24 @@ function buildClusterMarker(count: number): L.DivIcon {
   });
 }
 
+// The draggable "you searched here" pin — visually distinct (blue teardrop)
+// from the gold/teal price pills used for properties.
+function buildSearchPinIcon(): L.DivIcon {
+  const html = `
+    <div class="npb-search-pin">
+      <svg width="30" height="40" viewBox="0 0 30 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 0C6.72 0 0 6.72 0 15c0 11.25 15 25 15 25s15-13.75 15-25c0-8.28-6.72-15-15-15z" fill="#2563eb" stroke="white" stroke-width="2"/>
+        <circle cx="15" cy="15" r="5.5" fill="white"/>
+      </svg>
+    </div>`;
+  return L.divIcon({
+    html,
+    className: "npb-search-pin-wrapper",
+    iconSize: [30, 40],
+    iconAnchor: [15, 40],
+  });
+}
+
 // Prisma Decimal fields (latitude/longitude) serialize to JSON as strings,
 // not numbers, even though the API's declared response shape says number —
 // coerce defensively before doing any arithmetic on them.
@@ -96,6 +115,8 @@ export default function MapView({
   const [mounted, setMounted] = useState(false);
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
   const [messages, setMessages] = useState<any>(null);
+  const [searchMarker, setSearchMarker] = useState<{ lat: number; lng: number; label: string } | null>(null);
+  const [travelMode, setTravelMode] = useState<TravelMode>("walk");
 
   useEffect(() => {
     import(`@/messages/${locale}.json`).then((m) => setMessages(m.default));
@@ -129,9 +150,45 @@ export default function MapView({
 
   const validProperties = properties.filter((p) => p.latitude && p.longitude);
 
+  const renderDistance = (propLat: number, propLng: number) => {
+    if (!searchMarker) return null;
+    const straightKm = haversineDistanceKm(searchMarker.lat, searchMarker.lng, propLat, propLng);
+    const { routeKm, minutes } = estimateTravel(straightKm, travelMode);
+    const kmLabel = routeKm < 1 ? `${Math.round(routeKm * 1000)} ม.` : `${routeKm.toFixed(1)} กม.`;
+    const minLabel = minutes < 1 ? "<1" : Math.round(minutes);
+    return (
+      <span className="text-gray-600">
+        {kmLabel} · ~{minLabel} {locale === "th" ? "นาที" : "min"}
+      </span>
+    );
+  };
+
+  const TravelModeToggle = () => (
+    <div className="inline-flex rounded-full border border-gray-200 overflow-hidden text-[11px] font-medium">
+      <button
+        type="button"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTravelMode("walk"); }}
+        className={`px-2 py-1 transition-colors ${travelMode === "walk" ? "bg-[#C8A951] text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
+      >
+        🚶 {locale === "th" ? "เดิน" : "Walk"}
+      </button>
+      <button
+        type="button"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTravelMode("drive"); }}
+        className={`px-2 py-1 transition-colors border-l border-gray-200 ${travelMode === "drive" ? "bg-[#C8A951] text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
+      >
+        🚗 {locale === "th" ? "ขับรถ" : "Drive"}
+      </button>
+    </div>
+  );
+
   return (
     <div className={`${className} relative`}>
-      <MapSearchBox map={mapInstance} locale={locale} />
+      <MapSearchBox
+        map={mapInstance}
+        locale={locale}
+        onSelect={(r) => setSearchMarker({ lat: r.lat, lng: r.lng, label: r.displayName })}
+      />
       <style jsx global>{`
         .npb-price-marker-wrapper {
           background: transparent !important;
@@ -204,6 +261,17 @@ export default function MapView({
           border-right: 6px solid transparent;
           border-top: 7px solid #1e293b;
         }
+        .npb-search-pin-wrapper {
+          background: transparent !important;
+          border: none !important;
+        }
+        .npb-search-pin {
+          cursor: grab;
+          filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+        }
+        .npb-search-pin:active {
+          cursor: grabbing;
+        }
       `}</style>
 
       <MapContainer
@@ -218,6 +286,30 @@ export default function MapView({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+
+        {searchMarker && (
+          <Marker
+            position={[searchMarker.lat, searchMarker.lng]}
+            icon={buildSearchPinIcon()}
+            draggable
+            eventHandlers={{
+              dragend: (e) => {
+                const pos = e.target.getLatLng();
+                setSearchMarker((prev) => (prev ? { ...prev, lat: pos.lat, lng: pos.lng } : null));
+              },
+            }}
+          >
+            <Tooltip
+              direction="top"
+              offset={[0, -40]}
+              opacity={1}
+              className="!bg-blue-600 !text-white !border-0 !rounded-lg !shadow-lg !text-xs !px-2 !py-1"
+            >
+              {locale === "th" ? "ลากเพื่อย้ายตำแหน่ง" : "Drag to move"}
+            </Tooltip>
+          </Marker>
+        )}
+
         {Object.entries(
           validProperties.reduce<Record<string, MapProperty[]>>((groups, property) => {
             const key = `${roundCoord(property.latitude!)},${roundCoord(property.longitude!)}`;
@@ -269,6 +361,14 @@ export default function MapView({
                     <p className="font-semibold mb-2">
                       {groupTitle} · {group.length} รายการ
                     </p>
+                    {searchMarker && (
+                      <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-gray-100">
+                        <span className="text-[11px] text-gray-500">
+                          {locale === "th" ? "จากตำแหน่งที่ค้นหา" : "From searched location"}
+                        </span>
+                        <TravelModeToggle />
+                      </div>
+                    )}
                     <div className="max-h-72 overflow-y-auto divide-y divide-gray-100 -mx-1">
                       {group.map((property) => {
                         const { isRent, displayPrice } = getPriceInfo(property);
@@ -306,6 +406,9 @@ export default function MapView({
                                   </span>
                                 )}
                               </div>
+                              {searchMarker && (
+                                <div className="text-[10px] mt-0.5">{renderDistance(lat, lng)}</div>
+                              )}
                             </div>
                             <span className="text-[#C8A951] font-bold text-xs shrink-0 whitespace-nowrap">
                               ฿{formatPrice(displayPrice)}
@@ -378,6 +481,17 @@ export default function MapView({
                       </span>
                     )}
                   </p>
+                  {searchMarker && (
+                    <div className="mt-2 pt-2 border-t border-gray-100">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="text-[11px] text-gray-500">
+                          {locale === "th" ? "จากตำแหน่งที่ค้นหา" : "From searched location"}
+                        </span>
+                        <TravelModeToggle />
+                      </div>
+                      <div className="text-xs">{renderDistance(lat, lng)}</div>
+                    </div>
+                  )}
                   <a
                     href={`/${locale}/properties/${property.id}`}
                     className="inline-block mt-2 text-[#C8A951] hover:underline text-xs font-medium"
