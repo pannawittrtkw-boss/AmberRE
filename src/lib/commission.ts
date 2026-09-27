@@ -77,23 +77,29 @@ export interface AgentCommissionMonth {
   pendingCommission: number;
 }
 
-// Buckets an agent's commission-received contracts by the month the money
-// was received in (commissionReceivedDate — not contractDate/startDate;
-// see summarizeClosedCountByMonth for the separate, status-independent
-// "closed" count). Each month's whole revenue total determines a single
-// tier bracket (non-graduated), applied to that whole total. Because the
-// same percentage applies uniformly, each contract's own slice of the
-// month's earned commission is its own revenue x that percentage — which
-// is then bucketed into "paid" or "pending" per that contract's own
-// commissionPaid flag, so the two halves always add up to the month's
-// earnedCommission exactly.
+// Buckets an agent's contracts by the month they were signed in
+// (contractDate — same convention as summarizeClosedCountByMonth), so a
+// commission shows up as "pending" for the agent to see as motivation as
+// soon as the contract exists, rather than waiting on the company to
+// separately confirm it has collected the money from the owner. Whether
+// the company has received that money is tracked independently via
+// Contract.commissionReceived and no longer gates this. A contract only
+// stops counting if the deal itself fell through (status TERMINATED) —
+// callers are expected to have already excluded those from `contracts`.
+// Each month's whole revenue total determines a single tier bracket
+// (non-graduated), applied to that whole total. Because the same
+// percentage applies uniformly, each contract's own slice of the month's
+// earned commission is its own revenue x that percentage — which is then
+// bucketed into "paid" or "pending" per that contract's own
+// commissionPaid flag (set once the agent is actually paid out), so the
+// two halves always add up to the month's earnedCommission exactly.
 export function summarizeAgentCommissionByMonth(
   contracts: Array<{
     monthlyRent: number | string;
     contractType: string;
     termMonths: number;
     dealType: string;
-    commissionReceivedDate: Date | string | null;
+    contractDate: Date | string;
     commissionPaid: boolean;
   }>,
   rentTiers: CommissionTierLike[]
@@ -101,8 +107,7 @@ export function summarizeAgentCommissionByMonth(
   const byMonth = new Map<string, Array<{ amount: number; paid: boolean }>>();
 
   for (const c of contracts) {
-    if (!c.commissionReceivedDate) continue;
-    const d = new Date(c.commissionReceivedDate);
+    const d = new Date(c.contractDate);
     const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     const amount = calcContractCommission(c);
     const list = byMonth.get(monthKey) ?? [];

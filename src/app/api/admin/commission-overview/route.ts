@@ -26,15 +26,20 @@ export async function GET(req: NextRequest) {
       where: { agentId: { not: null } },
       select: { agentId: true, contractDate: true },
     }),
+    // "Pending" shows up for the agent as soon as the contract exists —
+    // only a fallen-through deal (TERMINATED) is excluded. Whether the
+    // company has separately collected the money (commissionReceived) no
+    // longer gates this; only the commissionPaid toggle moves an amount
+    // from pending to paid.
     prisma.contract.findMany({
-      where: { agentId: { not: null }, commissionReceived: true },
+      where: { agentId: { not: null }, status: { not: "TERMINATED" } },
       select: {
         agentId: true,
         monthlyRent: true,
         contractType: true,
         termMonths: true,
         dealType: true,
-        commissionReceivedDate: true,
+        contractDate: true,
         commissionPaid: true,
       },
     }),

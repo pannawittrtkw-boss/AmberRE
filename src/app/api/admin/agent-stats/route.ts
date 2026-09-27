@@ -92,6 +92,7 @@ export async function GET(req: NextRequest) {
             contractDate: true,
             contractType: true,
             dealType: true,
+            status: true,
             projectName: true,
             unitNumber: true,
             lesseeName: true,
@@ -104,14 +105,19 @@ export async function GET(req: NextRequest) {
             signedPdfUrl: true,
           },
         }),
+        // "Pending" shows up for the agent as soon as the contract exists —
+        // only a fallen-through deal (TERMINATED) is excluded. Whether the
+        // company has separately collected the money (commissionReceived)
+        // no longer gates this; only the commissionPaid toggle moves an
+        // amount from pending to paid.
         prisma.contract.findMany({
-          where: { agentId: targetAgentId, commissionReceived: true },
+          where: { agentId: targetAgentId, status: { not: "TERMINATED" } },
           select: {
             monthlyRent: true,
             contractType: true,
             termMonths: true,
             dealType: true,
-            commissionReceivedDate: true,
+            contractDate: true,
             commissionPaid: true,
           },
         }),
@@ -141,11 +147,9 @@ export async function GET(req: NextRequest) {
       const allTimePaid = commissionMonths.reduce((sum, m) => sum + m.paidCommission, 0);
       const allTimePending = commissionMonths.reduce((sum, m) => sum + m.pendingCommission, 0);
 
-      // Looked up by each contract's own commissionReceivedDate month (not
-      // the contractDate month used to group "history" below) — the tier
-      // bracket a contract's payout falls into depends on when the money
-      // was actually received, which can be a different month than when
-      // the contract was signed.
+      // Keyed by the same contractDate month used to group "history" below
+      // — a contract's tier bracket now depends on the month it was
+      // signed, not on a separate money-received date.
       const commissionByMonthKey = new Map(commissionMonths.map((m) => [m.monthKey, m]));
 
       // Per-contract history grouped by the month it was signed — answers
@@ -162,11 +166,11 @@ export async function GET(req: NextRequest) {
       const history = Array.from(historyByMonth, ([monthKey, list]) => {
         const contracts = list.map((c) => {
           const revenueAmount = calcContractCommission({ ...c, monthlyRent: Number(c.monthlyRent) });
+          // A fallen-through deal never earns a commission, regardless of
+          // what tier the rest of the month's contracts reached.
           let agentEarnedCommission: number | null = null;
-          if (c.commissionReceived && c.commissionReceivedDate) {
-            const rd = new Date(c.commissionReceivedDate);
-            const receivedMonthKey = `${rd.getFullYear()}-${String(rd.getMonth() + 1).padStart(2, "0")}`;
-            const tierPercent = commissionByMonthKey.get(receivedMonthKey)?.tierPercent ?? null;
+          if (c.status !== "TERMINATED") {
+            const tierPercent = commissionByMonthKey.get(monthKey)?.tierPercent ?? null;
             if (tierPercent != null) agentEarnedCommission = (revenueAmount * tierPercent) / 100;
           }
           return {
@@ -179,6 +183,7 @@ export async function GET(req: NextRequest) {
             monthlyRent: Number(c.monthlyRent),
             commissionAmount: revenueAmount,
             agentEarnedCommission,
+            status: c.status,
             commissionReceived: c.commissionReceived,
             commissionReceivedDate: c.commissionReceivedDate,
             commissionPaid: c.commissionPaid,
@@ -191,9 +196,9 @@ export async function GET(req: NextRequest) {
           closedCount: contracts.length,
           totalContractValue: contracts.reduce((sum, c) => sum + c.monthlyRent, 0),
           totalEarnedCommission: contracts.reduce((sum, c) => sum + (c.agentEarnedCommission ?? 0), 0),
-          // Tier achieved for this calendar month (by commissionReceivedDate,
-          // same convention as "currentMonth") — null if nothing was
-          // received in this month yet.
+          // Tier achieved for this calendar month (by contractDate, same
+          // convention as "currentMonth") — null if nothing was signed in
+          // this month yet.
           tierPercent: commissionByMonthKey.get(monthKey)?.tierPercent ?? null,
           contracts,
         };

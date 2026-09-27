@@ -49,6 +49,7 @@ export interface HistoryContract {
   monthlyRent: number;
   commissionAmount: number;
   agentEarnedCommission: number | null;
+  status: string;
   commissionReceived: boolean;
   commissionReceivedDate: string | null;
   commissionPaid: boolean;
@@ -344,7 +345,11 @@ export default function AgentCommissionPanel({
                           <div key={c.id} className="flex items-center gap-3 px-5 py-3 pl-8">
                             <span
                               className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                                c.commissionPaid ? "bg-emerald-500" : c.commissionReceived ? "bg-orange-400" : "bg-gray-300"
+                                c.agentEarnedCommission == null
+                                  ? "bg-gray-300"
+                                  : c.commissionPaid
+                                  ? "bg-emerald-500"
+                                  : "bg-orange-400"
                               }`}
                             />
                             <div className="flex-1 min-w-0">
@@ -364,12 +369,14 @@ export default function AgentCommissionPanel({
                                 ค่าคอมที่ได้ {c.agentEarnedCommission != null ? `฿${fmtMoney(c.agentEarnedCommission)}` : "-"}
                               </div>
                               <div className="text-[11px] mt-0.5">
-                                {c.commissionPaid ? (
+                                {c.agentEarnedCommission == null ? (
+                                  <span className="text-gray-400">
+                                    {c.status === "TERMINATED" ? "ยกเลิกสัญญา" : "-"}
+                                  </span>
+                                ) : c.commissionPaid ? (
                                   <span className="text-green-600">จ่ายแล้ว</span>
-                                ) : c.commissionReceived ? (
-                                  <span className="text-orange-600">รอจ่าย</span>
                                 ) : (
-                                  <span className="text-gray-400">ยังไม่รับเงิน</span>
+                                  <span className="text-orange-600">รอจ่าย</span>
                                 )}
                               </div>
                             </div>
