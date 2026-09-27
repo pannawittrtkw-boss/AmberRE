@@ -87,6 +87,26 @@ export default function AdminLayout({
   const [locale, setLocale] = useState("th");
   const [messages, setMessages] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // The site header's real height varies (logo size, wrapping, etc.) — measure
+  // it instead of hardcoding a px value, so the mobile toggle bar and sidebar
+  // never end up overlapping it or miscalculating their own scrollable height.
+  const [headerHeight, setHeaderHeight] = useState(64);
+
+  useEffect(() => {
+    const measure = () => {
+      const header = document.querySelector("header");
+      if (header) setHeaderHeight(header.getBoundingClientRect().height);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    const ro = new ResizeObserver(measure);
+    const header = document.querySelector("header");
+    if (header) ro.observe(header);
+    return () => {
+      window.removeEventListener("resize", measure);
+      ro.disconnect();
+    };
+  }, []);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [menuConfig, setMenuConfig] = useState<Record<string, string[]> | null>(null);
   // Fetch tier fresh from DB — avoids stale JWT cache showing wrong tier
@@ -278,8 +298,11 @@ export default function AdminLayout({
   );
 
   return (
-    <div className="flex" style={{ minHeight: "calc(100vh - 64px)" }}>
-      <div className="lg:hidden fixed top-16 left-0 right-0 z-40 bg-[#112240] text-white px-4 py-2 flex items-center gap-3">
+    <div
+      className="flex"
+      style={{ minHeight: `calc(100vh - ${headerHeight}px)`, ["--header-h" as any]: `${headerHeight}px` }}
+    >
+      <div className="lg:hidden fixed top-[var(--header-h)] left-0 right-0 z-40 h-10 bg-[#112240] text-white px-4 flex items-center gap-3">
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1">
           {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
@@ -292,20 +315,20 @@ export default function AdminLayout({
 
       <aside
         className={`
-          fixed lg:relative top-0 left-0 z-40 w-64 flex-shrink-0 transition-transform duration-200
+          fixed top-[var(--header-h)] bottom-0 lg:top-auto lg:bottom-auto
+          lg:relative left-0 z-40 w-64 flex-shrink-0 overflow-y-auto transition-transform duration-200
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
           lg:translate-x-0
         `}
-        style={{ minHeight: "calc(100vh - 64px)" }}
       >
-        <div className="h-full bg-white text-gray-900 border-r border-gray-200">
-          <div className="p-4 pt-20 lg:pt-4">
+        <div className="min-h-full bg-white text-gray-900 border-r border-gray-200">
+          <div className="p-4 pb-24 lg:pb-4">
             <SidebarContent />
           </div>
         </div>
       </aside>
 
-      <div className="flex-1 bg-gray-50 p-4 sm:p-6 pt-16 lg:pt-6 min-w-0">
+      <div className="flex-1 bg-gray-50 p-4 sm:p-6 pt-14 lg:pt-6 min-w-0">
         {children}
       </div>
     </div>
