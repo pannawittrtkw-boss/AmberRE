@@ -279,6 +279,16 @@ export default function HeroSearchPanel({ locale, messages }: HeroSearchPanelPro
                     style={{ position: "fixed", top: typeDropdownPos.top, left: typeDropdownPos.left }}
                     className="z-[100] w-48 bg-white border border-gray-200 rounded-lg shadow-lg p-2"
                   >
+                    <label className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-50 cursor-pointer text-sm font-medium text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={propertyTypes.length === 0}
+                        onChange={() => setPropertyTypes([])}
+                        className="accent-[#C8A951]"
+                      />
+                      {locale === "th" ? "ทั้งหมด" : "All"}
+                    </label>
+                    <div className="my-1 border-t border-gray-100" />
                     {PROPERTY_TYPES.map((type) => (
                       <label
                         key={type}

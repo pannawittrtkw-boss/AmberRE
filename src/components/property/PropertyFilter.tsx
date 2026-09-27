@@ -233,6 +233,14 @@ export default function PropertyFilter({
           {t.propertyTypeLabel}
         </label>
         <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => updateFilter("propertyType", [])}
+            className={`col-span-2 py-2.5 rounded-xl text-xs font-medium transition-all ${
+              filters.propertyType.length === 0 ? pillActiveCls : pillInactiveCls
+            }`}
+          >
+            {tc.all}
+          </button>
           {["CONDO", "HOUSE", "TOWNHOUSE", "LAND", "OFFICE", "WAREHOUSE"].map((type) => (
             <button
               key={type}
