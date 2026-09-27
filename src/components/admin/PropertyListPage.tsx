@@ -889,52 +889,15 @@ export default function PropertyListPage({
                         {statusInfo.label}
                       </span>
                     )}
-                    {canManageRow ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            await fetch(`/api/properties/${p.id}`, {
-                              method: "PUT",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ isRented: !p.isRented }),
-                            });
-                            refreshAll();
-                          }}
-                          className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${p.isRented ? "bg-teal-100 text-teal-800" : "bg-gray-100 text-gray-400"}`}
-                        >
-                          {locale === "th" ? "ให้เช่าแล้ว" : "Rented"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            await fetch(`/api/properties/${p.id}`, {
-                              method: "PUT",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ isSold: !p.isSold }),
-                            });
-                            refreshAll();
-                          }}
-                          className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${p.isSold ? "bg-rose-100 text-rose-800" : "bg-gray-100 text-gray-400"}`}
-                        >
-                          {locale === "th" ? "ขายแล้ว" : "Sold"}
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        {p.isRented && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-teal-100 text-teal-800 flex-shrink-0">
-                            {locale === "th" ? "ให้เช่าแล้ว" : "Rented"}
-                          </span>
-                        )}
-                        {p.isSold && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-rose-100 text-rose-800 flex-shrink-0">
-                            {locale === "th" ? "ขายแล้ว" : "Sold"}
-                          </span>
-                        )}
-                      </>
+                    {p.isRented && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-teal-100 text-teal-800 flex-shrink-0">
+                        {locale === "th" ? "ให้เช่าแล้ว" : "Rented"}
+                      </span>
+                    )}
+                    {p.isSold && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-rose-100 text-rose-800 flex-shrink-0">
+                        {locale === "th" ? "ขายแล้ว" : "Sold"}
+                      </span>
                     )}
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${daysBadgeCls}`}>
                       {daysPosted} {locale === "th" ? "วัน" : "d"}
@@ -1127,50 +1090,15 @@ export default function PropertyListPage({
                       {statusInfo.label}
                     </span>
                   )}
-                  {canManageRow ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          await fetch(`/api/properties/${p.id}`, {
-                            method: "PUT",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ isRented: !p.isRented }),
-                          });
-                          refreshAll();
-                        }}
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ${p.isRented ? "bg-teal-100 text-teal-800" : "bg-gray-100 text-gray-400"}`}
-                      >
-                        {locale === "th" ? "ให้เช่าแล้ว" : "Rented"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          await fetch(`/api/properties/${p.id}`, {
-                            method: "PUT",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ isSold: !p.isSold }),
-                          });
-                          refreshAll();
-                        }}
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ${p.isSold ? "bg-rose-100 text-rose-800" : "bg-gray-100 text-gray-400"}`}
-                      >
-                        {locale === "th" ? "ขายแล้ว" : "Sold"}
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      {p.isRented && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-teal-100 text-teal-800 shrink-0">
-                          {locale === "th" ? "ให้เช่าแล้ว" : "Rented"}
-                        </span>
-                      )}
-                      {p.isSold && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-rose-100 text-rose-800 shrink-0">
-                          {locale === "th" ? "ขายแล้ว" : "Sold"}
-                        </span>
-                      )}
-                    </>
+                  {p.isRented && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-teal-100 text-teal-800 shrink-0">
+                      {locale === "th" ? "ให้เช่าแล้ว" : "Rented"}
+                    </span>
+                  )}
+                  {p.isSold && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-rose-100 text-rose-800 shrink-0">
+                      {locale === "th" ? "ขายแล้ว" : "Sold"}
+                    </span>
                   )}
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ${daysBadgeCls}`}>
                     {daysPosted} {locale === "th" ? "วัน" : "d"}

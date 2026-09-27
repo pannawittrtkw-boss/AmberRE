@@ -90,8 +90,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       "status", "category", "priority", "foreignerAccept", "petFriendly", "smokingAllowed", "note",
     ];
     const boolFields = [
-      "kitchenPartition", "bedroomPartition", "isFeatured", "isPopular", "isSold", "isRented", "isExclusive",
+      "kitchenPartition", "bedroomPartition", "isFeatured", "isPopular", "isExclusive",
     ];
+    // Admin-only — availability flags aren't editable by owners/agents, even
+    // though they can otherwise manage their own listing.
+    const adminOnlyBoolFields = ["isSold", "isRented"];
     const intFields = ["bedrooms", "bathrooms", "floor", "views", "projectId"];
 
     for (const key of stringFields) {
@@ -99,6 +102,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
     for (const key of boolFields) {
       if (rawData[key] !== undefined) updateData[key] = Boolean(rawData[key]);
+    }
+    if (role === "ADMIN") {
+      for (const key of adminOnlyBoolFields) {
+        if (rawData[key] !== undefined) updateData[key] = Boolean(rawData[key]);
+      }
     }
     for (const key of intFields) {
       if (rawData[key] !== undefined) updateData[key] = rawData[key] !== null ? Number(rawData[key]) : null;

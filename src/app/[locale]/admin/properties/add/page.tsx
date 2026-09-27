@@ -1709,32 +1709,34 @@ export default function AddPropertyPage({
               </div>
             </div>
 
-            {/* Rented / Sold — quick availability flags */}
-            <div>
-              <label className="block text-sm font-semibold mb-2 text-rose-700">
-                {locale === "th" ? "สถานะใช้งาน" : "Availability"}
-              </label>
-              <div className="flex items-center gap-6 mt-1">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.isRented}
-                    onChange={(e) => updateForm("isRented", e.target.checked)}
-                    className="w-5 h-5 text-rose-600 focus:ring-rose-500 rounded"
-                  />
-                  <span className="text-sm font-medium">{locale === "th" ? "ให้เช่าแล้ว" : "Rented"}</span>
+            {/* Rented / Sold — quick availability flags, admin only */}
+            {!isAgentMode && (
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-rose-700">
+                  {locale === "th" ? "สถานะใช้งาน" : "Availability"}
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.isSold}
-                    onChange={(e) => updateForm("isSold", e.target.checked)}
-                    className="w-5 h-5 text-rose-600 focus:ring-rose-500 rounded"
-                  />
-                  <span className="text-sm font-medium">{locale === "th" ? "ขายแล้ว" : "Sold"}</span>
-                </label>
+                <div className="flex items-center gap-6 mt-1">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.isRented}
+                      onChange={(e) => updateForm("isRented", e.target.checked)}
+                      className="w-5 h-5 text-rose-600 focus:ring-rose-500 rounded"
+                    />
+                    <span className="text-sm font-medium">{locale === "th" ? "ให้เช่าแล้ว" : "Rented"}</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.isSold}
+                      onChange={(e) => updateForm("isSold", e.target.checked)}
+                      className="w-5 h-5 text-rose-600 focus:ring-rose-500 rounded"
+                    />
+                    <span className="text-sm font-medium">{locale === "th" ? "ขายแล้ว" : "Sold"}</span>
+                  </label>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Post From */}
             <div>
