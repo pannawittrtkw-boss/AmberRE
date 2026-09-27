@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Tooltip, Polyline } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Tooltip, Polyline, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { X } from "lucide-react";
 import { getIntlLocale } from "@/lib/utils";
 import { haversineDistanceKm, estimateTravel, type TravelMode } from "@/lib/geo";
 import MapSearchBox from "./MapSearchBox";
@@ -49,10 +50,10 @@ function formatPriceCompact(value: number): string {
   return `฿${value}`;
 }
 
-function buildPriceMarker(label: string, isRent: boolean): L.DivIcon {
+function buildPriceMarker(label: string, isRent: boolean, isActive: boolean): L.DivIcon {
   const bg = isRent ? "#0f766e" : "#C8A951"; // teal for rent, gold for sale
   const html = `
-    <div class="npb-price-marker" style="--bg:${bg}">
+    <div class="npb-price-marker${isActive ? " npb-marker--active" : ""}" style="--bg:${bg}">
       <span>${label}</span>
     </div>`;
   return L.divIcon({
@@ -66,10 +67,10 @@ function buildPriceMarker(label: string, isRent: boolean): L.DivIcon {
 // Same building/project often has many units geocoded to the exact same
 // lat/lng — stacking that many individual price pins on the same pixel
 // makes all but the topmost one unclickable. Shown instead as one
-// "N รายการ" badge; clicking it opens a popup listing every unit there.
-function buildClusterMarker(count: number): L.DivIcon {
+// "N รายการ" badge; clicking it opens the info panel listing every unit.
+function buildClusterMarker(count: number, isActive: boolean): L.DivIcon {
   const html = `
-    <div class="npb-cluster-marker">
+    <div class="npb-cluster-marker${isActive ? " npb-marker--active" : ""}">
       <span>${count} รายการ</span>
     </div>`;
   return L.divIcon({
@@ -80,8 +81,8 @@ function buildClusterMarker(count: number): L.DivIcon {
   });
 }
 
-// The draggable "you searched here" pin — visually distinct (blue teardrop)
-// from the gold/teal price pills used for properties.
+// The draggable "start point" pin — visually distinct (blue teardrop) from
+// the gold/teal price pills used for properties.
 function buildSearchPinIcon(): L.DivIcon {
   const html = `
     <div class="npb-search-pin">
@@ -105,6 +106,18 @@ function roundCoord(n: number | string): string {
   return Number(n).toFixed(6);
 }
 
+// Lets clicking anywhere on the map (not on a marker — Leaflet markers don't
+// bubble their clicks to the map by default) drop the start pin there
+// directly, without requiring a text search first.
+function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click(e) {
+      onMapClick(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+}
+
 export default function MapView({
   properties,
   locale,
@@ -117,9 +130,9 @@ export default function MapView({
   const [messages, setMessages] = useState<any>(null);
   const [searchMarker, setSearchMarker] = useState<{ lat: number; lng: number; label: string } | null>(null);
   const [travelMode, setTravelMode] = useState<TravelMode>("walk");
-  // The property currently shown in an open popup — draws a line from the
-  // search pin to it. Cleared when that popup closes.
-  const [routeTarget, setRouteTarget] = useState<{ lat: number; lng: number } | null>(null);
+  // Whichever marker's info panel is currently open — drives both the
+  // docked panel content and the route destination. Cleared on close.
+  const [activeMarker, setActiveMarker] = useState<{ key: string; group: MapProperty[]; lat: number; lng: number } | null>(null);
   const [isDraggingPin, setIsDraggingPin] = useState(false);
   // Real street-following route from OpenRouteService, when available —
   // null while loading/unavailable, in which case a straight-line estimate
@@ -138,7 +151,7 @@ export default function MapView({
   // travel mode changes — skipped while actively dragging the pin so we
   // don't spam the routing API on every pointermove.
   useEffect(() => {
-    if (!searchMarker || !routeTarget || isDraggingPin) {
+    if (!searchMarker || !activeMarker || isDraggingPin) {
       setRouteData(null);
       return;
     }
@@ -146,8 +159,8 @@ export default function MapView({
     const params = new URLSearchParams({
       startLat: String(searchMarker.lat),
       startLng: String(searchMarker.lng),
-      endLat: String(routeTarget.lat),
-      endLng: String(routeTarget.lng),
+      endLat: String(activeMarker.lat),
+      endLng: String(activeMarker.lng),
       mode: travelMode,
     });
     fetch(`/api/route?${params}`)
@@ -162,7 +175,7 @@ export default function MapView({
     return () => {
       cancelled = true;
     };
-  }, [searchMarker?.lat, searchMarker?.lng, routeTarget?.lat, routeTarget?.lng, travelMode, isDraggingPin]);
+  }, [searchMarker?.lat, searchMarker?.lng, activeMarker?.lat, activeMarker?.lng, travelMode, isDraggingPin]);
 
   useEffect(() => {
     setMounted(true);
@@ -192,10 +205,25 @@ export default function MapView({
 
   const validProperties = properties.filter((p) => p.latitude && p.longitude);
 
+  const getPriceInfo = (property: MapProperty) => {
+    const isRent =
+      property.listingType === "RENT" || property.listingType === "RENT_AND_SALE";
+    const displayPrice = isRent
+      ? property.price
+      : property.salePrice && property.salePrice > 0
+      ? property.salePrice
+      : property.price;
+    return { isRent, displayPrice };
+  };
+
+  const getTitle = (property: MapProperty) =>
+    property.projectName ||
+    (locale !== "th" && property.titleEn ? property.titleEn : property.titleTh);
+
   const renderDistance = (propLat: number, propLng: number) => {
     if (!searchMarker) return null;
     const isCurrentRoute =
-      !isDraggingPin && routeTarget?.lat === propLat && routeTarget?.lng === propLng && routeData;
+      !isDraggingPin && activeMarker?.lat === propLat && activeMarker?.lng === propLng && routeData;
 
     if (isCurrentRoute) {
       const km = routeData!.distanceMeters / 1000;
@@ -227,19 +255,34 @@ export default function MapView({
     <div className="inline-flex rounded-full border border-gray-200 overflow-hidden text-[11px] font-medium">
       <button
         type="button"
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTravelMode("walk"); }}
+        onClick={() => setTravelMode("walk")}
         className={`px-2 py-1 transition-colors ${travelMode === "walk" ? "bg-[#C8A951] text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
       >
         🚶 {locale === "th" ? "เดิน" : "Walk"}
       </button>
       <button
         type="button"
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTravelMode("drive"); }}
+        onClick={() => setTravelMode("drive")}
         className={`px-2 py-1 transition-colors border-l border-gray-200 ${travelMode === "drive" ? "bg-[#C8A951] text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
       >
         🚗 {locale === "th" ? "ขับรถ" : "Drive"}
       </button>
     </div>
+  );
+
+  const setAsStart = () => {
+    if (!activeMarker) return;
+    const groupTitle = getTitle(activeMarker.group[0]);
+    setSearchMarker({ lat: activeMarker.lat, lng: activeMarker.lng, label: groupTitle });
+    setActiveMarker(null);
+  };
+
+  const groupedProperties = Object.entries(
+    validProperties.reduce<Record<string, MapProperty[]>>((groups, property) => {
+      const key = `${roundCoord(property.latitude!)},${roundCoord(property.longitude!)}`;
+      (groups[key] ??= []).push(property);
+      return groups;
+    }, {})
   );
 
   return (
@@ -321,6 +364,9 @@ export default function MapView({
           border-right: 6px solid transparent;
           border-top: 7px solid #1e293b;
         }
+        .npb-marker--active {
+          box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+        }
         .npb-search-pin-wrapper {
           background: transparent !important;
           border: none !important;
@@ -347,6 +393,8 @@ export default function MapView({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
+        <MapClickHandler onMapClick={(lat, lng) => setSearchMarker({ lat, lng, label: "" })} />
+
         {searchMarker && (
           <Marker
             position={[searchMarker.lat, searchMarker.lng]}
@@ -367,12 +415,12 @@ export default function MapView({
               opacity={1}
               className="!bg-blue-600 !text-white !border-0 !rounded-lg !shadow-lg !text-xs !px-2 !py-1"
             >
-              {locale === "th" ? "ลากเพื่อย้ายตำแหน่ง" : "Drag to move"}
+              {locale === "th" ? "จุดเริ่มต้น · ลากเพื่อย้าย" : "Start point · drag to move"}
             </Tooltip>
           </Marker>
         )}
 
-        {searchMarker && routeTarget && (() => {
+        {searchMarker && activeMarker && (() => {
           const hasRealRoute = !isDraggingPin && !!routeData?.coordinates?.length;
           return (
             <Polyline
@@ -381,7 +429,7 @@ export default function MapView({
                   ? routeData!.coordinates
                   : [
                       [searchMarker.lat, searchMarker.lng],
-                      [routeTarget.lat, routeTarget.lng],
+                      [activeMarker.lat, activeMarker.lng],
                     ]
               }
               pathOptions={
@@ -393,44 +441,22 @@ export default function MapView({
           );
         })()}
 
-        {Object.entries(
-          validProperties.reduce<Record<string, MapProperty[]>>((groups, property) => {
-            const key = `${roundCoord(property.latitude!)},${roundCoord(property.longitude!)}`;
-            (groups[key] ??= []).push(property);
-            return groups;
-          }, {})
-        ).map(([key, group]) => {
-          const getPriceInfo = (property: MapProperty) => {
-            const isRent =
-              property.listingType === "RENT" ||
-              property.listingType === "RENT_AND_SALE";
-            // For RENT_AND_SALE, prefer rent monthly figure (smaller — fits the pill better)
-            const displayPrice = isRent
-              ? property.price
-              : property.salePrice && property.salePrice > 0
-              ? property.salePrice
-              : property.price;
-            return { isRent, displayPrice };
-          };
-          const getTitle = (property: MapProperty) =>
-            property.projectName ||
-            (locale !== "th" && property.titleEn ? property.titleEn : property.titleTh);
-
+        {groupedProperties.map(([key, group]) => {
           const [lat, lng] = key.split(",").map(Number);
+          const isActive = activeMarker?.key === key;
 
           // Multiple units geocoded to the same spot (same building/project)
           // — show one "N รายการ" badge instead of stacking pins on top of
-          // each other, with a popup listing every unit to pick from.
+          // each other; clicking opens the docked panel listing every unit.
           if (group.length > 1) {
             const groupTitle = getTitle(group[0]);
             return (
               <Marker
                 key={key}
                 position={[lat, lng]}
-                icon={buildClusterMarker(group.length)}
+                icon={buildClusterMarker(group.length, isActive)}
                 eventHandlers={{
-                  popupopen: () => setRouteTarget({ lat, lng }),
-                  popupclose: () => setRouteTarget(null),
+                  click: () => setActiveMarker({ key, group, lat, lng }),
                 }}
               >
                 <Tooltip
@@ -442,73 +468,6 @@ export default function MapView({
                   <div className="font-medium">{groupTitle}</div>
                   <div className="text-[10px] opacity-80">{group.length} รายการ</div>
                 </Tooltip>
-
-                <Popup maxWidth={300}>
-                  <div className="text-sm w-[260px]">
-                    <p className="font-semibold mb-2">
-                      {groupTitle} · {group.length} รายการ
-                    </p>
-                    {searchMarker && (
-                      <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-gray-100">
-                        <span className="text-[11px] text-gray-500">
-                          {locale === "th" ? "จากตำแหน่งที่ค้นหา" : "From searched location"}
-                        </span>
-                        <TravelModeToggle />
-                      </div>
-                    )}
-                    <div className="max-h-72 overflow-y-auto divide-y divide-gray-100 -mx-1">
-                      {group.map((property) => {
-                        const { isRent, displayPrice } = getPriceInfo(property);
-                        const unitLabel = [
-                          property.building ? `ตึก ${property.building}` : null,
-                          property.floor ? `ชั้น ${property.floor}` : null,
-                          property.bedrooms ? `${property.bedrooms} นอน` : null,
-                          property.sizeSqm ? `${property.sizeSqm} ตร.ม.` : null,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ");
-                        const isUnavailable = property.isRented || property.isSold;
-                        return (
-                          <a
-                            key={property.id}
-                            href={`/${locale}/properties/${property.id}`}
-                            className={`flex items-center justify-between gap-2 py-2 px-1 transition-colors ${
-                              isUnavailable ? "bg-rose-50 hover:bg-rose-100" : "hover:bg-gray-50"
-                            }`}
-                          >
-                            <div className="min-w-0">
-                              <div className="text-xs text-gray-700 truncate">
-                                {unitLabel || (locale !== "th" && property.titleEn ? property.titleEn : property.titleTh)}
-                              </div>
-                              <div className="text-[10px] text-gray-400 flex items-center gap-1 flex-wrap">
-                                <span>{listingLabel(property.listingType)}</span>
-                                {property.isRented && (
-                                  <span className="px-1.5 py-0.5 rounded-full bg-red-600 text-white font-bold">
-                                    {locale === "th" ? "ให้เช่าแล้ว" : "Rented"}
-                                  </span>
-                                )}
-                                {property.isSold && (
-                                  <span className="px-1.5 py-0.5 rounded-full bg-red-600 text-white font-bold">
-                                    {locale === "th" ? "ขายแล้ว" : "Sold"}
-                                  </span>
-                                )}
-                              </div>
-                              {searchMarker && (
-                                <div className="text-[10px] mt-0.5">{renderDistance(lat, lng)}</div>
-                              )}
-                            </div>
-                            <span className="text-[#C8A951] font-bold text-xs shrink-0 whitespace-nowrap">
-                              ฿{formatPrice(displayPrice)}
-                              {isRent && (
-                                <span className="text-[10px] font-normal text-gray-400">{tp.perMonth || "/month"}</span>
-                              )}
-                            </span>
-                          </a>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </Popup>
               </Marker>
             );
           }
@@ -517,7 +476,7 @@ export default function MapView({
           const { isRent, displayPrice } = getPriceInfo(property);
           const compact = formatPriceCompact(displayPrice);
           const title = getTitle(property);
-          const icon = buildPriceMarker(compact, isRent);
+          const icon = buildPriceMarker(compact, isRent, isActive);
 
           return (
             <Marker
@@ -525,8 +484,7 @@ export default function MapView({
               position={[lat, lng]}
               icon={icon}
               eventHandlers={{
-                popupopen: () => setRouteTarget({ lat, lng }),
-                popupclose: () => setRouteTarget(null),
+                click: () => setActiveMarker({ key, group, lat, lng }),
               }}
             >
               {/* Hover label: project name */}
@@ -542,16 +500,109 @@ export default function MapView({
                   {isRent && (tp.perMonth || "/month")}
                 </div>
               </Tooltip>
+            </Marker>
+          );
+        })}
+      </MapContainer>
 
-              <Popup>
-                <div className="text-sm min-w-[180px]">
-                  <p className="font-semibold mb-1">{title}</p>
+      {/* Docked info panel — fixed to the top-right corner instead of a
+          Leaflet popup anchored above the marker, so it never covers the
+          route line drawn across the middle of the map. */}
+      {activeMarker && (
+        <div className="absolute top-3 right-3 z-[500] w-[280px] max-h-[calc(100%-24px)] overflow-y-auto bg-white rounded-xl shadow-xl border border-gray-100 p-4 text-sm">
+          <button
+            type="button"
+            onClick={() => setActiveMarker(null)}
+            className="absolute top-2.5 right-2.5 text-gray-400 hover:text-gray-600"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          {activeMarker.group.length > 1 ? (
+            <>
+              <p className="font-semibold mb-1 pr-5">
+                {getTitle(activeMarker.group[0])} · {activeMarker.group.length} รายการ
+              </p>
+              <button
+                type="button"
+                onClick={setAsStart}
+                className="mb-2 text-[11px] font-medium text-blue-600 hover:underline"
+              >
+                📍 {locale === "th" ? "ตั้งเป็นจุดเริ่มต้น" : "Set as start point"}
+              </button>
+              {searchMarker && (
+                <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-gray-100">
+                  <span className="text-[11px] text-gray-500">
+                    {locale === "th" ? "จากจุดเริ่มต้น" : "From start point"}
+                  </span>
+                  <TravelModeToggle />
+                </div>
+              )}
+              <div className="divide-y divide-gray-100 -mx-1">
+                {activeMarker.group.map((property) => {
+                  const { isRent, displayPrice } = getPriceInfo(property);
+                  const unitLabel = [
+                    property.building ? `ตึก ${property.building}` : null,
+                    property.floor ? `ชั้น ${property.floor}` : null,
+                    property.bedrooms ? `${property.bedrooms} นอน` : null,
+                    property.sizeSqm ? `${property.sizeSqm} ตร.ม.` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ");
+                  const isUnavailable = property.isRented || property.isSold;
+                  return (
+                    <a
+                      key={property.id}
+                      href={`/${locale}/properties/${property.id}`}
+                      className={`flex items-center justify-between gap-2 py-2 px-1 transition-colors ${
+                        isUnavailable ? "bg-rose-50 hover:bg-rose-100" : "hover:bg-gray-50"
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <div className="text-xs text-gray-700 truncate">
+                          {unitLabel || (locale !== "th" && property.titleEn ? property.titleEn : property.titleTh)}
+                        </div>
+                        <div className="text-[10px] text-gray-400 flex items-center gap-1 flex-wrap">
+                          <span>{listingLabel(property.listingType)}</span>
+                          {property.isRented && (
+                            <span className="px-1.5 py-0.5 rounded-full bg-red-600 text-white font-bold">
+                              {locale === "th" ? "ให้เช่าแล้ว" : "Rented"}
+                            </span>
+                          )}
+                          {property.isSold && (
+                            <span className="px-1.5 py-0.5 rounded-full bg-red-600 text-white font-bold">
+                              {locale === "th" ? "ขายแล้ว" : "Sold"}
+                            </span>
+                          )}
+                        </div>
+                        {searchMarker && (
+                          <div className="text-[10px] mt-0.5">{renderDistance(activeMarker.lat, activeMarker.lng)}</div>
+                        )}
+                      </div>
+                      <span className="text-[#C8A951] font-bold text-xs shrink-0 whitespace-nowrap">
+                        ฿{formatPrice(displayPrice)}
+                        {isRent && (
+                          <span className="text-[10px] font-normal text-gray-400">{tp.perMonth || "/month"}</span>
+                        )}
+                      </span>
+                    </a>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            (() => {
+              const property = activeMarker.group[0];
+              const { isRent, displayPrice } = getPriceInfo(property);
+              const title = getTitle(property);
+              return (
+                <div>
+                  <p className="font-semibold mb-1 pr-5">{title}</p>
                   <p className="text-[#C8A951] font-bold text-base">
                     ฿{formatPrice(displayPrice)}
                     {isRent && (
-                      <span className="text-xs font-normal text-gray-500">
-                        {tp.perMonth || "/month"}
-                      </span>
+                      <span className="text-xs font-normal text-gray-500">{tp.perMonth || "/month"}</span>
                     )}
                   </p>
                   {property.salePrice &&
@@ -559,8 +610,7 @@ export default function MapView({
                     isRent &&
                     property.listingType === "RENT_AND_SALE" && (
                       <p className="text-xs text-gray-600 mt-0.5">
-                        {tc.sale || "Sale"}: ฿
-                        {formatPrice(Number(property.salePrice))}
+                        {tc.sale || "Sale"}: ฿{formatPrice(Number(property.salePrice))}
                       </p>
                     )}
                   <p className="text-gray-500 text-xs mt-1 flex items-center gap-1 flex-wrap">
@@ -576,15 +626,22 @@ export default function MapView({
                       </span>
                     )}
                   </p>
+                  <button
+                    type="button"
+                    onClick={setAsStart}
+                    className="mt-2 text-[11px] font-medium text-blue-600 hover:underline block"
+                  >
+                    📍 {locale === "th" ? "ตั้งเป็นจุดเริ่มต้น" : "Set as start point"}
+                  </button>
                   {searchMarker && (
                     <div className="mt-2 pt-2 border-t border-gray-100">
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <span className="text-[11px] text-gray-500">
-                          {locale === "th" ? "จากตำแหน่งที่ค้นหา" : "From searched location"}
+                          {locale === "th" ? "จากจุดเริ่มต้น" : "From start point"}
                         </span>
                         <TravelModeToggle />
                       </div>
-                      <div className="text-xs">{renderDistance(lat, lng)}</div>
+                      <div className="text-xs">{renderDistance(activeMarker.lat, activeMarker.lng)}</div>
                     </div>
                   )}
                   <a
@@ -594,11 +651,11 @@ export default function MapView({
                     {tp.viewDetails || "View Details"} →
                   </a>
                 </div>
-              </Popup>
-            </Marker>
-          );
-        })}
-      </MapContainer>
+              );
+            })()
+          )}
+        </div>
+      )}
     </div>
   );
 }
