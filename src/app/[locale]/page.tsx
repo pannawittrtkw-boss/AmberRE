@@ -265,10 +265,8 @@ export default async function HomePage({
                     label: t.statClosedDeals,
                   },
                 ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-[#C8A951]/15 border border-[#C8A951]/30 flex items-center justify-center flex-shrink-0">
-                      <item.icon className="w-5 h-5 text-[#E8C97A]" />
-                    </div>
+                  <div key={i} className="flex items-center gap-3">
+                    <item.icon className="w-9 h-9 lg:w-10 lg:h-10 text-[#E8C97A] flex-shrink-0" strokeWidth={1.5} />
                     <div>
                       <div className="text-2xl lg:text-3xl font-bold text-[#E8C97A] tabular-nums">
                         <AnimatedStat value={item.value} suffix="+" />
@@ -281,10 +279,8 @@ export default async function HomePage({
                 ))}
               </div>
 
-              <div className="flex items-center gap-4 mt-8 pt-8 border-t border-white/10">
-                <div className="w-12 h-12 rounded-2xl bg-[#C8A951]/15 border border-[#C8A951]/30 flex items-center justify-center flex-shrink-0">
-                  <Star className="w-5 h-5 text-[#E8C97A] fill-[#E8C97A]" />
-                </div>
+              <div className="flex items-center gap-3 mt-8 pt-8 border-t border-white/10">
+                <Star className="w-9 h-9 lg:w-10 lg:h-10 text-[#E8C97A] fill-[#E8C97A]" strokeWidth={1.5} />
                 <div>
                   <div className="text-2xl lg:text-3xl font-bold text-[#E8C97A] tabular-nums">
                     <AnimatedStat value={satisfactionScore} decimals={1} />
