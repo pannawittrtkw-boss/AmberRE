@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Loader2, RefreshCw, Users, Home, Wallet, PiggyBank, Clock, CalendarRange, ChevronRight } from "lucide-react";
+import { Loader2, RefreshCw, Users, Home, Wallet, PiggyBank, Clock, CalendarRange, ChevronRight, Search } from "lucide-react";
 import { avatarColor, initials } from "@/lib/avatar";
 
 interface Row {
@@ -83,6 +83,15 @@ export default function CommissionOverviewPage() {
   const [data, setData] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+
+  const visibleRows = useMemo(() => {
+    if (!data) return [];
+    const q = search.trim().toLowerCase();
+    return [...data.rows]
+      .filter((r) => !q || r.name.toLowerCase().includes(q))
+      .sort((a, b) => b.selectedMonth.revenue - a.selectedMonth.revenue);
+  }, [data, search]);
 
   const fetchData = useCallback(async (m: string) => {
     setLoading(true);
@@ -168,10 +177,24 @@ export default function CommissionOverviewPage() {
             />
           </div>
 
+          {/* Search */}
+          <div className="relative mb-4 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="ค้นหาชื่อ Agent..."
+              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30 focus:border-[#C8A951]"
+            />
+          </div>
+
           {/* Per-agent table */}
           <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
             {data.rows.length === 0 ? (
               <div className="text-center py-16 text-gray-400 text-sm">ยังไม่มี Agent ในระบบ</div>
+            ) : visibleRows.length === 0 ? (
+              <div className="text-center py-16 text-gray-400 text-sm">ไม่พบ Agent ที่ค้นหา</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm border-collapse">
@@ -200,7 +223,7 @@ export default function CommissionOverviewPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.rows.map((r, idx) => (
+                    {visibleRows.map((r, idx) => (
                       <tr
                         key={r.agentId}
                         onClick={() => router.push(`/${locale}/admin/commission-overview/${r.agentId}`)}
