@@ -120,10 +120,49 @@ export default function MapView({
   // The property currently shown in an open popup — draws a line from the
   // search pin to it. Cleared when that popup closes.
   const [routeTarget, setRouteTarget] = useState<{ lat: number; lng: number } | null>(null);
+  const [isDraggingPin, setIsDraggingPin] = useState(false);
+  // Real street-following route from OpenRouteService, when available —
+  // null while loading/unavailable, in which case a straight-line estimate
+  // is shown instead (see renderDistance / the Polyline fallback below).
+  const [routeData, setRouteData] = useState<{
+    coords: [number, number][];
+    distanceMeters: number;
+    durationSeconds: number;
+  } | null>(null);
 
   useEffect(() => {
     import(`@/messages/${locale}.json`).then((m) => setMessages(m.default));
   }, [locale]);
+
+  // Fetch the real route whenever the pin, the viewed property, or the
+  // travel mode changes — skipped while actively dragging the pin so we
+  // don't spam the routing API on every pointermove.
+  useEffect(() => {
+    if (!searchMarker || !routeTarget || isDraggingPin) {
+      setRouteData(null);
+      return;
+    }
+    let cancelled = false;
+    const params = new URLSearchParams({
+      startLat: String(searchMarker.lat),
+      startLng: String(searchMarker.lng),
+      endLat: String(routeTarget.lat),
+      endLng: String(routeTarget.lng),
+      mode: travelMode,
+    });
+    fetch(`/api/route?${params}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        setRouteData(d.success ? d.data : null);
+      })
+      .catch(() => {
+        if (!cancelled) setRouteData(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [searchMarker?.lat, searchMarker?.lng, routeTarget?.lat, routeTarget?.lng, travelMode, isDraggingPin]);
 
   useEffect(() => {
     setMounted(true);
@@ -155,13 +194,31 @@ export default function MapView({
 
   const renderDistance = (propLat: number, propLng: number) => {
     if (!searchMarker) return null;
+    const isCurrentRoute =
+      !isDraggingPin && routeTarget?.lat === propLat && routeTarget?.lng === propLng && routeData;
+
+    if (isCurrentRoute) {
+      const km = routeData!.distanceMeters / 1000;
+      const minutes = routeData!.durationSeconds / 60;
+      const kmLabel = km < 1 ? `${Math.round(km * 1000)} ม.` : `${km.toFixed(1)} กม.`;
+      const minLabel = minutes < 1 ? "<1" : Math.round(minutes);
+      return (
+        <span className="text-gray-600">
+          {kmLabel} · ~{minLabel} {locale === "th" ? "นาที" : "min"}
+        </span>
+      );
+    }
+
+    // Fallback while the real route loads, fails, or routing isn't
+    // configured yet — a straight-line estimate, clearly marked as such.
     const straightKm = haversineDistanceKm(searchMarker.lat, searchMarker.lng, propLat, propLng);
     const { routeKm, minutes } = estimateTravel(straightKm, travelMode);
     const kmLabel = routeKm < 1 ? `${Math.round(routeKm * 1000)} ม.` : `${routeKm.toFixed(1)} กม.`;
     const minLabel = minutes < 1 ? "<1" : Math.round(minutes);
     return (
-      <span className="text-gray-600">
-        {kmLabel} · ~{minLabel} {locale === "th" ? "นาที" : "min"}
+      <span className="text-gray-500">
+        ~{kmLabel} · ~{minLabel} {locale === "th" ? "นาที" : "min"}{" "}
+        <span className="text-gray-400">({locale === "th" ? "ประมาณ" : "est."})</span>
       </span>
     );
   };
@@ -296,10 +353,12 @@ export default function MapView({
             icon={buildSearchPinIcon()}
             draggable
             eventHandlers={{
+              dragstart: () => setIsDraggingPin(true),
               drag: (e) => {
                 const pos = e.target.getLatLng();
                 setSearchMarker((prev) => (prev ? { ...prev, lat: pos.lat, lng: pos.lng } : null));
               },
+              dragend: () => setIsDraggingPin(false),
             }}
           >
             <Tooltip
@@ -315,11 +374,19 @@ export default function MapView({
 
         {searchMarker && routeTarget && (
           <Polyline
-            positions={[
-              [searchMarker.lat, searchMarker.lng],
-              [routeTarget.lat, routeTarget.lng],
-            ]}
-            pathOptions={{ color: "#2563eb", weight: 3, opacity: 0.75, dashArray: "8 8" }}
+            positions={
+              !isDraggingPin && routeData
+                ? routeData.coords
+                : [
+                    [searchMarker.lat, searchMarker.lng],
+                    [routeTarget.lat, routeTarget.lng],
+                  ]
+            }
+            pathOptions={
+              !isDraggingPin && routeData
+                ? { color: "#2563eb", weight: 4, opacity: 0.85 }
+                : { color: "#2563eb", weight: 3, opacity: 0.6, dashArray: "8 8" }
+            }
           />
         )}
 
