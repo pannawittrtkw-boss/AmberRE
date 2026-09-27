@@ -41,6 +41,7 @@ export default function IdCardUpload({
   const [ocrPreview, setOcrPreview] = useState<Array<{ label: string; value: string }>>([]);
   const [ocrRawText, setOcrRawText] = useState("");
   const [showRaw, setShowRaw] = useState(false);
+  const [ocrEngine, setOcrEngine] = useState<"vision" | "tesseract" | null>(null);
 
   // Crop modal state
   const [capturedImageData, setCapturedImageData] = useState<{ dataUrl: string; width: number; height: number } | null>(null);
@@ -71,22 +72,27 @@ export default function IdCardUpload({
     setOcrProgress(0);
     setOcrPreview([]);
     setOcrRawText("");
+    setOcrEngine(null);
     try {
+      const ocrFile = await prepareForOcr(file);
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", ocrFile);
       const res = await fetch("/api/admin/ocr", { method: "POST", body: fd });
       const data = await res.json().catch(() => null);
       if (data?.success && typeof data.data?.text === "string" && data.data.text.trim()) {
+        setOcrEngine("vision");
         applyOcrText(data.data.text);
         return;
       }
       console.warn("Falling back to Tesseract OCR:", data?.error || `HTTP ${res.status}`);
       const text = await runTesseractFallback(file);
+      setOcrEngine("tesseract");
       applyOcrText(text);
     } catch (err) {
       console.error("OCR failed:", err);
       try {
         const text = await runTesseractFallback(file);
+        setOcrEngine("tesseract");
         applyOcrText(text);
       } catch (fallbackErr) {
         console.error("Tesseract fallback also failed:", fallbackErr);
@@ -102,28 +108,34 @@ export default function IdCardUpload({
     setOcrPreview([]);
     setOcrRawText("");
     setShowRaw(false);
+    setOcrEngine(null);
   };
 
-  // Compress image client-side and return as a base64 data URI.
-  // Max 1600px on longest side, JPEG 0.82 quality — keeps ID cards sharp
-  // while staying well under 500 KB, no external upload needed.
-  const compressToDataUri = (file: File): Promise<string> =>
+  // Shared resize helper. Modern phone cameras routinely produce 8-15MB
+  // photos — sending those straight to the OCR endpoint risks tripping its
+  // 8MB cap and silently falling back to the much weaker in-browser
+  // Tesseract engine (see runOcr below), which is the main source of
+  // "sometimes it reads fine, sometimes it's garbage" reports: it's two
+  // different OCR engines depending on file size, not one flaky one.
+  const resizeImage = (file: File, maxDim: number, quality: number): Promise<{ dataUrl: string; blob: Promise<Blob | null> }> =>
     new Promise((resolve, reject) => {
       const img = new Image();
       const reader = new FileReader();
       reader.onload = (e) => {
         img.onload = () => {
-          const MAX = 1600;
           let { width, height } = img;
-          if (width > MAX || height > MAX) {
-            if (width >= height) { height = Math.round((height * MAX) / width); width = MAX; }
-            else { width = Math.round((width * MAX) / height); height = MAX; }
+          if (width > maxDim || height > maxDim) {
+            if (width >= height) { height = Math.round((height * maxDim) / width); width = maxDim; }
+            else { width = Math.round((width * maxDim) / height); height = maxDim; }
           }
           const canvas = document.createElement("canvas");
           canvas.width = width;
           canvas.height = height;
           canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL("image/jpeg", 0.82));
+          resolve({
+            dataUrl: canvas.toDataURL("image/jpeg", quality),
+            blob: new Promise((res) => canvas.toBlob(res, "image/jpeg", quality)),
+          });
         };
         img.onerror = reject;
         img.src = e.target?.result as string;
@@ -131,6 +143,21 @@ export default function IdCardUpload({
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+
+  // Max 1600px on longest side, JPEG 0.82 quality — keeps ID cards sharp
+  // while staying well under 500 KB, no external upload needed.
+  const compressToDataUri = async (file: File): Promise<string> => (await resizeImage(file, 1600, 0.82)).dataUrl;
+
+  // A separate, higher-fidelity pass just for OCR: 2200px / 0.92 quality
+  // keeps small print legible while still landing well under the Vision
+  // endpoint's 8MB cap, so a large camera photo doesn't accidentally
+  // demote itself to the Tesseract fallback.
+  const prepareForOcr = async (file: File): Promise<File> => {
+    if (file.size <= 3 * 1024 * 1024) return file; // already small enough — avoid a lossy re-encode
+    const { blob } = await resizeImage(file, 2200, 0.92);
+    const resized = await blob;
+    return resized ? new File([resized], file.name || "ocr.jpg", { type: "image/jpeg" }) : file;
+  };
 
   const handleFile = async (file: File) => {
     setError("");
@@ -404,6 +431,13 @@ export default function IdCardUpload({
                 {locale === "th"
                   ? "ไม่พบข้อมูลที่ตรงกับฟอร์มอัตโนมัติ — ลองดูข้อความที่อ่านได้ด้านล่าง แล้วกรอกในช่องเอง"
                   : "Couldn't auto-extract fields — see raw text below and fill the form manually."}
+              </div>
+            )}
+            {stage !== "ocr" && ocrEngine === "tesseract" && (
+              <div className="rounded-lg border border-orange-200 bg-orange-50 p-2.5 text-[11px] text-orange-800 max-w-md">
+                {locale === "th"
+                  ? "⚠️ ระบบ OCR หลักใช้งานไม่ได้ กำลังใช้ระบบสำรอง (ความแม่นยำต่ำกว่า) — ควรตรวจทานข้อมูลให้ละเอียดขึ้น"
+                  : "⚠️ Primary OCR unavailable — used the backup engine (lower accuracy). Please double-check the fields."}
               </div>
             )}
             {ocrRawText && (
