@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   Plus,
@@ -72,6 +71,45 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
   NOT_AVAILABLE: { label: "Not Available", color: "bg-gray-100 text-gray-800" },
 };
 
+// A real <a> (via next/link) when the row is clickable, so right-click ->
+// "open in new tab" works — a plain onClick handler on a <div> can't do
+// that. Falls back to a non-interactive <div> when the viewer can't manage
+// the row at all.
+function RowTitleWrapper({
+  canManageRow,
+  href,
+  className,
+  children,
+}: {
+  canManageRow: boolean;
+  href: string;
+  className: string;
+  children: React.ReactNode;
+}) {
+  if (!canManageRow) return <div className={className}>{children}</div>;
+  return (
+    <Link href={href} className={className}>
+      {children}
+    </Link>
+  );
+}
+
+// Persists the search/filter panel's state across navigation (e.g. opening
+// a property, then clicking the browser Back button) so the admin doesn't
+// have to re-enter it every time. Scoped to this tab's session, not saved
+// permanently, since it's a "remember where I was" convenience rather than
+// a durable preference.
+const FILTER_STORAGE_KEY = "admin-properties-filters";
+
+function loadStoredFilters(): Record<string, any> {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(sessionStorage.getItem(FILTER_STORAGE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
 function parseJson(val: string | null | undefined): string[] {
   if (!val) return [];
   try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; }
@@ -109,7 +147,6 @@ export default function PropertyListPage({
 }: {
   params: Promise<{ locale: string }>;
 }) {
-  const router = useRouter();
   const { data: session } = useSession();
   const role = (session?.user as any)?.role;
   const userId = Number((session?.user as any)?.id);
@@ -143,29 +180,48 @@ export default function PropertyListPage({
   const [bulkLocationResult, setBulkLocationResult] = useState<{ updated: number; skipped: number } | null>(null);
 
   // Month & Status tabs
-  const [selectedMonth, setSelectedMonth] = useState<string>("all");
-  const [selectedStatusTab, setSelectedStatusTab] = useState<string>("all");
+  const [restored] = useState(loadStoredFilters);
+  const [selectedMonth, setSelectedMonth] = useState<string>(restored.selectedMonth ?? "all");
+  const [selectedStatusTab, setSelectedStatusTab] = useState<string>(restored.selectedStatusTab ?? "all");
 
   // Search & Filter
-  const [searchText, setSearchText] = useState("");
+  const [searchText, setSearchText] = useState(restored.searchText ?? "");
   const [showFilters, setShowFilters] = useState(false);
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterListing, setFilterListing] = useState<"RENT" | "SALE">("RENT");
-  const [filterPropertyType, setFilterPropertyType] = useState("");
-  const [filterPriority, setFilterPriority] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
-  const [filterPriceRange, setFilterPriceRange] = useState("");
-  const [filterStations, setFilterStations] = useState<string[]>([]);
+  const [filterStatus, setFilterStatus] = useState(restored.filterStatus ?? "");
+  const [filterListing, setFilterListing] = useState<"RENT" | "SALE">(restored.filterListing ?? "RENT");
+  const [filterPropertyType, setFilterPropertyType] = useState(restored.filterPropertyType ?? "");
+  const [filterPriority, setFilterPriority] = useState(restored.filterPriority ?? "");
+  const [filterCategory, setFilterCategory] = useState(restored.filterCategory ?? "");
+  const [filterPriceRange, setFilterPriceRange] = useState(restored.filterPriceRange ?? "");
+  const [filterStations, setFilterStations] = useState<string[]>(restored.filterStations ?? []);
   const [showStationFilterModal, setShowStationFilterModal] = useState(false);
-  const [filterExclusive, setFilterExclusive] = useState(false);
-  const [filterPostDateFrom, setFilterPostDateFrom] = useState("");
-  const [filterPostDateTo, setFilterPostDateTo] = useState("");
-  const [filterBedrooms, setFilterBedrooms] = useState("");
-  const [filterMinSize, setFilterMinSize] = useState("");
-  const [filterReadyToMoveIn, setFilterReadyToMoveIn] = useState(false);
-  const [filterPetFriendly, setFilterPetFriendly] = useState(false);
-  const [filterSmokingAllowed, setFilterSmokingAllowed] = useState(false);
-  const [filterHideUnavailable, setFilterHideUnavailable] = useState(false);
+  const [filterExclusive, setFilterExclusive] = useState(restored.filterExclusive ?? false);
+  const [filterPostDateFrom, setFilterPostDateFrom] = useState(restored.filterPostDateFrom ?? "");
+  const [filterPostDateTo, setFilterPostDateTo] = useState(restored.filterPostDateTo ?? "");
+  const [filterBedrooms, setFilterBedrooms] = useState(restored.filterBedrooms ?? "");
+  const [filterMinSize, setFilterMinSize] = useState(restored.filterMinSize ?? "");
+  const [filterReadyToMoveIn, setFilterReadyToMoveIn] = useState(restored.filterReadyToMoveIn ?? false);
+  const [filterPetFriendly, setFilterPetFriendly] = useState(restored.filterPetFriendly ?? false);
+  const [filterSmokingAllowed, setFilterSmokingAllowed] = useState(restored.filterSmokingAllowed ?? false);
+  const [filterHideUnavailable, setFilterHideUnavailable] = useState(restored.filterHideUnavailable ?? false);
+
+  // Save on any change so a Back-navigation into this page restores them.
+  useEffect(() => {
+    const data = {
+      selectedMonth, selectedStatusTab, searchText, filterStatus, filterListing,
+      filterPropertyType, filterPriority, filterCategory, filterPriceRange,
+      filterStations, filterExclusive, filterPostDateFrom, filterPostDateTo,
+      filterBedrooms, filterMinSize, filterReadyToMoveIn, filterPetFriendly,
+      filterSmokingAllowed, filterHideUnavailable,
+    };
+    try { sessionStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(data)); } catch {}
+  }, [
+    selectedMonth, selectedStatusTab, searchText, filterStatus, filterListing,
+    filterPropertyType, filterPriority, filterCategory, filterPriceRange,
+    filterStations, filterExclusive, filterPostDateFrom, filterPostDateTo,
+    filterBedrooms, filterMinSize, filterReadyToMoveIn, filterPetFriendly,
+    filterSmokingAllowed, filterHideUnavailable,
+  ]);
 
   useEffect(() => {
     params.then(({ locale: l }) => {
@@ -837,9 +893,10 @@ export default function PropertyListPage({
               {/* Main Row - Desktop */}
               <div className="hidden sm:flex items-center gap-3 px-4 py-3">
                 <div className="w-8 text-center text-sm font-bold text-gray-400">{idx + 1}</div>
-                <div
-                  onClick={canManageRow ? () => router.push(`/${locale}/admin/properties/add?edit=${p.id}`) : undefined}
-                  className={`flex-1 min-w-0 transition-opacity ${canManageRow ? "cursor-pointer hover:opacity-80" : ""}`}
+                <RowTitleWrapper
+                  canManageRow={canManageRow}
+                  href={`/${locale}/admin/properties/add?edit=${p.id}`}
+                  className={`flex-1 min-w-0 transition-opacity ${canManageRow ? "hover:opacity-80" : ""}`}
                 >
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-semibold text-gray-900 truncate">
@@ -959,7 +1016,7 @@ export default function PropertyListPage({
                       </div>
                     ) : null;
                   })()}
-                </div>
+                </RowTitleWrapper>
                 <div className="text-right min-w-[100px]">
                   {price > 0 && (
                     <div className="text-sm font-bold text-gray-800">฿{price.toLocaleString()}<span className="text-[10px] text-gray-400 font-normal">{locale === "th" ? "/เดือน" : "/mo"}</span></div>
