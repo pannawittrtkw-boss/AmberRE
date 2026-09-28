@@ -850,6 +850,11 @@ export default function PropertyListPage({
                         Co-Agent: {p.agent.firstName} {p.agent.lastName}
                       </span>
                     )}
+                    {p.postFrom === "AGENT" && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-medium flex-shrink-0">
+                        {locale === "th" ? "โพสต์โดย Agent" : "Posted by Agent"}
+                      </span>
+                    )}
                     {canManageRow ? (
                       <select
                         value={p.status || "PENDING"}
@@ -1052,6 +1057,16 @@ export default function PropertyListPage({
                     <h3 className="font-semibold text-gray-900 text-sm leading-tight min-w-0 flex-1 truncate">
                       {p.projectName || p.titleTh || "-"}
                     </h3>
+                  )}
+                  {p.postFrom === "CO_AGENT" && p.agent && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-medium shrink-0">
+                      Co-Agent: {p.agent.firstName} {p.agent.lastName}
+                    </span>
+                  )}
+                  {p.postFrom === "AGENT" && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-medium shrink-0">
+                      {locale === "th" ? "โพสต์โดย Agent" : "Posted by Agent"}
+                    </span>
                   )}
                   {canManageRow ? (
                     <select
