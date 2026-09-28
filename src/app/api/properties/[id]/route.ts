@@ -157,31 +157,43 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         : rawData.nearbyPlaces;
     }
 
-    const property = await prisma.property.update({
-      where: { id: parseInt(id) },
-      data: updateData,
-      include: { images: true, propertyAmenities: { include: { amenity: true } } },
-    });
+    // All writes for this update run as one transaction: the image and
+    // amenity replacements are delete-then-recreate pairs, and running them
+    // as separate awaited calls (as before) left a window where the delete
+    // could commit but the recreate never did — e.g. a transient DB hiccup,
+    // or a bad URL failing the createMany — permanently wiping a property's
+    // photos with no rollback. Wrapping everything in $transaction means a
+    // failure anywhere rolls back the whole update instead of silently
+    // losing images.
+    const ops: any[] = [
+      prisma.property.update({
+        where: { id: parseInt(id) },
+        data: updateData,
+        include: { images: true, propertyAmenities: { include: { amenity: true } } },
+      }),
+    ];
 
     if (amenityIds) {
-      await prisma.propertyAmenity.deleteMany({ where: { propertyId: parseInt(id) } });
-      await prisma.propertyAmenity.createMany({
+      ops.push(prisma.propertyAmenity.deleteMany({ where: { propertyId: parseInt(id) } }));
+      ops.push(prisma.propertyAmenity.createMany({
         data: amenityIds.map((amenityId: number) => ({ propertyId: parseInt(id), amenityId })),
-      });
+      }));
     }
 
     if (imageUrls?.length) {
       // Delete all existing images and recreate with new order
-      await prisma.propertyImage.deleteMany({ where: { propertyId: parseInt(id) } });
-      await prisma.propertyImage.createMany({
+      ops.push(prisma.propertyImage.deleteMany({ where: { propertyId: parseInt(id) } }));
+      ops.push(prisma.propertyImage.createMany({
         data: imageUrls.map((url: string, index: number) => ({
           propertyId: parseInt(id),
           imageUrl: url,
           sortOrder: index,
           isPrimary: index === 0,
         })),
-      });
+      }));
     }
+
+    const [property] = await prisma.$transaction(ops);
 
     return NextResponse.json({ success: true, data: property });
   } catch (error: any) {
