@@ -241,8 +241,12 @@ export default function AgentDashboardPage() {
                           signedPdfUrl: c.signedPdfUrl,
                           shareToken: c.shareToken,
                           subtitle: c.property?.titleTh || c.property?.projectName || undefined,
+                          lesseeName: c.lesseeName,
                         }}
                         locale={locale}
+                        showEdit={false}
+                        showEsign
+                        showSchedule
                       />
                     </div>
                   );

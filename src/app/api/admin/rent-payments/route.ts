@@ -6,7 +6,8 @@ import prisma from "@/lib/prisma";
 // GET: fetch rent payments for a date range
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session?.user || !["ADMIN", "CO_AGENT"].includes((session.user as any).role)) {
+  const role = (session?.user as any)?.role;
+  if (!session?.user || !["ADMIN", "CO_AGENT"].includes(role)) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 
@@ -26,6 +27,12 @@ export async function GET(req: NextRequest) {
       gte: new Date(Date.UTC(year, month - 1, 1)),
       lt:  new Date(Date.UTC(year, month, 1)),
     };
+  }
+
+  // CO_AGENT only ever sees payment schedules for contracts credited to them.
+  if (role === "CO_AGENT") {
+    const userId = Number((session.user as any).id);
+    where.contract = { agentId: userId };
   }
 
   const payments = await prisma.rentPayment.findMany({

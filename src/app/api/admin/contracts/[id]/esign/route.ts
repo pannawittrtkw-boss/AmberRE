@@ -27,6 +27,7 @@ export async function GET(
       where: { id: parseInt(id, 10) },
       select: {
         id: true,
+        agentId: true,
         lessorName: true,
         lesseeName: true,
         jointLesseeName: true,
@@ -44,8 +45,13 @@ export async function GET(
     if (!contract) {
       return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
     }
+    // CO_AGENT can only view E-Sign status for a contract credited to them.
+    if (role === "CO_AGENT" && contract.agentId !== Number((session.user as any).id)) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
 
-    return NextResponse.json({ success: true, data: contract });
+    const { agentId: _agentId, ...data } = contract;
+    return NextResponse.json({ success: true, data });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
     console.error("E-Sign GET error:", err);
@@ -73,6 +79,7 @@ export async function POST(
     const existing = await prisma.contract.findUnique({
       where: { id: contractId },
       select: {
+        agentId: true,
         lessorSignToken: true,
         lesseeSignToken: true,
         jointLesseeSignToken: true,
@@ -83,6 +90,10 @@ export async function POST(
 
     if (!existing) {
       return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
+    }
+    // CO_AGENT can only generate E-Sign links for a contract credited to them.
+    if (role === "CO_AGENT" && existing.agentId !== Number((session.user as any).id)) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
     const body = await req.json().catch(() => ({}));
