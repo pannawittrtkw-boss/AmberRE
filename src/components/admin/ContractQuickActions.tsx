@@ -14,6 +14,7 @@ export type QuickActionContract = {
   shareToken?: string | null;
   subtitle?: string;
   lesseeName?: string;
+  latePaymentFee?: number;
 };
 
 // Extracted from admin/contracts/page.tsx's per-row "แนบสัญญาที่เซ็นแล้ว" modal
@@ -230,6 +231,7 @@ function PaymentScheduleModal({
 }) {
   const [payments, setPayments] = useState<RentPayment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [markingId, setMarkingId] = useState<number | null>(null);
 
   useEffect(() => {
     fetch(`/api/admin/rent-payments?contractId=${contract.id}`)
@@ -238,9 +240,27 @@ function PaymentScheduleModal({
       .finally(() => setLoading(false));
   }, [contract.id]);
 
+  const markPaid = async (paymentId: number) => {
+    setMarkingId(paymentId);
+    try {
+      const res = await fetch(`/api/admin/rent-payments/${paymentId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isPaid: true }),
+      });
+      const d = await res.json();
+      if (d.success) {
+        setPayments((prev) => prev.map((p) => (p.id === paymentId ? { ...p, isPaid: true } : p)));
+      }
+    } finally {
+      setMarkingId(null);
+    }
+  };
+
   const todayStr = new Date().toISOString().slice(0, 10);
   const paid = payments.filter((p) => p.isPaid).length;
   const pending = payments.filter((p) => !p.isPaid).length;
+  const perDayFee = contract.latePaymentFee ?? 0;
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -298,6 +318,11 @@ function PaymentScheduleModal({
                 const isOverdue = !p.isPaid && dueDateStr < todayStr;
                 const isToday = !p.isPaid && dueDateStr === todayStr;
 
+                const overdueDays = isOverdue
+                  ? Math.ceil((Date.now() - new Date(p.dueDate).getTime()) / 86400000)
+                  : 0;
+                const penalty = overdueDays * perDayFee;
+
                 let statusEl: React.ReactNode;
                 if (p.isPaid) {
                   statusEl = (
@@ -313,10 +338,9 @@ function PaymentScheduleModal({
                     </span>
                   );
                 } else if (isOverdue) {
-                  const days = Math.ceil((Date.now() - new Date(p.dueDate).getTime()) / 86400000);
                   statusEl = (
                     <span className="text-[11px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
-                      {locale === "th" ? `เกิน ${days} วัน` : `${days}d overdue`}
+                      {locale === "th" ? `เกิน ${overdueDays} วัน` : `${overdueDays}d overdue`}
                     </span>
                   );
                 } else {
@@ -330,16 +354,39 @@ function PaymentScheduleModal({
                 return (
                   <li
                     key={p.id}
-                    className={`flex items-center gap-3 px-5 py-2.5 ${p.isPaid ? "opacity-40" : ""}`}
+                    className={`px-5 py-2.5 ${p.isPaid ? "opacity-40" : ""} ${isOverdue ? "bg-red-50/40" : ""}`}
                   >
-                    <span className="text-[11px] text-gray-400 w-5 text-right shrink-0">{i + 1}</span>
-                    <span className={`text-xs font-medium w-24 shrink-0 ${isOverdue ? "text-red-600" : isToday ? "text-amber-600" : "text-gray-700"}`}>
-                      {fmtScheduleDate(p.dueDate)}
-                    </span>
-                    <span className="text-xs text-gray-700 flex-1">
-                      ฿{p.amount.toLocaleString()}
-                    </span>
-                    <div className="shrink-0">{statusEl}</div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] text-gray-400 w-5 text-right shrink-0">{i + 1}</span>
+                      <span className={`text-xs font-medium w-24 shrink-0 ${isOverdue ? "text-red-600" : isToday ? "text-amber-600" : "text-gray-700"}`}>
+                        {fmtScheduleDate(p.dueDate)}
+                      </span>
+                      <span className="text-xs text-gray-700 flex-1">
+                        ฿{p.amount.toLocaleString()}
+                      </span>
+                      <div className="shrink-0">{statusEl}</div>
+                      {!p.isPaid && (
+                        <button
+                          onClick={() => markPaid(p.id)}
+                          disabled={markingId === p.id}
+                          className="shrink-0 flex items-center gap-1 text-[11px] font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-60 px-2 py-1 rounded"
+                        >
+                          {markingId === p.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="w-3 h-3" />
+                          )}
+                          {locale === "th" ? "ชำระแล้ว" : "Mark paid"}
+                        </button>
+                      )}
+                    </div>
+                    {isOverdue && (
+                      <p className="text-[11px] text-red-600 mt-1 ml-8">
+                        {locale === "th"
+                          ? `ค้างชำระมาแล้ว ${overdueDays} วัน · ค่าปรับ ฿${penalty.toLocaleString()}${perDayFee ? ` (฿${perDayFee.toLocaleString()}/วัน)` : ""}`
+                          : `${overdueDays} days overdue · Penalty ฿${penalty.toLocaleString()}${perDayFee ? ` (฿${perDayFee.toLocaleString()}/day)` : ""}`}
+                      </p>
+                    )}
                   </li>
                 );
               })}

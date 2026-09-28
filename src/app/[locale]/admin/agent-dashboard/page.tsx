@@ -26,6 +26,7 @@ interface Stats {
     status: string;
     shareToken: string | null;
     signedPdfUrl: string | null;
+    latePaymentFee: number;
     property: { id: number; titleTh: string; projectName: string } | null;
   }[];
   commission: AgentCommission | null;
@@ -242,6 +243,7 @@ export default function AgentDashboardPage() {
                           shareToken: c.shareToken,
                           subtitle: c.property?.titleTh || c.property?.projectName || undefined,
                           lesseeName: c.lesseeName,
+                          latePaymentFee: Number(c.latePaymentFee),
                         }}
                         locale={locale}
                         showEdit={false}

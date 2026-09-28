@@ -18,6 +18,7 @@ interface RecentContract {
   status: string;
   shareToken: string | null;
   signedPdfUrl: string | null;
+  latePaymentFee: number;
   property: { id: number; titleTh: string; projectName: string } | null;
 }
 
@@ -196,6 +197,7 @@ export default function AgentCommissionDetailPage() {
                           shareToken: c.shareToken,
                           subtitle: c.property?.titleTh || c.property?.projectName || undefined,
                           lesseeName: c.lesseeName,
+                          latePaymentFee: Number(c.latePaymentFee),
                         }}
                         locale={locale}
                         showEdit={false}

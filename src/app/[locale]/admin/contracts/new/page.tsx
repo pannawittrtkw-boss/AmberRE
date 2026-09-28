@@ -67,6 +67,13 @@ export default function NewContractPage({
           createdAt: _ca,
           updatedAt: _ua,
           createdById: _cb,
+          // paymentDay is derived from startDate — stripping it here lets
+          // ContractForm's auto-default effect recompute it for whatever
+          // start date is picked on this new copy, instead of silently
+          // carrying over the source contract's due day (e.g. copying a
+          // contract with paymentDay=1 onto a new start date of the 28th
+          // would otherwise leave the due day stuck at 1).
+          paymentDay: _pd,
           ...rest
         } = d.data;
         // touch the unused destructured locals to keep eslint quiet
@@ -79,6 +86,7 @@ export default function NewContractPage({
         void _ca;
         void _ua;
         void _cb;
+        void _pd;
         setPrefill(rest);
       })
       .finally(() => setLoading(false));

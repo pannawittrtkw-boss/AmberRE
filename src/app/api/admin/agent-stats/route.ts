@@ -69,6 +69,7 @@ export async function GET(req: NextRequest) {
           status: true,
           shareToken: true,
           signedPdfUrl: true,
+          latePaymentFee: true,
           property: {
             select: { id: true, titleTh: true, projectName: true },
           },
