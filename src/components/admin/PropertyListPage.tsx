@@ -908,8 +908,8 @@ export default function PropertyListPage({
                       </span>
                     )}
                     {p.postFrom === "AGENT" && (
-                      <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-medium flex-shrink-0">
-                        {locale === "th" ? "โพสต์โดย Agent" : "Posted by Agent"}
+                      <span className="text-[10px] px-1.5 py-0.5 bg-black text-white rounded font-medium flex-shrink-0">
+                        Co-Agent
                       </span>
                     )}
                     {canManageRow ? (
@@ -1121,8 +1121,8 @@ export default function PropertyListPage({
                     </span>
                   )}
                   {p.postFrom === "AGENT" && (
-                    <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-medium shrink-0">
-                      {locale === "th" ? "โพสต์โดย Agent" : "Posted by Agent"}
+                    <span className="text-[10px] px-1.5 py-0.5 bg-black text-white rounded font-medium shrink-0">
+                      Co-Agent
                     </span>
                   )}
                   {canManageRow ? (
