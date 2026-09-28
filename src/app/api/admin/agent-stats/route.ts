@@ -70,9 +70,12 @@ export async function GET(req: NextRequest) {
           shareToken: true,
           signedPdfUrl: true,
           latePaymentFee: true,
-          property: {
-            select: { id: true, titleTh: true, projectName: true },
-          },
+          // The contract's own projectName/unitNumber (not the linked
+          // Property's) — several contracts on the same building can share
+          // one Property listing row, so Property.titleTh's unit number
+          // doesn't necessarily match any one contract's actual unit.
+          projectName: true,
+          unitNumber: true,
         },
       }),
     ]);

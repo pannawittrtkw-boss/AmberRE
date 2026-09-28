@@ -19,7 +19,8 @@ interface RecentContract {
   shareToken: string | null;
   signedPdfUrl: string | null;
   latePaymentFee: number;
-  property: { id: number; titleTh: string; projectName: string } | null;
+  projectName: string;
+  unitNumber: string;
 }
 
 interface Stats {
@@ -176,7 +177,7 @@ export default function AgentCommissionDetailPage() {
                           </span>
                         </div>
                         <div className="text-xs text-gray-500 truncate mt-0.5">
-                          {c.lesseeName} · {c.property?.titleTh || c.property?.projectName || "—"}
+                          {c.lesseeName} · {c.projectName} #{c.unitNumber}
                         </div>
                       </div>
 
@@ -195,7 +196,7 @@ export default function AgentCommissionDetailPage() {
                           contractNumber: c.contractNumber,
                           signedPdfUrl: c.signedPdfUrl,
                           shareToken: c.shareToken,
-                          subtitle: c.property?.titleTh || c.property?.projectName || undefined,
+                          subtitle: `${c.projectName} #${c.unitNumber}`,
                           lesseeName: c.lesseeName,
                           latePaymentFee: Number(c.latePaymentFee),
                         }}
