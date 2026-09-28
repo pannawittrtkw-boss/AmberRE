@@ -55,9 +55,14 @@ export default function AdminSatisfactionPage({ params }: { params: Promise<{ lo
     refreshSurveys();
   };
 
-  const deleteSurvey = async (id: number) => {
-    if (!confirm(isTh ? "ยืนยันการลบ?" : "Confirm delete?")) return;
-    await fetch(`/api/admin/satisfaction?id=${id}`, { method: "DELETE" });
+  // Not a delete — rejecting just hides the review from the public site by
+  // marking it unapproved, same record kept around either way.
+  const rejectSurvey = async (id: number) => {
+    await fetch("/api/admin/satisfaction", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, isApproved: false }),
+    });
     refreshSurveys();
   };
 
@@ -141,7 +146,12 @@ export default function AdminSatisfactionPage({ params }: { params: Promise<{ lo
                   >
                     <CheckCircle className="w-5 h-5" />
                   </button>
-                  <button onClick={() => deleteSurvey(survey.id)} title={isTh ? "ลบ" : "Delete"} className="p-1 text-red-500">
+                  <button
+                    onClick={() => rejectSurvey(survey.id)}
+                    disabled={!survey.isApproved}
+                    title={isTh ? "ไม่อนุมัติ" : "Reject"}
+                    className="p-1 text-red-500 disabled:text-gray-300 disabled:cursor-not-allowed"
+                  >
                     <XCircle className="w-5 h-5" />
                   </button>
                 </div>
