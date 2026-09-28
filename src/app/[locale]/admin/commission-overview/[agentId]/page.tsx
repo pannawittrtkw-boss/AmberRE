@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Loader2, RefreshCw, ArrowLeft, FileText, CheckCircle2, Clock, XCircle } from "lucide-react";
@@ -51,6 +52,8 @@ export default function AgentCommissionDetailPage() {
   const params = useParams();
   const locale = (params?.locale as string) || "th";
   const agentId = params?.agentId as string;
+  const { data: session } = useSession();
+  const isAdmin = (session?.user as any)?.role === "ADMIN";
 
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -201,7 +204,7 @@ export default function AgentCommissionDetailPage() {
                           latePaymentFee: Number(c.latePaymentFee),
                         }}
                         locale={locale}
-                        showEdit={false}
+                        showEdit={isAdmin}
                         showEsign
                         showSchedule
                       />
