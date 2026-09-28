@@ -9,6 +9,7 @@ import {
   TrendingUp, RefreshCw, ChevronRight,
 } from "lucide-react";
 import AgentCommissionPanel, { type AgentCommission } from "@/components/admin/AgentCommissionPanel";
+import ContractQuickActions from "@/components/admin/ContractQuickActions";
 
 interface Stats {
   draft: number;
@@ -23,6 +24,8 @@ interface Stats {
     endDate: string;
     monthlyRent: number;
     status: string;
+    shareToken: string | null;
+    signedPdfUrl: string | null;
     property: { id: number; titleTh: string; projectName: string } | null;
   }[];
   commission: AgentCommission | null;
@@ -199,10 +202,9 @@ export default function AgentDashboardPage() {
                 {stats.recentContracts.map((c) => {
                   const meta = STATUS_META[c.status] ?? STATUS_META.DRAFT;
                   return (
-                    <Link
+                    <div
                       key={c.id}
-                      href={`/${locale}/admin/contracts/${c.id}`}
-                      className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors group"
+                      className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors"
                     >
                       {/* Status dot */}
                       <span className={`w-2 h-2 rounded-full flex-shrink-0 ${meta.dot}`} />
@@ -232,8 +234,17 @@ export default function AgentDashboardPage() {
                         </div>
                       </div>
 
-                      <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 flex-shrink-0" />
-                    </Link>
+                      <ContractQuickActions
+                        contract={{
+                          id: c.id,
+                          contractNumber: c.contractNumber,
+                          signedPdfUrl: c.signedPdfUrl,
+                          shareToken: c.shareToken,
+                          subtitle: c.property?.titleTh || c.property?.projectName || undefined,
+                        }}
+                        locale={locale}
+                      />
+                    </div>
                   );
                 })}
               </div>

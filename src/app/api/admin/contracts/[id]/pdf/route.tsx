@@ -126,7 +126,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
+  const role = (session?.user as any)?.role;
+  if (!session?.user || !["ADMIN", "CO_AGENT"].includes(role)) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 
@@ -136,6 +137,10 @@ export async function GET(
   });
   if (!contract) {
     return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
+  }
+  // CO_AGENT can only download the PDF of a contract credited to them.
+  if (role === "CO_AGENT" && contract.agentId !== Number((session.user as any).id)) {
+    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 
   const witnesses = await getWitnessSettings();

@@ -5,15 +5,44 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Loader2, RefreshCw, ArrowLeft, FileText, CheckCircle2, Clock, XCircle } from "lucide-react";
 import AgentCommissionPanel, { type AgentCommission } from "@/components/admin/AgentCommissionPanel";
+import ContractQuickActions from "@/components/admin/ContractQuickActions";
 import { avatarColor, initials } from "@/lib/avatar";
+
+interface RecentContract {
+  id: number;
+  contractNumber: string;
+  lesseeName: string;
+  startDate: string;
+  endDate: string;
+  monthlyRent: number;
+  status: string;
+  shareToken: string | null;
+  signedPdfUrl: string | null;
+  property: { id: number; titleTh: string; projectName: string } | null;
+}
 
 interface Stats {
   draft: number;
   active: number;
   expiringSoon: number;
   expired: number;
+  recentContracts: RecentContract[];
   commission: AgentCommission | null;
   agentName: string | null;
+}
+
+const STATUS_META: Record<string, { label: string; color: string; dot: string }> = {
+  DRAFT:      { label: "Draft",     color: "bg-gray-100 text-gray-600",   dot: "bg-gray-400" },
+  ACTIVE:     { label: "Active",    color: "bg-green-100 text-green-700", dot: "bg-green-500" },
+  EXPIRED:    { label: "Expired",   color: "bg-red-100 text-red-600",     dot: "bg-red-500" },
+  TERMINATED: { label: "Terminated",color: "bg-orange-100 text-orange-600", dot: "bg-orange-500" },
+};
+
+function fmtDate(d: string) {
+  return new Date(d).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" });
+}
+function fmtMoney(n: number) {
+  return n?.toLocaleString("th-TH") ?? "-";
 }
 
 export default function AgentCommissionDetailPage() {
@@ -114,6 +143,67 @@ export default function AgentCommissionDetailPage() {
               ไม่พบข้อมูลค่าคอมมิชชั่น
             </div>
           )}
+
+          {/* Recent contracts — scoped to this agent only */}
+          <div className="bg-white rounded-xl border border-gray-200 mt-8">
+            <div className="px-5 py-4 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-800">สัญญาล่าสุด</h2>
+            </div>
+
+            {!stats.recentContracts?.length ? (
+              <div className="text-center py-12 text-gray-400 text-sm">
+                ยังไม่มีสัญญา
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-50">
+                {stats.recentContracts.map((c) => {
+                  const meta = STATUS_META[c.status] ?? STATUS_META.DRAFT;
+                  return (
+                    <div
+                      key={c.id}
+                      className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors"
+                    >
+                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${meta.dot}`} />
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-800 truncate">
+                            {c.contractNumber}
+                          </span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${meta.color}`}>
+                            {meta.label}
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-500 truncate mt-0.5">
+                          {c.lesseeName} · {c.property?.titleTh || c.property?.projectName || "—"}
+                        </div>
+                      </div>
+
+                      <div className="text-right flex-shrink-0 hidden sm:block">
+                        <div className="text-xs text-gray-600 font-medium">
+                          {fmtMoney(c.monthlyRent)} ฿/เดือน
+                        </div>
+                        <div className="text-[11px] text-gray-400 mt-0.5">
+                          {fmtDate(c.startDate)} – {fmtDate(c.endDate)}
+                        </div>
+                      </div>
+
+                      <ContractQuickActions
+                        contract={{
+                          id: c.id,
+                          contractNumber: c.contractNumber,
+                          signedPdfUrl: c.signedPdfUrl,
+                          shareToken: c.shareToken,
+                          subtitle: c.property?.titleTh || c.property?.projectName || undefined,
+                        }}
+                        locale={locale}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </>
       ) : null}
     </div>

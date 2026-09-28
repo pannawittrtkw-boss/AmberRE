@@ -10,7 +10,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
+  const role = (session?.user as any)?.role;
+  if (!session?.user || !["ADMIN", "CO_AGENT"].includes(role)) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 
@@ -20,6 +21,10 @@ export async function POST(
   const contract = await prisma.contract.findUnique({ where: { id: contractId } });
   if (!contract) {
     return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
+  }
+  // CO_AGENT can only attach a signed PDF to a contract credited to them.
+  if (role === "CO_AGENT" && contract.agentId !== Number((session.user as any).id)) {
+    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 
   let formData: FormData;
@@ -89,13 +94,25 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
+  const role = (session?.user as any)?.role;
+  if (!session?.user || !["ADMIN", "CO_AGENT"].includes(role)) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 
   const { id } = await params;
+  const contractId = parseInt(id, 10);
+
+  const contract = await prisma.contract.findUnique({ where: { id: contractId } });
+  if (!contract) {
+    return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
+  }
+  // CO_AGENT can only remove the signed PDF of a contract credited to them.
+  if (role === "CO_AGENT" && contract.agentId !== Number((session.user as any).id)) {
+    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+  }
+
   const updated = await prisma.contract.update({
-    where: { id: parseInt(id, 10) },
+    where: { id: contractId },
     data: { signedPdfUrl: null },
     select: { id: true, signedPdfUrl: true, shareToken: true },
   });

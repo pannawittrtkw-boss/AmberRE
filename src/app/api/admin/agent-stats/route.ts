@@ -67,6 +67,8 @@ export async function GET(req: NextRequest) {
           endDate: true,
           monthlyRent: true,
           status: true,
+          shareToken: true,
+          signedPdfUrl: true,
           property: {
             select: { id: true, titleTh: true, projectName: true },
           },
