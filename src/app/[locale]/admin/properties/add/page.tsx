@@ -491,16 +491,41 @@ export default function AddPropertyPage({
     }
   };
 
+  // Vercel's serverless functions hard-cap the request body around 4.5MB
+  // regardless of the app's own upload-route limit (which allows up to
+  // 10MB) — a photo over this actually gets rejected by the platform
+  // before our code ever runs, as a plain non-JSON error response. That
+  // made saving throw an opaque "An error occurred while saving" with no
+  // indication it was a photo's fault. Reject oversized files here, before
+  // upload is even attempted, with a message that names the file.
+  const MAX_UPLOAD_MB = 4;
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setImageFiles((prev) => [...prev, ...files]);
-    files.forEach((file) => {
+    const tooBig = files.filter((f) => f.size > MAX_UPLOAD_MB * 1024 * 1024);
+    const ok = files.filter((f) => f.size <= MAX_UPLOAD_MB * 1024 * 1024);
+
+    if (tooBig.length > 0) {
+      const names = tooBig.map((f) => `${f.name} (${(f.size / 1024 / 1024).toFixed(1)}MB)`).join("\n");
+      alert(
+        locale === "th"
+          ? `ไฟล์ต่อไปนี้ใหญ่เกิน ${MAX_UPLOAD_MB}MB จะไม่ถูกแนบ กรุณาบีบอัดหรือย่อขนาดรูปก่อนอัปโหลด:\n\n${names}`
+          : `The following files exceed ${MAX_UPLOAD_MB}MB and were not attached. Please compress or resize them before uploading:\n\n${names}`
+      );
+    }
+
+    setImageFiles((prev) => [...prev, ...ok]);
+    ok.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreviews((prev) => [...prev, reader.result as string]);
       };
       reader.readAsDataURL(file);
     });
+    // Allow re-selecting the same (now-rejected) file after the user
+    // resizes it, since <input type="file"> won't fire onChange again for
+    // an identical file list otherwise.
+    e.target.value = "";
   };
 
   const removeImage = (index: number) => {
@@ -629,7 +654,17 @@ export default function AddPropertyPage({
         alert(data.error || "Failed to save property");
       }
     } catch (err) {
-      alert("An error occurred while saving");
+      // A thrown error here (as opposed to the data.success === false
+      // branch above) almost always means a response wasn't valid JSON —
+      // e.g. an attached photo tripped the server's ~4.5MB request-size
+      // ceiling and got rejected before our own code even ran. Say so
+      // instead of a bare "an error occurred".
+      const detail = err instanceof Error ? err.message : String(err);
+      alert(
+        locale === "th"
+          ? `บันทึกไม่สำเร็จ — อาจเกิดจากไฟล์รูป/วิดีโอที่แนบมีขนาดใหญ่เกินไป หรือปัญหาการเชื่อมต่อ\n\nรายละเอียด: ${detail}`
+          : `Failed to save — this can happen when an attached photo/video is too large, or from a connection issue.\n\nDetails: ${detail}`
+      );
     }
 
     setSaving(false);

@@ -43,8 +43,14 @@ export async function POST(req: NextRequest) {
     const isVideo = file.type.startsWith("video/");
     const url = new URL(req.url);
     const maxMBParam = parseInt(url.searchParams.get("maxMB") || "0");
-    const defaultImageMB = 10;
-    const defaultVideoMB = 50;
+    // Vercel's Node.js serverless functions hard-cap the request body at
+    // ~4.5MB regardless of what we declare here — a file that passes this
+    // check but exceeds that platform ceiling gets rejected before this
+    // route even runs, as a non-JSON response the caller can't parse. Kept
+    // at 4MB (not the platform's exact 4.5MB) to leave headroom for
+    // multipart/form-data overhead around the raw file bytes.
+    const defaultImageMB = 4;
+    const defaultVideoMB = 4;
     const limitMB = isVideo
       ? Math.max(maxMBParam || 0, defaultVideoMB)
       : Math.max(maxMBParam || 0, defaultImageMB);
