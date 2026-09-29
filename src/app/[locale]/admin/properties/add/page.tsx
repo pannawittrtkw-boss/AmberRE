@@ -535,6 +535,22 @@ export default function AddPropertyPage({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // A listing marked "Added Properties" is live on the public site, where
+    // the location map only renders when coordinates exist (see the
+    // property detail page) — block saving that status without them so a
+    // listing doesn't silently go live with a missing map. Other statuses
+    // (draft/pending/etc.) are unaffected since the admin may still be
+    // filling the listing in incrementally.
+    if (form.status === "ADDED_PROPERTIES" && (!form.latitude || !form.longitude)) {
+      alert(
+        locale === "th"
+          ? 'ยังไม่มีพิกัดตำแหน่ง (Latitude/Longitude) — กรุณากดปุ่ม "AI ค้นหาข้อมูลโครงการ (Facilities + พิกัด)" ก่อนบันทึกสถานะ Added Properties'
+          : 'Missing location coordinates (Latitude/Longitude) — please click "AI Project Lookup (Facilities + Location)" before saving with Added Properties status.'
+      );
+      return;
+    }
+
     setSaving(true);
 
     try {

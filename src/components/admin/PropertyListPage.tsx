@@ -924,6 +924,7 @@ export default function PropertyListPage({
                             if (!p.images || p.images.length === 0) missing.push(locale === "th" ? "รูปภาพ" : "Photos");
                             if (!p.bedrooms || p.bedrooms === 0) missing.push(locale === "th" ? "จำนวนห้องนอน" : "Bedrooms");
                             if (!p.bathrooms || p.bathrooms === 0) missing.push(locale === "th" ? "จำนวนห้องน้ำ" : "Bathrooms");
+                            if (!p.latitude || !p.longitude) missing.push(locale === "th" ? "พิกัดตำแหน่ง (กด AI ค้นหาข้อมูลโครงการ)" : "Location coordinates (use AI Project Lookup)");
                             if (missing.length > 0) {
                               alert(locale === "th"
                                 ? `กรุณาเพิ่มข้อมูลก่อนเปลี่ยนสถานะเป็น Added:\n- ${missing.join("\n- ")}\n\nกด Edit เพื่อเพิ่มข้อมูล`
@@ -1135,6 +1136,7 @@ export default function PropertyListPage({
                           if (!p.images || p.images.length === 0) missing.push(locale === "th" ? "รูปภาพ" : "Photos");
                           if (!p.bedrooms || p.bedrooms === 0) missing.push(locale === "th" ? "จำนวนห้องนอน" : "Bedrooms");
                           if (!p.bathrooms || p.bathrooms === 0) missing.push(locale === "th" ? "จำนวนห้องน้ำ" : "Bathrooms");
+                          if (!p.latitude || !p.longitude) missing.push(locale === "th" ? "พิกัดตำแหน่ง (กด AI ค้นหาข้อมูลโครงการ)" : "Location coordinates (use AI Project Lookup)");
                           if (missing.length > 0) {
                             alert(locale === "th"
                               ? `กรุณาเพิ่มข้อมูลก่อนเปลี่ยนสถานะเป็น Added:\n- ${missing.join("\n- ")}\n\nกด Edit เพื่อเพิ่มข้อมูล`
