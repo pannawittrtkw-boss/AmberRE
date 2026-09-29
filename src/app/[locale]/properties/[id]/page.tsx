@@ -303,6 +303,7 @@ export default async function PropertyDetailPage({
     building: property.building,
     condition: property.condition,
     postFrom: property.postFrom,
+    petFriendly: property.petFriendly,
     availableDate: property.availableDate,
     furniture,
     appliances,
@@ -460,6 +461,11 @@ export default async function PropertyDetailPage({
                 {property.propertyType === "LAND" && (
                   <span className="bg-amber-700 text-white text-[11px] font-semibold uppercase tracking-widest px-3 py-1 rounded-full">
                     {locale === "th" ? "ที่ดิน" : "Land"}
+                  </span>
+                )}
+                {property.petFriendly === "ACCEPT" && (
+                  <span className="bg-orange-500 text-white text-[11px] font-semibold uppercase tracking-widest px-3 py-1 rounded-full flex items-center gap-1">
+                    🐾 {locale === "th" ? "เลี้ยงสัตว์ได้" : "Pet-Friendly"}
                   </span>
                 )}
                 <span className={`${daysBadgeCls} text-white text-[11px] font-semibold px-3 py-1 rounded-full`}>

@@ -66,6 +66,7 @@ export interface MarketingProperty {
   building?: string | null;
   condition?: string | null;
   postFrom?: string | null;
+  petFriendly?: string | null;
   availableDate?: Date | string | null;
   furniture: string[];
   appliances: string[];
@@ -267,14 +268,19 @@ function buildBlock(p: MarketingProperty, lang: "en" | "th"): string {
     lines.push(DIVIDER);
   }
 
-  // Facilities
-  if (p.facilities.length > 0) {
+  // Facilities — Pet-Friendly comes from the dedicated field (not the
+  // facilities list) so it always leads when the property allows pets.
+  const facilityLabels: string[] = [];
+  if (p.petFriendly === "ACCEPT") {
+    facilityLabels.push(lang === "th" ? "เลี้ยงสัตว์ได้ 🐾" : "Pet-Friendly 🐾");
+  }
+  p.facilities.forEach((k) => {
+    const m = FACILITY_MAP[k];
+    facilityLabels.push(m ? m[lang] || m.en : k);
+  });
+  if (facilityLabels.length > 0) {
     lines.push(`🏊 ${T.facilities}`);
-    p.facilities.forEach((k) => {
-      const m = FACILITY_MAP[k];
-      const label = m ? m[lang] || m.en : k;
-      lines.push(`• ${label}`);
-    });
+    facilityLabels.forEach((label) => lines.push(`• ${label}`));
     lines.push(DIVIDER);
   }
 

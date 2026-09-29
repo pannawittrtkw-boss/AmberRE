@@ -971,6 +971,11 @@ export default function PropertyListPage({
                     {p.priority === "URGENT" && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">Urgent</span>
                     )}
+                    {p.petFriendly === "ACCEPT" && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium">
+                        🐾 {locale === "th" ? "เลี้ยงสัตว์ได้" : "Pet-Friendly"}
+                      </span>
+                    )}
                     {p.isExclusive && (
                       <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium ${
                         exclusiveDaysLeft !== null && exclusiveDaysLeft < 0 ? "bg-red-100 text-red-700" :
@@ -1196,6 +1201,11 @@ export default function PropertyListPage({
                   <span className="text-gray-400 text-[10px]">{locale === "th" ? "เพิ่มเข้าระบบ" : "Added"}: {new Date(p.createdAt).toLocaleDateString(locale === "th" ? "th-TH" : "en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
                   {p.category === "LUXURY" && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">Luxury</span>}
                   {p.priority === "URGENT" && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">Urgent</span>}
+                  {p.petFriendly === "ACCEPT" && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium">
+                      🐾 {locale === "th" ? "เลี้ยงสัตว์ได้" : "Pet-Friendly"}
+                    </span>
+                  )}
                   {p.isExclusive && (
                     <span className={`inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
                       exclusiveDaysLeft !== null && exclusiveDaysLeft < 0 ? "bg-red-100 text-red-700" :
