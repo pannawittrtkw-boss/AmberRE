@@ -58,7 +58,6 @@ const APPLIANCE_ITEMS = [
 ];
 
 const FACILITY_ITEMS = [
-  { key: "petFriendly", labelEn: "Pet-Friendly", labelTh: "เลี้ยงสัตว์ได้" },
   { key: "convenienceStore", labelEn: "Convenience Store", labelTh: "ร้านสะดวกซื้อ" },
   { key: "coWorkingSpace", labelEn: "Co-working Space", labelTh: "" },
   { key: "evCharger", labelEn: "EV Charger", labelTh: "" },

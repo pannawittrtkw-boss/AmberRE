@@ -63,7 +63,7 @@ const APPLIANCE_MAP: Record<string, { en: string; th: string }> = {
 };
 
 const FACILITY_MAP: Record<string, { en: string; th: string }> = {
-  petFriendly: { en: "Pet-Friendly", th: "เลี้ยงสัตว์ได้" }, convenienceStore: { en: "Convenience Store", th: "ร้านสะดวกซื้อ" },
+  convenienceStore: { en: "Convenience Store", th: "ร้านสะดวกซื้อ" },
   coWorkingSpace: { en: "Co-working Space", th: "" }, evCharger: { en: "EV Charger", th: "" },
   garden: { en: "Garden", th: "สวนหย่อม" }, swimmingPool: { en: "Swimming Pool", th: "สระว่ายน้ำ" },
   parking: { en: "Parking", th: "ที่จอดรถ" }, sauna: { en: "Sauna", th: "ซาวน่า" },

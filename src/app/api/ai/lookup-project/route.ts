@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { findNearbyPlaces } from "@/lib/nearby-places";
 
 const FACILITY_KEYS = [
-  "petFriendly", "convenienceStore", "coWorkingSpace", "evCharger",
+  "convenienceStore", "coWorkingSpace", "evCharger",
   "garden", "swimmingPool", "parking", "sauna", "playground",
   "library", "security24h", "karaokeRoom", "meetingRoom", "fitnessGym",
   "clubhouse", "snookerTable", "basketballCourt", "badmintonCourt",
