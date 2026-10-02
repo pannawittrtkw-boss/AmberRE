@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { renderToBuffer } from "@react-pdf/renderer";
-import { ContractPdf, ContractPdfData, PdfChecklistItem } from "@/lib/contract-pdf";
+import { ContractPdf, ContractPdfData, PdfChecklistItem, ContractLanguage } from "@/lib/contract-pdf";
 import {
   FURNITURE_OPTIONS,
   APPLIANCE_OPTIONS,
@@ -253,6 +253,7 @@ export async function GET(
       STANDARD_CLAUSES,
       parseClauseOverrides(contract.clauseOverrides)
     ),
+    documentLanguage: (contract.documentLanguage as ContractLanguage) || "BOTH",
 
     lessorIdImage: await toBase64DataUri(contract.lessorIdImage),
     lesseeIdImage: await toBase64DataUri(contract.lesseeIdImage),

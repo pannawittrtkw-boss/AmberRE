@@ -428,57 +428,81 @@ function inlineRuns(text: string, data: ClauseDataMap): React.ReactNode {
   );
 }
 
+// Which language(s) the body of the agreement (clauses, item checklists)
+// renders in. Party info, financial details, and signature blocks stay
+// bilingual regardless — this only trims the bulk prose/legal text, which
+// is where almost all of the page count actually comes from.
+export type ContractLanguage = "BOTH" | "TH" | "EN";
+
+// Renders a Thai/English pair that's normally shown as one combined
+// "{th} / {en}" line (section bars, table headers) — collapses to just
+// one side when the document is single-language.
+function bilingualInline(th: React.ReactNode, en: React.ReactNode, language: ContractLanguage): React.ReactNode {
+  if (language === "TH") return th;
+  if (language === "EN") return en;
+  return <>{th} / {en}</>;
+}
+
 function renderClause(
   clause: ContractClause,
   data: ClauseDataMap,
-  key: string | number
+  key: string | number,
+  language: ContractLanguage = "BOTH"
 ): React.ReactNode {
   const th = inlineRuns(clause.th, data);
   const en = inlineRuns(clause.en, data);
+  const showTh = language !== "EN";
+  const showEn = language !== "TH";
 
   switch (clause.type) {
     case "section_bar":
       return (
         <View key={key} style={styles.sectionBar} wrap={false}>
-          <TText>
-            {th} / {en}
-          </TText>
+          <TText>{bilingualInline(th, en, language)}</TText>
         </View>
       );
     case "paragraph":
       return (
         <React.Fragment key={key}>
-          <TText style={styles.paragraph}>{th}</TText>
-          <TText style={styles.paragraph}>{en}</TText>
+          {showTh && <TText style={styles.paragraph}>{th}</TText>}
+          {showEn && <TText style={styles.paragraph}>{en}</TText>}
         </React.Fragment>
       );
     case "bullet":
       return (
         <View key={key} style={{ marginBottom: 3 }} wrap={false}>
-          <TText style={[styles.paragraph, styles.bullet, { marginBottom: 0 }]}>
-            {th}
-          </TText>
-          <TText style={[styles.paragraph, styles.bullet, { marginBottom: 0 }]}>
-            {en}
-          </TText>
+          {showTh && (
+            <TText style={[styles.paragraph, styles.bullet, { marginBottom: 0 }]}>
+              {th}
+            </TText>
+          )}
+          {showEn && (
+            <TText style={[styles.paragraph, styles.bullet, { marginBottom: 0 }]}>
+              {en}
+            </TText>
+          )}
         </View>
       );
     case "sub_bullet":
       return (
         <View key={key} style={{ marginBottom: 3 }} wrap={false}>
-          <TText style={[styles.paragraph, styles.subBullet, { marginBottom: 0 }]}>
-            {th}
-          </TText>
-          <TText style={[styles.paragraph, styles.subBullet, { marginBottom: 0 }]}>
-            {en}
-          </TText>
+          {showTh && (
+            <TText style={[styles.paragraph, styles.subBullet, { marginBottom: 0 }]}>
+              {th}
+            </TText>
+          )}
+          {showEn && (
+            <TText style={[styles.paragraph, styles.subBullet, { marginBottom: 0 }]}>
+              {en}
+            </TText>
+          )}
         </View>
       );
     case "small":
       return (
         <View key={key} style={{ marginTop: 4 }} wrap={false}>
-          <TText style={[styles.small, { marginBottom: 0 }]}>{th}</TText>
-          <TText style={styles.small}>{en}</TText>
+          {showTh && <TText style={[styles.small, { marginBottom: 0 }]}>{th}</TText>}
+          {showEn && <TText style={styles.small}>{en}</TText>}
         </View>
       );
     default:
@@ -505,9 +529,11 @@ function renderClause(
 function ItemTable({
   items,
   noneSelected,
+  language = "BOTH",
 }: {
   items: PdfChecklistItem[];
   noneSelected?: boolean;
+  language?: ContractLanguage;
 }) {
   if (items.length === 0) return null;
   return (
@@ -519,11 +545,13 @@ function ItemTable({
           </TText>
         </View>
         <View style={styles.itemTableCellListing}>
-          <TText style={styles.itemTableHeaderText}>รายการ / Listing</TText>
+          <TText style={styles.itemTableHeaderText}>
+            {bilingualInline("รายการ", "Listing", language)}
+          </TText>
         </View>
         <View style={styles.itemTableCellQty}>
           <TText style={[styles.itemTableHeaderText, { textAlign: "center" }]}>
-            จำนวน / Qty
+            {bilingualInline("จำนวน", "Qty", language)}
           </TText>
         </View>
       </View>
@@ -541,9 +569,7 @@ function ItemTable({
               <TText style={{ textAlign: "center" }}>{i + 1}</TText>
             </View>
             <View style={styles.itemTableCellListing}>
-              <TText>
-                {item.th} / {item.en}
-              </TText>
+              <TText>{bilingualInline(item.th, item.en, language)}</TText>
             </View>
             <View style={styles.itemTableCellQty}>
               <TText style={{ textAlign: "center" }}>{qtyLabel}</TText>
@@ -639,6 +665,12 @@ export interface ContractPdfData {
   // and passing the resolved list here.
   clauses?: ContractClause[];
 
+  // Which language(s) the clause body + item checklists render in.
+  // Defaults to "BOTH" (existing bilingual behavior) when omitted. Party
+  // info, financial details, and signature blocks stay bilingual
+  // regardless of this setting.
+  documentLanguage?: ContractLanguage;
+
   lessorIdImage?: string | null;
   lesseeIdImage?: string | null;
   jointLesseeIdImage?: string | null;
@@ -667,6 +699,7 @@ const D = ({ children }: { children: React.ReactNode }) => (
 );
 
 export function ContractPdf({ data }: { data: ContractPdfData }) {
+  const language: ContractLanguage = data.documentLanguage || "BOTH";
   return (
     <Document>
       {/* Main agreement — single Page; react-pdf wraps content automatically */}
@@ -964,33 +997,36 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
               {data.furnitureList.length > 0 && (
                 <>
                   <TText style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
-                    10.1 เฟอร์นิเจอร์ / Furniture
+                    10.1 {bilingualInline("เฟอร์นิเจอร์", "Furniture", language)}
                   </TText>
                   <ItemTable
                     items={data.furnitureList}
                     noneSelected={data.furnitureNone}
+                    language={language}
                   />
                 </>
               )}
               {data.applianceList.length > 0 && (
                 <>
                   <TText style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
-                    10.2 เครื่องใช้ไฟฟ้า / Electrical Appliances
+                    10.2 {bilingualInline("เครื่องใช้ไฟฟ้า", "Electrical Appliances", language)}
                   </TText>
                   <ItemTable
                     items={data.applianceList}
                     noneSelected={data.applianceNone}
+                    language={language}
                   />
                 </>
               )}
               {data.otherItems.length > 0 && (
                 <>
                   <TText style={[styles.boldHL, { marginTop: 6, marginBottom: 4 }]}>
-                    10.3 รายการอื่นๆ / Other Items
+                    10.3 {bilingualInline("รายการอื่นๆ", "Other Items", language)}
                   </TText>
                   <ItemTable
                     items={data.otherItems}
                     noneSelected={data.otherItemsNone}
+                    language={language}
                   />
                 </>
               )}
@@ -998,7 +1034,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           );
 
           return (data.clauses || []).map((clause) => {
-            const node = renderClause(clause, clauseDataMap, clause.key);
+            const node = renderClause(clause, clauseDataMap, clause.key, language);
             if (clause.key === "3.1" && bankBox) {
               return (
                 <React.Fragment key={clause.key}>
@@ -1029,12 +1065,12 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           // pairing reads consistently across all sections.
           return (
             <View key={`cc-${i}`} style={{ marginBottom: 3 }} wrap={false}>
-              {th && (
+              {th && language !== "EN" && (
                 <TText style={[styles.paragraph, styles.bullet, { marginBottom: 0 }]}>
                   {`${num} ${th}`}
                 </TText>
               )}
-              {en && (
+              {en && language !== "TH" && (
                 <TText style={[styles.paragraph, styles.bullet, { marginBottom: 0 }]}>
                   {`${num} ${en}`}
                 </TText>

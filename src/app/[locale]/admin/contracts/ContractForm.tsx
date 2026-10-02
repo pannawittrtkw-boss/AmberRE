@@ -132,6 +132,7 @@ export default function ContractForm({
     securityDeposit: initialData?.securityDeposit || "",
 
     contractType: initialData?.contractType || "NEW",
+    documentLanguage: initialData?.documentLanguage || "BOTH",
     agentId: initialData?.agentId || null,
     dealType: initialData?.dealType || "DIRECT_OWNER",
     coAgentName: initialData?.coAgentName || "",
@@ -482,6 +483,47 @@ export default function ContractForm({
 
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-stone-700">
+              {locale === "th" ? "ภาษาสัญญา" : "Document Language"}
+            </span>
+            <div className="flex rounded-lg border border-stone-200 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => update("documentLanguage", "BOTH")}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${
+                  form.documentLanguage === "BOTH"
+                    ? "bg-[#C8A951] text-white"
+                    : "bg-white text-stone-600 hover:bg-stone-50"
+                }`}
+              >
+                {locale === "th" ? "ไทย + อังกฤษ" : "Thai + English"}
+              </button>
+              <button
+                type="button"
+                onClick={() => update("documentLanguage", "TH")}
+                className={`px-3 py-2 text-sm font-medium transition-colors border-l border-stone-200 ${
+                  form.documentLanguage === "TH"
+                    ? "bg-[#C8A951] text-white"
+                    : "bg-white text-stone-600 hover:bg-stone-50"
+                }`}
+              >
+                {locale === "th" ? "ไทยอย่างเดียว" : "Thai only"}
+              </button>
+              <button
+                type="button"
+                onClick={() => update("documentLanguage", "EN")}
+                className={`px-3 py-2 text-sm font-medium transition-colors border-l border-stone-200 ${
+                  form.documentLanguage === "EN"
+                    ? "bg-[#C8A951] text-white"
+                    : "bg-white text-stone-600 hover:bg-stone-50"
+                }`}
+              >
+                {locale === "th" ? "อังกฤษอย่างเดียว" : "English only"}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-stone-700">
               {locale === "th" ? "ตัวแทน (Agent)" : "Agent"}
             </span>
             <select
@@ -498,6 +540,13 @@ export default function ContractForm({
             </select>
           </div>
         </div>
+        {form.documentLanguage !== "BOTH" && (
+          <p className="text-xs text-stone-500 -mt-3 mb-5">
+            {locale === "th"
+              ? "มีผลกับข้อความเงื่อนไขสัญญา (ข้อ 2-11) และรายการเฟอร์นิเจอร์/เครื่องใช้ไฟฟ้าใน PDF เท่านั้น — ข้อมูลผู้เช่า/ผู้ให้เช่า ที่อยู่ และยอดเงินยังแสดงสองภาษาตามปกติ"
+              : "Only affects the clause text (sections 2-11) and furniture/appliance lists in the PDF — party info, addresses, and amounts still show in both languages."}
+          </p>
+        )}
 
         {/* Co-Agent fields — shown only when dealType = CO_AGENT */}
         {form.dealType === "CO_AGENT" && (
@@ -1270,6 +1319,7 @@ export default function ContractForm({
           locale={locale}
           sectionsFilter={["2", "3", "4", "5", "6", "7", "8", "9", "10"]}
           baseline={templateBaseline}
+          language={form.documentLanguage}
         />
       </Card>
 
@@ -1295,6 +1345,7 @@ export default function ContractForm({
               sectionsFilter={["11"]}
               hideHeader
               baseline={templateBaseline}
+              language={form.documentLanguage}
             />
           </div>
           <div className="border-t border-stone-200 pt-4">
@@ -1308,6 +1359,7 @@ export default function ContractForm({
               onChange={setCustomClauses}
               onResetFromTemplate={handleResetCustomClausesFromTemplate}
               locale={locale}
+              language={form.documentLanguage}
             />
           </div>
         </div>

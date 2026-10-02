@@ -8,6 +8,9 @@ interface Props {
   onChange: (clauses: CustomClause[]) => void;
   onResetFromTemplate?: () => void;
   locale: string;
+  /** Same meaning as StandardClausesEditor's — hides the other language's
+   * field when the contract's document isn't bilingual. */
+  language?: "BOTH" | "TH" | "EN";
 }
 
 const inputCls =
@@ -18,7 +21,10 @@ export default function CustomClausesEditor({
   onChange,
   onResetFromTemplate,
   locale,
+  language = "BOTH",
 }: Props) {
+  const showTh = language !== "EN";
+  const showEn = language !== "TH";
   const addClause = () => onChange([...value, { th: "", en: "" }]);
   const removeAt = (idx: number) =>
     onChange(value.filter((_, i) => i !== idx));
@@ -59,35 +65,39 @@ export default function CustomClausesEditor({
                   {locale === "th" ? "ลบ" : "Remove"}
                 </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs text-stone-500 mb-1">
-                    {locale === "th" ? "ภาษาไทย" : "Thai"}
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={clause.th}
-                    onChange={(e) => updateAt(idx, { th: e.target.value })}
-                    placeholder={
-                      locale === "th"
-                        ? "เช่น ห้ามนำสัตว์เลี้ยงเข้ามาในห้อง"
-                        : "e.g. ห้ามนำสัตว์เลี้ยงเข้ามาในห้อง"
-                    }
-                    className={inputCls}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-stone-500 mb-1">
-                    English
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={clause.en}
-                    onChange={(e) => updateAt(idx, { en: e.target.value })}
-                    placeholder="e.g. No pets allowed in the unit."
-                    className={inputCls}
-                  />
-                </div>
+              <div className={`grid grid-cols-1 gap-2 ${showTh && showEn ? "md:grid-cols-2" : ""}`}>
+                {showTh && (
+                  <div>
+                    <label className="block text-xs text-stone-500 mb-1">
+                      {locale === "th" ? "ภาษาไทย" : "Thai"}
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={clause.th}
+                      onChange={(e) => updateAt(idx, { th: e.target.value })}
+                      placeholder={
+                        locale === "th"
+                          ? "เช่น ห้ามนำสัตว์เลี้ยงเข้ามาในห้อง"
+                          : "e.g. ห้ามนำสัตว์เลี้ยงเข้ามาในห้อง"
+                      }
+                      className={inputCls}
+                    />
+                  </div>
+                )}
+                {showEn && (
+                  <div>
+                    <label className="block text-xs text-stone-500 mb-1">
+                      English
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={clause.en}
+                      onChange={(e) => updateAt(idx, { en: e.target.value })}
+                      placeholder="e.g. No pets allowed in the unit."
+                      className={inputCls}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           ))}

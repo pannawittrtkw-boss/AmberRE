@@ -120,6 +120,7 @@ export async function PUT(
         clauseOverrides: body.clauseOverrides || null,
 
         contractType: body.contractType || undefined,
+        documentLanguage: body.documentLanguage || undefined,
         ...(body.agentId !== undefined
           ? {
               agent: body.agentId

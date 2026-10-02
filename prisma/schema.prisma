@@ -163,6 +163,10 @@ model Contract {
   // Contract type
   contractType String @default("NEW") @db.VarChar(10) // NEW | RENEW
 
+  // Which language(s) the generated PDF (and the clause editor) show.
+  // BOTH = Thai + English side by side (default, unchanged behavior).
+  documentLanguage String @default("BOTH") @db.VarChar(10) // BOTH | TH | EN
+
   // Deal type
   dealType      String  @default("DIRECT_OWNER") @db.VarChar(20) // DIRECT_OWNER | CO_AGENT
   coAgentName   String? @db.VarChar(200)

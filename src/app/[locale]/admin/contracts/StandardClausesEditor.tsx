@@ -37,6 +37,13 @@ interface Props {
    * track only the override layer above the baseline.
    */
   baseline?: ClauseOverrideMap;
+  /**
+   * Which language(s) the contract's PDF will actually render. "BOTH"
+   * (default) shows both textareas side by side as before; "TH"/"EN"
+   * hides the other language's field (full width) since editing text
+   * that won't appear in the document would just be confusing.
+   */
+  language?: "BOTH" | "TH" | "EN";
 }
 
 const inputCls =
@@ -77,7 +84,10 @@ export default function StandardClausesEditor({
   sectionsFilter,
   hideHeader,
   baseline,
+  language = "BOTH",
 }: Props) {
+  const showTh = language !== "EN";
+  const showEn = language !== "TH";
   // Effective "standard" text after the baseline layer is applied. This is
   // what an unedited textarea shows, and what we compare against to decide
   // whether the user has actually overridden a clause.
@@ -272,33 +282,37 @@ export default function StandardClausesEditor({
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-[11px] text-stone-500 mb-1">
-                            {locale === "th" ? "ภาษาไทย" : "Thai"}
-                          </label>
-                          <textarea
-                            rows={Math.max(3, Math.ceil(standardOf(clause, "th").length / 60))}
-                            value={override.th ?? standardOf(clause, "th")}
-                            onChange={(e) =>
-                              setOverride(clause, "th", e.target.value)
-                            }
-                            className={inputCls}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] text-stone-500 mb-1">
-                            English
-                          </label>
-                          <textarea
-                            rows={Math.max(3, Math.ceil(standardOf(clause, "en").length / 60))}
-                            value={override.en ?? standardOf(clause, "en")}
-                            onChange={(e) =>
-                              setOverride(clause, "en", e.target.value)
-                            }
-                            className={inputCls}
-                          />
-                        </div>
+                      <div className={`grid grid-cols-1 gap-2 ${showTh && showEn ? "md:grid-cols-2" : ""}`}>
+                        {showTh && (
+                          <div>
+                            <label className="block text-[11px] text-stone-500 mb-1">
+                              {locale === "th" ? "ภาษาไทย" : "Thai"}
+                            </label>
+                            <textarea
+                              rows={Math.max(3, Math.ceil(standardOf(clause, "th").length / 60))}
+                              value={override.th ?? standardOf(clause, "th")}
+                              onChange={(e) =>
+                                setOverride(clause, "th", e.target.value)
+                              }
+                              className={inputCls}
+                            />
+                          </div>
+                        )}
+                        {showEn && (
+                          <div>
+                            <label className="block text-[11px] text-stone-500 mb-1">
+                              English
+                            </label>
+                            <textarea
+                              rows={Math.max(3, Math.ceil(standardOf(clause, "en").length / 60))}
+                              value={override.en ?? standardOf(clause, "en")}
+                              onChange={(e) =>
+                                setOverride(clause, "en", e.target.value)
+                              }
+                              className={inputCls}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

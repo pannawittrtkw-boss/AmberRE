@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
 import { renderToBuffer } from "@react-pdf/renderer";
-import { ContractPdf, ContractPdfData, PdfChecklistItem } from "@/lib/contract-pdf";
+import { ContractPdf, ContractPdfData, PdfChecklistItem, ContractLanguage } from "@/lib/contract-pdf";
 import {
   FURNITURE_OPTIONS,
   APPLIANCE_OPTIONS,
@@ -219,6 +219,7 @@ export async function GET(
     otherItemsNone: !!contract.otherItemsNone,
     customClauses: parseCustomClauses(contract.customClauses),
     clauses: applyOverrides(STANDARD_CLAUSES, parseClauseOverrides(contract.clauseOverrides)),
+    documentLanguage: (contract.documentLanguage as ContractLanguage) || "BOTH",
     lessorIdImage: toAbs(contract.lessorIdImage),
     lesseeIdImage: toAbs(contract.lesseeIdImage),
     jointLesseeIdImage: toAbs(contract.jointLesseeIdImage),
