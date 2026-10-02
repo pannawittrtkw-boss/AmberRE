@@ -8,6 +8,7 @@ import ItemSelector from "./ItemSelector";
 import IdCardUpload from "./IdCardUpload";
 import CustomClausesEditor from "./CustomClausesEditor";
 import StandardClausesEditor from "./StandardClausesEditor";
+import AgentPickerModal from "./AgentPickerModal";
 import { parseIdCardOcr } from "@/lib/idcard-ocr";
 import { parseBankBookOcr } from "@/lib/bank-ocr";
 import {
@@ -200,6 +201,7 @@ export default function ContractForm({
   // Internal agents (User.role === "CO_AGENT") for the commission-credit
   // dropdown — distinct from the free-text external co-agent fields below.
   const [agents, setAgents] = useState<{ id: number; firstName: string; lastName: string }[]>([]);
+  const [showAgentPicker, setShowAgentPicker] = useState(false);
   useEffect(() => {
     fetch("/api/admin/users")
       .then((r) => r.json())
@@ -526,18 +528,17 @@ export default function ContractForm({
             <span className="text-sm font-medium text-stone-700">
               {locale === "th" ? "ตัวแทน (Agent)" : "Agent"}
             </span>
-            <select
-              value={form.agentId ?? ""}
-              onChange={(e) => update("agentId", e.target.value ? Number(e.target.value) : null)}
-              className={`${inputCls} w-56`}
+            <button
+              type="button"
+              onClick={() => setShowAgentPicker(true)}
+              className={`${inputCls} w-56 text-left bg-white hover:bg-stone-50 transition-colors`}
             >
-              <option value="">{locale === "th" ? "— ไม่ระบุ —" : "— None —"}</option>
-              {agents.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.firstName} {a.lastName}
-                </option>
-              ))}
-            </select>
+              {(() => {
+                const selected = agents.find((a) => a.id === form.agentId);
+                if (selected) return `${selected.firstName} ${selected.lastName}`;
+                return locale === "th" ? "— ไม่ระบุ —" : "— None —";
+              })()}
+            </button>
           </div>
         </div>
         {form.documentLanguage !== "BOTH" && (
@@ -1404,6 +1405,16 @@ export default function ContractForm({
             : isEdit ? "Save Changes" : "Create Contract"}
         </button>
       </div>
+
+      {showAgentPicker && (
+        <AgentPickerModal
+          agents={agents}
+          selectedId={form.agentId}
+          onSelect={(id) => update("agentId", id)}
+          onClose={() => setShowAgentPicker(false)}
+          locale={locale}
+        />
+      )}
     </form>
   );
 }
