@@ -811,44 +811,54 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           </View>
         )}
 
-        {/* Property description */}
-        <TText style={[styles.paragraph, { marginTop: 10 }]}>
-          โดยผู้ให้เช่าเป็นเจ้าของ <D>{data.projectName}</D> ห้องชุดเลขที่{" "}
-          <D>{data.unitNumber}</D>
-          {data.buildingName ? <>{" "}อาคาร <D>{data.buildingName}</D></> : null}
-          {data.floorNumber ? <>{" "}ชั้น <D>{data.floorNumber}</D></> : null}
-          {" "}ที่ตั้ง <D>{data.propertyAddress}</D>
-          {data.sizeSqm != null ? <>{" "}ขนาดห้อง <D>{data.sizeSqm}</D> ตารางเมตร</> : null}
-          {" "}ซึ่งรวมถึงอุปกรณ์ตกแต่งและเฟอร์นิเจอร์ ซึ่งต่อไปนี้เรียกว่า "ทรัพย์สิน"
-        </TText>
+        {/* Property description — recital prose, so it follows the
+            document language toggle like the numbered clauses do, unlike
+            the party-info rows above. */}
+        {language !== "EN" && (
+          <TText style={[styles.paragraph, { marginTop: 10 }]}>
+            โดยผู้ให้เช่าเป็นเจ้าของ <D>{data.projectName}</D> ห้องชุดเลขที่{" "}
+            <D>{data.unitNumber}</D>
+            {data.buildingName ? <>{" "}อาคาร <D>{data.buildingName}</D></> : null}
+            {data.floorNumber ? <>{" "}ชั้น <D>{data.floorNumber}</D></> : null}
+            {" "}ที่ตั้ง <D>{data.propertyAddress}</D>
+            {data.sizeSqm != null ? <>{" "}ขนาดห้อง <D>{data.sizeSqm}</D> ตารางเมตร</> : null}
+            {" "}ซึ่งรวมถึงอุปกรณ์ตกแต่งและเฟอร์นิเจอร์ ซึ่งต่อไปนี้เรียกว่า "ทรัพย์สิน"
+          </TText>
+        )}
 
-        <TText style={styles.paragraph}>
-          Whereas, Lessor is the owner of <D>{data.projectName}</D>, Unit number{" "}
-          <D>{data.unitNumber}</D>
-          {data.buildingName ? <>, Building <D>{data.buildingName}</D></> : null}
-          {data.floorNumber ? <>, Floor <D>{data.floorNumber}</D></> : null},
-          located at <D>{data.propertyAddressEn || data.propertyAddress}</D>
-          {data.sizeSqm != null ? <>, approximate area <D>{data.sizeSqm}</D> sqm.</> : null}{" "}
-          and all premises including all fixtures and fittings hereinafter
-          referred to as the "Premises".
-        </TText>
+        {language !== "TH" && (
+          <TText style={[styles.paragraph, language === "EN" ? { marginTop: 10 } : {}]}>
+            Whereas, Lessor is the owner of <D>{data.projectName}</D>, Unit number{" "}
+            <D>{data.unitNumber}</D>
+            {data.buildingName ? <>, Building <D>{data.buildingName}</D></> : null}
+            {data.floorNumber ? <>, Floor <D>{data.floorNumber}</D></> : null},
+            located at <D>{data.propertyAddressEn || data.propertyAddress}</D>
+            {data.sizeSqm != null ? <>, approximate area <D>{data.sizeSqm}</D> sqm.</> : null}{" "}
+            and all premises including all fixtures and fittings hereinafter
+            referred to as the "Premises".
+          </TText>
+        )}
 
         {/* Lessor desires + Lessee agrees */}
-        <TText style={styles.paragraph}>
-          ซึ่งผู้ให้เช่าต้องการให้เช่าและผู้เช่าตกลงจะเช่าทรัพย์สิน
-          โดยทั้ง 2 ฝ่ายตกลงกันตามเงื่อนไขที่ระบุในสัญญานี้ดังต่อไปนี้
-        </TText>
-        <TText style={styles.paragraph}>
-          Whereas the Lessor desires to let and the Lessee desires to rent the
-          Premises under the terms and conditions set forth in this Agreement as
-          follows:
-        </TText>
+        {language !== "EN" && (
+          <TText style={styles.paragraph}>
+            ซึ่งผู้ให้เช่าต้องการให้เช่าและผู้เช่าตกลงจะเช่าทรัพย์สิน
+            โดยทั้ง 2 ฝ่ายตกลงกันตามเงื่อนไขที่ระบุในสัญญานี้ดังต่อไปนี้
+          </TText>
+        )}
+        {language !== "TH" && (
+          <TText style={styles.paragraph}>
+            Whereas the Lessor desires to let and the Lessee desires to rent the
+            Premises under the terms and conditions set forth in this Agreement as
+            follows:
+          </TText>
+        )}
 
         {/* Joint Lessee */}
         {data.jointLesseeName && (
           <>
             <View style={styles.sectionBar} wrap={false}>
-              <TText>1. ผู้เช่าร่วม / Joint Lessee</TText>
+              <TText>{bilingualInline("1. ผู้เช่าร่วม", "Joint Lessee", language)}</TText>
             </View>
             <View wrap={false}>
               <View style={styles.row}>
@@ -1083,14 +1093,20 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
             block never splits across pages. Lives in the main Page wrap so
             it stays on the same page as the tail of section 11. */}
         <View wrap={false} style={{ marginTop: 12 }}>
-          <TText style={[styles.paragraph, { fontSize: 9 }]}>
-            สัญญาฉบับนี้ทำขึ้น 2 ฉบับ มีข้อความตรงกัน ผู้ให้เช่าและผู้เช่าถือไว้คนละฉบับ
-            ทั้งสองฝ่ายได้อ่านและเห็นว่าถูกต้องตามวัตถุประสงค์ของทั้ง 2 ฝ่าย
-            จึงลงลายมือชื่อไว้ต่อหน้าพยาน /
-            This Agreement is made in duplicates with identical contents, one
-            copy held by each party. Both parties have read and agree, signing
-            in the presence of witnesses.
-          </TText>
+          {language !== "EN" && (
+            <TText style={[styles.paragraph, { fontSize: 9 }]}>
+              สัญญาฉบับนี้ทำขึ้น 2 ฉบับ มีข้อความตรงกัน ผู้ให้เช่าและผู้เช่าถือไว้คนละฉบับ
+              ทั้งสองฝ่ายได้อ่านและเห็นว่าถูกต้องตามวัตถุประสงค์ของทั้ง 2 ฝ่าย
+              จึงลงลายมือชื่อไว้ต่อหน้าพยาน
+            </TText>
+          )}
+          {language !== "TH" && (
+            <TText style={[styles.paragraph, { fontSize: 9 }]}>
+              This Agreement is made in duplicates with identical contents, one
+              copy held by each party. Both parties have read and agree, signing
+              in the presence of witnesses.
+            </TText>
+          )}
 
           <View style={styles.twoCol}>
             <View style={styles.signatureBlock}>
