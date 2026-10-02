@@ -115,7 +115,16 @@ export default function StandardClausesEditor({
     // no-override so the clause falls back automatically. Lets the
     // textarea start out pre-filled with the standard copy without
     // dirtying every clause.
-    if (text === standardText || text.trim() === "") {
+    //
+    // Deliberately NOT treating "" as no-override too (as this used to) —
+    // that made the textarea snap back to the standard text the instant it
+    // was emptied (e.g. select-all + delete while retyping), since clearing
+    // the override makes the controlled value fall back to the standard
+    // copy on the very next render. That fought every edit that started by
+    // clearing the field. An intentionally blank clause is a valid override
+    // in its own right; the explicit Reset button is how you get back to
+    // standard.
+    if (text === standardText) {
       const cleared = { ...current };
       delete cleared[lang];
       if (Object.keys(cleared).length === 0) delete next[clause.key];
