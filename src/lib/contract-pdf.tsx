@@ -694,6 +694,15 @@ export interface ContractPdfData {
 const formatNum = (n: number) =>
   new Intl.NumberFormat("en-US", { minimumFractionDigits: 2 }).format(n);
 
+// Addresses are free-text, and some were entered (or pasted) with a literal
+// line break in them — e.g. from a multi-line textarea in the admin form.
+// react-pdf renders that newline as a forced break instead of letting the
+// text reflow, leaving a short line with room to spare and an oddly placed
+// wrap. Collapse all whitespace runs to a single space so these always
+// flow naturally regardless of how they were originally typed.
+const normalizeAddr = (s: string | null | undefined): string =>
+  (s || "").replace(/\s+/g, " ").trim();
+
 const D = ({ children }: { children: React.ReactNode }) => (
   <TText style={styles.boldHL}>{children}</TText>
 );
@@ -747,13 +756,13 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
             {data.lessorAddress && (
               <View style={styles.row}>
                 <TText style={styles.label}>ที่อยู่</TText>
-                <TText style={styles.value}>{data.lessorAddress}</TText>
+                <TText style={styles.value}>{normalizeAddr(data.lessorAddress)}</TText>
               </View>
             )}
             <View style={styles.row}>
               <TText style={styles.label}>Address</TText>
               <TText style={styles.value}>
-                {data.lessorAddressEn || data.lessorAddress}
+                {normalizeAddr(data.lessorAddressEn || data.lessorAddress)}
               </TText>
             </View>
           </View>
@@ -793,13 +802,13 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
             {data.lesseeAddress && (
               <View style={styles.row}>
                 <TText style={styles.label}>ที่อยู่</TText>
-                <TText style={styles.value}>{data.lesseeAddress}</TText>
+                <TText style={styles.value}>{normalizeAddr(data.lesseeAddress)}</TText>
               </View>
             )}
             <View style={styles.row}>
               <TText style={styles.label}>Address</TText>
               <TText style={styles.value}>
-                {data.lesseeAddressEn || data.lesseeAddress}
+                {normalizeAddr(data.lesseeAddressEn || data.lesseeAddress)}
               </TText>
             </View>
           </View>
@@ -820,7 +829,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
             <D>{data.unitNumber}</D>
             {data.buildingName ? <>{" "}อาคาร <D>{data.buildingName}</D></> : null}
             {data.floorNumber ? <>{" "}ชั้น <D>{data.floorNumber}</D></> : null}
-            {" "}ที่ตั้ง <D>{data.propertyAddress}</D>
+            {" "}ที่ตั้ง <D>{normalizeAddr(data.propertyAddress)}</D>
             {data.sizeSqm != null ? <>{" "}ขนาดห้อง <D>{data.sizeSqm}</D> ตารางเมตร</> : null}
             {" "}ซึ่งรวมถึงอุปกรณ์ตกแต่งและเฟอร์นิเจอร์ ซึ่งต่อไปนี้เรียกว่า "ทรัพย์สิน"
           </TText>
@@ -832,7 +841,7 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
             <D>{data.unitNumber}</D>
             {data.buildingName ? <>, Building <D>{data.buildingName}</D></> : null}
             {data.floorNumber ? <>, Floor <D>{data.floorNumber}</D></> : null},
-            located at <D>{data.propertyAddressEn || data.propertyAddress}</D>
+            located at <D>{normalizeAddr(data.propertyAddressEn || data.propertyAddress)}</D>
             {data.sizeSqm != null ? <>, approximate area <D>{data.sizeSqm}</D> sqm.</> : null}{" "}
             and all premises including all fixtures and fittings hereinafter
             referred to as the "Premises".
@@ -889,13 +898,13 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
                 {data.jointLesseeAddress && (
                   <View style={styles.row}>
                     <TText style={styles.label}>ที่อยู่</TText>
-                    <TText style={styles.value}>{data.jointLesseeAddress}</TText>
+                    <TText style={styles.value}>{normalizeAddr(data.jointLesseeAddress)}</TText>
                   </View>
                 )}
                 <View style={styles.row}>
                   <TText style={styles.label}>Address</TText>
                   <TText style={styles.value}>
-                    {data.jointLesseeAddressEn || data.jointLesseeAddress}
+                    {normalizeAddr(data.jointLesseeAddressEn || data.jointLesseeAddress)}
                   </TText>
                 </View>
               </View>
