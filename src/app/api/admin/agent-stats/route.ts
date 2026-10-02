@@ -88,16 +88,16 @@ export async function GET(req: NextRequest) {
       const [rentTiers, allAgentContracts, commissionContracts] = await Promise.all([
         prisma.commissionTier.findMany({ where: { dealCategory: "RENT" } }),
         // "Closed" count/history is independent of payment status — every
-        // contract credited to this agent, by the month it was actually
-        // entered (createdAt), not contractDate/startDate (the tenant's
-        // move-in date, often well after the deal was actually closed).
+        // contract credited to this agent, by the month its lease term
+        // starts (startDate), not createdAt (when it was entered into the
+        // system — see src/lib/commission.ts for why startDate is used).
         prisma.contract.findMany({
           where: { agentId: targetAgentId },
-          orderBy: { createdAt: "desc" },
+          orderBy: { startDate: "desc" },
           select: {
             id: true,
             contractNumber: true,
-            createdAt: true,
+            startDate: true,
             contractType: true,
             dealType: true,
             status: true,
@@ -125,7 +125,7 @@ export async function GET(req: NextRequest) {
             contractType: true,
             termMonths: true,
             dealType: true,
-            createdAt: true,
+            startDate: true,
             commissionPaid: true,
           },
         }),
@@ -155,17 +155,16 @@ export async function GET(req: NextRequest) {
       const allTimePaid = commissionMonths.reduce((sum, m) => sum + m.paidCommission, 0);
       const allTimePending = commissionMonths.reduce((sum, m) => sum + m.pendingCommission, 0);
 
-      // Keyed by the same createdAt month used to group "history" below —
-      // a contract's tier bracket depends on the month the deal was
-      // actually entered, not a separate money-received or move-in date.
+      // Keyed by the same startDate month used to group "history" below —
+      // a contract's tier bracket depends on the month its lease starts.
       const commissionByMonthKey = new Map(commissionMonths.map((m) => [m.monthKey, m]));
 
-      // Per-contract history grouped by the month it was entered — answers
+      // Per-contract history grouped by the month its lease starts — answers
       // "how many, and which ones" behind the closed-count numbers, with a
       // link to the signed contract for each.
       const historyByMonth = new Map<string, typeof allAgentContracts>();
       for (const c of allAgentContracts) {
-        const d = new Date(c.createdAt);
+        const d = new Date(c.startDate);
         const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
         const list = historyByMonth.get(monthKey) ?? [];
         list.push(c);
@@ -204,9 +203,9 @@ export async function GET(req: NextRequest) {
           closedCount: contracts.length,
           totalContractValue: contracts.reduce((sum, c) => sum + c.monthlyRent, 0),
           totalEarnedCommission: contracts.reduce((sum, c) => sum + (c.agentEarnedCommission ?? 0), 0),
-          // Tier achieved for this calendar month (by createdAt, same
-          // convention as "currentMonth") — null if nothing was entered in
-          // this month yet.
+          // Tier achieved for this calendar month (by startDate, same
+          // convention as "currentMonth") — null if no lease starts in
+          // this month.
           tierPercent: commissionByMonthKey.get(monthKey)?.tierPercent ?? null,
           contracts,
         };
