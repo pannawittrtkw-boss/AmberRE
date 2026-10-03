@@ -87,7 +87,9 @@ const styles = StyleSheet.create({
   page: {
     fontFamily: "Sarabun",
     fontSize: 10,
-    paddingTop: 36,
+    // Pushed down to clear the fixed letterhead (logo + company info)
+    // repeated at the top of every page — see letterheadRow.
+    paddingTop: 128,
     // Bottom padding leaves room for the per-page signature footer (see
     // styles.pageFooter) which is positioned absolutely at the bottom of
     // every page so both parties can initial each page individually.
@@ -98,21 +100,25 @@ const styles = StyleSheet.create({
     // gives the marks enough breathing room without wasting the page.
     lineHeight: 1.6,
   },
-  // Company letterhead — logo + name/address/Tax ID/phone, page 1 only.
+  // Company letterhead — logo + name/address/Tax ID/phone, repeated at a
+  // fixed position at the top of every page (see the `fixed` View below).
   letterheadRow: {
+    position: "absolute",
+    top: 24,
+    left: 50,
+    right: 50,
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#C8A951",
+    paddingBottom: 10,
+    borderBottomWidth: 1.5,
+    borderBottomColor: "#000",
   },
-  letterheadLogo: { width: 44, height: 44, objectFit: "contain", marginRight: 10 },
+  letterheadLogo: { width: 72, height: 72, objectFit: "contain", marginRight: 14 },
   letterheadMeta: { flex: 1 },
-  letterheadName: { fontSize: 10, fontWeight: "bold", marginBottom: 2 },
-  letterheadText: { fontSize: 7.5, color: "#555", lineHeight: 1.4 },
-  // Faint logo + phone watermark, repeated on every page via `fixed`.
-  // Low opacity keeps body text fully legible on top of it.
+  letterheadName: { fontSize: 13, fontWeight: "bold", marginBottom: 3 },
+  letterheadText: { fontSize: 9, color: "#444", lineHeight: 1.5 },
+  // Logo + phone watermark, repeated on every page via `fixed`. Visible
+  // but still subdued enough to keep body text fully legible on top.
   watermark: {
     position: "absolute",
     top: 0,
@@ -122,14 +128,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  watermarkLogo: { width: 200, height: 200, objectFit: "contain", opacity: 0.045 },
+  watermarkLogo: { width: 340, height: 340, objectFit: "contain", opacity: 0.11 },
   watermarkPhone: {
-    fontSize: 14,
-    color: "#999",
-    opacity: 0.12,
-    marginTop: 6,
+    fontSize: 22,
+    color: "#777",
+    opacity: 0.22,
+    marginTop: 10,
     fontWeight: "bold",
-    letterSpacing: 2,
+    letterSpacing: 3,
   },
   header: { textAlign: "center", marginBottom: 14 },
   title: { fontSize: 14, fontWeight: "bold", marginBottom: 4, lineHeight: 1.5 },
@@ -772,11 +778,11 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
           </View>
         )}
 
-        <View style={styles.letterheadRow}>
+        <View style={styles.letterheadRow} fixed>
           {data.companyLogoUrl ? (
             <Image src={data.companyLogoUrl} style={styles.letterheadLogo} />
           ) : (
-            <View style={{ width: 44 }} />
+            <View style={{ width: 72 }} />
           )}
           <View style={styles.letterheadMeta}>
             <TText style={styles.letterheadName}>
