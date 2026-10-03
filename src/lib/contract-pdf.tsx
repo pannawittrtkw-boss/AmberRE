@@ -117,8 +117,8 @@ const styles = StyleSheet.create({
   letterheadMeta: { flex: 1 },
   letterheadName: { fontSize: 13, fontWeight: "bold", marginBottom: 3 },
   letterheadText: { fontSize: 9, color: "#444", lineHeight: 1.5 },
-  // Logo + phone watermark, repeated on every page via `fixed`. Visible
-  // but still subdued enough to keep body text fully legible on top.
+  // Logo watermark, repeated on every page via `fixed`. Visible but still
+  // subdued enough to keep body text fully legible on top.
   watermark: {
     position: "absolute",
     top: 0,
@@ -129,14 +129,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   watermarkLogo: { width: 340, height: 340, objectFit: "contain", opacity: 0.11 },
-  watermarkPhone: {
-    fontSize: 22,
-    color: "#777",
-    opacity: 0.22,
-    marginTop: 10,
-    fontWeight: "bold",
-    letterSpacing: 3,
-  },
   header: { textAlign: "center", marginBottom: 14 },
   title: { fontSize: 14, fontWeight: "bold", marginBottom: 4, lineHeight: 1.5 },
   subtitle: { fontSize: 13, fontWeight: "bold", lineHeight: 1.5 },
@@ -180,7 +172,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     paddingLeft: 8,
     borderLeftWidth: 2,
-    borderLeftColor: "#C8A951",
+    borderLeftColor: "#000",
   },
   checkRow: {
     flexDirection: "row",
@@ -772,9 +764,6 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
         {data.companyLogoUrl && (
           <View style={styles.watermark} fixed>
             <Image src={data.companyLogoUrl} style={styles.watermarkLogo} />
-            {data.companyPhone && (
-              <Text style={styles.watermarkPhone}>{data.companyPhone}</Text>
-            )}
           </View>
         )}
 
