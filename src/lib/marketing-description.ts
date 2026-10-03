@@ -77,12 +77,15 @@ export interface MarketingProperty {
 const DIVIDER = "_____________";
 const STAR_DIVIDER = "*******************";
 
-const FIXED_CONTACT_BLOCK = `_____________
-🎀 Contact for more details 🎀
-📞 095-680-9191 (AG Namphung)
-💬 ID Line: @cfx5958x
-📧 Email: npb.property8@gmail.com
-🤝 Accept Co-Agents
+export interface MarketingContact {
+  nickname?: string | null;
+  phone?: string | null;
+  phone2?: string | null;
+  lineId?: string | null;
+  lineId2?: string | null;
+}
+
+const STATIC_FOOTER = `🤝 Accept Co-Agents
 🏠 Property for sale & rent
 _____________
 #BangkokCondo
@@ -96,6 +99,30 @@ _____________
 #BangkokLiving
 #CondoLife
 #ReadyToMoveIn`;
+
+// Built from the logged-in viewer's own profile (so each agent's post text
+// carries their own contact details) — omitted entirely when nobody is
+// logged in, or when the viewer hasn't filled in a phone/LINE ID yet.
+function buildContactBlock(contact?: MarketingContact | null): string {
+  if (!contact) return "";
+  const phones = [contact.phone, contact.phone2].filter(
+    (v): v is string => !!v && v.trim() !== ""
+  );
+  const lineIds = [contact.lineId, contact.lineId2].filter(
+    (v): v is string => !!v && v.trim() !== ""
+  );
+  if (phones.length === 0 && lineIds.length === 0) return "";
+
+  const lines = ["🎀 Contact for more details 🎀"];
+  if (phones.length > 0) {
+    const suffix = contact.nickname ? ` (AG ${contact.nickname})` : "";
+    lines.push(`📞 ${phones.join(" , ")}${suffix}`);
+  }
+  if (lineIds.length > 0) {
+    lines.push(`💬 ID Line: ${lineIds.join(" , ")}`);
+  }
+  return lines.join("\n") + "\n";
+}
 
 function fmtNumber(n: number): string {
   return new Intl.NumberFormat("en-US").format(n);
@@ -312,8 +339,12 @@ function buildBlock(p: MarketingProperty, lang: "en" | "th"): string {
   return lines.join("\n");
 }
 
-export function buildMarketingDescription(p: MarketingProperty): string {
+export function buildMarketingDescription(
+  p: MarketingProperty,
+  contact?: MarketingContact | null
+): string {
   const en = buildBlock(p, "en");
   const th = buildBlock(p, "th");
-  return [en, STAR_DIVIDER, th, FIXED_CONTACT_BLOCK].join("\n");
+  const footer = DIVIDER + "\n" + buildContactBlock(contact) + STATIC_FOOTER;
+  return [en, STAR_DIVIDER, th, footer].join("\n");
 }

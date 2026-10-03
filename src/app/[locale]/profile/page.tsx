@@ -12,7 +12,11 @@ export default function ProfilePage({ params }: { params: Promise<{ locale: stri
   const [messages, setMessages] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [profile, setProfile] = useState({ firstName: "", lastName: "", phone: "", language: "th" });
+  const [profile, setProfile] = useState({
+    firstName: "", lastName: "", nickname: "",
+    phone: "", phone2: "", lineId: "", lineId2: "",
+    language: "th",
+  });
 
   useEffect(() => {
     params.then(({ locale: l }) => {
@@ -29,7 +33,11 @@ export default function ProfilePage({ params }: { params: Promise<{ locale: stri
           setProfile({
             firstName: d.data.firstName || "",
             lastName: d.data.lastName || "",
+            nickname: d.data.nickname || "",
             phone: d.data.phone || "",
+            phone2: d.data.phone2 || "",
+            lineId: d.data.lineId || "",
+            lineId2: d.data.lineId2 || "",
             language: d.data.language || "th",
           });
         }
@@ -82,8 +90,30 @@ export default function ProfilePage({ params }: { params: Promise<{ locale: stri
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{messages.auth.phone}</label>
-            <input type="tel" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} className="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <label className="block text-sm font-medium text-gray-700 mb-1">{messages.auth.nickname}</label>
+            <input type="text" value={profile.nickname} onChange={(e) => setProfile({ ...profile, nickname: e.target.value })} className="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{messages.auth.phone}</label>
+              <input type="tel" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} className="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{messages.auth.phone2}</label>
+              <input type="tel" value={profile.phone2} onChange={(e) => setProfile({ ...profile, phone2: e.target.value })} className="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{messages.auth.lineId}</label>
+              <input type="text" value={profile.lineId} onChange={(e) => setProfile({ ...profile, lineId: e.target.value })} className="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{messages.auth.lineId2}</label>
+              <input type="text" value={profile.lineId2} onChange={(e) => setProfile({ ...profile, lineId2: e.target.value })} className="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
           </div>
 
           <div>

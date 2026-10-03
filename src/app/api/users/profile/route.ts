@@ -17,7 +17,11 @@ export async function GET() {
         email: true,
         firstName: true,
         lastName: true,
+        nickname: true,
         phone: true,
+        phone2: true,
+        lineId: true,
+        lineId2: true,
         role: true,
         language: true,
         profileImage: true,
@@ -39,14 +43,18 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { firstName, lastName, phone, language } = body;
+    const { firstName, lastName, nickname, phone, phone2, lineId, lineId2, language } = body;
 
     const user = await prisma.user.update({
       where: { id: Number((session.user as any).id) },
       data: {
         ...(firstName && { firstName }),
         ...(lastName && { lastName }),
+        ...(nickname !== undefined && { nickname }),
         ...(phone !== undefined && { phone }),
+        ...(phone2 !== undefined && { phone2 }),
+        ...(lineId !== undefined && { lineId }),
+        ...(lineId2 !== undefined && { lineId2 }),
         ...(language && { language }),
       },
       select: {
@@ -54,7 +62,11 @@ export async function PUT(req: NextRequest) {
         email: true,
         firstName: true,
         lastName: true,
+        nickname: true,
         phone: true,
+        phone2: true,
+        lineId: true,
+        lineId2: true,
         role: true,
         language: true,
         profileImage: true,

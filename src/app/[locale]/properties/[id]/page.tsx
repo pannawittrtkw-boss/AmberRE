@@ -289,7 +289,7 @@ export default async function PropertyDetailPage({
   const propertyUrl = `${proto}://${host}/${locale}/properties/${id}`;
   const imageUrls = property.images.map((img) => img.imageUrl);
 
-  const marketingText = buildMarketingDescription({
+  const marketingPropertyInput = {
     projectName: property.projectName,
     titleTh: property.titleTh,
     titleEn: property.titleEn,
@@ -309,7 +309,20 @@ export default async function PropertyDetailPage({
     appliances,
     facilities,
     stations,
-  });
+  };
+
+  // Contact details come from the logged-in viewer's own profile — nobody
+  // logged in (or no phone/LINE filled in yet) means no contact block at
+  // all, never a stale hardcoded one.
+  const viewerContact = viewerId
+    ? await prisma.user.findUnique({
+        where: { id: viewerId },
+        select: { nickname: true, phone: true, phone2: true, lineId: true, lineId2: true },
+      })
+    : null;
+
+  const marketingTextDisplay = buildMarketingDescription(marketingPropertyInput, null);
+  const marketingTextForCopy = buildMarketingDescription(marketingPropertyInput, viewerContact);
 
   const isRent =
     property.listingType === "RENT" || property.listingType === "RENT_AND_SALE";
@@ -651,7 +664,8 @@ export default async function PropertyDetailPage({
                 className="mb-5"
               />
               <MarketingDescription
-                text={marketingText}
+                displayText={marketingTextDisplay}
+                copyText={marketingTextForCopy}
                 locale={locale}
                 propertyUrl={propertyUrl}
                 imageUrls={imageUrls}

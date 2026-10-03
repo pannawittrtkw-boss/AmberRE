@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 
 interface Props {
-  text: string;
+  displayText: string;
+  copyText: string;
   locale: string;
   propertyUrl: string;
   imageUrls: string[];
@@ -73,7 +74,8 @@ async function triggerDownload(url: string, filename: string): Promise<boolean> 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export default function MarketingDescription({
-  text,
+  displayText,
+  copyText,
   locale,
   propertyUrl,
   imageUrls,
@@ -118,7 +120,7 @@ export default function MarketingDescription({
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(copyText);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -257,7 +259,7 @@ export default function MarketingDescription({
 
         // Best case: this device/app supports sharing images and text together.
         const combinedShare: ShareData = {
-          text: `${text}\n\n${propertyUrl}`,
+          text: `${copyText}\n\n${propertyUrl}`,
           files,
         };
         const canShareCombined =
@@ -279,7 +281,7 @@ export default function MarketingDescription({
           await navigator.share(combinedShare);
         } else if (canShareFilesOnly) {
           try {
-            await navigator.clipboard.writeText(text);
+            await navigator.clipboard.writeText(copyText);
           } catch {
             /* ignore */
           }
@@ -292,7 +294,7 @@ export default function MarketingDescription({
           if (imageUrls.length > 0) {
             await downloadAllImages();
           }
-          await navigator.share({ text, url: propertyUrl });
+          await navigator.share({ text: copyText, url: propertyUrl });
           if (imageUrls.length > 0) setMobileHint("textonly");
         }
         setShareStatus("idle");
@@ -313,7 +315,7 @@ export default function MarketingDescription({
     try {
       // 1. Copy text to clipboard so user can paste into the share dialog
       try {
-        await navigator.clipboard.writeText(text);
+        await navigator.clipboard.writeText(copyText);
       } catch {
         const ta = document.getElementById(
           "npb-marketing-text"
@@ -514,12 +516,12 @@ export default function MarketingDescription({
       )}
 
       <pre className="whitespace-pre-wrap break-words text-sm text-stone-800 font-sans leading-relaxed px-5 py-5 max-h-[600px] overflow-y-auto">
-        {text}
+        {displayText}
       </pre>
       <textarea
         id="npb-marketing-text"
         readOnly
-        value={text}
+        value={copyText}
         className="sr-only"
         tabIndex={-1}
         aria-hidden="true"

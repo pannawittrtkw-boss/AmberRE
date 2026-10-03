@@ -35,10 +35,13 @@ model User {
   firstName     String    @db.VarChar(100)
   lastName      String    @db.VarChar(100)
   phone         String?   @db.VarChar(20)
+  phone2        String?   @db.VarChar(20)
+  nickname      String?   @db.VarChar(100)
   role          String    @default("BUYER") @db.VarChar(20)
   language      String    @default("th") @db.VarChar(5)
   profileImage  String?   @db.VarChar(500)
   lineId        String?   @db.VarChar(100)
+  lineId2       String?   @db.VarChar(100)
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
