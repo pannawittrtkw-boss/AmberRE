@@ -15,12 +15,15 @@ import {
 
 interface Props {
   displayText: string;
-  copyText: string;
+  copyTextBoth: string;
+  copyTextEn: string;
+  copyTextTh: string;
   locale: string;
   propertyUrl: string;
   imageUrls: string[];
 }
 
+type CopyLang = "both" | "en" | "th";
 type ShareTarget = "facebook" | "line" | "download";
 type ShareStatus = "idle" | "preparing" | "sharing" | "downloading" | "done";
 
@@ -75,13 +78,16 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export default function MarketingDescription({
   displayText,
-  copyText,
+  copyTextBoth,
+  copyTextEn,
+  copyTextTh,
   locale,
   propertyUrl,
   imageUrls,
 }: Props) {
   const [messages, setMessages] = useState<any>(null);
   const [copied, setCopied] = useState(false);
+  const [copyMenuOpen, setCopyMenuOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [shareStatus, setShareStatus] = useState<ShareStatus>("idle");
   const [activeTarget, setActiveTarget] = useState<ShareTarget | null>(null);
@@ -99,6 +105,9 @@ export default function MarketingDescription({
     headerHint: "Share",
     copy: "Copy text",
     copied: "Copied",
+    copyBoth: "English + Thai",
+    copyEnOnly: "English only",
+    copyThOnly: "Thai only",
     copyLink: "Copy link",
     linkCopied: "Link copied",
     download: "Download all images",
@@ -118,9 +127,14 @@ export default function MarketingDescription({
     close: "Close",
   };
 
-  const handleCopy = async () => {
+  const textForLang = (lang: CopyLang) =>
+    lang === "en" ? copyTextEn : lang === "th" ? copyTextTh : copyTextBoth;
+
+  const handleCopy = async (lang: CopyLang) => {
+    setCopyMenuOpen(false);
+    const value = textForLang(lang);
     try {
-      await navigator.clipboard.writeText(copyText);
+      await navigator.clipboard.writeText(value);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -128,6 +142,7 @@ export default function MarketingDescription({
         "npb-marketing-text"
       ) as HTMLTextAreaElement | null;
       if (ta) {
+        ta.value = value;
         ta.select();
         document.execCommand("copy");
         setCopied(true);
@@ -259,7 +274,7 @@ export default function MarketingDescription({
 
         // Best case: this device/app supports sharing images and text together.
         const combinedShare: ShareData = {
-          text: `${copyText}\n\n${propertyUrl}`,
+          text: `${copyTextBoth}\n\n${propertyUrl}`,
           files,
         };
         const canShareCombined =
@@ -281,7 +296,7 @@ export default function MarketingDescription({
           await navigator.share(combinedShare);
         } else if (canShareFilesOnly) {
           try {
-            await navigator.clipboard.writeText(copyText);
+            await navigator.clipboard.writeText(copyTextBoth);
           } catch {
             /* ignore */
           }
@@ -294,7 +309,7 @@ export default function MarketingDescription({
           if (imageUrls.length > 0) {
             await downloadAllImages();
           }
-          await navigator.share({ text: copyText, url: propertyUrl });
+          await navigator.share({ text: copyTextBoth, url: propertyUrl });
           if (imageUrls.length > 0) setMobileHint("textonly");
         }
         setShareStatus("idle");
@@ -315,7 +330,7 @@ export default function MarketingDescription({
     try {
       // 1. Copy text to clipboard so user can paste into the share dialog
       try {
-        await navigator.clipboard.writeText(copyText);
+        await navigator.clipboard.writeText(copyTextBoth);
       } catch {
         const ta = document.getElementById(
           "npb-marketing-text"
@@ -374,23 +389,56 @@ export default function MarketingDescription({
           <span className="text-xs font-medium">{T.headerHint}</span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={handleCopy}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-stone-200 hover:bg-stone-300 text-stone-700 transition-colors disabled:opacity-60"
-            disabled={copied}
-          >
-            {copied ? (
+          <div className="relative">
+            <button
+              onClick={() => setCopyMenuOpen((v) => !v)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-stone-200 hover:bg-stone-300 text-stone-700 transition-colors disabled:opacity-60"
+              disabled={copied}
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5" />
+                  {T.copied}
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  {T.copy}
+                </>
+              )}
+            </button>
+            {copyMenuOpen && (
               <>
-                <Check className="w-3.5 h-3.5" />
-                {T.copied}
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                {T.copy}
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setCopyMenuOpen(false)}
+                />
+                <div className="absolute left-0 top-full mt-1 z-20 w-44 bg-white border border-stone-200 rounded-lg shadow-lg py-1 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => handleCopy("both")}
+                    className="w-full text-left px-3 py-2 text-xs text-stone-700 hover:bg-stone-100 transition-colors"
+                  >
+                    {T.copyBoth}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy("en")}
+                    className="w-full text-left px-3 py-2 text-xs text-stone-700 hover:bg-stone-100 transition-colors"
+                  >
+                    {T.copyEnOnly}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy("th")}
+                    className="w-full text-left px-3 py-2 text-xs text-stone-700 hover:bg-stone-100 transition-colors"
+                  >
+                    {T.copyThOnly}
+                  </button>
+                </div>
               </>
             )}
-          </button>
+          </div>
           <button
             onClick={handleCopyLink}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-stone-200 hover:bg-stone-300 text-stone-700 transition-colors disabled:opacity-60"
@@ -521,7 +569,7 @@ export default function MarketingDescription({
       <textarea
         id="npb-marketing-text"
         readOnly
-        value={copyText}
+        value={copyTextBoth}
         className="sr-only"
         tabIndex={-1}
         aria-hidden="true"

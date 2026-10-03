@@ -322,7 +322,9 @@ export default async function PropertyDetailPage({
     : null;
 
   const marketingTextDisplay = buildMarketingDescription(marketingPropertyInput, null);
-  const marketingTextForCopy = buildMarketingDescription(marketingPropertyInput, viewerContact);
+  const marketingTextCopyBoth = buildMarketingDescription(marketingPropertyInput, viewerContact, "both");
+  const marketingTextCopyEn = buildMarketingDescription(marketingPropertyInput, viewerContact, "en");
+  const marketingTextCopyTh = buildMarketingDescription(marketingPropertyInput, viewerContact, "th");
 
   const isRent =
     property.listingType === "RENT" || property.listingType === "RENT_AND_SALE";
@@ -665,7 +667,9 @@ export default async function PropertyDetailPage({
               />
               <MarketingDescription
                 displayText={marketingTextDisplay}
-                copyText={marketingTextForCopy}
+                copyTextBoth={marketingTextCopyBoth}
+                copyTextEn={marketingTextCopyEn}
+                copyTextTh={marketingTextCopyTh}
                 locale={locale}
                 propertyUrl={propertyUrl}
                 imageUrls={imageUrls}

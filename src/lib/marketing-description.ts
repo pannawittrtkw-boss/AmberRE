@@ -339,12 +339,19 @@ function buildBlock(p: MarketingProperty, lang: "en" | "th"): string {
   return lines.join("\n");
 }
 
+export type MarketingLang = "both" | "en" | "th";
+
 export function buildMarketingDescription(
   p: MarketingProperty,
-  contact?: MarketingContact | null
+  contact?: MarketingContact | null,
+  lang: MarketingLang = "both"
 ): string {
+  const footer = DIVIDER + "\n" + buildContactBlock(contact) + STATIC_FOOTER;
+
+  if (lang === "en") return [buildBlock(p, "en"), footer].join("\n");
+  if (lang === "th") return [buildBlock(p, "th"), footer].join("\n");
+
   const en = buildBlock(p, "en");
   const th = buildBlock(p, "th");
-  const footer = DIVIDER + "\n" + buildContactBlock(contact) + STATIC_FOOTER;
   return [en, STAR_DIVIDER, th, footer].join("\n");
 }
