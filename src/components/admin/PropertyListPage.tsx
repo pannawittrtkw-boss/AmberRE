@@ -326,7 +326,7 @@ export default function PropertyListPage({
     // — internal workflow states (Pending/Waiting/Review/etc.) aren't meaningful to
     // show a client. Their own properties stay visible regardless of status so they
     // can still track/manage what they've submitted.
-    if (!isAdmin && p.agentId !== userId && p.status !== "VERIFIED" && p.status !== "ADDED_PROPERTIES") return false;
+    if (!isAdmin && p.agentId !== userId && p.status !== "VERIFIED" && p.status !== "VERIFIED_OVER_30_DAYS" && p.status !== "ADDED_PROPERTIES") return false;
     // Text search
     if (searchText) {
       const q = searchText.toLowerCase();
