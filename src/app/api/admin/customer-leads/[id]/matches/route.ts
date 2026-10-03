@@ -74,7 +74,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     where: {
       isSold: false,
       isRented: false,
-      status: { in: ["VERIFIED", "VERIFIED_OVER_10_DAYS", "ADDED_PROPERTIES"] },
+      status: { in: ["VERIFIED", "VERIFIED_OVER_30_DAYS", "ADDED_PROPERTIES"] },
     },
     include: {
       images: { where: { isPrimary: true }, take: 1 },

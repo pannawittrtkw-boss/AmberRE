@@ -764,7 +764,7 @@ const REASON_LABELS: Record<string, { th: string; en: string }> = {
 
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   VERIFIED: { label: "Verified", color: "bg-green-500" },
-  VERIFIED_OVER_10_DAYS: { label: "Verified 10+d", color: "bg-orange-500" },
+  VERIFIED_OVER_30_DAYS: { label: "Verified 30 days ago", color: "bg-orange-500" },
   ADDED_PROPERTIES: { label: "Added", color: "bg-purple-600" },
 };
 

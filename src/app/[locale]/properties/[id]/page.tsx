@@ -81,7 +81,7 @@ const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   PENDING: { label: "Pending", color: "bg-yellow-500" },
   WAITING: { label: "Waiting", color: "bg-blue-500" },
   VERIFIED: { label: "Verified", color: "bg-green-600" },
-  VERIFIED_OVER_10_DAYS: { label: "Verified 10d+", color: "bg-orange-500" },
+  VERIFIED_OVER_30_DAYS: { label: "Verified 30 days ago", color: "bg-orange-500" },
   REVIEW: { label: "Review", color: "bg-cyan-500" },
   ADDED_PROPERTIES: { label: "Added", color: "bg-purple-500" },
   NOT_ACCEPT: { label: "Not Accept", color: "bg-red-500" },

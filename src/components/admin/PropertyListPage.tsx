@@ -64,7 +64,7 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
   PENDING: { label: "Pending", color: "bg-yellow-100 text-yellow-800" },
   WAITING: { label: "Waiting", color: "bg-blue-100 text-blue-800" },
   VERIFIED: { label: "Verified", color: "bg-green-100 text-green-800" },
-  VERIFIED_OVER_10_DAYS: { label: "Verified 10d+", color: "bg-orange-100 text-orange-800" },
+  VERIFIED_OVER_30_DAYS: { label: "Verified 30 days ago", color: "bg-orange-100 text-orange-800" },
   REVIEW: { label: "Review", color: "bg-cyan-100 text-cyan-800" },
   ADDED_PROPERTIES: { label: "Added", color: "bg-purple-100 text-purple-800" },
   NOT_ACCEPT: { label: "Not Accept", color: "bg-red-100 text-red-800" },
