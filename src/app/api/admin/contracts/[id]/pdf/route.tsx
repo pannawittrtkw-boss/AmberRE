@@ -143,7 +143,10 @@ export async function GET(
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 
-  const witnesses = await getWitnessSettings();
+  const [witnesses, company] = await Promise.all([
+    getWitnessSettings(),
+    prisma.accountingCompany.findFirst(),
+  ]);
 
   const hdrs = await headers();
   const host = hdrs.get("host") || "";
@@ -180,7 +183,15 @@ export async function GET(
     }
   };
 
+  const companyLogoDataUri = await toBase64DataUri(company?.logoUrl ?? null);
+
   const data: ContractPdfData = {
+    companyName: company?.name ?? null,
+    companyAddress: company?.address ?? null,
+    companyTaxId: company?.taxId ?? null,
+    companyPhone: company?.phone ?? null,
+    companyLogoUrl: companyLogoDataUri,
+
     contractNumber: contract.contractNumber,
     contractDateTh: fmtThaiDate(contract.contractDate),
     contractDateEn: fmtEnDate(contract.contractDate),

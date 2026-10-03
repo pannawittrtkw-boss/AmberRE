@@ -148,7 +148,10 @@ export async function GET(
     }
   }
 
-  const witnesses = await getWitnessSettings();
+  const [witnesses, company] = await Promise.all([
+    getWitnessSettings(),
+    prisma.accountingCompany.findFirst(),
+  ]);
 
   const hdrs = await headers();
   const host = hdrs.get("host") || "";
@@ -161,7 +164,33 @@ export async function GET(
     return `${proto}://${host}${u.startsWith("/") ? "" : "/"}${u}`;
   };
 
+  // react-pdf cannot reliably fetch external image URLs inside a Vercel
+  // serverless function — pre-fetch the logo and embed it as a base64 data
+  // URI instead (same reasoning as the admin PDF route).
+  const toBase64DataUri = async (u: string | null | undefined): Promise<string | null> => {
+    if (!u) return null;
+    if (u.startsWith("data:")) return u;
+    const abs = toAbs(u);
+    if (!abs) return null;
+    try {
+      const res = await fetch(abs);
+      if (!res.ok) return null;
+      const buf = await res.arrayBuffer();
+      const mime = res.headers.get("content-type") || "image/png";
+      return `data:${mime};base64,${Buffer.from(buf).toString("base64")}`;
+    } catch {
+      return null;
+    }
+  };
+  const companyLogoDataUri = await toBase64DataUri(company?.logoUrl ?? null);
+
   const data: ContractPdfData = {
+    companyName: company?.name ?? null,
+    companyAddress: company?.address ?? null,
+    companyTaxId: company?.taxId ?? null,
+    companyPhone: company?.phone ?? null,
+    companyLogoUrl: companyLogoDataUri,
+
     contractNumber: contract.contractNumber,
     contractDateTh: fmtThaiDate(contract.contractDate),
     contractDateEn: fmtEnDate(contract.contractDate),

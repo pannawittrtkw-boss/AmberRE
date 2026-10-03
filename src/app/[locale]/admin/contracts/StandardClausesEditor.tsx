@@ -93,7 +93,11 @@ export default function StandardClausesEditor({
   // whether the user has actually overridden a clause.
   const standardOf = (clause: ContractClause, lang: "th" | "en"): string => {
     const b = baseline?.[clause.key]?.[lang];
-    if (typeof b === "string" && b.length > 0) return b;
+    // An explicit "" in the baseline (e.g. a saved contract's own snapshot
+    // where this clause was deliberately cleared) is a real value, not a
+    // missing one — only `undefined` (key absent) should fall through to
+    // the raw standard text.
+    if (typeof b === "string") return b;
     return clause[lang];
   };
   // When the editor is filtered to just one or two sections, expand them

@@ -98,6 +98,39 @@ const styles = StyleSheet.create({
     // gives the marks enough breathing room without wasting the page.
     lineHeight: 1.6,
   },
+  // Company letterhead — logo + name/address/Tax ID/phone, page 1 only.
+  letterheadRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#C8A951",
+  },
+  letterheadLogo: { width: 44, height: 44, objectFit: "contain", marginRight: 10 },
+  letterheadMeta: { flex: 1 },
+  letterheadName: { fontSize: 10, fontWeight: "bold", marginBottom: 2 },
+  letterheadText: { fontSize: 7.5, color: "#555", lineHeight: 1.4 },
+  // Faint logo + phone watermark, repeated on every page via `fixed`.
+  // Low opacity keeps body text fully legible on top of it.
+  watermark: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  watermarkLogo: { width: 200, height: 200, objectFit: "contain", opacity: 0.045 },
+  watermarkPhone: {
+    fontSize: 14,
+    color: "#999",
+    opacity: 0.12,
+    marginTop: 6,
+    fontWeight: "bold",
+    letterSpacing: 2,
+  },
   header: { textAlign: "center", marginBottom: 14 },
   title: { fontSize: 14, fontWeight: "bold", marginBottom: 4, lineHeight: 1.5 },
   subtitle: { fontSize: 13, fontWeight: "bold", lineHeight: 1.5 },
@@ -449,34 +482,43 @@ function renderClause(
   key: string | number,
   language: ContractLanguage = "BOTH"
 ): React.ReactNode {
-  const th = inlineRuns(clause.th, data);
-  const en = inlineRuns(clause.en, data);
   const showTh = language !== "EN";
   const showEn = language !== "TH";
+  // A clause intentionally cleared to "" in the editor should disappear
+  // from the document entirely — no empty line, no residual spacing —
+  // rather than rendering a blank paragraph/bullet/section bar.
+  const thVisible = showTh && clause.th.trim() !== "";
+  const enVisible = showEn && clause.en.trim() !== "";
+  if (!thVisible && !enVisible) return null;
+
+  const th = inlineRuns(clause.th, data);
+  const en = inlineRuns(clause.en, data);
+  const effectiveLang: ContractLanguage =
+    thVisible && enVisible ? "BOTH" : thVisible ? "TH" : "EN";
 
   switch (clause.type) {
     case "section_bar":
       return (
         <View key={key} style={styles.sectionBar} wrap={false}>
-          <TText>{bilingualInline(th, en, language)}</TText>
+          <TText>{bilingualInline(th, en, effectiveLang)}</TText>
         </View>
       );
     case "paragraph":
       return (
         <React.Fragment key={key}>
-          {showTh && <TText style={styles.paragraph}>{th}</TText>}
-          {showEn && <TText style={styles.paragraph}>{en}</TText>}
+          {thVisible && <TText style={styles.paragraph}>{th}</TText>}
+          {enVisible && <TText style={styles.paragraph}>{en}</TText>}
         </React.Fragment>
       );
     case "bullet":
       return (
         <View key={key} style={{ marginBottom: 3 }} wrap={false}>
-          {showTh && (
+          {thVisible && (
             <TText style={[styles.paragraph, styles.bullet, { marginBottom: 0 }]}>
               {th}
             </TText>
           )}
-          {showEn && (
+          {enVisible && (
             <TText style={[styles.paragraph, styles.bullet, { marginBottom: 0 }]}>
               {en}
             </TText>
@@ -486,12 +528,12 @@ function renderClause(
     case "sub_bullet":
       return (
         <View key={key} style={{ marginBottom: 3 }} wrap={false}>
-          {showTh && (
+          {thVisible && (
             <TText style={[styles.paragraph, styles.subBullet, { marginBottom: 0 }]}>
               {th}
             </TText>
           )}
-          {showEn && (
+          {enVisible && (
             <TText style={[styles.paragraph, styles.subBullet, { marginBottom: 0 }]}>
               {en}
             </TText>
@@ -501,8 +543,8 @@ function renderClause(
     case "small":
       return (
         <View key={key} style={{ marginTop: 4 }} wrap={false}>
-          {showTh && <TText style={[styles.small, { marginBottom: 0 }]}>{th}</TText>}
-          {showEn && <TText style={styles.small}>{en}</TText>}
+          {thVisible && <TText style={[styles.small, { marginBottom: 0 }]}>{th}</TText>}
+          {enVisible && <TText style={styles.small}>{en}</TText>}
         </View>
       );
     default:
@@ -589,6 +631,14 @@ export interface PdfChecklistItem {
 }
 
 export interface ContractPdfData {
+  // Letterhead + watermark — sourced from the AccountingCompany singleton
+  // so this stays in sync with the invoice/receipt PDFs' company info.
+  companyName?: string | null;
+  companyAddress?: string | null;
+  companyTaxId?: string | null;
+  companyPhone?: string | null;
+  companyLogoUrl?: string | null;
+
   contractNumber: string;
   contractDateTh: string;
   contractDateEn: string;
@@ -713,6 +763,39 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
     <Document>
       {/* Main agreement — single Page; react-pdf wraps content automatically */}
       <Page size="A4" style={styles.page} wrap>
+        {data.companyLogoUrl && (
+          <View style={styles.watermark} fixed>
+            <Image src={data.companyLogoUrl} style={styles.watermarkLogo} />
+            {data.companyPhone && (
+              <Text style={styles.watermarkPhone}>{data.companyPhone}</Text>
+            )}
+          </View>
+        )}
+
+        <View style={styles.letterheadRow}>
+          {data.companyLogoUrl ? (
+            <Image src={data.companyLogoUrl} style={styles.letterheadLogo} />
+          ) : (
+            <View style={{ width: 44 }} />
+          )}
+          <View style={styles.letterheadMeta}>
+            <TText style={styles.letterheadName}>
+              {data.companyName || "บริษัท แอมเบอร์ เรียล เอสเตท จำกัด"}
+            </TText>
+            {data.companyAddress && (
+              <TText style={styles.letterheadText}>{data.companyAddress}</TText>
+            )}
+            {data.companyTaxId && (
+              <TText style={styles.letterheadText}>
+                {`เลขประจำตัวผู้เสียภาษี / Tax ID: ${data.companyTaxId}`}
+              </TText>
+            )}
+            {data.companyPhone && (
+              <TText style={styles.letterheadText}>{`โทร / Tel: ${data.companyPhone}`}</TText>
+            )}
+          </View>
+        </View>
+
         <View style={styles.header}>
           <TText style={styles.title}>สัญญาเช่า / Agreement</TText>
           <TText style={styles.subtitle}>{data.projectName}</TText>

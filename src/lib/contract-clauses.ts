@@ -340,12 +340,11 @@ export function mergeClauseOverrides(
       const existing = out[key] || {};
       out[key] = {
         ...existing,
-        ...(typeof value.th === "string" && value.th.length > 0
-          ? { th: value.th }
-          : {}),
-        ...(typeof value.en === "string" && value.en.length > 0
-          ? { en: value.en }
-          : {}),
+        // A later layer's "" is a deliberate "clear this clause," not
+        // "no override" — only `undefined` (key absent) should fall
+        // through to the earlier layer / standard text.
+        ...(typeof value.th === "string" ? { th: value.th } : {}),
+        ...(typeof value.en === "string" ? { en: value.en } : {}),
       };
     }
   }
@@ -354,8 +353,9 @@ export function mergeClauseOverrides(
 
 /**
  * Returns the effective clause text for the given key after applying the
- * override map. If `override.th` is undefined or empty, falls back to the
- * standard text. Same for `en`. Pass `null` to get just the standard.
+ * override map. `override.th`/`en` being `undefined` falls back to the
+ * standard text; an explicit `""` is a deliberate "remove this clause" and
+ * is kept as-is. Pass `null` to get just the standard.
  */
 export function applyOverrides(
   standard: ContractClause[],
@@ -368,8 +368,8 @@ export function applyOverrides(
       if (!layer) continue;
       const o = layer[c.key];
       if (!o) continue;
-      if (typeof o.th === "string" && o.th.length > 0) th = o.th;
-      if (typeof o.en === "string" && o.en.length > 0) en = o.en;
+      if (typeof o.th === "string") th = o.th;
+      if (typeof o.en === "string") en = o.en;
     }
     return { ...c, th, en };
   });
