@@ -22,6 +22,10 @@ export default function MapSearchPage({
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [companyContact, setCompanyContact] = useState<{ phone: string | null; lineId: string | null }>({
+    phone: null,
+    lineId: null,
+  });
 
   useEffect(() => {
     params.then(({ locale: l }) => {
@@ -57,7 +61,10 @@ export default function MapSearchPage({
       }
     });
 
-    query.set("status", "ADDED_PROPERTIES");
+    // Verified listings (not just fully Added ones) show on the map too —
+    // their popup swaps "View Details" for a contact prompt since they're
+    // not public detail pages yet (see MapView's CONTACT_ONLY_STATUSES).
+    query.set("status", "ADDED_PROPERTIES,VERIFIED,VERIFIED_OVER_30_DAYS");
     try {
       const res = await fetch(`/api/properties?${query.toString()}`);
       const data = await res.json();
@@ -80,6 +87,17 @@ export default function MapSearchPage({
     fetch("/api/stations")
       .then((r) => r.json())
       .then((d) => d.success && setStations(d.data))
+      .catch(() => {});
+    fetch("/api/site-settings?keys=contactPhone,contactLine")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) {
+          setCompanyContact({
+            phone: d.data.contactPhone || null,
+            lineId: d.data.contactLine || null,
+          });
+        }
+      })
       .catch(() => {});
   }, [fetchProperties]);
 
@@ -153,6 +171,8 @@ export default function MapSearchPage({
           properties={properties}
           locale={locale}
           className="w-full h-full"
+          companyPhone={companyContact.phone}
+          companyLineId={companyContact.lineId}
         />
 
         {/* Mobile floating filter button */}

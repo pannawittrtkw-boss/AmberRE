@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Tooltip, Polyline, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { X } from "lucide-react";
+import { X, Phone } from "lucide-react";
 import { getIntlLocale } from "@/lib/utils";
 import { haversineDistanceKm, estimateTravel, type TravelMode } from "@/lib/geo";
 import MapSearchBox from "./MapSearchBox";
@@ -27,7 +27,13 @@ interface MapProperty {
   sizeSqm?: number | string | null;
   isRented?: boolean;
   isSold?: boolean;
+  status?: string;
 }
+
+// Listings in these two pipeline stages aren't "live" yet — the map shows
+// them, but the popup swaps "View Details" for a contact prompt instead of
+// linking to the (not-yet-public) detail page.
+const CONTACT_ONLY_STATUSES = new Set(["VERIFIED", "VERIFIED_OVER_30_DAYS"]);
 
 interface MapViewProps {
   properties: MapProperty[];
@@ -35,6 +41,19 @@ interface MapViewProps {
   center?: [number, number];
   zoom?: number;
   className?: string;
+  companyPhone?: string | null;
+  companyLineId?: string | null;
+}
+
+// Admin can store either a bare LINE id ("@cfx5958x") or a full/short URL
+// (lin.ee short link or a full line.me link) — use URLs as-is, otherwise
+// wrap with the LINE OA deep-link pattern.
+function lineContactUrl(lineId: string): string {
+  const trimmed = lineId.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://line.me/R/ti/p/${encodeURIComponent(
+    trimmed.startsWith("@") ? trimmed : `@${trimmed}`
+  )}`;
 }
 
 function formatPriceCompact(value: number): string {
@@ -124,6 +143,8 @@ export default function MapView({
   center = [13.7563, 100.5018], // Bangkok
   zoom = 12,
   className = "w-full h-[600px]",
+  companyPhone,
+  companyLineId,
 }: MapViewProps) {
   const [mounted, setMounted] = useState(false);
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
@@ -133,6 +154,10 @@ export default function MapView({
   // Whichever marker's info panel is currently open — drives both the
   // docked panel content and the route destination. Cleared on close.
   const [activeMarker, setActiveMarker] = useState<{ key: string; group: MapProperty[]; lat: number; lng: number } | null>(null);
+  // Whether the company phone/LINE have been revealed for the currently
+  // open VERIFIED / VERIFIED_OVER_30_DAYS popup — reset whenever a
+  // different marker is opened.
+  const [contactRevealed, setContactRevealed] = useState(false);
   const [isDraggingPin, setIsDraggingPin] = useState(false);
   // Real street-following route from OpenRouteService, when available —
   // null while loading/unavailable, in which case a straight-line estimate
@@ -146,6 +171,10 @@ export default function MapView({
   useEffect(() => {
     import(`@/messages/${locale}.json`).then((m) => setMessages(m.default));
   }, [locale]);
+
+  useEffect(() => {
+    setContactRevealed(false);
+  }, [activeMarker?.key]);
 
   // Fetch the real route whenever the pin, the viewed property, or the
   // travel mode changes — skipped while actively dragging the pin so we
@@ -644,12 +673,46 @@ export default function MapView({
                       <div className="text-xs">{renderDistance(activeMarker.lat, activeMarker.lng)}</div>
                     </div>
                   )}
-                  <a
-                    href={`/${locale}/properties/${property.id}`}
-                    className="inline-block mt-2 text-[#C8A951] hover:underline text-xs font-medium"
-                  >
-                    {tp.viewDetails || "View Details"} →
-                  </a>
+                  {CONTACT_ONLY_STATUSES.has(property.status || "") ? (
+                    contactRevealed ? (
+                      <div className="mt-2 pt-2 border-t border-gray-100 space-y-1.5">
+                        {companyPhone && (
+                          <a
+                            href={`tel:${companyPhone.replace(/[^0-9+]/g, "")}`}
+                            className="flex items-center gap-1.5 text-xs font-medium text-stone-700 hover:text-stone-900"
+                          >
+                            <Phone className="w-3.5 h-3.5" />
+                            {companyPhone}
+                          </a>
+                        )}
+                        {companyLineId && (
+                          <a
+                            href={lineContactUrl(companyLineId)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-xs font-medium text-[#06C755] hover:underline"
+                          >
+                            LINE: {companyLineId}
+                          </a>
+                        )}
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setContactRevealed(true)}
+                        className="mt-2 text-[#C8A951] hover:underline text-xs font-medium block"
+                      >
+                        {locale === "th" ? "ติดต่อขอทราบข้อมูล" : "Contact for information"} →
+                      </button>
+                    )
+                  ) : (
+                    <a
+                      href={`/${locale}/properties/${property.id}`}
+                      className="inline-block mt-2 text-[#C8A951] hover:underline text-xs font-medium"
+                    >
+                      {tp.viewDetails || "View Details"} →
+                    </a>
+                  )}
                 </div>
               );
             })()

@@ -135,7 +135,10 @@ export async function GET(req: NextRequest) {
     if (bedroomPartition) where.bedroomPartition = true;
     if (featured) where.isFeatured = true;
     if (popular) where.isPopular = true;
-    if (status) where.status = status;
+    if (status) {
+      const statuses = status.split(",").filter(Boolean);
+      where.status = statuses.length > 1 ? { in: statuses } : statuses[0];
+    }
 
     if (stationId) {
       where.propertyStations = {
