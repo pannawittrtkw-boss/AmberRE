@@ -69,8 +69,16 @@ function formatPriceCompact(value: number): string {
   return `฿${value}`;
 }
 
-function buildPriceMarker(label: string, isRent: boolean, isActive: boolean): L.DivIcon {
-  const bg = isRent ? "#0f766e" : "#C8A951"; // teal for rent, gold for sale
+function buildPriceMarker(
+  label: string,
+  isRent: boolean,
+  isActive: boolean,
+  isContactOnly: boolean
+): L.DivIcon {
+  // Verified / Verified 30+ days listings aren't public detail pages yet —
+  // marked violet so they read as visually distinct from the teal/gold
+  // "fully Added" pins regardless of rent vs sale.
+  const bg = isContactOnly ? "#6D28D9" : isRent ? "#0f766e" : "#C8A951"; // teal for rent, gold for sale
   const html = `
     <div class="npb-price-marker${isActive ? " npb-marker--active" : ""}" style="--bg:${bg}">
       <span>${label}</span>
@@ -505,7 +513,12 @@ export default function MapView({
           const { isRent, displayPrice } = getPriceInfo(property);
           const compact = formatPriceCompact(displayPrice);
           const title = getTitle(property);
-          const icon = buildPriceMarker(compact, isRent, isActive);
+          const icon = buildPriceMarker(
+            compact,
+            isRent,
+            isActive,
+            CONTACT_ONLY_STATUSES.has(property.status || "")
+          );
 
           return (
             <Marker

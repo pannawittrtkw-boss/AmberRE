@@ -49,7 +49,10 @@ export default function MapSearchPage({
   const fetchProperties = useCallback(async (filterParams: any = {}) => {
     setLoading(true);
     const query = new URLSearchParams();
-    query.set("limit", "200");
+    // No cap — the API orders by createdAt desc, so a fixed limit here
+    // would systematically exclude VERIFIED_OVER_30_DAYS listings (they're
+    // old by definition) once newer properties outnumbered the cap.
+    query.set("limit", "0");
 
     Object.entries(filterParams).forEach(([key, value]) => {
       if (value && value !== "" && value !== false) {
