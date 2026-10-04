@@ -249,6 +249,7 @@ export async function GET(
     customClauses: parseCustomClauses(contract.customClauses),
     clauses: applyOverrides(STANDARD_CLAUSES, parseClauseOverrides(contract.clauseOverrides)),
     documentLanguage: (contract.documentLanguage as ContractLanguage) || "BOTH",
+    showBranding: contract.showBranding,
     lessorIdImage: toAbs(contract.lessorIdImage),
     lesseeIdImage: toAbs(contract.lesseeIdImage),
     jointLesseeIdImage: toAbs(contract.jointLesseeIdImage),

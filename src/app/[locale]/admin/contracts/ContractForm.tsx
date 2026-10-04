@@ -134,6 +134,7 @@ export default function ContractForm({
 
     contractType: initialData?.contractType || "NEW",
     documentLanguage: initialData?.documentLanguage || "BOTH",
+    showBranding: initialData?.showBranding !== false,
     agentId: initialData?.agentId || null,
     dealType: initialData?.dealType || "DIRECT_OWNER",
     coAgentName: initialData?.coAgentName || "",
@@ -526,6 +527,36 @@ export default function ContractForm({
 
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-stone-700">
+              {locale === "th" ? "หัวกระดาษ+ลายน้ำ+พยาน" : "Letterhead+Watermark+Witness"}
+            </span>
+            <div className="flex rounded-lg border border-stone-200 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => update("showBranding", true)}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  form.showBranding
+                    ? "bg-[#C8A951] text-white"
+                    : "bg-white text-stone-600 hover:bg-stone-50"
+                }`}
+              >
+                {locale === "th" ? "แสดง" : "Show"}
+              </button>
+              <button
+                type="button"
+                onClick={() => update("showBranding", false)}
+                className={`px-4 py-2 text-sm font-medium transition-colors border-l border-stone-200 ${
+                  !form.showBranding
+                    ? "bg-blue-600 text-white"
+                    : "bg-white text-stone-600 hover:bg-stone-50"
+                }`}
+              >
+                {locale === "th" ? "ไม่แสดง" : "Hide"}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-stone-700">
               {locale === "th" ? "ตัวแทน (Agent)" : "Agent"}
             </span>
             <button
@@ -546,6 +577,13 @@ export default function ContractForm({
             {locale === "th"
               ? "มีผลกับข้อความเงื่อนไขสัญญา (ข้อ 2-11) และรายการเฟอร์นิเจอร์/เครื่องใช้ไฟฟ้าใน PDF เท่านั้น — ข้อมูลผู้เช่า/ผู้ให้เช่า ที่อยู่ และยอดเงินยังแสดงสองภาษาตามปกติ"
               : "Only affects the clause text (sections 2-11) and furniture/appliance lists in the PDF — party info, addresses, and amounts still show in both languages."}
+          </p>
+        )}
+        {!form.showBranding && (
+          <p className="text-xs text-stone-500 -mt-3 mb-5">
+            {locale === "th"
+              ? "PDF จะไม่มีโลโก้/ที่อยู่บริษัทที่หัวกระดาษ ไม่มีลายน้ำ และไม่มีช่องลงชื่อพยาน — ลายเซ็นผู้ให้เช่า/ผู้เช่ายังแสดงตามปกติ"
+              : "The PDF will have no company letterhead/logo, no watermark, and no witness signature block — Lessor/Lessee signatures still show as usual."}
           </p>
         )}
 

@@ -170,6 +170,12 @@ model Contract {
   // BOTH = Thai + English side by side (default, unchanged behavior).
   documentLanguage String @default("BOTH") @db.VarChar(10) // BOTH | TH | EN
 
+  // Whether the generated PDF shows the company letterhead, watermark,
+  // and witness signature block. A single toggle for all three — off for
+  // contracts that shouldn't carry the company's branding/formal witness
+  // block (e.g. a template handed to a client under a different entity).
+  showBranding Boolean @default(true)
+
   // Deal type
   dealType      String  @default("DIRECT_OWNER") @db.VarChar(20) // DIRECT_OWNER | CO_AGENT
   coAgentName   String? @db.VarChar(200)

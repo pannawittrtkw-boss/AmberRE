@@ -719,6 +719,10 @@ export interface ContractPdfData {
   // regardless of this setting.
   documentLanguage?: ContractLanguage;
 
+  // Whether to render the company letterhead, watermark, and witness
+  // signature block. Defaults to true (existing behavior) when omitted.
+  showBranding?: boolean;
+
   lessorIdImage?: string | null;
   lesseeIdImage?: string | null;
   jointLesseeIdImage?: string | null;
@@ -757,39 +761,48 @@ const D = ({ children }: { children: React.ReactNode }) => (
 
 export function ContractPdf({ data }: { data: ContractPdfData }) {
   const language: ContractLanguage = data.documentLanguage || "BOTH";
+  // Defaults to true (existing behavior) when the contract predates this
+  // field or hasn't opted out.
+  const showBranding = data.showBranding !== false;
   return (
     <Document>
       {/* Main agreement — single Page; react-pdf wraps content automatically */}
-      <Page size="A4" style={styles.page} wrap>
-        {data.companyLogoUrl && (
+      <Page
+        size="A4"
+        style={showBranding ? styles.page : [styles.page, { paddingTop: 36 }]}
+        wrap
+      >
+        {showBranding && data.companyLogoUrl && (
           <View style={styles.watermark} fixed>
             <Image src={data.companyLogoUrl} style={styles.watermarkLogo} />
           </View>
         )}
 
-        <View style={styles.letterheadRow} fixed>
-          {data.companyLogoUrl ? (
-            <Image src={data.companyLogoUrl} style={styles.letterheadLogo} />
-          ) : (
-            <View style={{ width: 72 }} />
-          )}
-          <View style={styles.letterheadMeta}>
-            <TText style={styles.letterheadName}>
-              {data.companyName || "บริษัท แอมเบอร์ เรียล เอสเตท จำกัด"}
-            </TText>
-            {data.companyAddress && (
-              <TText style={styles.letterheadText}>{data.companyAddress}</TText>
+        {showBranding && (
+          <View style={styles.letterheadRow} fixed>
+            {data.companyLogoUrl ? (
+              <Image src={data.companyLogoUrl} style={styles.letterheadLogo} />
+            ) : (
+              <View style={{ width: 72 }} />
             )}
-            {data.companyTaxId && (
-              <TText style={styles.letterheadText}>
-                {`เลขประจำตัวผู้เสียภาษี / Tax ID: ${data.companyTaxId}`}
+            <View style={styles.letterheadMeta}>
+              <TText style={styles.letterheadName}>
+                {data.companyName || "บริษัท แอมเบอร์ เรียล เอสเตท จำกัด"}
               </TText>
-            )}
-            {data.companyPhone && (
-              <TText style={styles.letterheadText}>{`โทร / Tel: ${data.companyPhone}`}</TText>
-            )}
+              {data.companyAddress && (
+                <TText style={styles.letterheadText}>{data.companyAddress}</TText>
+              )}
+              {data.companyTaxId && (
+                <TText style={styles.letterheadText}>
+                  {`เลขประจำตัวผู้เสียภาษี / Tax ID: ${data.companyTaxId}`}
+                </TText>
+              )}
+              {data.companyPhone && (
+                <TText style={styles.letterheadText}>{`โทร / Tel: ${data.companyPhone}`}</TText>
+              )}
+            </View>
           </View>
-        </View>
+        )}
 
         <View style={styles.header}>
           <TText style={styles.title}>สัญญาเช่า / Agreement</TText>
@@ -1218,32 +1231,34 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
             </View>
           </View>
 
-          <View style={[styles.twoCol, { marginTop: 36 }]}>
-            <View style={styles.signatureBlock}>
-              {data.witness1Signature ? (
-                // eslint-disable-next-line jsx-a11y/alt-text
-                <Image src={data.witness1Signature} style={styles.witnessSignatureImage} />
-              ) : (
-                <View style={styles.signatureLine} />
-              )}
-              <TText style={styles.small}>พยาน / Witness</TText>
-              {data.witness1Name && (
-                <TText style={styles.boldHL}>({data.witness1Name})</TText>
-              )}
+          {showBranding && (
+            <View style={[styles.twoCol, { marginTop: 36 }]}>
+              <View style={styles.signatureBlock}>
+                {data.witness1Signature ? (
+                  // eslint-disable-next-line jsx-a11y/alt-text
+                  <Image src={data.witness1Signature} style={styles.witnessSignatureImage} />
+                ) : (
+                  <View style={styles.signatureLine} />
+                )}
+                <TText style={styles.small}>พยาน / Witness</TText>
+                {data.witness1Name && (
+                  <TText style={styles.boldHL}>({data.witness1Name})</TText>
+                )}
+              </View>
+              <View style={styles.signatureBlock}>
+                {data.witness2Signature ? (
+                  // eslint-disable-next-line jsx-a11y/alt-text
+                  <Image src={data.witness2Signature} style={styles.witnessSignatureImage} />
+                ) : (
+                  <View style={styles.signatureLine} />
+                )}
+                <TText style={styles.small}>พยาน / Witness</TText>
+                {data.witness2Name && (
+                  <TText style={styles.boldHL}>({data.witness2Name})</TText>
+                )}
+              </View>
             </View>
-            <View style={styles.signatureBlock}>
-              {data.witness2Signature ? (
-                // eslint-disable-next-line jsx-a11y/alt-text
-                <Image src={data.witness2Signature} style={styles.witnessSignatureImage} />
-              ) : (
-                <View style={styles.signatureLine} />
-              )}
-              <TText style={styles.small}>พยาน / Witness</TText>
-              {data.witness2Name && (
-                <TText style={styles.boldHL}>({data.witness2Name})</TText>
-              )}
-            </View>
-          </View>
+          )}
         </View>
 
         <PageFooter

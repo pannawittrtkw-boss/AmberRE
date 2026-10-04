@@ -121,6 +121,9 @@ export async function PUT(
 
         contractType: body.contractType || undefined,
         documentLanguage: body.documentLanguage || undefined,
+        // Boolean — "|| undefined" would wrongly treat an explicit `false`
+        // as "omitted, don't touch." Only a truly absent key should skip.
+        showBranding: body.showBranding === undefined ? undefined : body.showBranding !== false,
         ...(body.agentId !== undefined
           ? {
               agent: body.agentId

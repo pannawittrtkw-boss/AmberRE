@@ -265,6 +265,7 @@ export async function GET(
       parseClauseOverrides(contract.clauseOverrides)
     ),
     documentLanguage: (contract.documentLanguage as ContractLanguage) || "BOTH",
+    showBranding: contract.showBranding,
 
     lessorIdImage: await toBase64DataUri(contract.lessorIdImage),
     lesseeIdImage: await toBase64DataUri(contract.lesseeIdImage),

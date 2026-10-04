@@ -183,6 +183,7 @@ export async function POST(req: NextRequest) {
 
         contractType: body.contractType || "NEW",
         documentLanguage: body.documentLanguage || "BOTH",
+        showBranding: body.showBranding !== false,
         dealType: body.dealType || "DIRECT_OWNER",
         coAgentName: body.dealType === "CO_AGENT" ? (body.coAgentName || null) : null,
         coAgentPhone: body.dealType === "CO_AGENT" ? (body.coAgentPhone || null) : null,
