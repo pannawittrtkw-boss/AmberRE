@@ -26,6 +26,9 @@ import {
   Lock,
   Sparkles,
   CalendarClock,
+  Images,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import StationMapSelector, { LINES } from "@/components/admin/StationMapSelector";
 import BookingReceiptModal from "@/app/[locale]/admin/properties/BookingReceiptModal";
@@ -173,6 +176,8 @@ export default function PropertyListPage({
   const [detailModal, setDetailModal] = useState<any>(null);
   const [receiptModal, setReceiptModal] = useState<any>(null);
   const [exclusiveModal, setExclusiveModal] = useState<any>(null);
+  const [imageModal, setImageModal] = useState<any>(null);
+  const [imageModalIndex, setImageModalIndex] = useState(0);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
@@ -455,6 +460,23 @@ export default function PropertyListPage({
     fetchPageDetails(visibleIds);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visibleIdsKey]);
+
+  // Keyboard nav for the image gallery modal — arrows to switch photos,
+  // Escape to close.
+  useEffect(() => {
+    if (!imageModal) return;
+    const count = imageModal.images?.length || 0;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setImageModal(null);
+      else if (e.key === "ArrowLeft" && count > 1) {
+        setImageModalIndex((i) => (i - 1 + count) % count);
+      } else if (e.key === "ArrowRight" && count > 1) {
+        setImageModalIndex((i) => (i + 1) % count);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [imageModal]);
 
   // Any change to search/filters/tabs re-starts pagination from the top.
   const filterStationsKey = filterStations.join(",");
@@ -1070,6 +1092,15 @@ export default function PropertyListPage({
                           <ExternalLink className="w-4 h-4" />
                         </a>
                       )}
+                      {p.images && p.images.length > 0 && (
+                        <button
+                          onClick={() => { setImageModal(p); setImageModalIndex(0); }}
+                          className="p-2 hover:bg-purple-50 rounded-lg text-purple-600 transition-colors"
+                          title={locale === "th" ? `ดูรูป (${p.images.length})` : `View photos (${p.images.length})`}
+                        >
+                          <Images className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
                         onClick={() => setExclusiveModal(p)}
                         className={`p-2 rounded-lg transition-colors ${p.isExclusive ? "text-amber-600 bg-amber-50 hover:bg-amber-100" : "hover:bg-gray-100 text-gray-400"}`}
@@ -1272,6 +1303,15 @@ export default function PropertyListPage({
                             <ExternalLink className="w-4 h-4" />
                           </a>
                         )}
+                        {p.images && p.images.length > 0 && (
+                          <button
+                            onClick={() => { setImageModal(p); setImageModalIndex(0); }}
+                            className="p-2 hover:bg-purple-50 rounded-lg text-purple-600 transition-colors"
+                            title={locale === "th" ? `ดูรูป (${p.images.length})` : `View photos (${p.images.length})`}
+                          >
+                            <Images className="w-4 h-4" />
+                          </button>
+                        )}
                         <button
                           onClick={() => setExclusiveModal(p)}
                           className={`p-2 rounded-lg transition-colors ${p.isExclusive ? "text-amber-600 bg-amber-50 hover:bg-amber-100" : "hover:bg-gray-100 text-gray-400"}`}
@@ -1468,6 +1508,85 @@ export default function PropertyListPage({
                 })}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Gallery Modal */}
+      {imageModal && imageModal.images && imageModal.images.length > 0 && (
+        <div
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+          onClick={() => setImageModal(null)}
+        >
+          <div className="relative max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-white text-sm font-medium truncate pr-3">
+                {imageModal.projectName || imageModal.titleTh}
+              </p>
+              <button
+                onClick={() => setImageModal(null)}
+                className="p-1.5 hover:bg-white/10 rounded-full text-white shrink-0"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="relative bg-black rounded-xl overflow-hidden flex items-center justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imageModal.images[imageModalIndex]?.imageUrl}
+                alt=""
+                className="w-full max-h-[70vh] object-contain"
+              />
+              {imageModal.images.length > 1 && (
+                <>
+                  <button
+                    onClick={() =>
+                      setImageModalIndex(
+                        (i) => (i - 1 + imageModal.images.length) % imageModal.images.length
+                      )
+                    }
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                    aria-label="Previous image"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() =>
+                      setImageModalIndex((i) => (i + 1) % imageModal.images.length)
+                    }
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                    aria-label="Next image"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
+            </div>
+
+            <p className="text-center text-white/70 text-xs mt-2">
+              {imageModalIndex + 1} / {imageModal.images.length}
+            </p>
+
+            {imageModal.images.length > 1 && (
+              <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+                {imageModal.images.map((img: any, i: number) => (
+                  <button
+                    key={img.id}
+                    onClick={() => setImageModalIndex(i)}
+                    className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                      i === imageModalIndex
+                        ? "border-[#C8A951]"
+                        : "border-transparent opacity-60 hover:opacity-100"
+                    }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={img.imageUrl} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
