@@ -114,52 +114,50 @@ const s = StyleSheet.create({
   page: {
     fontFamily: "Sarabun",
     fontSize: 10,
-    paddingTop: 40,
-    paddingBottom: 92,
-    paddingHorizontal: 50,
-    lineHeight: 1.6,
+    paddingTop: 34,
+    paddingBottom: 88,
+    paddingHorizontal: 44,
+    lineHeight: 1.35,
     color: BLACK,
   },
-  // ── Header: small company block (issuer identity, no logo) | Title ──
+  // ── Header: small company block (issuer identity, no logo) | Title + meta ──
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
     borderBottomWidth: 2,
     borderBottomColor: GOLD,
-    paddingBottom: 10,
-    marginBottom: 16,
+    paddingBottom: 7,
+    marginBottom: 9,
   },
   companyBlock: { maxWidth: 260 },
-  companyName: { fontSize: 10, fontWeight: "bold", marginBottom: 2 },
-  companyText: { fontSize: 7.5, color: GRAY, lineHeight: 1.5 },
+  companyName: { fontSize: 9.5, fontWeight: "bold", marginBottom: 1.5 },
+  companyText: { fontSize: 7, color: GRAY, lineHeight: 1.4 },
   titleBlock: { alignItems: "flex-end" },
-  titleTh: { fontSize: 17, fontWeight: "bold", textAlign: "right" },
-  titleEn: { fontSize: 10.5, color: GRAY, textAlign: "right", marginTop: 2, letterSpacing: 0.5 },
-  titleSub: { fontSize: 8, color: GRAY, textAlign: "right", marginTop: 4 },
-  // ── Meta row (No / Date) ──
-  metaRow: { flexDirection: "row", justifyContent: "flex-end", gap: 18, marginBottom: 14 },
-  metaItem: { alignItems: "flex-end" },
-  metaLabel: { fontSize: 8, color: GRAY },
-  metaVal: { fontSize: 10, fontWeight: "bold" },
-  // ── Party box (owner / tenant) ──
+  titleTh: { fontSize: 15, fontWeight: "bold", textAlign: "right" },
+  titleEn: { fontSize: 9, color: GRAY, textAlign: "right", marginTop: 1, letterSpacing: 0.5 },
+  metaRow: { flexDirection: "row", gap: 10, marginTop: 4 },
+  metaLabel: { fontSize: 7, color: GRAY },
+  metaVal: { fontSize: 9, fontWeight: "bold" },
+  // ── Party box (owner / tenant) — side by side ──
+  partyRow: { flexDirection: "row", gap: 8, marginBottom: 7 },
   partyBox: {
+    flex: 1,
     borderWidth: 1,
     borderColor: BORDER,
     borderRadius: 4,
     backgroundColor: LIGHT,
-    padding: 10,
-    marginBottom: 10,
+    padding: 7,
   },
   partyLabel: {
-    fontSize: 7.5,
+    fontSize: 6.5,
     fontWeight: "bold",
     color: GOLD,
-    letterSpacing: 0.6,
-    marginBottom: 4,
+    letterSpacing: 0.4,
+    marginBottom: 2.5,
   },
-  partyName: { fontSize: 11, fontWeight: "bold", marginBottom: 2 },
-  partyText: { fontSize: 8.5, color: "#444", lineHeight: 1.55 },
+  partyName: { fontSize: 10, fontWeight: "bold", marginBottom: 1.5 },
+  partyText: { fontSize: 7.5, color: "#444", lineHeight: 1.35 },
   // ── Property block ──
   propertyBox: {
     borderWidth: 1,
@@ -167,65 +165,66 @@ const s = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: GOLD,
     borderRadius: 4,
-    padding: 10,
-    marginBottom: 12,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    marginBottom: 7,
   },
-  propertyLabel: { fontSize: 7.5, fontWeight: "bold", color: GRAY, letterSpacing: 0.6, marginBottom: 3 },
-  propertyName: { fontSize: 11, fontWeight: "bold", marginBottom: 2 },
-  propertyText: { fontSize: 8.5, color: "#444", lineHeight: 1.5 },
+  propertyLabel: { fontSize: 6.5, fontWeight: "bold", color: GRAY, letterSpacing: 0.4, marginBottom: 1.5 },
+  propertyName: { fontSize: 10, fontWeight: "bold", marginBottom: 1 },
+  propertyText: { fontSize: 7.5, color: "#444", lineHeight: 1.3 },
   // ── Amount box ──
   amountBox: {
     borderWidth: 1.5,
     borderColor: GOLD,
     borderRadius: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 7,
     backgroundColor: "#FFFCF0",
   },
-  amountLabelTh: { fontSize: 9, color: BLACK, fontWeight: "bold", width: 130 },
-  amountLabelEn: { fontSize: 8, color: GRAY, width: 130 },
-  amountVal: { flex: 1, fontSize: 14, fontWeight: "bold", color: GOLD },
-  amountWords: { fontSize: 8.5, color: GRAY, paddingLeft: 130, marginTop: 3 },
-  // ── Field rows (deal terms) ──
-  fieldGrid: { flexDirection: "row", flexWrap: "wrap", marginBottom: 10 },
-  fieldCol: { width: "50%", marginBottom: 8, paddingRight: 8 },
-  fieldLabelTh: { fontSize: 8.5, color: GRAY, fontWeight: "bold" },
-  fieldLabelEn: { fontSize: 7.5, color: GRAY, marginBottom: 2 },
+  amountLabelTh: { fontSize: 8.5, color: BLACK, fontWeight: "bold", width: 115 },
+  amountLabelEn: { fontSize: 7, color: GRAY, width: 115 },
+  amountVal: { flex: 1, fontSize: 13, fontWeight: "bold", color: GOLD },
+  amountWords: { fontSize: 7.5, color: GRAY, paddingLeft: 115, marginTop: 1 },
+  // ── Field rows (deal terms) — 3 columns, combined bilingual label line ──
+  fieldGrid: { flexDirection: "row", flexWrap: "wrap", marginBottom: 7 },
+  fieldCol: { width: "33.33%", marginBottom: 5, paddingRight: 6 },
+  fieldLabel: { fontSize: 6.5, color: GRAY, marginBottom: 1.5 },
   fieldVal: {
-    fontSize: 9.5,
+    fontSize: 8.5,
     fontWeight: "bold",
     borderBottomWidth: 0.5,
     borderBottomColor: "#BBBBBB",
-    paddingBottom: 2,
+    paddingBottom: 1.5,
   },
-  // ── Bank box ──
+  // ── Bank box — compact single row ──
   bankBox: {
     borderWidth: 1,
     borderColor: BORDER,
     borderRadius: 4,
-    padding: 10,
-    marginBottom: 12,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    marginBottom: 7,
   },
-  bankLabel: { fontSize: 8, fontWeight: "bold", color: BLACK, marginBottom: 6 },
-  bankRow: { flexDirection: "row", marginBottom: 3 },
-  bankKey: { fontSize: 8, color: GRAY, width: 110 },
-  bankVal: { flex: 1, fontSize: 9, fontWeight: "bold" },
+  bankLabel: { fontSize: 6.5, fontWeight: "bold", color: GRAY, letterSpacing: 0.3, marginBottom: 3 },
+  bankRow: { flexDirection: "row", gap: 14 },
+  bankItem: { flexDirection: "row", alignItems: "baseline", gap: 3 },
+  bankKey: { fontSize: 7, color: GRAY },
+  bankVal: { fontSize: 8.5, fontWeight: "bold" },
   // ── Terms ──
   termBar: {
     backgroundColor: BLACK,
     color: "#FFFFFF",
-    paddingVertical: 5,
+    paddingVertical: 3.5,
     paddingHorizontal: 10,
     fontWeight: "bold",
     textAlign: "center",
-    fontSize: 10,
-    marginBottom: 8,
+    fontSize: 8.5,
+    marginBottom: 5,
   },
-  termIntro: { fontSize: 8.5, marginBottom: 8, lineHeight: 1.6, color: GRAY },
-  clauseTitle: { fontWeight: "bold", fontSize: 9, marginBottom: 4 },
-  bullet: { fontSize: 8.5, marginLeft: 14, marginBottom: 4, lineHeight: 1.6 },
-  agree: { fontSize: 8.5, marginTop: 6, marginBottom: 2, lineHeight: 1.6 },
+  clauseTitle: { fontWeight: "bold", fontSize: 7.5, marginBottom: 1.5 },
+  bullet: { fontSize: 7, marginLeft: 12, marginBottom: 1.5, lineHeight: 1.3 },
+  agree: { fontSize: 7, marginTop: 4, lineHeight: 1.3, color: GRAY },
   // ── Evidence ──
   evidenceSection: { marginTop: 14 },
   refHeader: {
@@ -261,7 +260,7 @@ const s = StyleSheet.create({
   slipLabel: { fontSize: 7.5, color: GRAY, marginBottom: 4, textAlign: "center", lineHeight: 1.4 },
   slipImage: { width: 200, height: 260, borderWidth: 0.5, borderColor: BORDER, borderRadius: 2, objectFit: "contain" },
   // ── Fixed signature footer — 4 columns: Owner | Tenant | Issuer | Witness ──
-  sigFooter: { position: "absolute", bottom: 24, left: 50, right: 50 },
+  sigFooter: { position: "absolute", bottom: 22, left: 44, right: 44 },
   sigCol: { flex: 1, alignItems: "center" },
   sigLine: { borderBottomWidth: 0.8, borderBottomColor: BLACK, width: "85%", height: 26, marginBottom: 3 },
   sigSignatureImg: { width: "85%", height: 26, objectFit: "contain", marginBottom: 3 },
@@ -300,8 +299,7 @@ function PartyBox({
 function FieldCol({ labelTh, labelEn, value }: { labelTh: string; labelEn: string; value: string }) {
   return (
     <View style={s.fieldCol}>
-      <TText style={s.fieldLabelTh}>{labelTh}</TText>
-      <TText style={s.fieldLabelEn}>{labelEn}</TText>
+      <TText style={s.fieldLabel}>{`${labelTh} / ${labelEn}`}</TText>
       <TText style={s.fieldVal}>{value || " "}</TText>
     </View>
   );
@@ -329,38 +327,38 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
           <View style={s.titleBlock}>
             <TText style={s.titleTh}>ใบจอง</TText>
             <TText style={s.titleEn}>BOOKING FORM</TText>
-            <TText style={s.titleSub}>ต้นฉบับ / Original</TText>
+            <View style={s.metaRow}>
+              <View>
+                <TText style={s.metaLabel}>เลขที่ / No.</TText>
+                <TText style={s.metaVal}>{data.docNumber}</TText>
+              </View>
+              <View>
+                <TText style={s.metaLabel}>วันที่ / Date</TText>
+                <TText style={s.metaVal}>{data.date}</TText>
+              </View>
+            </View>
           </View>
         </View>
 
-        <View style={s.metaRow}>
-          <View style={s.metaItem}>
-            <TText style={s.metaLabel}>เลขที่ / No.</TText>
-            <TText style={s.metaVal}>{data.docNumber}</TText>
-          </View>
-          <View style={s.metaItem}>
-            <TText style={s.metaLabel}>วันที่ / Date</TText>
-            <TText style={s.metaVal}>{data.date}</TText>
-          </View>
+        {/* ── Parties — side by side ── */}
+        <View style={s.partyRow}>
+          <PartyBox
+            labelTh="เจ้าของทรัพย์สิน (ผู้รับเงิน)"
+            labelEn="PROPERTY OWNER"
+            name={data.ownerName}
+            idCard={data.ownerIdCard}
+            address={data.ownerAddress}
+            phone={data.ownerPhone}
+          />
+          <PartyBox
+            labelTh="ผู้เช่า (ผู้จ่ายเงิน)"
+            labelEn="TENANT"
+            name={data.tenantName}
+            idCard={data.tenantIdCard}
+            address={data.tenantAddress}
+            phone={data.tenantPhone}
+          />
         </View>
-
-        {/* ── Parties ── */}
-        <PartyBox
-          labelTh="เจ้าของทรัพย์สิน (ผู้รับเงิน)"
-          labelEn="PROPERTY OWNER (Receiver)"
-          name={data.ownerName}
-          idCard={data.ownerIdCard}
-          address={data.ownerAddress}
-          phone={data.ownerPhone}
-        />
-        <PartyBox
-          labelTh="ผู้เช่า (ผู้จ่ายเงิน)"
-          labelEn="TENANT (Payer)"
-          name={data.tenantName}
-          idCard={data.tenantIdCard}
-          address={data.tenantAddress}
-          phone={data.tenantPhone}
-        />
 
         {/* ── Property ── */}
         {(unitLine || data.propertyAddress) && (
@@ -374,7 +372,7 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
         {/* ── Deposit amount ── */}
         <View style={s.amountBox}>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <View style={{ width: 130 }}>
+            <View style={{ width: 115 }}>
               <TText style={s.amountLabelTh}>เป็นจำนวนเงิน</TText>
               <TText style={s.amountLabelEn}>Deposit Amount</TText>
             </View>
@@ -391,16 +389,16 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
             <FieldCol labelTh="วันที่วางเงินจอง" labelEn="Deposit Date" value={data.depositDate} />
           )}
           {data.appointmentDate && (
-            <FieldCol labelTh="วันที่นัดทำสัญญา" labelEn="Contract Appointment Date" value={data.appointmentDate} />
+            <FieldCol labelTh="วันที่นัดทำสัญญา" labelEn="Appointment Date" value={data.appointmentDate} />
           )}
           {data.moveInDate && (
-            <FieldCol labelTh="วันที่เข้าอยู่โดยประมาณ" labelEn="Est. Move-in Date" value={data.moveInDate} />
+            <FieldCol labelTh="วันที่เข้าอยู่โดยประมาณ" labelEn="Est. Move-in" value={data.moveInDate} />
           )}
           {data.monthlyRent != null && (
             <FieldCol
               labelTh="ค่าเช่าต่อเดือน"
               labelEn="Monthly Rent"
-              value={`${fmtMoney(data.monthlyRent)} บาท / เดือน`}
+              value={`${fmtMoney(data.monthlyRent)} บาท`}
             />
           )}
           {data.leaseTermMonths != null && (
@@ -414,34 +412,31 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
             <TText style={s.bankLabel}>
               บัญชีธนาคารเจ้าของ (สำหรับรับเงินมัดจำ) / Owner&apos;s Bank Account
             </TText>
-            {data.ownerBankName && (
-              <View style={s.bankRow}>
-                <TText style={s.bankKey}>ธนาคาร / Bank</TText>
-                <TText style={s.bankVal}>{data.ownerBankName}</TText>
-              </View>
-            )}
-            {data.ownerBankAccountNumber && (
-              <View style={s.bankRow}>
-                <TText style={s.bankKey}>เลขที่บัญชี / Account No.</TText>
-                <TText style={s.bankVal}>{data.ownerBankAccountNumber}</TText>
-              </View>
-            )}
-            {data.ownerBankAccountName && (
-              <View style={s.bankRow}>
-                <TText style={s.bankKey}>ชื่อบัญชี / Account Name</TText>
-                <TText style={s.bankVal}>{data.ownerBankAccountName}</TText>
-              </View>
-            )}
+            <View style={s.bankRow}>
+              {data.ownerBankName && (
+                <View style={s.bankItem}>
+                  <TText style={s.bankKey}>ธนาคาร:</TText>
+                  <TText style={s.bankVal}>{data.ownerBankName}</TText>
+                </View>
+              )}
+              {data.ownerBankAccountNumber && (
+                <View style={s.bankItem}>
+                  <TText style={s.bankKey}>เลขที่บัญชี:</TText>
+                  <TText style={s.bankVal}>{data.ownerBankAccountNumber}</TText>
+                </View>
+              )}
+              {data.ownerBankAccountName && (
+                <View style={s.bankItem}>
+                  <TText style={s.bankKey}>ชื่อบัญชี:</TText>
+                  <TText style={s.bankVal}>{data.ownerBankAccountName}</TText>
+                </View>
+              )}
+            </View>
           </View>
         )}
 
         {/* ── Terms & conditions ── */}
         <TText style={s.termBar}>เงื่อนไขและข้อตกลงร่วมกัน / Terms &amp; Conditions</TText>
-        <TText style={s.termIntro}>
-          {
-            "เพื่อความเป็นธรรมและความมั่นใจของทุกฝ่าย คู่สัญญาตกลงปฏิบัติตามเงื่อนไขดังนี้:\nFor fairness and mutual commitment, all parties agree to the following terms:"
-          }
-        </TText>
 
         <View style={{ marginBottom: 6 }}>
           <TText style={s.clauseTitle}>1. กรณีผู้เช่ายกเลิก / If Tenant Cancels:</TText>
@@ -481,7 +476,7 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
         </TText>
 
         {data.signedAtText && (
-          <TText style={{ fontSize: 8, color: GRAY, marginTop: 6 }}>
+          <TText style={{ fontSize: 7, color: GRAY, marginTop: 3 }}>
             {`เจ้าของลงนามออนไลน์เมื่อ / Owner e-signed on: ${data.signedAtText}`}
           </TText>
         )}
