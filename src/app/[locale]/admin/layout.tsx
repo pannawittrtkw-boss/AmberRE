@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Building2, Users, FileText, Star, Loader2,
   Menu, X, Trophy, Zap, Wallet, Layers, Mail, FileSignature, Lock, UserSearch, CalendarDays, Percent,
-  Receipt, ClipboardList, Building,
+  Receipt, ClipboardList, Building, BookmarkCheck,
 } from "lucide-react";
 import { ADMIN_MENU_ITEMS, ALWAYS_VISIBLE_NAV_ITEMS, ALWAYS_VISIBLE_ADMIN_KEYS, type AdminMenuItem } from "@/lib/admin-menu";
 
@@ -238,6 +238,7 @@ export default function AdminLayout({
     { href: `/${locale}/admin/accounting/invoices`, icon: FileText, label: "ใบแจ้งหนี้" },
     { href: `/${locale}/admin/accounting/billing-notes`, icon: ClipboardList, label: "ใบวางบิล" },
     { href: `/${locale}/admin/accounting/receipts`, icon: Receipt, label: "ใบเสร็จรับเงิน" },
+    { href: `/${locale}/admin/bookings`, icon: BookmarkCheck, label: "ใบจอง" },
     { href: `/${locale}/admin/accounting/customers`, icon: Users, label: "จัดการลูกค้า" },
     { href: `/${locale}/admin/accounting/company`, icon: Building, label: "ตั้งค่าบริษัท" },
   ];

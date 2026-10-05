@@ -254,6 +254,72 @@ model RentPayment {
   @@index([isPaid])
 }
 
+// Booking Form (ใบจอง) — records a deposit paid by a prospective tenant to
+// a property owner, ahead of the formal lease Contract. Modeled after the
+// accounting Invoice's clean document layout, but the company only ever
+// appears in two roles: the document issuer and a witness — never as a
+// transacting party, since the actual transaction is owner <-> tenant.
+model Booking {
+  id        Int      @id @default(autoincrement())
+  docNumber String   @unique @db.VarChar(50)
+  date      DateTime @default(now())
+
+  // Property being booked — optional link to an existing listing, plus a
+  // free-text snapshot (same convention as Contract.propertyId / projectName).
+  propertyId      Int?
+  property        Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  projectName     String?   @db.VarChar(300)
+  unitNumber      String?   @db.VarChar(50)
+  propertyAddress String?   @db.Text
+
+  // Owner — receives the deposit, signs online once money is received
+  ownerName              String  @db.VarChar(200)
+  ownerIdCard             String? @db.VarChar(50)
+  ownerIdCardImage        String? @db.Text
+  ownerAddress            String? @db.Text
+  ownerPhone              String? @db.VarChar(50)
+  ownerBankName           String? @db.VarChar(100)
+  ownerBankAccountNumber  String? @db.VarChar(50)
+  ownerBankAccountName    String? @db.VarChar(200)
+
+  // Tenant — pays the deposit
+  tenantName       String  @db.VarChar(200)
+  tenantIdCard      String? @db.VarChar(50)
+  tenantIdCardImage String? @db.Text
+  tenantAddress     String? @db.Text
+  tenantPhone       String? @db.VarChar(50)
+
+  // Deal terms
+  depositAmount   Decimal   @db.Decimal(18, 2)
+  monthlyRent     Decimal?  @db.Decimal(18, 2)
+  leaseTermMonths Int?
+  depositDate     DateTime?
+  appointmentDate DateTime? // นัดทำสัญญาเช่าฉบับจริง
+  moveInDate      DateTime?
+
+  transferSlipImage String? @db.Text
+
+  // Amber Real Estate staff — document issuer and witness roles only,
+  // never a transacting party.
+  issuerName  String? @db.VarChar(200)
+  witnessName String? @db.VarChar(200)
+  agentPhone  String? @db.VarChar(50)
+
+  // Online signature — owner only, same canvas-signature pattern as
+  // Contract's e-sign flow.
+  signToken      String?   @unique @db.VarChar(100)
+  ownerSignature String?   @db.Text
+  signedAt       DateTime?
+
+  status String @default("DRAFT") @db.VarChar(20) // DRAFT | SIGNED
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([propertyId])
+  @@index([status])
+}
+
 model PasswordResetToken {
   id        Int      @id @default(autoincrement())
   token     String   @unique @db.VarChar(100)
@@ -382,6 +448,7 @@ model Property {
   commissions        CommissionSharing[]
   contracts          Contract[]
   contactUnlockLogs  ContactUnlockLog[]
+  bookings           Booking[]
 }
 
 model ContactUnlockLog {
