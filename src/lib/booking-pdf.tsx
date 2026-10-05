@@ -430,12 +430,7 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
           </TText>
           <TText style={s.bullet}>
             {
-              "• แจ้งล่วงหน้า ≥ 10 วันก่อนวันเข้าพัก: คืนมัดจำเต็มจำนวน ไม่มีค่าปรับ\n  Notice given ≥ 10 days before move-in: Full refund, no penalty."
-            }
-          </TText>
-          <TText style={s.bullet}>
-            {
-              "• แจ้งล่วงหน้า < 10 วันก่อนวันเข้าพัก: คืนมัดจำเต็มจำนวน + ชดเชยค่าเสียเวลาหาที่พักใหม่ 2,000 บาท\n  Notice given < 10 days before move-in: Full refund + 2,000 THB compensation for urgent relocation."
+              "• คืนมัดจำเต็มจำนวน ไม่มีค่าปรับ\n  Full refund, no penalty."
             }
           </TText>
           <TText style={s.bullet}>
