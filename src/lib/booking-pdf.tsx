@@ -58,11 +58,9 @@ export interface BookingPdfData {
   docNumber: string;
   date: string; // pre-formatted display date
 
-  // Company — issuer/witness identity only, no logo
+  // Company — only ever shown as the tiny doc-id line in the signature
+  // footer, never a header/letterhead; no logo, address, or tax ID.
   companyName?: string | null;
-  companyAddress?: string | null;
-  companyTaxId?: string | null;
-  companyPhone?: string | null;
 
   // Property
   projectName?: string | null;
@@ -122,19 +120,16 @@ const s = StyleSheet.create({
     lineHeight: 1.4,
     color: BLACK,
   },
-  // ── Header: small company block (issuer identity, no logo) | Title + meta ──
+  // ── Header: title only, right-aligned — no company name/address/logo ──
   headerRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     alignItems: "flex-start",
     borderBottomWidth: 2,
     borderBottomColor: BLACK,
     paddingBottom: 9,
     marginBottom: 12,
   },
-  companyBlock: { maxWidth: 260 },
-  companyName: { fontSize: 10, fontWeight: "bold", marginBottom: 2 },
-  companyText: { fontSize: 7.5, color: GRAY, lineHeight: 1.5 },
   titleBlock: { alignItems: "flex-end" },
   titleTh: { fontSize: 17, fontWeight: "bold", textAlign: "right", lineHeight: 1.3 },
   titleEn: { fontSize: 11, fontWeight: "bold", color: BLACK, textAlign: "right", marginTop: 6, letterSpacing: 0.6 },
@@ -307,18 +302,8 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
   return (
     <Document>
       <Page size="A4" style={s.page} wrap>
-        {/* ── Header: company (issuer identity only) | Title ── */}
+        {/* ── Header: title only, right-aligned — no company name/address ── */}
         <View style={s.headerRow}>
-          <View style={s.companyBlock}>
-            <TText style={s.companyName}>
-              {data.companyName || "บริษัท แอมเบอร์ เรียล เอสเตท จำกัด"}
-            </TText>
-            {data.companyAddress && <TText style={s.companyText}>{data.companyAddress}</TText>}
-            {data.companyTaxId && (
-              <TText style={s.companyText}>{`เลขประจำตัวผู้เสียภาษี / Tax ID: ${data.companyTaxId}`}</TText>
-            )}
-            {data.companyPhone && <TText style={s.companyText}>{`โทร / Tel: ${data.companyPhone}`}</TText>}
-          </View>
           <View style={s.titleBlock}>
             <TText style={s.titleTh}>ใบจอง</TText>
             <TText style={s.titleEn}>BOOKING FORM</TText>

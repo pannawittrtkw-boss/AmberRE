@@ -78,9 +78,6 @@ export async function GET(
     date: fmtDate(booking.date) || "",
 
     companyName: company?.name ?? null,
-    companyAddress: company?.address ?? null,
-    companyTaxId: company?.taxId ?? null,
-    companyPhone: company?.phone ?? null,
 
     projectName: booking.projectName,
     unitNumber: booking.unitNumber,
