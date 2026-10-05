@@ -119,20 +119,20 @@ const s = StyleSheet.create({
     lineHeight: 1.4,
     color: BLACK,
   },
-  // ── Header: title only, right-aligned — no company name/address/logo ──
+  // ── Header: title only, left-aligned — no company name/address/logo ──
   headerRow: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "flex-start",
     alignItems: "flex-start",
     borderBottomWidth: 2,
     borderBottomColor: BLACK,
     paddingBottom: 9,
     marginBottom: 12,
   },
-  titleBlock: { alignItems: "flex-end" },
-  titleTh: { fontSize: 17, fontWeight: "bold", textAlign: "right", lineHeight: 1.3 },
-  titleEn: { fontSize: 11, fontWeight: "bold", color: BLACK, textAlign: "right", marginTop: 6, letterSpacing: 0.6 },
-  titleSub: { fontSize: 7, color: GRAY2, textAlign: "right", marginTop: 3 },
+  titleBlock: { alignItems: "flex-start" },
+  titleTh: { fontSize: 17, fontWeight: "bold", textAlign: "left", lineHeight: 1.3 },
+  titleEn: { fontSize: 11, fontWeight: "bold", color: BLACK, textAlign: "left", marginTop: 6, letterSpacing: 0.6 },
+  titleSub: { fontSize: 7, color: GRAY2, textAlign: "left", marginTop: 3 },
   // ── Doc meta — hairline key/value rows, like the invoice's docInfoRow ──
   metaWrap: { width: 150, marginTop: 8 },
   metaRow: {
