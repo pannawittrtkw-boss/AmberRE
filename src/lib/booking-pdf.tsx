@@ -119,10 +119,11 @@ const s = StyleSheet.create({
     lineHeight: 1.4,
     color: BLACK,
   },
-  // ── Header: title only, left-aligned — no company name/address/logo ──
+  // ── Header: title on the left, doc meta on the right — no company
+  // name/address/logo ──
   headerRow: {
     flexDirection: "row",
-    justifyContent: "flex-start",
+    justifyContent: "space-between",
     alignItems: "flex-start",
     borderBottomWidth: 2,
     borderBottomColor: BLACK,
@@ -134,7 +135,7 @@ const s = StyleSheet.create({
   titleEn: { fontSize: 11, fontWeight: "bold", color: BLACK, textAlign: "left", marginTop: 6, letterSpacing: 0.6 },
   titleSub: { fontSize: 7, color: GRAY2, textAlign: "left", marginTop: 3 },
   // ── Doc meta — hairline key/value rows, like the invoice's docInfoRow ──
-  metaWrap: { width: 150, marginTop: 8 },
+  metaWrap: { width: 150, marginTop: 2 },
   metaRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -297,21 +298,22 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
   return (
     <Document>
       <Page size="A4" style={s.page} wrap>
-        {/* ── Header: title only, right-aligned — no company name/address ── */}
+        {/* ── Header: title on the left, doc meta on the right — no company
+            name/address ── */}
         <View style={s.headerRow}>
           <View style={s.titleBlock}>
             <TText style={s.titleTh}>ใบจอง</TText>
             <TText style={s.titleEn}>BOOKING FORM</TText>
             <TText style={s.titleSub}>ต้นฉบับ / Original</TText>
-            <View style={s.metaWrap}>
-              <View style={s.metaRow}>
-                <TText style={s.metaLabel}>เลขที่ / No.</TText>
-                <TText style={s.metaVal}>{data.docNumber}</TText>
-              </View>
-              <View style={[s.metaRow, { borderBottomWidth: 0 }]}>
-                <TText style={s.metaLabel}>วันที่ / Date</TText>
-                <TText style={s.metaVal}>{data.date}</TText>
-              </View>
+          </View>
+          <View style={s.metaWrap}>
+            <View style={s.metaRow}>
+              <TText style={s.metaLabel}>เลขที่ / No.</TText>
+              <TText style={s.metaVal}>{data.docNumber}</TText>
+            </View>
+            <View style={[s.metaRow, { borderBottomWidth: 0 }]}>
+              <TText style={s.metaLabel}>วันที่ / Date</TText>
+              <TText style={s.metaVal}>{data.date}</TText>
             </View>
           </View>
         </View>
