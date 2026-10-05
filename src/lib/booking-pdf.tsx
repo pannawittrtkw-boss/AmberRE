@@ -104,20 +104,22 @@ export interface BookingPdfData {
   witnessName?: string | null;
 }
 
-const GOLD = "#C8A951";
-const BLACK = "#1A1A1A";
-const GRAY = "#777777";
-const LIGHT = "#F8F8F8";
-const BORDER = "#E2E2E2";
+// Same monochrome palette as the accounting invoice (lib/acc-pdf.tsx) —
+// black text, gray labels, thin hairline rules. No color fills/boxes, so
+// the two documents read as one family.
+const BLACK = "#1C1C1C";
+const GRAY = "#4A4A4A";
+const GRAY2 = "#8A8A8A";
+const RULE = "#D8D8D8";
 
 const s = StyleSheet.create({
   page: {
     fontFamily: "Sarabun",
-    fontSize: 10,
-    paddingTop: 34,
-    paddingBottom: 88,
-    paddingHorizontal: 44,
-    lineHeight: 1.35,
+    fontSize: 9,
+    paddingTop: 30,
+    paddingBottom: 72,
+    paddingHorizontal: 40,
+    lineHeight: 1.4,
     color: BLACK,
   },
   // ── Header: small company block (issuer identity, no logo) | Title + meta ──
@@ -126,141 +128,134 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     borderBottomWidth: 2,
-    borderBottomColor: GOLD,
-    paddingBottom: 7,
-    marginBottom: 9,
+    borderBottomColor: BLACK,
+    paddingBottom: 9,
+    marginBottom: 12,
   },
   companyBlock: { maxWidth: 260 },
-  companyName: { fontSize: 9.5, fontWeight: "bold", marginBottom: 1.5 },
-  companyText: { fontSize: 7, color: GRAY, lineHeight: 1.4 },
+  companyName: { fontSize: 10, fontWeight: "bold", marginBottom: 2 },
+  companyText: { fontSize: 7.5, color: GRAY, lineHeight: 1.5 },
   titleBlock: { alignItems: "flex-end" },
-  titleTh: { fontSize: 15, fontWeight: "bold", textAlign: "right" },
-  titleEn: { fontSize: 9, color: GRAY, textAlign: "right", marginTop: 1, letterSpacing: 0.5 },
-  metaRow: { flexDirection: "row", gap: 10, marginTop: 4 },
-  metaLabel: { fontSize: 7, color: GRAY },
-  metaVal: { fontSize: 9, fontWeight: "bold" },
-  // ── Party box (owner / tenant) — side by side ──
-  partyRow: { flexDirection: "row", gap: 8, marginBottom: 7 },
-  partyBox: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 4,
-    backgroundColor: LIGHT,
-    padding: 7,
+  titleTh: { fontSize: 17, fontWeight: "bold", textAlign: "right", lineHeight: 1.3 },
+  titleEn: { fontSize: 11, fontWeight: "bold", color: BLACK, textAlign: "right", marginTop: 6, letterSpacing: 0.6 },
+  titleSub: { fontSize: 7, color: GRAY2, textAlign: "right", marginTop: 3 },
+  // ── Doc meta — hairline key/value rows, like the invoice's docInfoRow ──
+  metaWrap: { width: 150, marginTop: 8 },
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 3,
+    borderBottomWidth: 0.5,
+    borderBottomColor: RULE,
   },
+  metaLabel: { fontSize: 7, color: GRAY2 },
+  metaVal: { fontSize: 8.5, fontWeight: "bold" },
+  // ── Party strip (owner / tenant) — side by side, hairline label rule ──
+  partyRow: { flexDirection: "row", marginBottom: 10 },
+  partyBlock: { flex: 1, paddingRight: 14 },
   partyLabel: {
-    fontSize: 6.5,
+    fontSize: 7,
     fontWeight: "bold",
-    color: GOLD,
     letterSpacing: 0.4,
-    marginBottom: 2.5,
+    marginBottom: 5,
+    paddingBottom: 3,
+    borderBottomWidth: 1,
+    borderBottomColor: RULE,
   },
-  partyName: { fontSize: 10, fontWeight: "bold", marginBottom: 1.5 },
-  partyText: { fontSize: 7.5, color: "#444", lineHeight: 1.35 },
-  // ── Property block ──
-  propertyBox: {
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderLeftWidth: 3,
-    borderLeftColor: GOLD,
-    borderRadius: 4,
-    paddingVertical: 5,
-    paddingHorizontal: 8,
-    marginBottom: 7,
+  partyName: { fontSize: 10, fontWeight: "bold", marginBottom: 2 },
+  partyText: { fontSize: 7.5, color: GRAY, lineHeight: 1.5 },
+  // ── Property strip ──
+  propertyWrap: { marginBottom: 10 },
+  propertyLabel: {
+    fontSize: 7,
+    fontWeight: "bold",
+    letterSpacing: 0.4,
+    marginBottom: 5,
+    paddingBottom: 3,
+    borderBottomWidth: 1,
+    borderBottomColor: RULE,
   },
-  propertyLabel: { fontSize: 6.5, fontWeight: "bold", color: GRAY, letterSpacing: 0.4, marginBottom: 1.5 },
-  propertyName: { fontSize: 10, fontWeight: "bold", marginBottom: 1 },
-  propertyText: { fontSize: 7.5, color: "#444", lineHeight: 1.3 },
-  // ── Amount box ──
-  amountBox: {
-    borderWidth: 1.5,
-    borderColor: GOLD,
-    borderRadius: 4,
-    paddingHorizontal: 10,
+  propertyName: { fontSize: 10, fontWeight: "bold", marginBottom: 1.5 },
+  propertyText: { fontSize: 7.5, color: GRAY, lineHeight: 1.4 },
+  // ── Deposit amount — bold row with a top rule, like the invoice's grand total ──
+  amountRow: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 6,
-    marginBottom: 7,
-    backgroundColor: "#FFFCF0",
+    borderTopWidth: 1,
+    borderTopColor: BLACK,
+    borderBottomWidth: 1,
+    borderBottomColor: BLACK,
+    marginBottom: 2,
   },
-  amountLabelTh: { fontSize: 8.5, color: BLACK, fontWeight: "bold", width: 115 },
-  amountLabelEn: { fontSize: 7, color: GRAY, width: 115 },
-  amountVal: { flex: 1, fontSize: 13, fontWeight: "bold", color: GOLD },
-  amountWords: { fontSize: 7.5, color: GRAY, paddingLeft: 115, marginTop: 1 },
+  amountLabelTh: { fontSize: 9, fontWeight: "bold" },
+  amountLabelEn: { fontSize: 7, color: GRAY2 },
+  amountVal: { fontSize: 13, fontWeight: "bold" },
+  amountWords: { fontSize: 7.5, color: GRAY2, marginBottom: 10 },
   // ── Field rows (deal terms) — 3 columns, combined bilingual label line ──
-  fieldGrid: { flexDirection: "row", flexWrap: "wrap", marginBottom: 7 },
-  fieldCol: { width: "33.33%", marginBottom: 5, paddingRight: 6 },
-  fieldLabel: { fontSize: 6.5, color: GRAY, marginBottom: 1.5 },
+  fieldGrid: { flexDirection: "row", flexWrap: "wrap", marginBottom: 10 },
+  fieldCol: { width: "33.33%", marginBottom: 6, paddingRight: 8 },
+  fieldLabel: { fontSize: 6.5, color: GRAY2, marginBottom: 2 },
   fieldVal: {
     fontSize: 8.5,
     fontWeight: "bold",
+    paddingBottom: 2,
     borderBottomWidth: 0.5,
-    borderBottomColor: "#BBBBBB",
-    paddingBottom: 1.5,
+    borderBottomColor: RULE,
   },
-  // ── Bank box — compact single row ──
-  bankBox: {
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 4,
-    paddingVertical: 5,
-    paddingHorizontal: 8,
-    marginBottom: 7,
-  },
-  bankLabel: { fontSize: 6.5, fontWeight: "bold", color: GRAY, letterSpacing: 0.3, marginBottom: 3 },
-  bankRow: { flexDirection: "row", gap: 14 },
-  bankItem: { flexDirection: "row", alignItems: "baseline", gap: 3 },
-  bankKey: { fontSize: 7, color: GRAY },
+  // ── Bank info — plain key/value grid, like the invoice's Payment Details ──
+  bankWrap: { marginBottom: 10 },
+  bankLabel: { fontSize: 7.5, fontWeight: "bold", color: GRAY, marginBottom: 5 },
+  bankRow: { flexDirection: "row", gap: 20 },
+  bankItem: { flex: 1 },
+  bankKey: { fontSize: 6.5, color: GRAY2, marginBottom: 1.5 },
   bankVal: { fontSize: 8.5, fontWeight: "bold" },
-  // ── Terms ──
-  termBar: {
-    backgroundColor: BLACK,
-    color: "#FFFFFF",
-    paddingVertical: 3.5,
-    paddingHorizontal: 10,
+  // ── Terms — bold label + hairline rule, same as the party/property labels ──
+  termLabel: {
+    fontSize: 7,
     fontWeight: "bold",
-    textAlign: "center",
-    fontSize: 8.5,
+    letterSpacing: 0.4,
     marginBottom: 5,
+    paddingBottom: 3,
+    borderBottomWidth: 1,
+    borderBottomColor: RULE,
   },
-  clauseTitle: { fontWeight: "bold", fontSize: 7.5, marginBottom: 1.5 },
-  bullet: { fontSize: 7, marginLeft: 12, marginBottom: 1.5, lineHeight: 1.3 },
-  agree: { fontSize: 7, marginTop: 4, lineHeight: 1.3, color: GRAY },
+  clauseTitle: { fontWeight: "bold", fontSize: 7.5, marginBottom: 2 },
+  bullet: { fontSize: 7, marginLeft: 12, marginBottom: 2, lineHeight: 1.35, color: GRAY },
+  agree: { fontSize: 7, marginTop: 5, lineHeight: 1.35, color: GRAY2 },
   // ── Evidence ──
-  evidenceSection: { marginTop: 14 },
+  evidenceSection: { marginTop: 16 },
   refHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F5F5F5",
-    borderLeftWidth: 3,
-    borderLeftColor: GOLD,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
+    paddingBottom: 4,
     marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: RULE,
   },
-  refHeaderText: { fontSize: 9, fontWeight: "bold", color: BLACK },
+  refHeaderText: { fontSize: 8.5, fontWeight: "bold" },
   evidenceSectionTitle: {
-    fontSize: 7.5,
+    fontSize: 7,
     fontWeight: "bold",
-    color: GRAY,
+    color: GRAY2,
     textAlign: "center",
     letterSpacing: 0.5,
     marginBottom: 7,
   },
-  evidenceDivider: { borderBottomWidth: 0.5, borderBottomColor: BORDER, marginTop: 10, marginBottom: 10 },
+  evidenceDivider: { borderBottomWidth: 0.5, borderBottomColor: RULE, marginTop: 10, marginBottom: 10 },
   idRow: { flexDirection: "row", gap: 10, justifyContent: "center" },
   idBlock: { flex: 1, alignItems: "center" },
   idLabel: { fontSize: 7.5, color: GRAY, marginBottom: 4, textAlign: "center", lineHeight: 1.4 },
-  idImage: { width: "100%", height: 130, borderWidth: 0.5, borderColor: BORDER, borderRadius: 2, objectFit: "contain" },
+  idImage: { width: "100%", height: 130, borderWidth: 0.5, borderColor: RULE, objectFit: "contain" },
   idPlaceholder: {
-    width: "100%", height: 130, borderWidth: 0.5, borderColor: BORDER, borderStyle: "dashed",
-    borderRadius: 2, backgroundColor: "#F9F9F9", alignItems: "center", justifyContent: "center",
+    width: "100%", height: 130, borderWidth: 0.5, borderColor: RULE, borderStyle: "dashed",
+    backgroundColor: "#FAFAFA", alignItems: "center", justifyContent: "center",
   },
   slipRow: { flexDirection: "row", justifyContent: "center", marginTop: 2 },
   slipBlock: { width: 200, alignItems: "center" },
   slipLabel: { fontSize: 7.5, color: GRAY, marginBottom: 4, textAlign: "center", lineHeight: 1.4 },
-  slipImage: { width: 200, height: 260, borderWidth: 0.5, borderColor: BORDER, borderRadius: 2, objectFit: "contain" },
+  slipImage: { width: 200, height: 260, borderWidth: 0.5, borderColor: RULE, objectFit: "contain" },
   // ── Fixed signature footer — 4 columns: Owner | Tenant | Issuer | Witness ──
-  sigFooter: { position: "absolute", bottom: 22, left: 44, right: 44 },
+  sigFooter: { position: "absolute", bottom: 20, left: 40, right: 40 },
+  sigSeparator: { borderTopWidth: 0.5, borderTopColor: RULE, marginBottom: 8 },
   sigCol: { flex: 1, alignItems: "center" },
   sigLine: { borderBottomWidth: 0.8, borderBottomColor: BLACK, width: "85%", height: 26, marginBottom: 3 },
   sigSignatureImg: { width: "85%", height: 26, objectFit: "contain", marginBottom: 3 },
@@ -270,7 +265,7 @@ function fmtMoney(n: number): string {
   return n.toLocaleString("th-TH");
 }
 
-function PartyBox({
+function PartyBlock({
   labelTh,
   labelEn,
   name,
@@ -286,7 +281,7 @@ function PartyBox({
   phone?: string | null;
 }) {
   return (
-    <View style={s.partyBox}>
+    <View style={s.partyBlock}>
       <TText style={s.partyLabel}>{`${labelTh} / ${labelEn}`}</TText>
       <TText style={s.partyName}>{name || " "}</TText>
       {idCard && <TText style={s.partyText}>{`เลขบัตรประชาชน / ID Card: ${idCard}`}</TText>}
@@ -327,12 +322,13 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
           <View style={s.titleBlock}>
             <TText style={s.titleTh}>ใบจอง</TText>
             <TText style={s.titleEn}>BOOKING FORM</TText>
-            <View style={s.metaRow}>
-              <View>
+            <TText style={s.titleSub}>ต้นฉบับ / Original</TText>
+            <View style={s.metaWrap}>
+              <View style={s.metaRow}>
                 <TText style={s.metaLabel}>เลขที่ / No.</TText>
                 <TText style={s.metaVal}>{data.docNumber}</TText>
               </View>
-              <View>
+              <View style={[s.metaRow, { borderBottomWidth: 0 }]}>
                 <TText style={s.metaLabel}>วันที่ / Date</TText>
                 <TText style={s.metaVal}>{data.date}</TText>
               </View>
@@ -342,7 +338,7 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
 
         {/* ── Parties — side by side ── */}
         <View style={s.partyRow}>
-          <PartyBox
+          <PartyBlock
             labelTh="เจ้าของทรัพย์สิน (ผู้รับเงิน)"
             labelEn="PROPERTY OWNER"
             name={data.ownerName}
@@ -350,7 +346,7 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
             address={data.ownerAddress}
             phone={data.ownerPhone}
           />
-          <PartyBox
+          <PartyBlock
             labelTh="ผู้เช่า (ผู้จ่ายเงิน)"
             labelEn="TENANT"
             name={data.tenantName}
@@ -362,7 +358,7 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
 
         {/* ── Property ── */}
         {(unitLine || data.propertyAddress) && (
-          <View style={s.propertyBox}>
+          <View style={s.propertyWrap}>
             <TText style={s.propertyLabel}>ทรัพย์สินที่จอง / PROPERTY BOOKED</TText>
             {unitLine && <TText style={s.propertyName}>{unitLine}</TText>}
             {data.propertyAddress && <TText style={s.propertyText}>{data.propertyAddress}</TText>}
@@ -370,18 +366,14 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
         )}
 
         {/* ── Deposit amount ── */}
-        <View style={s.amountBox}>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <View style={{ width: 115 }}>
-              <TText style={s.amountLabelTh}>เป็นจำนวนเงิน</TText>
-              <TText style={s.amountLabelEn}>Deposit Amount</TText>
-            </View>
-            <TText style={[s.amountVal, { marginRight: 8 }]}>
-              {`${fmtMoney(data.depositAmount)}  บาท / THB`}
-            </TText>
+        <View style={s.amountRow}>
+          <View style={{ width: 115 }}>
+            <TText style={s.amountLabelTh}>เป็นจำนวนเงิน</TText>
+            <TText style={s.amountLabelEn}>Deposit Amount</TText>
           </View>
-          <TText style={s.amountWords}>{`(${data.depositAmountText})`}</TText>
+          <TText style={[s.amountVal, { flex: 1 }]}>{`${fmtMoney(data.depositAmount)} บาท / THB`}</TText>
         </View>
+        <TText style={s.amountWords}>{`(${data.depositAmountText})`}</TText>
 
         {/* ── Deal terms ── */}
         <View style={s.fieldGrid}>
@@ -408,26 +400,26 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
 
         {/* ── Owner's bank account (for receiving the deposit) ── */}
         {(data.ownerBankName || data.ownerBankAccountNumber) && (
-          <View style={s.bankBox}>
+          <View style={s.bankWrap}>
             <TText style={s.bankLabel}>
               บัญชีธนาคารเจ้าของ (สำหรับรับเงินมัดจำ) / Owner&apos;s Bank Account
             </TText>
             <View style={s.bankRow}>
               {data.ownerBankName && (
                 <View style={s.bankItem}>
-                  <TText style={s.bankKey}>ธนาคาร:</TText>
+                  <TText style={s.bankKey}>ธนาคาร / Bank</TText>
                   <TText style={s.bankVal}>{data.ownerBankName}</TText>
                 </View>
               )}
               {data.ownerBankAccountNumber && (
                 <View style={s.bankItem}>
-                  <TText style={s.bankKey}>เลขที่บัญชี:</TText>
+                  <TText style={s.bankKey}>เลขที่บัญชี / Account No.</TText>
                   <TText style={s.bankVal}>{data.ownerBankAccountNumber}</TText>
                 </View>
               )}
               {data.ownerBankAccountName && (
                 <View style={s.bankItem}>
-                  <TText style={s.bankKey}>ชื่อบัญชี:</TText>
+                  <TText style={s.bankKey}>ชื่อบัญชี / Account Name</TText>
                   <TText style={s.bankVal}>{data.ownerBankAccountName}</TText>
                 </View>
               )}
@@ -436,7 +428,7 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
         )}
 
         {/* ── Terms & conditions ── */}
-        <TText style={s.termBar}>เงื่อนไขและข้อตกลงร่วมกัน / Terms &amp; Conditions</TText>
+        <TText style={s.termLabel}>เงื่อนไขและข้อตกลงร่วมกัน / TERMS &amp; CONDITIONS</TText>
 
         <View style={{ marginBottom: 6 }}>
           <TText style={s.clauseTitle}>1. กรณีผู้เช่ายกเลิก / If Tenant Cancels:</TText>
@@ -481,9 +473,10 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
           </TText>
         )}
 
-        {/* ── Evidence: ID cards + transfer slip ── */}
+        {/* ── Evidence: ID cards + transfer slip — always starts on a fresh
+            page so it never collides with the fixed signature footer ── */}
         {hasEvidence && (
-          <View style={s.evidenceSection}>
+          <View style={s.evidenceSection} break>
             <View style={s.refHeader}>
               <TText style={s.refHeaderText}>เอกสารอ้างอิง / REFERENCE DOCUMENTS</TText>
             </View>
@@ -535,6 +528,7 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
 
         {/* ── Fixed signature footer — 4 columns, every page ── */}
         <View fixed style={s.sigFooter}>
+          <View style={s.sigSeparator} />
           <View style={{ flexDirection: "row", gap: 8 }}>
             {[
               {
