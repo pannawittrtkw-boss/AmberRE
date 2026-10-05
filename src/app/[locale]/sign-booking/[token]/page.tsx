@@ -4,7 +4,11 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { use } from "react";
 import { Loader2, RotateCcw, CheckCircle2, PenLine, AlertCircle, FileText } from "lucide-react";
 
+type Role = "OWNER" | "TENANT" | "WITNESS";
+
 interface BookingInfo {
+  role: Role;
+  signerName: string | null;
   docNumber: string;
   projectName: string | null;
   unitNumber: string | null;
@@ -14,6 +18,12 @@ interface BookingInfo {
   alreadySigned: boolean;
   signedAt?: string | null;
 }
+
+const ROLE_LABEL: Record<Role, string> = {
+  OWNER: "Owner (เจ้าของทรัพย์สิน)",
+  TENANT: "Tenant (ผู้เช่า)",
+  WITNESS: "Witness (พยาน)",
+};
 
 function formatDate(iso?: string | null) {
   if (!iso) return "";
@@ -169,7 +179,9 @@ export default function SignBookingPage({
         <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full text-center space-y-4">
           <CheckCircle2 className="w-14 h-14 text-green-500 mx-auto" />
           <h1 className="text-xl font-bold text-gray-900">Signature Submitted</h1>
-          <p className="text-sm text-gray-600">Owner · {info?.ownerName}</p>
+          <p className="text-sm text-gray-600">
+            {info ? ROLE_LABEL[info.role] : ""} · {info?.signerName}
+          </p>
           <p className="text-sm text-gray-500">
             {info?.docNumber} {propertyLabel ? `· ${propertyLabel}` : ""}
           </p>
@@ -223,10 +235,10 @@ export default function SignBookingPage({
         <div className="px-6 py-5 space-y-5">
           {/* Signer info */}
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-            <p className="text-xs text-amber-700 font-medium mb-0.5">Owner (เจ้าของทรัพย์สิน)</p>
-            <p className="font-semibold text-gray-900">{info?.ownerName}</p>
+            <p className="text-xs text-amber-700 font-medium mb-0.5">{info ? ROLE_LABEL[info.role] : ""}</p>
+            <p className="font-semibold text-gray-900">{info?.signerName}</p>
             <p className="text-xs text-gray-500 mt-1">
-              Deposit amount: ฿{info?.depositAmount.toLocaleString("en-US")} · Tenant: {info?.tenantName}
+              Deposit amount: ฿{info?.depositAmount.toLocaleString("en-US")} · Owner: {info?.ownerName} · Tenant: {info?.tenantName}
             </p>
           </div>
 

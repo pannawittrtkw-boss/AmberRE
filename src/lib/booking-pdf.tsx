@@ -58,10 +58,6 @@ export interface BookingPdfData {
   docNumber: string;
   date: string; // pre-formatted display date
 
-  // Company — only ever shown as the tiny doc-id line in the signature
-  // footer, never a header/letterhead; no logo, address, or tax ID.
-  companyName?: string | null;
-
   // Property
   projectName?: string | null;
   unitNumber?: string | null;
@@ -85,6 +81,9 @@ export interface BookingPdfData {
   tenantIdCard?: string | null;
   tenantAddress?: string | null;
   tenantPhone?: string | null;
+  // Set once the tenant has e-signed — drawn in place of the blank line
+  tenantSignature?: string | null;
+  tenantSignedAtText?: string | null;
 
   // Deal terms
   depositAmount: number;
@@ -99,6 +98,9 @@ export interface BookingPdfData {
 
   issuerName?: string | null;
   witnessName?: string | null;
+  // Set once the witness has e-signed — drawn in place of the blank line
+  witnessSignature?: string | null;
+  witnessSignedAtText?: string | null;
 }
 
 // Same monochrome palette as the accounting invoice (lib/acc-pdf.tsx) —
@@ -444,10 +446,24 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
           คู่สัญญารับทราบและยินยอมผูกพันตามเงื่อนไขข้างต้น / All parties have read and agreed to these terms.
         </TText>
 
-        {data.signedAtText && (
-          <TText style={{ fontSize: 7, color: GRAY, marginTop: 3 }}>
-            {`เจ้าของลงนามออนไลน์เมื่อ / Owner e-signed on: ${data.signedAtText}`}
-          </TText>
+        {(data.signedAtText || data.tenantSignedAtText || data.witnessSignedAtText) && (
+          <View style={{ marginTop: 3 }}>
+            {data.signedAtText && (
+              <TText style={{ fontSize: 7, color: GRAY }}>
+                {`เจ้าของลงนามออนไลน์เมื่อ / Owner e-signed on: ${data.signedAtText}`}
+              </TText>
+            )}
+            {data.tenantSignedAtText && (
+              <TText style={{ fontSize: 7, color: GRAY }}>
+                {`ผู้เช่าลงนามออนไลน์เมื่อ / Tenant e-signed on: ${data.tenantSignedAtText}`}
+              </TText>
+            )}
+            {data.witnessSignedAtText && (
+              <TText style={{ fontSize: 7, color: GRAY }}>
+                {`พยานลงนามออนไลน์เมื่อ / Witness e-signed on: ${data.witnessSignedAtText}`}
+              </TText>
+            )}
+          </View>
         )}
 
         {/* ── Evidence: ID cards + transfer slip — always starts on a fresh
@@ -497,13 +513,21 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
                 name: data.ownerName,
                 signature: data.ownerSignature,
               },
-              { role: "ผู้เช่า / Tenant", name: data.tenantName, signature: null },
+              {
+                role: "ผู้เช่า / Tenant",
+                name: data.tenantName,
+                signature: data.tenantSignature,
+              },
               {
                 role: "ผู้ออกเอกสาร / Issuer",
                 name: data.issuerName,
                 signature: null,
               },
-              { role: "พยาน / Witness", name: data.witnessName, signature: null },
+              {
+                role: "พยาน / Witness",
+                name: data.witnessName,
+                signature: data.witnessSignature,
+              },
             ].map(({ role, name, signature }) => (
               <View key={role} style={s.sigCol}>
                 {signature ? (
@@ -521,7 +545,7 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
             ))}
           </View>
           <TText style={{ fontSize: 6.5, color: GRAY, textAlign: "center", marginTop: 5 }}>
-            {`${data.companyName || "Amber Real Estate"}  |  ใบจอง / Booking Form  |  ${data.docNumber}`}
+            {`ใบจอง / Booking Form  |  ${data.docNumber}`}
           </TText>
         </View>
       </Page>

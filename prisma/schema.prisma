@@ -305,13 +305,21 @@ model Booking {
   witnessName String? @db.VarChar(200)
   agentPhone  String? @db.VarChar(50)
 
-  // Online signature — owner only, same canvas-signature pattern as
-  // Contract's e-sign flow.
-  signToken      String?   @unique @db.VarChar(100)
+  // Online signatures — owner, tenant, and witness each get their own
+  // token/link, same canvas-signature pattern as Contract's e-sign flow.
+  signToken      String?   @unique @db.VarChar(100) // owner's token
   ownerSignature String?   @db.Text
-  signedAt       DateTime?
+  signedAt       DateTime? // owner signed-at
 
-  status String @default("DRAFT") @db.VarChar(20) // DRAFT | SIGNED
+  tenantSignToken String?   @unique @db.VarChar(100)
+  tenantSignature String?   @db.Text
+  tenantSignedAt  DateTime?
+
+  witnessSignToken String?   @unique @db.VarChar(100)
+  witnessSignature String?   @db.Text
+  witnessSignedAt  DateTime?
+
+  status String @default("DRAFT") @db.VarChar(20) // DRAFT | PARTIALLY_SIGNED | SIGNED
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

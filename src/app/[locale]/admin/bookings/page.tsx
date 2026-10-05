@@ -37,6 +37,10 @@ interface Booking {
   agentPhone: string | null;
   signToken: string | null;
   signedAt: string | null;
+  tenantSignToken: string | null;
+  tenantSignedAt: string | null;
+  witnessSignToken: string | null;
+  witnessSignedAt: string | null;
   status: string;
   createdAt: string;
 }
@@ -114,7 +118,8 @@ const inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm foc
 
 const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
   DRAFT: { label: "รอเซ็น", cls: "bg-amber-100 text-amber-800" },
-  SIGNED: { label: "เซ็นแล้ว", cls: "bg-green-100 text-green-800" },
+  PARTIALLY_SIGNED: { label: "เซ็นบางส่วน", cls: "bg-blue-100 text-blue-800" },
+  SIGNED: { label: "เซ็นครบแล้ว", cls: "bg-green-100 text-green-800" },
 };
 
 export default function BookingsPage() {
@@ -255,66 +260,100 @@ export default function BookingsPage() {
   );
 }
 
-function SignLinkModal({ booking, onClose }: { booking: Booking; onClose: () => void }) {
+function SignLinkRow({
+  label, personName, token, signedAt, emptyHint,
+}: {
+  label: string;
+  personName: string | null;
+  token: string | null;
+  signedAt: string | null;
+  emptyHint?: string;
+}) {
   const [copied, setCopied] = useState(false);
-  const url = typeof window !== "undefined" && booking.signToken
-    ? `${window.location.origin}/th/sign-booking/${booking.signToken}`
+  const url = typeof window !== "undefined" && token
+    ? `${window.location.origin}/th/sign-booking/${token}`
     : "";
 
   const copy = () => {
+    if (!url) return;
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
+    <div className={`rounded-xl border p-4 ${signedAt ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"}`}>
+      <p className="text-xs font-semibold text-gray-700 mb-1">{label}{personName ? ` · ${personName}` : ""}</p>
+      {!token ? (
+        <p className="text-xs text-gray-400">{emptyHint || "ยังไม่มีลิงก์"}</p>
+      ) : signedAt ? (
+        <p className="flex items-center gap-1 text-xs text-green-700 mb-2">
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          เซ็นแล้วเมื่อ {new Date(signedAt).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" })}
+        </p>
+      ) : (
+        <p className="text-xs text-amber-700 mb-2">ยังไม่ได้เซ็น — ส่งลิงก์นี้เมื่อพร้อม</p>
+      )}
+      {token && (
+        <div className="flex gap-2 items-center">
+          <input
+            readOnly
+            value={url}
+            className="flex-1 text-xs bg-white border border-gray-200 rounded px-2 py-1.5 text-gray-600 select-all min-w-0"
+            onClick={(e) => (e.target as HTMLInputElement).select()}
+          />
+          <button
+            onClick={copy}
+            className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded transition-colors ${copied ? "bg-green-500 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+          >
+            {copied ? "✓" : "คัดลอก"}
+          </button>
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SignLinkModal({ booking, onClose }: { booking: Booking; onClose: () => void }) {
+  return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-xl max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b">
           <div className="flex items-center gap-2">
             <PenLine className="w-4 h-4 text-amber-600" />
-            <h3 className="font-semibold text-gray-900">ลิงก์เซ็นออนไลน์ (เจ้าของ)</h3>
+            <h3 className="font-semibold text-gray-900">ลิงก์เซ็นออนไลน์</h3>
           </div>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-4 h-4" /></button>
         </div>
-        <div className="px-5 py-4 space-y-4">
-          <p className="text-sm text-gray-500">
-            {booking.docNumber} · {booking.ownerName}
-          </p>
-          <div
-            className={`rounded-xl border p-4 ${booking.signedAt ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"}`}
-          >
-            {booking.signedAt ? (
-              <p className="flex items-center gap-1 text-xs text-green-700 mb-2">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                เซ็นแล้วเมื่อ {new Date(booking.signedAt).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" })}
-              </p>
-            ) : (
-              <p className="text-xs text-amber-700 mb-2">ยังไม่ได้เซ็น — ส่งลิงก์นี้ให้เจ้าของเมื่อได้รับเงินมัดจำแล้ว</p>
-            )}
-            <div className="flex gap-2 items-center">
-              <input
-                readOnly
-                value={url}
-                className="flex-1 text-xs bg-white border border-gray-200 rounded px-2 py-1.5 text-gray-600 select-all min-w-0"
-                onClick={(e) => (e.target as HTMLInputElement).select()}
-              />
-              <button
-                onClick={copy}
-                className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded transition-colors ${copied ? "bg-green-500 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
-              >
-                {copied ? "✓" : "คัดลอก"}
-              </button>
-              <a
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="shrink-0 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            </div>
-          </div>
+        <div className="px-5 py-4 space-y-3">
+          <p className="text-sm text-gray-500">{booking.docNumber}</p>
+          <SignLinkRow
+            label="เจ้าของ"
+            personName={booking.ownerName}
+            token={booking.signToken}
+            signedAt={booking.signedAt}
+          />
+          <SignLinkRow
+            label="ผู้เช่า"
+            personName={booking.tenantName}
+            token={booking.tenantSignToken}
+            signedAt={booking.tenantSignedAt}
+          />
+          <SignLinkRow
+            label="พยาน"
+            personName={booking.witnessName}
+            token={booking.witnessSignToken}
+            signedAt={booking.witnessSignedAt}
+            emptyHint="ยังไม่ได้ระบุชื่อพยาน"
+          />
         </div>
       </div>
     </div>

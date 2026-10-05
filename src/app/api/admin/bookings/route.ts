@@ -91,6 +91,8 @@ export async function POST(req: NextRequest) {
       agentPhone: body.agentPhone || null,
 
       signToken: crypto.randomBytes(24).toString("hex"),
+      tenantSignToken: crypto.randomBytes(24).toString("hex"),
+      witnessSignToken: crypto.randomBytes(24).toString("hex"),
     },
   });
 

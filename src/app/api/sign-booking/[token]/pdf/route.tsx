@@ -41,21 +41,21 @@ function bahtText(num: number): string {
   return result + "บาทถ้วน";
 }
 
-const TH_MONTHS = [
-  "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
-  "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
+const EN_MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
 
 function fmtDate(d: Date | null): string | null {
   if (!d) return null;
   const date = new Date(d);
-  return `${date.getDate()} ${TH_MONTHS[date.getMonth()]} ${date.getFullYear() + 543}`;
+  return `${date.getDate()} ${EN_MONTHS[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 function fmtDateTime(d: Date | null): string | null {
   if (!d) return null;
   const date = new Date(d);
-  return `${fmtDate(date)} ${date.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}`;
+  return `${fmtDate(date)} ${date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
 // Public — token is the only secret, same convention as /api/sign/[token]/pdf
@@ -65,10 +65,9 @@ export async function GET(
 ) {
   const { token } = await params;
 
-  const [booking, company] = await Promise.all([
-    prisma.booking.findUnique({ where: { signToken: token } }),
-    prisma.accountingCompany.findFirst(),
-  ]);
+  const booking = await prisma.booking.findFirst({
+    where: { OR: [{ signToken: token }, { tenantSignToken: token }, { witnessSignToken: token }] },
+  });
   if (!booking) {
     return NextResponse.json({ success: false, error: "Invalid link" }, { status: 404 });
   }
@@ -76,8 +75,6 @@ export async function GET(
   const data: BookingPdfData = {
     docNumber: booking.docNumber,
     date: fmtDate(booking.date) || "",
-
-    companyName: company?.name ?? null,
 
     projectName: booking.projectName,
     unitNumber: booking.unitNumber,
@@ -98,6 +95,8 @@ export async function GET(
     tenantIdCard: booking.tenantIdCard,
     tenantAddress: booking.tenantAddress,
     tenantPhone: booking.tenantPhone,
+    tenantSignature: booking.tenantSignature,
+    tenantSignedAtText: fmtDateTime(booking.tenantSignedAt),
 
     depositAmount: Number(booking.depositAmount),
     depositAmountText: bahtText(Number(booking.depositAmount)),
@@ -111,6 +110,8 @@ export async function GET(
 
     issuerName: booking.issuerName,
     witnessName: booking.witnessName,
+    witnessSignature: booking.witnessSignature,
+    witnessSignedAtText: fmtDateTime(booking.witnessSignedAt),
   };
 
   try {
