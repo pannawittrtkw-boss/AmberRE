@@ -350,7 +350,7 @@ function SignLinkModal({ booking, onClose }: { booking: Booking; onClose: () => 
           <SignLinkRow
             label="พยาน"
             personName={booking.witnessName}
-            token={booking.witnessSignToken}
+            token={booking.witnessName ? booking.witnessSignToken : null}
             signedAt={booking.witnessSignedAt}
             emptyHint="ยังไม่ได้ระบุชื่อพยาน"
           />
@@ -390,7 +390,6 @@ function BookingModal({
 
   const [transferSlipImage, setTransferSlipImage] = useState<string | null>(editing?.transferSlipImage ?? null);
 
-  const [issuerName, setIssuerName] = useState(editing?.issuerName ?? "");
   const [witnessName, setWitnessName] = useState(editing?.witnessName ?? "");
   const [agentPhone, setAgentPhone] = useState(editing?.agentPhone ?? "");
 
@@ -427,7 +426,7 @@ function BookingModal({
           appointmentDate: appointmentDate || null,
           moveInDate: moveInDate || null,
           transferSlipImage,
-          issuerName, witnessName, agentPhone,
+          witnessName, agentPhone,
         }),
       });
       const data = await res.json();
@@ -534,13 +533,12 @@ function BookingModal({
 
           <div className="border-t border-gray-100" />
 
-          {/* Issuer / Witness */}
+          {/* Witness */}
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">
-              Amber Real Estate (ผู้ออกเอกสาร / พยาน เท่านั้น)
+              Amber Real Estate (พยาน เท่านั้น)
             </p>
-            <div className="grid grid-cols-3 gap-3">
-              <Field label="ผู้ออกเอกสาร"><input value={issuerName} onChange={(e) => setIssuerName(e.target.value)} className={inputCls} /></Field>
+            <div className="grid grid-cols-2 gap-3">
               <Field label="พยาน"><input value={witnessName} onChange={(e) => setWitnessName(e.target.value)} className={inputCls} /></Field>
               <Field label="โทรติดต่อ"><input value={agentPhone} onChange={(e) => setAgentPhone(e.target.value)} className={inputCls} /></Field>
             </div>

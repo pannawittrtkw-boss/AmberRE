@@ -52,8 +52,7 @@ function TText({ children, style, wrap }: TTextProps) {
 }
 
 // Owner <-> Tenant deposit booking form. Amber Real Estate never appears as
-// a transacting party here — only as the document issuer (bottom-left
-// signature) and a witness (bottom-right signature).
+// a transacting party here — only as a witness (signature footer).
 export interface BookingPdfData {
   docNumber: string;
   date: string; // pre-formatted display date
@@ -96,7 +95,6 @@ export interface BookingPdfData {
 
   transferSlipImage?: string | null;
 
-  issuerName?: string | null;
   witnessName?: string | null;
   // Set once the witness has e-signed — drawn in place of the blank line
   witnessSignature?: string | null;
@@ -246,7 +244,7 @@ const s = StyleSheet.create({
   slipBlock: { width: 200, alignItems: "center" },
   slipLabel: { fontSize: 7.5, color: GRAY, marginBottom: 4, textAlign: "center", lineHeight: 1.4 },
   slipImage: { width: 200, height: 260, borderWidth: 0.5, borderColor: RULE, objectFit: "contain" },
-  // ── Fixed signature footer — 4 columns: Owner | Tenant | Issuer | Witness ──
+  // ── Fixed signature footer — 3 columns: Owner | Tenant | Witness ──
   sigFooter: { position: "absolute", bottom: 20, left: 40, right: 40 },
   sigSeparator: { borderTopWidth: 0.5, borderTopColor: RULE, marginBottom: 8 },
   sigCol: { flex: 1, alignItems: "center" },
@@ -503,7 +501,7 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
           </View>
         )}
 
-        {/* ── Fixed signature footer — 4 columns, every page ── */}
+        {/* ── Fixed signature footer — 3 columns, every page ── */}
         <View fixed style={s.sigFooter}>
           <View style={s.sigSeparator} />
           <View style={{ flexDirection: "row", gap: 8 }}>
@@ -517,11 +515,6 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
                 role: "ผู้เช่า / Tenant",
                 name: data.tenantName,
                 signature: data.tenantSignature,
-              },
-              {
-                role: "ผู้ออกเอกสาร / Issuer",
-                name: data.issuerName,
-                signature: null,
               },
               {
                 role: "พยาน / Witness",

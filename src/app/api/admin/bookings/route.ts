@@ -27,6 +27,29 @@ async function genDocNumber(date: Date): Promise<string> {
   return prefix + String(seq).padStart(4, "0");
 }
 
+// Older bookings were created before tenant/witness sign links existed, so
+// their tokens are null — backfill them lazily on read rather than forcing
+// a one-off migration script.
+async function backfillSignTokens(bookings: Array<{ id: number; signToken: string | null; tenantSignToken: string | null; witnessSignToken: string | null }>) {
+  const missing = bookings.filter((b) => !b.signToken || !b.tenantSignToken || !b.witnessSignToken);
+  if (missing.length === 0) return bookings;
+
+  const updated = await Promise.all(
+    missing.map((b) =>
+      prisma.booking.update({
+        where: { id: b.id },
+        data: {
+          signToken: b.signToken || crypto.randomBytes(24).toString("hex"),
+          tenantSignToken: b.tenantSignToken || crypto.randomBytes(24).toString("hex"),
+          witnessSignToken: b.witnessSignToken || crypto.randomBytes(24).toString("hex"),
+        },
+      })
+    )
+  );
+  const byId = new Map(updated.map((b) => [b.id, b]));
+  return bookings.map((b) => byId.get(b.id) ?? b);
+}
+
 export async function GET() {
   if (!(await requireAdmin())) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
@@ -34,7 +57,8 @@ export async function GET() {
   const bookings = await prisma.booking.findMany({
     orderBy: { createdAt: "desc" },
   });
-  return NextResponse.json({ success: true, data: bookings });
+  const data = await backfillSignTokens(bookings);
+  return NextResponse.json({ success: true, data });
 }
 
 export async function POST(req: NextRequest) {

@@ -108,7 +108,6 @@ export async function GET(
 
     transferSlipImage: booking.transferSlipImage,
 
-    issuerName: booking.issuerName,
     witnessName: booking.witnessName,
     witnessSignature: booking.witnessSignature,
     witnessSignedAtText: fmtDateTime(booking.witnessSignedAt),
