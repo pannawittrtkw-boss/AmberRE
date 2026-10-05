@@ -74,7 +74,6 @@ export async function POST(req: NextRequest) {
 
       tenantName: body.tenantName,
       tenantIdCard: body.tenantIdCard || null,
-      tenantIdCardImage: body.tenantIdCardImage || null,
       tenantAddress: body.tenantAddress || null,
       tenantPhone: body.tenantPhone || null,
 

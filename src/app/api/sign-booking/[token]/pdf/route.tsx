@@ -98,7 +98,6 @@ export async function GET(
     tenantIdCard: booking.tenantIdCard,
     tenantAddress: booking.tenantAddress,
     tenantPhone: booking.tenantPhone,
-    tenantIdCardImage: booking.tenantIdCardImage,
 
     depositAmount: Number(booking.depositAmount),
     depositAmountText: bahtText(Number(booking.depositAmount)),

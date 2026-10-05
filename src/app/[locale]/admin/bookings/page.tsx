@@ -23,7 +23,6 @@ interface Booking {
   ownerBankAccountName: string | null;
   tenantName: string;
   tenantIdCard: string | null;
-  tenantIdCardImage: string | null;
   tenantAddress: string | null;
   tenantPhone: string | null;
   depositAmount: number;
@@ -340,7 +339,6 @@ function BookingModal({
 
   const [tenantName, setTenantName] = useState(editing?.tenantName ?? "");
   const [tenantIdCard, setTenantIdCard] = useState(editing?.tenantIdCard ?? "");
-  const [tenantIdCardImage, setTenantIdCardImage] = useState<string | null>(editing?.tenantIdCardImage ?? null);
   const [tenantAddress, setTenantAddress] = useState(editing?.tenantAddress ?? "");
   const [tenantPhone, setTenantPhone] = useState(editing?.tenantPhone ?? "");
 
@@ -382,7 +380,7 @@ function BookingModal({
           projectName, unitNumber, propertyAddress,
           ownerName, ownerIdCard, ownerIdCardImage, ownerAddress, ownerPhone,
           ownerBankName, ownerBankAccountNumber, ownerBankAccountName,
-          tenantName, tenantIdCard, tenantIdCardImage, tenantAddress, tenantPhone,
+          tenantName, tenantIdCard, tenantAddress, tenantPhone,
           depositAmount: amount,
           monthlyRent: monthlyRent ? Number(monthlyRent) : null,
           leaseTermMonths: leaseTermMonths ? Number(leaseTermMonths) : null,
@@ -461,7 +459,6 @@ function BookingModal({
               <Field label="โทร"><input value={tenantPhone} onChange={(e) => setTenantPhone(e.target.value)} className={inputCls} /></Field>
               <Field label="ที่อยู่"><input value={tenantAddress} onChange={(e) => setTenantAddress(e.target.value)} className={inputCls} /></Field>
             </div>
-            <IdUploadBox label="สำเนาบัตรประชาชนผู้เช่า" value={tenantIdCardImage} onChange={setTenantIdCardImage} />
           </div>
 
           <div className="border-t border-gray-100" />

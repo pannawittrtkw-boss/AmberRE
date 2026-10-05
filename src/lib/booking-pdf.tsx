@@ -80,12 +80,11 @@ export interface BookingPdfData {
   ownerSignature?: string | null;
   signedAtText?: string | null;
 
-  // Tenant
+  // Tenant — no ID card copy collected/shown, only the owner's
   tenantName: string;
   tenantIdCard?: string | null;
   tenantAddress?: string | null;
   tenantPhone?: string | null;
-  tenantIdCardImage?: string | null;
 
   // Deal terms
   depositAmount: number;
@@ -146,64 +145,64 @@ const s = StyleSheet.create({
   metaLabel: { fontSize: 7, color: GRAY2 },
   metaVal: { fontSize: 8.5, fontWeight: "bold" },
   // ── Party strip (owner / tenant) — side by side, hairline label rule ──
-  partyRow: { flexDirection: "row", marginBottom: 10 },
-  partyBlock: { flex: 1, paddingRight: 14 },
+  partyRow: { flexDirection: "row", marginBottom: 16 },
+  partyBlock: { flex: 1, paddingRight: 18 },
   partyLabel: {
     fontSize: 7,
     fontWeight: "bold",
     letterSpacing: 0.4,
-    marginBottom: 5,
-    paddingBottom: 3,
+    marginBottom: 6,
+    paddingBottom: 4,
     borderBottomWidth: 1,
     borderBottomColor: RULE,
   },
-  partyName: { fontSize: 10, fontWeight: "bold", marginBottom: 2 },
-  partyText: { fontSize: 7.5, color: GRAY, lineHeight: 1.5 },
+  partyName: { fontSize: 10, fontWeight: "bold", marginBottom: 3 },
+  partyText: { fontSize: 7.5, color: GRAY, lineHeight: 1.65 },
   // ── Property strip ──
-  propertyWrap: { marginBottom: 10 },
+  propertyWrap: { marginBottom: 18 },
   propertyLabel: {
     fontSize: 7,
     fontWeight: "bold",
     letterSpacing: 0.4,
-    marginBottom: 5,
-    paddingBottom: 3,
+    marginBottom: 6,
+    paddingBottom: 4,
     borderBottomWidth: 1,
     borderBottomColor: RULE,
   },
-  propertyName: { fontSize: 10, fontWeight: "bold", marginBottom: 1.5 },
-  propertyText: { fontSize: 7.5, color: GRAY, lineHeight: 1.4 },
+  propertyName: { fontSize: 10, fontWeight: "bold", marginBottom: 2 },
+  propertyText: { fontSize: 7.5, color: GRAY, lineHeight: 1.5 },
   // ── Deposit amount — bold row with a top rule, like the invoice's grand total ──
   amountRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 6,
+    paddingVertical: 10,
     borderTopWidth: 1,
     borderTopColor: BLACK,
     borderBottomWidth: 1,
     borderBottomColor: BLACK,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   amountLabelTh: { fontSize: 9, fontWeight: "bold" },
   amountLabelEn: { fontSize: 7, color: GRAY2 },
   amountVal: { fontSize: 13, fontWeight: "bold" },
-  amountWords: { fontSize: 7.5, color: GRAY2, marginBottom: 10 },
+  amountWords: { fontSize: 7.5, color: GRAY2, marginBottom: 18 },
   // ── Field rows (deal terms) — 3 columns, combined bilingual label line ──
-  fieldGrid: { flexDirection: "row", flexWrap: "wrap", marginBottom: 10 },
-  fieldCol: { width: "33.33%", marginBottom: 6, paddingRight: 8 },
-  fieldLabel: { fontSize: 6.5, color: GRAY2, marginBottom: 2 },
+  fieldGrid: { flexDirection: "row", flexWrap: "wrap", marginBottom: 16 },
+  fieldCol: { width: "33.33%", marginBottom: 14, paddingRight: 16 },
+  fieldLabel: { fontSize: 6.5, color: GRAY2, marginBottom: 3 },
   fieldVal: {
     fontSize: 8.5,
     fontWeight: "bold",
-    paddingBottom: 2,
+    paddingBottom: 3,
     borderBottomWidth: 0.5,
     borderBottomColor: RULE,
   },
   // ── Bank info — plain key/value grid, like the invoice's Payment Details ──
-  bankWrap: { marginBottom: 10 },
-  bankLabel: { fontSize: 7.5, fontWeight: "bold", color: GRAY, marginBottom: 5 },
-  bankRow: { flexDirection: "row", gap: 20 },
+  bankWrap: { marginBottom: 18 },
+  bankLabel: { fontSize: 7.5, fontWeight: "bold", color: GRAY, marginBottom: 7 },
+  bankRow: { flexDirection: "row", gap: 28 },
   bankItem: { flex: 1 },
-  bankKey: { fontSize: 6.5, color: GRAY2, marginBottom: 1.5 },
+  bankKey: { fontSize: 6.5, color: GRAY2, marginBottom: 2 },
   bankVal: { fontSize: 8.5, fontWeight: "bold" },
   // ── Terms — bold label + hairline rule, same as the party/property labels ──
   termLabel: {
@@ -236,14 +235,10 @@ const s = StyleSheet.create({
     marginBottom: 7,
   },
   evidenceDivider: { borderBottomWidth: 0.5, borderBottomColor: RULE, marginTop: 10, marginBottom: 10 },
-  idRow: { flexDirection: "row", gap: 10, justifyContent: "center" },
-  idBlock: { flex: 1, alignItems: "center" },
+  idRow: { flexDirection: "row", justifyContent: "center" },
+  idBlockSingle: { width: 320, alignItems: "center" },
   idLabel: { fontSize: 7.5, color: GRAY, marginBottom: 4, textAlign: "center", lineHeight: 1.4 },
-  idImage: { width: "100%", height: 130, borderWidth: 0.5, borderColor: RULE, objectFit: "contain" },
-  idPlaceholder: {
-    width: "100%", height: 130, borderWidth: 0.5, borderColor: RULE, borderStyle: "dashed",
-    backgroundColor: "#FAFAFA", alignItems: "center", justifyContent: "center",
-  },
+  idImageSingle: { width: 320, height: 200, borderWidth: 0.5, borderColor: RULE, objectFit: "contain" },
   slipRow: { flexDirection: "row", justifyContent: "center", marginTop: 2 },
   slipBlock: { width: 200, alignItems: "center" },
   slipLabel: { fontSize: 7.5, color: GRAY, marginBottom: 4, textAlign: "center", lineHeight: 1.4 },
@@ -296,7 +291,7 @@ function FieldCol({ labelTh, labelEn, value }: { labelTh: string; labelEn: strin
 }
 
 export function BookingPdf({ data }: { data: BookingPdfData }) {
-  const hasEvidence = data.ownerIdCardImage || data.tenantIdCardImage || data.transferSlipImage;
+  const hasEvidence = data.ownerIdCardImage || data.transferSlipImage;
   const unitLine = [data.projectName, data.unitNumber].filter(Boolean).join("  ห้อง ");
 
   return (
@@ -461,36 +456,20 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
         {/* ── Evidence: ID cards + transfer slip — always starts on a fresh
             page so it never collides with the fixed signature footer ── */}
         {hasEvidence && (
-          <View style={s.evidenceSection} break>
+          <View style={s.evidenceSection} wrap={false}>
             <View style={s.refHeader}>
               <TText style={s.refHeaderText}>เอกสารอ้างอิง / REFERENCE DOCUMENTS</TText>
             </View>
 
-            {(data.ownerIdCardImage || data.tenantIdCardImage) && (
+            {data.ownerIdCardImage && (
               <>
                 <TText style={s.evidenceSectionTitle}>
-                  สำเนาบัตรประชาชน / ID CARD — สำหรับยืนยันตัวตน / IDENTITY VERIFICATION
+                  สำเนาบัตรประชาชนเจ้าของ / OWNER&apos;S ID CARD — สำหรับยืนยันตัวตน / IDENTITY VERIFICATION
                 </TText>
                 <View style={s.idRow}>
-                  <View style={s.idBlock}>
+                  <View style={s.idBlockSingle}>
                     <TText style={s.idLabel}>{`เจ้าของ / Owner\n${data.ownerName || ""}`}</TText>
-                    {data.ownerIdCardImage ? (
-                      <Image src={data.ownerIdCardImage} style={s.idImage} />
-                    ) : (
-                      <View style={s.idPlaceholder}>
-                        <TText style={{ fontSize: 8, color: GRAY }}>ไม่มีรูปถ่าย</TText>
-                      </View>
-                    )}
-                  </View>
-                  <View style={s.idBlock}>
-                    <TText style={s.idLabel}>{`ผู้เช่า / Tenant\n${data.tenantName || ""}`}</TText>
-                    {data.tenantIdCardImage ? (
-                      <Image src={data.tenantIdCardImage} style={s.idImage} />
-                    ) : (
-                      <View style={s.idPlaceholder}>
-                        <TText style={{ fontSize: 8, color: GRAY }}>ไม่มีรูปถ่าย</TText>
-                      </View>
-                    )}
+                    <Image src={data.ownerIdCardImage} style={s.idImageSingle} />
                   </View>
                 </View>
               </>

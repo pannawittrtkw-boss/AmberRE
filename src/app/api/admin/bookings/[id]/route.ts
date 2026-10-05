@@ -55,7 +55,6 @@ export async function PUT(
 
       tenantName: body.tenantName || undefined,
       tenantIdCard: body.tenantIdCard !== undefined ? body.tenantIdCard || null : undefined,
-      tenantIdCardImage: body.tenantIdCardImage !== undefined ? body.tenantIdCardImage || null : undefined,
       tenantAddress: body.tenantAddress !== undefined ? body.tenantAddress || null : undefined,
       tenantPhone: body.tenantPhone !== undefined ? body.tenantPhone || null : undefined,
 

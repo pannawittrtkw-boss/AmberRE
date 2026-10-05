@@ -282,12 +282,12 @@ model Booking {
   ownerBankAccountNumber  String? @db.VarChar(50)
   ownerBankAccountName    String? @db.VarChar(200)
 
-  // Tenant — pays the deposit
-  tenantName       String  @db.VarChar(200)
-  tenantIdCard      String? @db.VarChar(50)
-  tenantIdCardImage String? @db.Text
-  tenantAddress     String? @db.Text
-  tenantPhone       String? @db.VarChar(50)
+  // Tenant — pays the deposit. No ID card copy collected for the tenant —
+  // only the owner's, since they're the one being paid and signing online.
+  tenantName    String  @db.VarChar(200)
+  tenantIdCard  String? @db.VarChar(50)
+  tenantAddress String? @db.Text
+  tenantPhone   String? @db.VarChar(50)
 
   // Deal terms
   depositAmount   Decimal   @db.Decimal(18, 2)
