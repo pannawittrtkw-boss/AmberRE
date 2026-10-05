@@ -415,7 +415,7 @@ export function BookingPdf({ data }: { data: BookingPdfData }) {
         <View style={{ marginBottom: 6 }}>
           <TText style={s.clauseTitle}>1. กรณีผู้เช่ายกเลิก / If Tenant Cancels:</TText>
           <TText style={s.bullet}>
-            {"• เงินมัดจำตกเป็นของเจ้าของห้อง 100%\n  The deposit is 100% forfeited to the Owner."}
+            {"• ไม่คืนเงินมัดจำทุกกรณี\n  The deposit is 100% forfeited to the Owner."}
           </TText>
           <TText style={s.bullet}>
             {
