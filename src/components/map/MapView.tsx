@@ -159,9 +159,17 @@ function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void })
   return null;
 }
 
-function buildStationLabelIcon(name: string): L.DivIcon {
+function buildStationLabelIcon(name: string, color: string): L.DivIcon {
   const html = `
-    <div class="npb-station-label">
+    <div class="npb-station-label" style="--line-color:${color}">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4.5" y="3" width="15" height="12" rx="4" fill="${color}"/>
+        <path d="M4.5 10.5h15" stroke="white" stroke-width="1.4"/>
+        <path d="M9.5 3.5v7M14.5 3.5v7" stroke="white" stroke-width="1.2"/>
+        <circle cx="8.5" cy="18.5" r="1.6" fill="${color}"/>
+        <circle cx="15.5" cy="18.5" r="1.6" fill="${color}"/>
+        <path d="M7 15.2l-2.3 3M17 15.2l2.3 3" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
       <span>${name}</span>
     </div>`;
   return L.divIcon({
@@ -465,16 +473,19 @@ export default function MapView({
         }
         .npb-station-label {
           display: inline-flex;
-          background: rgba(255, 255, 255, 0.95);
-          color: #292524;
-          font-size: 10px;
-          font-weight: 600;
-          padding: 2px 6px;
-          border-radius: 4px;
-          border: 1px solid rgba(0, 0, 0, 0.12);
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+          align-items: center;
+          gap: 4px;
+          background: #ffffff;
+          color: #1c1917;
+          font-size: 13px;
+          font-weight: 700;
+          line-height: 1.2;
+          padding: 3px 8px 3px 6px;
+          border-radius: 5px;
+          border: 1.5px solid var(--line-color, #1c1917);
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
           white-space: nowrap;
-          transform: translate(6px, -50%);
+          transform: translate(7px, -50%);
           pointer-events: none;
         }
         .npb-search-pin-wrapper {
@@ -543,7 +554,7 @@ export default function MapView({
                 <Marker
                   key={`label-${st.lat},${st.lng}`}
                   position={[st.lat, st.lng]}
-                  icon={buildStationLabelIcon(locale === "th" ? st.nameTh : st.nameEn)}
+                  icon={buildStationLabelIcon(locale === "th" ? st.nameTh : st.nameEn, st.color)}
                   interactive={false}
                 />
               ))}
