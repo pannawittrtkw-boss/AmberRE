@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Tooltip, Polyline, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Tooltip, Polyline, CircleMarker, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { X, Phone } from "lucide-react";
+import { X, Phone, TrainFront } from "lucide-react";
 import { getIntlLocale } from "@/lib/utils";
 import { haversineDistanceKm, estimateTravel, type TravelMode } from "@/lib/geo";
 import MapSearchBox from "./MapSearchBox";
+import { TRANSIT_LINES } from "@/data/transit-lines";
 
 interface MapProperty {
   id: number;
@@ -145,6 +146,49 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number
   return null;
 }
 
+// Station name labels only start appearing once zoomed in far enough that
+// they wouldn't just be 190+ overlapping tags across all of Bangkok.
+const STATION_LABEL_MIN_ZOOM = 15;
+
+function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void }) {
+  const map = useMapEvents({
+    zoomend() {
+      onZoomChange(map.getZoom());
+    },
+  });
+  return null;
+}
+
+function buildStationLabelIcon(name: string): L.DivIcon {
+  const html = `
+    <div class="npb-station-label">
+      <span>${name}</span>
+    </div>`;
+  return L.divIcon({
+    html,
+    className: "npb-price-marker-wrapper",
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+  });
+}
+
+// Interchange stations appear once per line they serve (same coordinates,
+// different ids) so each line can still be drawn as one continuous
+// polyline — collapse those down to one dot per physical location here so
+// markers don't stack invisibly on top of each other.
+const TRANSIT_STATIONS_BY_COORD = (() => {
+  const byCoord = new Map<string, { nameTh: string; nameEn: string; lat: number; lng: number; color: string }>();
+  for (const line of TRANSIT_LINES) {
+    for (const st of line.stations) {
+      const key = `${st.lat.toFixed(5)},${st.lng.toFixed(5)}`;
+      if (!byCoord.has(key)) {
+        byCoord.set(key, { nameTh: st.nameTh, nameEn: st.nameEn, lat: st.lat, lng: st.lng, color: line.color });
+      }
+    }
+  }
+  return Array.from(byCoord.values());
+})();
+
 export default function MapView({
   properties,
   locale,
@@ -167,6 +211,8 @@ export default function MapView({
   // different marker is opened.
   const [contactRevealed, setContactRevealed] = useState(false);
   const [isDraggingPin, setIsDraggingPin] = useState(false);
+  const [showTransit, setShowTransit] = useState(true);
+  const [mapZoom, setMapZoom] = useState(zoom);
   // Real street-following route from OpenRouteService, when available —
   // null while loading/unavailable, in which case a straight-line estimate
   // is shown instead (see renderDistance / the Polyline fallback below).
@@ -329,6 +375,19 @@ export default function MapView({
         locale={locale}
         onSelect={(r) => setSearchMarker({ lat: r.lat, lng: r.lng, label: r.displayName })}
       />
+
+      <button
+        type="button"
+        onClick={() => setShowTransit((v) => !v)}
+        className={`absolute bottom-6 left-3 z-[500] inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium shadow-lg border transition-colors ${
+          showTransit
+            ? "bg-stone-900 text-white border-stone-900"
+            : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+        }`}
+      >
+        <TrainFront className="w-3.5 h-3.5" />
+        {locale === "th" ? "เส้นทางรถไฟฟ้า" : "Transit lines"}
+      </button>
       <style jsx global>{`
         .npb-price-marker-wrapper {
           background: transparent !important;
@@ -404,6 +463,20 @@ export default function MapView({
         .npb-marker--active {
           box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3) !important;
         }
+        .npb-station-label {
+          display: inline-flex;
+          background: rgba(255, 255, 255, 0.95);
+          color: #292524;
+          font-size: 10px;
+          font-weight: 600;
+          padding: 2px 6px;
+          border-radius: 4px;
+          border: 1px solid rgba(0, 0, 0, 0.12);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+          white-space: nowrap;
+          transform: translate(6px, -50%);
+          pointer-events: none;
+        }
         .npb-search-pin-wrapper {
           background: transparent !important;
           border: none !important;
@@ -431,6 +504,51 @@ export default function MapView({
         />
 
         <MapClickHandler onMapClick={(lat, lng) => setSearchMarker({ lat, lng, label: "" })} />
+        <ZoomTracker onZoomChange={setMapZoom} />
+
+        {showTransit && (
+          <>
+            {TRANSIT_LINES.map((line) => (
+              <Polyline
+                key={line.id}
+                positions={line.stations.map((s) => [s.lat, s.lng])}
+                pathOptions={{ color: line.color, weight: 3.5, opacity: 0.85 }}
+              />
+            ))}
+            {TRANSIT_STATIONS_BY_COORD.map((st) => (
+              <CircleMarker
+                key={`${st.lat},${st.lng}`}
+                center={[st.lat, st.lng]}
+                radius={4}
+                pathOptions={{ color: "#fff", weight: 1.5, fillColor: st.color, fillOpacity: 1 }}
+              >
+                <Tooltip
+                  direction="top"
+                  offset={[0, -6]}
+                  opacity={1}
+                  className="!bg-white !text-stone-800 !border !border-gray-200 !rounded !shadow !text-[10px] !px-1.5 !py-0.5 !font-medium"
+                >
+                  {locale === "th" ? st.nameTh : st.nameEn}
+                </Tooltip>
+              </CircleMarker>
+            ))}
+
+            {/* Always-visible name labels only once zoomed in far enough —
+                a plain divIcon marker (same pattern as the price pins)
+                instead of a Leaflet "permanent" Tooltip, which only reads
+                its `permanent` option at layer-creation time and won't
+                toggle on a prop update. */}
+            {mapZoom >= STATION_LABEL_MIN_ZOOM &&
+              TRANSIT_STATIONS_BY_COORD.map((st) => (
+                <Marker
+                  key={`label-${st.lat},${st.lng}`}
+                  position={[st.lat, st.lng]}
+                  icon={buildStationLabelIcon(locale === "th" ? st.nameTh : st.nameEn)}
+                  interactive={false}
+                />
+              ))}
+          </>
+        )}
 
         {searchMarker && (
           <Marker
