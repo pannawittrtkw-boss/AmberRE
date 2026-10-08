@@ -5,13 +5,14 @@ import prisma from "@/lib/prisma";
 import { getStationThaiName, getStationEnName } from "@/lib/stations";
 import { haversineDistanceKm } from "@/lib/geo";
 
-// Scoring weights (total possible = 145)
+// Scoring weights (total possible = 153)
 const SCORE = {
   PROJECT_NAME: 25,
   BUDGET: 25,
   BEDROOMS: 20,
   PROVINCE: 10,
   DISTRICT: 10,
+  SUBDISTRICT: 8,
   BTS_STATION: 10,
   SIZE: 10,
   PET_FRIENDLY: 5,
@@ -29,6 +30,22 @@ function nearbyLocationScore(distanceKm: number): number {
   if (distanceKm <= 3.5) return Math.round(SCORE.NEARBY_LOCATION * 0.4);
   if (distanceKm <= 5) return Math.round(SCORE.NEARBY_LOCATION * 0.15);
   return 0;
+}
+
+interface InterestPlace {
+  label: string;
+  lat: number;
+  lng: number;
+}
+
+function parseInterestPlaces(json: string | null): InterestPlace[] {
+  if (!json) return [];
+  try {
+    const arr = JSON.parse(json);
+    return Array.isArray(arr) ? arr.filter((p) => typeof p?.lat === "number" && typeof p?.lng === "number") : [];
+  } catch {
+    return [];
+  }
 }
 
 function normalizeText(s: string) {
@@ -80,6 +97,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 
+  const interestPlaces = parseInterestPlaces(lead.interestPlaces);
+
   // Fetch properties that have actually passed verification — never
   // recommend a lead something still pending/under review, rejected,
   // unavailable, or already rented/sold.
@@ -109,16 +128,68 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       (lead.dealType === "RENT" && prop.listingType !== "RENT" && prop.listingType !== "RENT_AND_SALE") ||
       (lead.dealType === "SALE" && prop.listingType !== "SALE" && prop.listingType !== "RENT_AND_SALE")
     ) {
-      return { property: prop, score: -1, reasons: [], distanceKm: null };
+      return { property: prop, score: -1, reasons: [], distanceKm: null, nearestPlaceLabel: null };
+    }
+
+    // Precompute every location signal once — reused both by the primary
+    // location gate right below and by the scoring additions further down.
+    const propProject = prop.projectName || prop.project?.nameTh || prop.project?.nameEn || "";
+    const projectMatched = !!(lead.projectName && propProject && textMatches(propProject, lead.projectName));
+
+    let distanceKm: number | null = null;
+    let nearestPlaceLabel: string | null = null;
+    if (interestPlaces.length > 0 && prop.latitude != null && prop.longitude != null) {
+      for (const place of interestPlaces) {
+        const d = haversineDistanceKm(place.lat, place.lng, Number(prop.latitude), Number(prop.longitude));
+        if (distanceKm === null || d < distanceKm) {
+          distanceKm = d;
+          nearestPlaceLabel = place.label;
+        }
+      }
+    }
+    const nearbyMatched = distanceKm !== null && nearbyLocationScore(distanceKm) > 0;
+
+    const propStationCodes = parseStationCodes(prop.nearbyStations);
+    const stationMatched = !!(
+      lead.btsStation &&
+      propStationCodes.length > 0 &&
+      lead.btsStation
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .some((name) =>
+          propStationCodes.some(
+            (code) => textMatches(getStationThaiName(code), name) || textMatches(getStationEnName(code), name)
+          )
+        )
+    );
+
+    const propProvince = resolvePropLocation(null, prop.project?.province, prop.address);
+    const propDistrict = resolvePropLocation(null, prop.project?.district, prop.address);
+    const provinceMatched = !!(lead.province && propProvince && textMatches(propProvince, lead.province));
+    const districtMatched = !!(lead.district && propDistrict && textMatches(propDistrict, lead.district));
+    const subdistrictMatched = !!(lead.subdistrict && prop.address && textMatches(prop.address, lead.subdistrict));
+
+    // Primary location gate — when the lead specified ANY location
+    // preference (project / searched zones / station / province-district-
+    // subdistrict), a property must satisfy at least one of them to even
+    // be considered. Price, bedrooms, size, and amenities only refine the
+    // ranking afterward — they never rescue a property that's nowhere near
+    // where the customer actually wants to live.
+    const hasLocationCriteria = !!(
+      lead.projectName || interestPlaces.length > 0 || lead.btsStation || lead.province || lead.district || lead.subdistrict
+    );
+    if (
+      hasLocationCriteria &&
+      !(projectMatched || nearbyMatched || stationMatched || provinceMatched || districtMatched || subdistrictMatched)
+    ) {
+      return { property: prop, score: -1, reasons: [], distanceKm: null, nearestPlaceLabel: null };
     }
 
     // 1. Project name match (25pts)
-    if (lead.projectName) {
-      const propProject = prop.projectName || prop.project?.nameTh || prop.project?.nameEn || "";
-      if (propProject && textMatches(propProject, lead.projectName)) {
-        score += SCORE.PROJECT_NAME;
-        reasons.push("PROJECT_NAME_MATCH");
-      }
+    if (projectMatched) {
+      score += SCORE.PROJECT_NAME;
+      reasons.push("PROJECT_NAME_MATCH");
     }
 
     // 2. Budget match (25pts)
@@ -128,7 +199,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       const max = lead.budgetMax ? Number(lead.budgetMax) : Infinity;
       // Disqualify if price exceeds max budget by more than 50%
       if (lead.budgetMax && price > Number(lead.budgetMax) * 1.5) {
-        return { property: prop, score: -1, reasons: [], distanceKm: null };
+        return { property: prop, score: -1, reasons: [], distanceKm: null, nearestPlaceLabel: null };
       }
       if (price >= min && price <= max) {
         score += SCORE.BUDGET;
@@ -149,44 +220,27 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         score += SCORE.BEDROOMS;
         reasons.push("BEDROOMS_MATCH");
       } else {
-        return { property: prop, score: -1, reasons: [], distanceKm: null };
+        return { property: prop, score: -1, reasons: [], distanceKm: null, nearestPlaceLabel: null };
       }
     }
 
-    // 4. Province — disqualify ONLY when property HAS province data that doesn't match
-    if (lead.province) {
-      const propProvince = resolvePropLocation(
-        (prop as any).province,
-        prop.project?.province,
-        prop.address
-      );
-      if (propProvince) {
-        if (textMatches(propProvince, lead.province)) {
-          score += SCORE.PROVINCE;
-          reasons.push("PROVINCE_MATCH");
-        } else {
-          return { property: prop, score: -1, reasons: [], distanceKm: null };
-        }
-      }
-      // No province data on property → don't disqualify, give 0 pts
+    // 4. Province match (10pts)
+    if (provinceMatched) {
+      score += SCORE.PROVINCE;
+      reasons.push("PROVINCE_MATCH");
     }
 
-    // 5. District — disqualify ONLY when property HAS district data that doesn't match
-    if (lead.district) {
-      const propDistrict = resolvePropLocation(
-        (prop as any).district,
-        prop.project?.district,
-        prop.address
-      );
-      if (propDistrict) {
-        if (textMatches(propDistrict, lead.district)) {
-          score += SCORE.DISTRICT;
-          reasons.push("DISTRICT_MATCH");
-        } else {
-          return { property: prop, score: -1, reasons: [], distanceKm: null };
-        }
-      }
-      // No district data on property → don't disqualify, give 0 pts
+    // 5. District match (10pts)
+    if (districtMatched) {
+      score += SCORE.DISTRICT;
+      reasons.push("DISTRICT_MATCH");
+    }
+
+    // 5b. Subdistrict match (8pts) — no dedicated column on Property, only
+    // ever found via a text hit in the free-text address.
+    if (subdistrictMatched) {
+      score += SCORE.SUBDISTRICT;
+      reasons.push("SUBDISTRICT_MATCH");
     }
 
     // 6. Minimum room size — disqualify only when property HAS size data
@@ -198,7 +252,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
           score += SCORE.SIZE;
           reasons.push("SIZE_MATCH");
         } else {
-          return { property: prop, score: -1, reasons: [], distanceKm: null };
+          return { property: prop, score: -1, reasons: [], distanceKm: null, nearestPlaceLabel: null };
         }
       }
     }
@@ -209,7 +263,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         score += SCORE.PET_FRIENDLY;
         reasons.push("PET_FRIENDLY_MATCH");
       } else {
-        return { property: prop, score: -1, reasons: [], distanceKm: null };
+        return { property: prop, score: -1, reasons: [], distanceKm: null, nearestPlaceLabel: null };
       }
     }
 
@@ -219,7 +273,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         score += SCORE.SMOKING_ALLOWED;
         reasons.push("SMOKING_MATCH");
       } else {
-        return { property: prop, score: -1, reasons: [], distanceKm: null };
+        return { property: prop, score: -1, reasons: [], distanceKm: null, nearestPlaceLabel: null };
       }
     }
 
@@ -227,45 +281,24 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     // the property means it's already listed as available now.
     if (lead.wantReadyToMoveIn) {
       if (prop.availableDate && new Date(prop.availableDate).getTime() > Date.now()) {
-        return { property: prop, score: -1, reasons: [], distanceKm: null };
+        return { property: prop, score: -1, reasons: [], distanceKm: null, nearestPlaceLabel: null };
       }
       score += SCORE.READY_TO_MOVE_IN;
       reasons.push("READY_MATCH");
     }
 
     // 10. BTS/MRT station match (10pts)
-    const propStationCodes = parseStationCodes(prop.nearbyStations);
-    if (lead.btsStation && propStationCodes.length > 0) {
-      const stationNames = lead.btsStation.split(",").map((s) => s.trim()).filter(Boolean);
-      const matched = propStationCodes.some((code) =>
-        stationNames.some(
-          (name) =>
-            textMatches(getStationThaiName(code), name) ||
-            textMatches(getStationEnName(code), name)
-        )
-      );
-      if (matched) {
-        score += SCORE.BTS_STATION;
-        reasons.push("STATION_MATCH");
-      }
+    if (stationMatched) {
+      score += SCORE.BTS_STATION;
+      reasons.push("STATION_MATCH");
     }
 
-    // 11. Proximity to the lead's geocoded "ทำเลที่สนใจ" search point (up to
-    // 20pts, soft bonus only — never disqualifies, and skipped entirely when
-    // either side is missing coordinates, same convention as size/province).
-    let distanceKm: number | null = null;
-    if (lead.interestLat != null && lead.interestLng != null && prop.latitude != null && prop.longitude != null) {
-      distanceKm = haversineDistanceKm(
-        Number(lead.interestLat),
-        Number(lead.interestLng),
-        Number(prop.latitude),
-        Number(prop.longitude)
-      );
-      const nearbyScore = nearbyLocationScore(distanceKm);
-      if (nearbyScore > 0) {
-        score += nearbyScore;
-        reasons.push("NEARBY_LOCATION_MATCH");
-      }
+    // 11. Proximity to the lead's geocoded "ทำเลที่สนใจ" search points (up to
+    // 20pts, soft bonus — decays with distance, on top of having already
+    // passed the primary location gate above).
+    if (nearbyMatched) {
+      score += nearbyLocationScore(distanceKm!);
+      reasons.push("NEARBY_LOCATION_MATCH");
     }
 
     // Older listings are more likely to already be rented out, so decay
@@ -277,14 +310,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       daysPosted > 90 ? 0.7 : daysPosted > 30 ? 0.85 : daysPosted > 7 ? 0.95 : 1;
     score = Math.round(score * freshnessFactor);
 
-    return { property: prop, score, reasons, distanceKm };
+    return { property: prop, score, reasons, distanceKm, nearestPlaceLabel };
   });
 
   const results = scored
     .filter((r) => r.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, 20)
-    .map(({ property, score, reasons, distanceKm }) => ({
+    .map(({ property, score, reasons, distanceKm, nearestPlaceLabel }) => ({
       id: property.id,
       titleTh: property.titleTh,
       titleEn: property.titleEn,
@@ -316,6 +349,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       score,
       reasons,
       distanceKm,
+      nearestPlaceLabel,
     }));
 
   return NextResponse.json({ success: true, data: results, total: results.length });

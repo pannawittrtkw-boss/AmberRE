@@ -26,7 +26,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const {
       name, phone, lineId, facebook, projectName,
       province, district, subdistrict, btsStation, dealType,
-      interestPlaceLabel, interestLat, interestLng,
+      interestPlaces,
       budgetMin, budgetMax, bedrooms, minSizeSqm,
       wantPetFriendly, wantSmokingAllowed, wantReadyToMoveIn, note, status,
     } = body;
@@ -43,9 +43,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         district: district !== undefined ? (district || null) : undefined,
         subdistrict: subdistrict !== undefined ? (subdistrict || null) : undefined,
         btsStation: btsStation !== undefined ? (btsStation || null) : undefined,
-        interestPlaceLabel: interestPlaceLabel !== undefined ? (interestPlaceLabel || null) : undefined,
-        interestLat: interestLat !== undefined ? (interestLat !== null ? parseFloat(interestLat) : null) : undefined,
-        interestLng: interestLng !== undefined ? (interestLng !== null ? parseFloat(interestLng) : null) : undefined,
+        interestPlaces:
+          interestPlaces !== undefined
+            ? (Array.isArray(interestPlaces) && interestPlaces.length > 0 ? JSON.stringify(interestPlaces) : null)
+            : undefined,
         dealType: dealType !== undefined ? (dealType === "SALE" ? "SALE" : "RENT") : undefined,
         budgetMin: budgetMin !== undefined ? (budgetMin ? parseFloat(budgetMin) : null) : undefined,
         budgetMax: budgetMax !== undefined ? (budgetMax ? parseFloat(budgetMax) : null) : undefined,

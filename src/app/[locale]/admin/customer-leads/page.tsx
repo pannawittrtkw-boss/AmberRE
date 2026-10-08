@@ -21,9 +21,7 @@ type CustomerLead = {
   district: string | null;
   subdistrict: string | null;
   btsStation: string | null;
-  interestPlaceLabel: string | null;
-  interestLat: string | null;
-  interestLng: string | null;
+  interestPlaces: string | null; // JSON-encoded { label, lat, lng }[]
   dealType: string;
   budgetMin: string | null;
   budgetMax: string | null;
@@ -62,13 +60,26 @@ type MatchedProperty = {
   score: number;
   reasons: string[];
   distanceKm: number | null;
+  nearestPlaceLabel: string | null;
 };
+
+type InterestPlace = { label: string; lat: number; lng: number };
+
+function parseInterestPlaces(json: string | null): InterestPlace[] {
+  if (!json) return [];
+  try {
+    const arr = JSON.parse(json);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
 
 const EMPTY_FORM = {
   name: "", phone: "", lineId: "", facebook: "",
   projectName: "", province: "", district: "", subdistrict: "",
   btsStation: "",
-  interestPlaceLabel: "", interestLat: null as number | null, interestLng: null as number | null,
+  interestPlaces: [] as InterestPlace[],
   dealType: "RENT", budgetMin: "", budgetMax: "", bedrooms: "",
   minSizeSqm: "", wantPetFriendly: false, wantSmokingAllowed: false, wantReadyToMoveIn: false,
   note: "", status: "ACTIVE",
@@ -190,7 +201,7 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
     placeSearchLabel: isTh ? "ค้นหาทำเล" : "Search Location",
     placeSearchPlaceholder: isTh ? "พิมพ์ชื่อย่าน เช่น ห้วยขวาง, พระราม 9, รัชดา..." : "Type a zone, e.g. Huai Khwang, Rama 9...",
     placeSearchNoResults: isTh ? "ไม่พบพื้นที่นี้" : "No results found",
-    placeSearchHint: isTh ? "ใช้จับคู่ทรัพย์ที่อยู่ใกล้พื้นที่นี้ นอกเหนือจากเงื่อนไขอื่น" : "Used to rank properties near this spot, alongside the other criteria",
+    placeSearchHint: isTh ? "เพิ่มได้หลายพื้นที่ — ใช้จับคู่ทรัพย์ที่อยู่ใกล้พื้นที่เหล่านี้ นอกเหนือจากเงื่อนไขอื่น" : "Add as many as needed — used to rank properties near any of these spots, alongside the other criteria",
     requirements: isTh ? "ความต้องการ" : "Requirements",
     dealTypeLabel: isTh ? "ประเภท" : "Type",
     budgetMinSale: isTh ? "งบประมาณต่ำสุด (บาท)" : "Min Budget (THB)",
@@ -245,9 +256,7 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
       district: lead.district || "",
       subdistrict: lead.subdistrict || "",
       btsStation: lead.btsStation || "",
-      interestPlaceLabel: lead.interestPlaceLabel || "",
-      interestLat: lead.interestLat !== null && lead.interestLat !== undefined ? Number(lead.interestLat) : null,
-      interestLng: lead.interestLng !== null && lead.interestLng !== undefined ? Number(lead.interestLng) : null,
+      interestPlaces: parseInterestPlaces(lead.interestPlaces),
       budgetMin: lead.budgetMin || "",
       budgetMax: lead.budgetMax || "",
       dealType: lead.dealType === "SALE" ? "SALE" : "RENT",
@@ -408,11 +417,11 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                           {[lead.province, lead.district, lead.subdistrict].filter(Boolean).join(" / ")}
                         </span>
                       )}
-                      {lead.interestPlaceLabel && (
-                        <span className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
-                          <MapPin className="w-3 h-3" />{lead.interestPlaceLabel}
+                      {parseInterestPlaces(lead.interestPlaces).map((p) => (
+                        <span key={p.label} className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
+                          <MapPin className="w-3 h-3" />{p.label}
                         </span>
-                      )}
+                      ))}
                       {lead.btsStation && (
                         <span className="flex items-center gap-1 text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full">
                           <Train className="w-3 h-3" />{lead.btsStation}
@@ -553,13 +562,18 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                     placeholder={T.placeSearchPlaceholder}
                     noResultsLabel={T.placeSearchNoResults}
                     hint={T.placeSearchHint}
-                    value={form.interestPlaceLabel}
-                    lat={form.interestLat}
-                    lng={form.interestLng}
-                    onSelect={(r) =>
-                      setForm((prev) => ({ ...prev, interestPlaceLabel: r.displayName, interestLat: r.lat, interestLng: r.lng }))
+                    places={form.interestPlaces}
+                    onAdd={(r) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        interestPlaces: prev.interestPlaces.some((p) => p.label === r.displayName)
+                          ? prev.interestPlaces
+                          : [...prev.interestPlaces, { label: r.displayName, lat: r.lat, lng: r.lng }],
+                      }))
                     }
-                    onClear={() => setForm((prev) => ({ ...prev, interestPlaceLabel: "", interestLat: null, interestLng: null }))}
+                    onRemove={(label) =>
+                      setForm((prev) => ({ ...prev, interestPlaces: prev.interestPlaces.filter((p) => p.label !== label) }))
+                    }
                   />
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <ThaiAddressFields
@@ -761,17 +775,15 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
 // straight-line distance to this point (see the /matches API route).
 function PlaceSearchField({
   label, placeholder, noResultsLabel, hint,
-  value, lat, lng, onSelect, onClear,
+  places, onAdd, onRemove,
 }: {
   label: string;
   placeholder: string;
   noResultsLabel: string;
   hint: string;
-  value: string;
-  lat: number | null;
-  lng: number | null;
-  onSelect: (r: { lat: number; lng: number; displayName: string }) => void;
-  onClear: () => void;
+  places: InterestPlace[];
+  onAdd: (r: { lat: number; lng: number; displayName: string }) => void;
+  onRemove: (label: string) => void;
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<{ lat: number; lng: number; displayName: string }[]>([]);
@@ -808,62 +820,69 @@ function PlaceSearchField({
     setLoading(false);
   };
 
-  if (value && lat !== null && lng !== null) {
-    return (
-      <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-        <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 rounded-lg px-3 py-2 text-sm">
-          <MapPin className="w-4 h-4 text-blue-500 flex-shrink-0" />
-          <span className="flex-1 text-gray-800 truncate">{value}</span>
-          <button type="button" onClick={onClear} className="p-0.5 rounded hover:bg-blue-100 text-blue-400">
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-        <p className="text-[11px] text-gray-400 mt-1">{hint}</p>
-      </div>
-    );
-  }
-
   return (
-    <div ref={wrapRef} className="relative">
+    <div>
       <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-      <form onSubmit={handleSearch} className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={placeholder}
-            className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={loading || !query.trim()}
-          className="shrink-0 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 disabled:opacity-50"
-        >
-          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
-        </button>
-      </form>
-      {open && (
-        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
-          {noResults ? (
-            <p className="px-3 py-2 text-xs text-gray-400">{noResultsLabel}</p>
-          ) : (
-            results.map((r, i) => (
+      <div ref={wrapRef} className="relative">
+        <form onSubmit={handleSearch} className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={placeholder}
+              className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading || !query.trim()}
+            className="shrink-0 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+          </button>
+        </form>
+        {open && (
+          <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+            {noResults ? (
+              <p className="px-3 py-2 text-xs text-gray-400">{noResultsLabel}</p>
+            ) : (
+              results.map((r, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => { onAdd(r); setQuery(""); setResults([]); setOpen(false); }}
+                  className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b border-gray-50 last:border-0 flex items-start gap-1.5"
+                >
+                  <MapPin className="w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">{r.displayName}</span>
+                </button>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+      {places.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {places.map((p) => (
+            <span
+              key={p.label}
+              className="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded-full max-w-full"
+            >
+              <MapPin className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate max-w-[220px]">{p.label}</span>
               <button
-                key={i}
                 type="button"
-                onClick={() => { onSelect(r); setQuery(""); setResults([]); setOpen(false); }}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b border-gray-50 last:border-0 flex items-start gap-1.5"
+                onClick={() => onRemove(p.label)}
+                className="p-0.5 rounded hover:bg-blue-100 text-blue-400 flex-shrink-0"
               >
-                <MapPin className="w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">{r.displayName}</span>
+                <X className="w-3 h-3" />
               </button>
-            ))
-          )}
+            </span>
+          ))}
         </div>
       )}
+      <p className="text-[11px] text-gray-400 mt-1">{hint}</p>
     </div>
   );
 }
@@ -899,6 +918,7 @@ const REASON_LABELS: Record<string, { th: string; en: string }> = {
   BEDROOMS_MATCH: { th: "จำนวนห้องนอนตรงกัน", en: "Bedrooms match" },
   PROVINCE_MATCH: { th: "จังหวัดตรงกัน", en: "Province matches" },
   DISTRICT_MATCH: { th: "อำเภอตรงกัน", en: "District matches" },
+  SUBDISTRICT_MATCH: { th: "ตำบลตรงกัน", en: "Subdistrict matches" },
   SIZE_MATCH: { th: "ขนาดห้องตรงตามที่ต้องการ", en: "Room size meets requirement" },
   PET_FRIENDLY_MATCH: { th: "รับเลี้ยงสัตว์", en: "Pet friendly" },
   SMOKING_MATCH: { th: "สูบบุหรี่ได้", en: "Smoking allowed" },
@@ -981,7 +1001,10 @@ function MatchCard({ prop, locale }: { prop: MatchedProperty; locale: string }) 
             <span className="flex items-center gap-0.5"><Train className="w-3 h-3" />{isTh ? prop.stations[0].nameTh : prop.stations[0].nameEn}</span>
           )}
           {prop.distanceKm !== null && (
-            <span className="flex items-center gap-0.5 text-blue-600">
+            <span
+              className="flex items-center gap-0.5 text-blue-600"
+              title={prop.nearestPlaceLabel ? (isTh ? `ใกล้ที่สุดจาก: ${prop.nearestPlaceLabel}` : `Nearest to: ${prop.nearestPlaceLabel}`) : undefined}
+            >
               <MapPin className="w-3 h-3" />
               {prop.distanceKm < 1
                 ? `${Math.round(prop.distanceKm * 1000)}${isTh ? " ม." : "m"}`

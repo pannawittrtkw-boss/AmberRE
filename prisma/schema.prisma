@@ -785,13 +785,14 @@ model CustomerLead {
   district    String?  @db.VarChar(100)
   subdistrict String?  @db.VarChar(100)
   btsStation  String?  @db.VarChar(200)
-  // Free-text zone/neighborhood search (e.g. "ห้วยขวาง", "พระราม 9") geocoded
-  // via /api/geocode, same as the map page's search box — lets matching rank
-  // properties by actual distance instead of relying only on the formal
+  // Free-text zone/neighborhood search points (e.g. "ห้วยขวาง", "พระราม 9"),
+  // one customer can pick several — geocoded via /api/geocode, same as the
+  // map page's search box. JSON-encoded array of { label, lat, lng }, same
+  // text-column-holding-JSON convention as Property.nearbyStations. Lets
+  // matching rank properties by actual distance to whichever of these
+  // points is closest, instead of relying only on the formal
   // province/district/subdistrict fields above.
-  interestPlaceLabel String?  @db.VarChar(300)
-  interestLat        Decimal? @db.Decimal(10, 7)
-  interestLng        Decimal? @db.Decimal(10, 7)
+  interestPlaces String? @db.Text
   dealType    String   @default("RENT") @db.VarChar(10) // RENT | SALE — what the customer wants
   budgetMin   Decimal? @db.Decimal(18, 2)
   budgetMax   Decimal? @db.Decimal(18, 2)
