@@ -81,6 +81,8 @@ export async function GET(req: NextRequest) {
           smokingAllowed: true,
           availableDate: true,
           agentId: true,
+          latitude: true,
+          longitude: true,
         },
         orderBy: { createdAt: "desc" },
       });

@@ -29,11 +29,13 @@ import {
   Images,
   ChevronLeft,
   ChevronRight,
+  MapPin,
 } from "lucide-react";
 import StationMapSelector, { LINES } from "@/components/admin/StationMapSelector";
 import BookingReceiptModal from "@/app/[locale]/admin/properties/BookingReceiptModal";
 import ExclusiveModal from "@/app/[locale]/admin/properties/ExclusiveModal";
 import { getPriceRanges, parsePriceRangeValue, PROPERTY_TYPES, PROPERTY_TYPE_LABEL_TH, PROPERTY_TYPE_LABEL_EN } from "@/lib/property-constants";
+import { haversineDistanceKm } from "@/lib/geo";
 
 const FURNITURE_ITEMS: Record<string, { en: string; th: string }> = {
   bed: { en: "Bed", th: "เตียง" },
@@ -144,6 +146,10 @@ function renderAvailableDate(availableDate: any, size: "sm" | "xs" = "sm", local
 }
 
 const PAGE_SIZE = 30;
+// How far from the searched zone a property can be and still count as "in
+// it" — same outer band as the customer-matching proximity score, which
+// already settled on 5km as a reasonable "still worth showing" cutoff.
+const PLACE_FILTER_RADIUS_KM = 5;
 
 export default function PropertyListPage({
   params,
@@ -200,6 +206,12 @@ export default function PropertyListPage({
   const [filterPriceRange, setFilterPriceRange] = useState(restored.filterPriceRange ?? "");
   const [filterStations, setFilterStations] = useState<string[]>(restored.filterStations ?? []);
   const [showStationFilterModal, setShowStationFilterModal] = useState(false);
+  // Geocoded zone search (e.g. "ห้วยขวาง") — same /api/geocode endpoint the
+  // map page and customer-matching use. Properties are included when within
+  // PLACE_FILTER_RADIUS_KM of this point.
+  const [filterPlace, setFilterPlace] = useState<{ label: string; lat: number; lng: number } | null>(
+    restored.filterPlace ?? null
+  );
   const [filterExclusive, setFilterExclusive] = useState(restored.filterExclusive ?? false);
   const [filterPostDateFrom, setFilterPostDateFrom] = useState(restored.filterPostDateFrom ?? "");
   const [filterPostDateTo, setFilterPostDateTo] = useState(restored.filterPostDateTo ?? "");
@@ -217,7 +229,7 @@ export default function PropertyListPage({
       filterPropertyType, filterPriority, filterCategory, filterPriceRange,
       filterStations, filterExclusive, filterPostDateFrom, filterPostDateTo,
       filterBedrooms, filterMinSize, filterReadyToMoveIn, filterPetFriendly,
-      filterSmokingAllowed, filterHideUnavailable,
+      filterSmokingAllowed, filterHideUnavailable, filterPlace,
     };
     try { sessionStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(data)); } catch {}
   }, [
@@ -225,7 +237,7 @@ export default function PropertyListPage({
     filterPropertyType, filterPriority, filterCategory, filterPriceRange,
     filterStations, filterExclusive, filterPostDateFrom, filterPostDateTo,
     filterBedrooms, filterMinSize, filterReadyToMoveIn, filterPetFriendly,
-    filterSmokingAllowed, filterHideUnavailable,
+    filterSmokingAllowed, filterHideUnavailable, filterPlace,
   ]);
 
   useEffect(() => {
@@ -404,10 +416,17 @@ export default function PropertyListPage({
     if (filterPetFriendly && p.petFriendly !== "ACCEPT") return false;
     if (filterSmokingAllowed && p.smokingAllowed !== "ACCEPT") return false;
     if (filterHideUnavailable && (p.isRented || p.isSold)) return false;
+    // Zone search — excludes properties with no coordinates to check, same
+    // as a station/province mismatch would.
+    if (filterPlace) {
+      if (p.latitude == null || p.longitude == null) return false;
+      const d = haversineDistanceKm(filterPlace.lat, filterPlace.lng, Number(p.latitude), Number(p.longitude));
+      if (d > PLACE_FILTER_RADIUS_KM) return false;
+    }
     return true;
   });
 
-  const hasActiveFilters = filterStatus || filterListing !== "RENT" || filterPropertyType || filterPriority || filterCategory || filterPriceRange || filterStations.length > 0 || filterExclusive || filterPostDateFrom || filterPostDateTo || filterBedrooms || filterMinSize || filterReadyToMoveIn || filterPetFriendly || filterSmokingAllowed || filterHideUnavailable;
+  const hasActiveFilters = filterStatus || filterListing !== "RENT" || filterPropertyType || filterPriority || filterCategory || filterPriceRange || filterStations.length > 0 || filterExclusive || filterPostDateFrom || filterPostDateTo || filterBedrooms || filterMinSize || filterReadyToMoveIn || filterPetFriendly || filterSmokingAllowed || filterHideUnavailable || filterPlace;
 
   const clearFilters = () => {
     setSearchText(""); setFilterStatus(""); setFilterListing("RENT"); setFilterPropertyType("");
@@ -416,7 +435,7 @@ export default function PropertyListPage({
     setFilterExclusive(false); setFilterPostDateFrom(""); setFilterPostDateTo("");
     setFilterBedrooms(""); setFilterMinSize("");
     setFilterReadyToMoveIn(false); setFilterPetFriendly(false); setFilterSmokingAllowed(false);
-    setFilterHideUnavailable(false);
+    setFilterHideUnavailable(false); setFilterPlace(null);
   };
 
   // Generate month tabs from properties
@@ -480,6 +499,7 @@ export default function PropertyListPage({
 
   // Any change to search/filters/tabs re-starts pagination from the top.
   const filterStationsKey = filterStations.join(",");
+  const filterPlaceKey = filterPlace ? `${filterPlace.lat},${filterPlace.lng}` : "";
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
   }, [
@@ -487,6 +507,7 @@ export default function PropertyListPage({
     filterPriceRange, filterStationsKey, filterExclusive,
     filterPostDateFrom, filterPostDateTo, selectedMonth, selectedStatusTab,
     filterBedrooms, filterMinSize, filterReadyToMoveIn, filterPetFriendly, filterSmokingAllowed, filterHideUnavailable,
+    filterPlaceKey,
   ]);
 
   const pageItemsById = new Map(pageItems.map((p: any) => [p.id, p]));
@@ -716,6 +737,12 @@ export default function PropertyListPage({
                   )}
                 </button>
               </div>
+              <PlaceFilterInput
+                locale={locale}
+                value={filterPlace}
+                onSelect={(r) => setFilterPlace({ label: r.displayName, lat: r.lat, lng: r.lng })}
+                onClear={() => setFilterPlace(null)}
+              />
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">{locale === "th" ? "Post date ตั้งแต่" : "Post date from"}</label>
                 <input type="date" value={filterPostDateFrom} onChange={(e) => setFilterPostDateFrom(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
@@ -1588,6 +1615,107 @@ export default function PropertyListPage({
               </div>
             )}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Geocoded zone search box (e.g. "ห้วยขวาง") — same /api/geocode endpoint
+// the map page and customer-matching use. Sized to sit in the filter grid
+// as a single cell: shows the picked zone inline with a clear (×) button,
+// or the search input + results dropdown when nothing is picked yet.
+function PlaceFilterInput({
+  locale, value, onSelect, onClear,
+}: {
+  locale: string;
+  value: { label: string; lat: number; lng: number } | null;
+  onSelect: (r: { lat: number; lng: number; displayName: string }) => void;
+  onClear: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<{ lat: number; lng: number; displayName: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [noResults, setNoResults] = useState(false);
+
+  const handleSearch = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const q = query.trim();
+    if (!q) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      const list = data.success ? (data.data || []) : [];
+      setResults(list);
+      setNoResults(list.length === 0);
+      setOpen(true);
+    } catch {
+      setResults([]);
+      setNoResults(true);
+      setOpen(true);
+    }
+    setLoading(false);
+  };
+
+  if (value) {
+    return (
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">
+          {locale === "th" ? "ค้นหาตามทำเล" : "Search by zone"}
+        </label>
+        <div className="w-full border rounded-lg px-3 py-2 text-sm flex items-center gap-1.5 bg-blue-50 border-blue-200">
+          <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+          <span className="flex-1 truncate text-blue-800">{value.label}</span>
+          <button type="button" onClick={onClear} className="p-0.5 rounded hover:bg-blue-100 text-blue-400 shrink-0">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <label className="block text-xs font-medium text-gray-500 mb-1">
+        {locale === "th" ? "ค้นหาตามทำเล" : "Search by zone"}
+      </label>
+      <form onSubmit={handleSearch} className="flex items-center gap-1.5">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onFocus={() => results.length > 0 && setOpen(true)}
+          placeholder={locale === "th" ? "เช่น ห้วยขวาง, พระราม 9..." : "e.g. Huai Khwang, Rama 9..."}
+          className="w-full border rounded-lg px-3 py-2 text-sm"
+        />
+        <button
+          type="submit"
+          disabled={loading || !query.trim()}
+          className="shrink-0 px-2.5 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+        </button>
+      </form>
+      {open && (
+        <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+          {noResults ? (
+            <p className="px-3 py-2 text-xs text-gray-400">{locale === "th" ? "ไม่พบพื้นที่นี้" : "No results found"}</p>
+          ) : (
+            results.map((r, i) => (
+              <button
+                key={i}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => { onSelect(r); setQuery(""); setResults([]); setOpen(false); }}
+                className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b border-gray-50 last:border-0 flex items-start gap-1.5"
+              >
+                <MapPin className="w-3 h-3 text-gray-400 mt-0.5 shrink-0" />
+                <span className="text-gray-700">{r.displayName}</span>
+              </button>
+            ))
+          )}
         </div>
       )}
     </div>
