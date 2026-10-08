@@ -207,10 +207,10 @@ export default function PropertyListPage({
   const [filterStations, setFilterStations] = useState<string[]>(restored.filterStations ?? []);
   const [showStationFilterModal, setShowStationFilterModal] = useState(false);
   // Geocoded zone search (e.g. "ห้วยขวาง") — same /api/geocode endpoint the
-  // map page and customer-matching use. Properties are included when within
-  // PLACE_FILTER_RADIUS_KM of this point.
-  const [filterPlace, setFilterPlace] = useState<{ label: string; lat: number; lng: number } | null>(
-    restored.filterPlace ?? null
+  // map page and customer-matching use. A property is included when it's
+  // within PLACE_FILTER_RADIUS_KM of ANY of the selected zones.
+  const [filterPlaces, setFilterPlaces] = useState<{ label: string; lat: number; lng: number }[]>(
+    restored.filterPlaces ?? []
   );
   const [filterExclusive, setFilterExclusive] = useState(restored.filterExclusive ?? false);
   const [filterPostDateFrom, setFilterPostDateFrom] = useState(restored.filterPostDateFrom ?? "");
@@ -229,7 +229,7 @@ export default function PropertyListPage({
       filterPropertyType, filterPriority, filterCategory, filterPriceRange,
       filterStations, filterExclusive, filterPostDateFrom, filterPostDateTo,
       filterBedrooms, filterMinSize, filterReadyToMoveIn, filterPetFriendly,
-      filterSmokingAllowed, filterHideUnavailable, filterPlace,
+      filterSmokingAllowed, filterHideUnavailable, filterPlaces,
     };
     try { sessionStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(data)); } catch {}
   }, [
@@ -237,7 +237,7 @@ export default function PropertyListPage({
     filterPropertyType, filterPriority, filterCategory, filterPriceRange,
     filterStations, filterExclusive, filterPostDateFrom, filterPostDateTo,
     filterBedrooms, filterMinSize, filterReadyToMoveIn, filterPetFriendly,
-    filterSmokingAllowed, filterHideUnavailable, filterPlace,
+    filterSmokingAllowed, filterHideUnavailable, filterPlaces,
   ]);
 
   useEffect(() => {
@@ -416,17 +416,20 @@ export default function PropertyListPage({
     if (filterPetFriendly && p.petFriendly !== "ACCEPT") return false;
     if (filterSmokingAllowed && p.smokingAllowed !== "ACCEPT") return false;
     if (filterHideUnavailable && (p.isRented || p.isSold)) return false;
-    // Zone search — excludes properties with no coordinates to check, same
-    // as a station/province mismatch would.
-    if (filterPlace) {
+    // Zone search — a property qualifies if it's near ANY selected zone.
+    // Excludes properties with no coordinates to check, same as a
+    // station/province mismatch would.
+    if (filterPlaces.length > 0) {
       if (p.latitude == null || p.longitude == null) return false;
-      const d = haversineDistanceKm(filterPlace.lat, filterPlace.lng, Number(p.latitude), Number(p.longitude));
-      if (d > PLACE_FILTER_RADIUS_KM) return false;
+      const nearAny = filterPlaces.some(
+        (place) => haversineDistanceKm(place.lat, place.lng, Number(p.latitude), Number(p.longitude)) <= PLACE_FILTER_RADIUS_KM
+      );
+      if (!nearAny) return false;
     }
     return true;
   });
 
-  const hasActiveFilters = filterStatus || filterListing !== "RENT" || filterPropertyType || filterPriority || filterCategory || filterPriceRange || filterStations.length > 0 || filterExclusive || filterPostDateFrom || filterPostDateTo || filterBedrooms || filterMinSize || filterReadyToMoveIn || filterPetFriendly || filterSmokingAllowed || filterHideUnavailable || filterPlace;
+  const hasActiveFilters = filterStatus || filterListing !== "RENT" || filterPropertyType || filterPriority || filterCategory || filterPriceRange || filterStations.length > 0 || filterExclusive || filterPostDateFrom || filterPostDateTo || filterBedrooms || filterMinSize || filterReadyToMoveIn || filterPetFriendly || filterSmokingAllowed || filterHideUnavailable || filterPlaces.length > 0;
 
   const clearFilters = () => {
     setSearchText(""); setFilterStatus(""); setFilterListing("RENT"); setFilterPropertyType("");
@@ -435,7 +438,7 @@ export default function PropertyListPage({
     setFilterExclusive(false); setFilterPostDateFrom(""); setFilterPostDateTo("");
     setFilterBedrooms(""); setFilterMinSize("");
     setFilterReadyToMoveIn(false); setFilterPetFriendly(false); setFilterSmokingAllowed(false);
-    setFilterHideUnavailable(false); setFilterPlace(null);
+    setFilterHideUnavailable(false); setFilterPlaces([]);
   };
 
   // Generate month tabs from properties
@@ -499,7 +502,7 @@ export default function PropertyListPage({
 
   // Any change to search/filters/tabs re-starts pagination from the top.
   const filterStationsKey = filterStations.join(",");
-  const filterPlaceKey = filterPlace ? `${filterPlace.lat},${filterPlace.lng}` : "";
+  const filterPlaceKey = filterPlaces.map((p) => `${p.lat},${p.lng}`).join("|");
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
   }, [
@@ -739,9 +742,15 @@ export default function PropertyListPage({
               </div>
               <PlaceFilterInput
                 locale={locale}
-                value={filterPlace}
-                onSelect={(r) => setFilterPlace({ label: r.displayName, lat: r.lat, lng: r.lng })}
-                onClear={() => setFilterPlace(null)}
+                places={filterPlaces}
+                onAdd={(r) =>
+                  setFilterPlaces((prev) =>
+                    prev.some((p) => p.label === r.displayName)
+                      ? prev
+                      : [...prev, { label: r.displayName, lat: r.lat, lng: r.lng }]
+                  )
+                }
+                onRemove={(label) => setFilterPlaces((prev) => prev.filter((p) => p.label !== label))}
               />
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">{locale === "th" ? "Post date ตั้งแต่" : "Post date from"}</label>
@@ -1622,16 +1631,15 @@ export default function PropertyListPage({
 }
 
 // Geocoded zone search box (e.g. "ห้วยขวาง") — same /api/geocode endpoint
-// the map page and customer-matching use. Sized to sit in the filter grid
-// as a single cell: shows the picked zone inline with a clear (×) button,
-// or the search input + results dropdown when nothing is picked yet.
+// the map page and customer-matching use. Several zones can be picked at
+// once (OR'd together); each shows as a removable chip under the input.
 function PlaceFilterInput({
-  locale, value, onSelect, onClear,
+  locale, places, onAdd, onRemove,
 }: {
   locale: string;
-  value: { label: string; lat: number; lng: number } | null;
-  onSelect: (r: { lat: number; lng: number; displayName: string }) => void;
-  onClear: () => void;
+  places: { label: string; lat: number; lng: number }[];
+  onAdd: (r: { lat: number; lng: number; displayName: string }) => void;
+  onRemove: (label: string) => void;
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<{ lat: number; lng: number; displayName: string }[]>([]);
@@ -1658,23 +1666,6 @@ function PlaceFilterInput({
     }
     setLoading(false);
   };
-
-  if (value) {
-    return (
-      <div>
-        <label className="block text-xs font-medium text-gray-500 mb-1">
-          {locale === "th" ? "ค้นหาตามทำเล" : "Search by zone"}
-        </label>
-        <div className="w-full border rounded-lg px-3 py-2 text-sm flex items-center gap-1.5 bg-blue-50 border-blue-200">
-          <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-          <span className="flex-1 truncate text-blue-800">{value.label}</span>
-          <button type="button" onClick={onClear} className="p-0.5 rounded hover:bg-blue-100 text-blue-400 shrink-0">
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="relative">
@@ -1708,7 +1699,7 @@ function PlaceFilterInput({
                 key={i}
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
-                onClick={() => { onSelect(r); setQuery(""); setResults([]); setOpen(false); }}
+                onClick={() => { onAdd(r); setQuery(""); setResults([]); setOpen(false); }}
                 className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b border-gray-50 last:border-0 flex items-start gap-1.5"
               >
                 <MapPin className="w-3 h-3 text-gray-400 mt-0.5 shrink-0" />
@@ -1716,6 +1707,22 @@ function PlaceFilterInput({
               </button>
             ))
           )}
+        </div>
+      )}
+      {places.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-1.5">
+          {places.map((p) => (
+            <span
+              key={p.label}
+              className="inline-flex items-center gap-1 text-[11px] bg-blue-50 text-blue-700 border border-blue-200 pl-1.5 pr-1 py-0.5 rounded-full max-w-full"
+            >
+              <MapPin className="w-2.5 h-2.5 shrink-0" />
+              <span className="truncate max-w-[140px]">{p.label}</span>
+              <button type="button" onClick={() => onRemove(p.label)} className="p-0.5 rounded hover:bg-blue-100 text-blue-400 shrink-0">
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </span>
+          ))}
         </div>
       )}
     </div>
