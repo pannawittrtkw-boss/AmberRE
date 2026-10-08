@@ -18,8 +18,7 @@ export async function GET(req: NextRequest) {
     const stationId = searchParams.get("stationId");
     const stationsParam = searchParams.get("stations") || "";
     const amenityIds = searchParams.get("amenityIds");
-    const kitchenPartition = searchParams.get("kitchenPartition") === "true";
-    const bedroomPartition = searchParams.get("bedroomPartition") === "true";
+    const bedroomsParam = searchParams.get("bedrooms");
     const featured = searchParams.get("featured") === "true";
     const popular = searchParams.get("popular") === "true";
     const status = searchParams.get("status") || "";
@@ -131,8 +130,11 @@ export async function GET(req: NextRequest) {
       if (minPriceParam) where.price.gte = Number(minPriceParam);
       if (maxPriceParam) where.price.lte = Number(maxPriceParam);
     }
-    if (kitchenPartition) where.kitchenPartition = true;
-    if (bedroomPartition) where.bedroomPartition = true;
+    if (bedroomsParam) {
+      const n = parseInt(bedroomsParam, 10);
+      // "4" means "4+", same convention used by customer-lead matching.
+      if (!isNaN(n)) where.bedrooms = n >= 4 ? { gte: 4 } : n;
+    }
     if (featured) where.isFeatured = true;
     if (popular) where.isPopular = true;
     if (status) {

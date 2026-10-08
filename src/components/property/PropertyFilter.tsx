@@ -77,8 +77,7 @@ export default function PropertyFilter({
     stationId: "",
     stations: [] as string[],
     amenityIds: [] as number[],
-    kitchenPartition: false,
-    bedroomPartition: false,
+    bedrooms: "",
   });
   const [showStationModal, setShowStationModal] = useState(false);
 
@@ -131,8 +130,7 @@ export default function PropertyFilter({
       stationId: "",
       stations: [],
       amenityIds: [],
-      kitchenPartition: false,
-      bedroomPartition: false,
+      bedrooms: "",
     };
     setFilters(reset);
     onFilter(toApiPayload(reset));
@@ -151,8 +149,7 @@ export default function PropertyFilter({
     filters.stationId ||
     filters.stations.length > 0 ||
     filters.amenityIds.length > 0 ||
-    filters.kitchenPartition ||
-    filters.bedroomPartition;
+    filters.bedrooms;
 
   const priceRanges = getPriceRanges(filters.listingType === "SALE" ? "SALE" : "RENT");
 
@@ -389,43 +386,25 @@ export default function PropertyFilter({
             </div>
           </div>
 
-          {/* Room Layout — toggles */}
-          <div className="space-y-3">
-            <label className="flex items-center justify-between cursor-pointer">
-              <span className={toggleLabelCls}>{t.kitchenPartition}</span>
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={filters.kitchenPartition}
-                  onChange={(e) =>
-                    updateFilter("kitchenPartition", e.target.checked)
-                  }
-                  className="sr-only peer"
-                />
-                <div
-                  className={`w-10 h-5 ${toggleBgCls} rounded-full peer peer-checked:bg-[#C8A951] transition-colors`}
-                />
-                <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5" />
+          {/* Bedrooms — hidden for property types that don't have any */}
+          {!(filters.propertyType.length > 0 && filters.propertyType.every((t) => hasNoBedrooms(t))) && (
+            <div>
+              <label className={`block ${labelCls}`}>{t.bedrooms}</label>
+              <div className="grid grid-cols-5 gap-2">
+                {["", "1", "2", "3", "4"].map((n) => (
+                  <button
+                    key={n || "all"}
+                    onClick={() => updateFilter("bedrooms", filters.bedrooms === n ? "" : n)}
+                    className={`py-2.5 rounded-xl text-xs font-medium transition-all ${
+                      filters.bedrooms === n ? pillActiveCls : pillInactiveCls
+                    }`}
+                  >
+                    {n === "" ? tc.all : n === "4" ? "4+" : n}
+                  </button>
+                ))}
               </div>
-            </label>
-            <label className="flex items-center justify-between cursor-pointer">
-              <span className={toggleLabelCls}>{t.bedroomPartition}</span>
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={filters.bedroomPartition}
-                  onChange={(e) =>
-                    updateFilter("bedroomPartition", e.target.checked)
-                  }
-                  className="sr-only peer"
-                />
-                <div
-                  className={`w-10 h-5 ${toggleBgCls} rounded-full peer peer-checked:bg-[#C8A951] transition-colors`}
-                />
-                <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5" />
-              </div>
-            </label>
-          </div>
+            </div>
+          )}
 
           {/* Stations — Modal Picker */}
           <div>
