@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
     const {
       name, phone, lineId, facebook, projectName,
       province, district, subdistrict, btsStation, dealType,
+      interestPlaceLabel, interestLat, interestLng,
       budgetMin, budgetMax, bedrooms, minSizeSqm,
       wantPetFriendly, wantSmokingAllowed, wantReadyToMoveIn, note, status,
     } = body;
@@ -50,6 +51,9 @@ export async function POST(req: NextRequest) {
         district: district || null,
         subdistrict: subdistrict || null,
         btsStation: btsStation || null,
+        interestPlaceLabel: interestPlaceLabel || null,
+        interestLat: interestLat !== undefined && interestLat !== null ? parseFloat(interestLat) : null,
+        interestLng: interestLng !== undefined && interestLng !== null ? parseFloat(interestLng) : null,
         dealType: dealType === "SALE" ? "SALE" : "RENT",
         budgetMin: budgetMin ? parseFloat(budgetMin) : null,
         budgetMax: budgetMax ? parseFloat(budgetMax) : null,

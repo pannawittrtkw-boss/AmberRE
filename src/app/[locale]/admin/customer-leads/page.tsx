@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import {
   Loader2, Plus, Pencil, Trash2, X, Search, Phone, MessageSquare,
@@ -21,6 +21,9 @@ type CustomerLead = {
   district: string | null;
   subdistrict: string | null;
   btsStation: string | null;
+  interestPlaceLabel: string | null;
+  interestLat: string | null;
+  interestLng: string | null;
   dealType: string;
   budgetMin: string | null;
   budgetMax: string | null;
@@ -58,12 +61,15 @@ type MatchedProperty = {
   project: { id: number; nameTh: string; province: string | null; district: string | null } | null;
   score: number;
   reasons: string[];
+  distanceKm: number | null;
 };
 
 const EMPTY_FORM = {
   name: "", phone: "", lineId: "", facebook: "",
   projectName: "", province: "", district: "", subdistrict: "",
-  btsStation: "", dealType: "RENT", budgetMin: "", budgetMax: "", bedrooms: "",
+  btsStation: "",
+  interestPlaceLabel: "", interestLat: null as number | null, interestLng: null as number | null,
+  dealType: "RENT", budgetMin: "", budgetMax: "", bedrooms: "",
   minSizeSqm: "", wantPetFriendly: false, wantSmokingAllowed: false, wantReadyToMoveIn: false,
   note: "", status: "ACTIVE",
 };
@@ -181,6 +187,10 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
     projectNamePlaceholder: isTh ? "ชื่อโครงการที่สนใจ" : "Project of interest",
     stationLabel: isTh ? "สถานี BTS/MRT" : "BTS/MRT Station",
     stationPlaceholder: isTh ? "คลิกเพื่อเลือกสถานี BTS/MRT..." : "Click to select BTS/MRT station...",
+    placeSearchLabel: isTh ? "ค้นหาทำเล" : "Search Location",
+    placeSearchPlaceholder: isTh ? "พิมพ์ชื่อย่าน เช่น ห้วยขวาง, พระราม 9, รัชดา..." : "Type a zone, e.g. Huai Khwang, Rama 9...",
+    placeSearchNoResults: isTh ? "ไม่พบพื้นที่นี้" : "No results found",
+    placeSearchHint: isTh ? "ใช้จับคู่ทรัพย์ที่อยู่ใกล้พื้นที่นี้ นอกเหนือจากเงื่อนไขอื่น" : "Used to rank properties near this spot, alongside the other criteria",
     requirements: isTh ? "ความต้องการ" : "Requirements",
     dealTypeLabel: isTh ? "ประเภท" : "Type",
     budgetMinSale: isTh ? "งบประมาณต่ำสุด (บาท)" : "Min Budget (THB)",
@@ -235,6 +245,9 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
       district: lead.district || "",
       subdistrict: lead.subdistrict || "",
       btsStation: lead.btsStation || "",
+      interestPlaceLabel: lead.interestPlaceLabel || "",
+      interestLat: lead.interestLat !== null && lead.interestLat !== undefined ? Number(lead.interestLat) : null,
+      interestLng: lead.interestLng !== null && lead.interestLng !== undefined ? Number(lead.interestLng) : null,
       budgetMin: lead.budgetMin || "",
       budgetMax: lead.budgetMax || "",
       dealType: lead.dealType === "SALE" ? "SALE" : "RENT",
@@ -395,6 +408,11 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                           {[lead.province, lead.district, lead.subdistrict].filter(Boolean).join(" / ")}
                         </span>
                       )}
+                      {lead.interestPlaceLabel && (
+                        <span className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
+                          <MapPin className="w-3 h-3" />{lead.interestPlaceLabel}
+                        </span>
+                      )}
                       {lead.btsStation && (
                         <span className="flex items-center gap-1 text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full">
                           <Train className="w-3 h-3" />{lead.btsStation}
@@ -529,6 +547,19 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
                     value={form.projectName}
                     onChange={(v) => setForm({ ...form, projectName: v })}
                     placeholder={T.projectNamePlaceholder}
+                  />
+                  <PlaceSearchField
+                    label={T.placeSearchLabel}
+                    placeholder={T.placeSearchPlaceholder}
+                    noResultsLabel={T.placeSearchNoResults}
+                    hint={T.placeSearchHint}
+                    value={form.interestPlaceLabel}
+                    lat={form.interestLat}
+                    lng={form.interestLng}
+                    onSelect={(r) =>
+                      setForm((prev) => ({ ...prev, interestPlaceLabel: r.displayName, interestLat: r.lat, interestLng: r.lng }))
+                    }
+                    onClear={() => setForm((prev) => ({ ...prev, interestPlaceLabel: "", interestLat: null, interestLng: null }))}
                   />
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <ThaiAddressFields
@@ -724,6 +755,119 @@ export default function CustomerLeadsPage({ params }: { params: Promise<{ locale
   );
 }
 
+// Free-text zone/neighborhood search (e.g. "ห้วยขวาง", "พระราม 9") — same
+// geocoding endpoint the map page's search box uses. Once a result is
+// picked, it collapses into a chip; matching then ranks properties by
+// straight-line distance to this point (see the /matches API route).
+function PlaceSearchField({
+  label, placeholder, noResultsLabel, hint,
+  value, lat, lng, onSelect, onClear,
+}: {
+  label: string;
+  placeholder: string;
+  noResultsLabel: string;
+  hint: string;
+  value: string;
+  lat: number | null;
+  lng: number | null;
+  onSelect: (r: { lat: number; lng: number; displayName: string }) => void;
+  onClear: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<{ lat: number; lng: number; displayName: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [noResults, setNoResults] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  const handleSearch = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const q = query.trim();
+    if (!q) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      const list = data.success ? (data.data || []) : [];
+      setResults(list);
+      setNoResults(list.length === 0);
+      setOpen(true);
+    } catch {
+      setResults([]);
+      setNoResults(true);
+      setOpen(true);
+    }
+    setLoading(false);
+  };
+
+  if (value && lat !== null && lng !== null) {
+    return (
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+        <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 rounded-lg px-3 py-2 text-sm">
+          <MapPin className="w-4 h-4 text-blue-500 flex-shrink-0" />
+          <span className="flex-1 text-gray-800 truncate">{value}</span>
+          <button type="button" onClick={onClear} className="p-0.5 rounded hover:bg-blue-100 text-blue-400">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <p className="text-[11px] text-gray-400 mt-1">{hint}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <form onSubmit={handleSearch} className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={placeholder}
+            className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={loading || !query.trim()}
+          className="shrink-0 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+        </button>
+      </form>
+      {open && (
+        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+          {noResults ? (
+            <p className="px-3 py-2 text-xs text-gray-400">{noResultsLabel}</p>
+          ) : (
+            results.map((r, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => { onSelect(r); setQuery(""); setResults([]); setOpen(false); }}
+                className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b border-gray-50 last:border-0 flex items-start gap-1.5"
+              >
+                <MapPin className="w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0" />
+                <span className="text-gray-700">{r.displayName}</span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FormField({
   label, value, onChange, placeholder, type = "text", className = "",
 }: {
@@ -760,6 +904,7 @@ const REASON_LABELS: Record<string, { th: string; en: string }> = {
   SMOKING_MATCH: { th: "สูบบุหรี่ได้", en: "Smoking allowed" },
   READY_MATCH: { th: "พร้อมเข้าอยู่ทันที", en: "Ready to move in" },
   STATION_MATCH: { th: "สถานี BTS/MRT ตรงกัน", en: "BTS/MRT station matches" },
+  NEARBY_LOCATION_MATCH: { th: "อยู่ใกล้ทำเลที่ค้นหา", en: "Near the searched location" },
 };
 
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
@@ -834,6 +979,14 @@ function MatchCard({ prop, locale }: { prop: MatchedProperty; locale: string }) 
           {prop.smokingAllowed === "ACCEPT" && <span title={smokingTitle}>🚬</span>}
           {prop.stations.length > 0 && (
             <span className="flex items-center gap-0.5"><Train className="w-3 h-3" />{isTh ? prop.stations[0].nameTh : prop.stations[0].nameEn}</span>
+          )}
+          {prop.distanceKm !== null && (
+            <span className="flex items-center gap-0.5 text-blue-600">
+              <MapPin className="w-3 h-3" />
+              {prop.distanceKm < 1
+                ? `${Math.round(prop.distanceKm * 1000)}${isTh ? " ม." : "m"}`
+                : `${prop.distanceKm.toFixed(1)}${isTh ? " กม." : "km"}`}
+            </span>
           )}
         </div>
         <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">

@@ -3,8 +3,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getStationThaiName, getStationEnName } from "@/lib/stations";
+import { haversineDistanceKm } from "@/lib/geo";
 
-// Scoring weights (total possible = 125)
+// Scoring weights (total possible = 145)
 const SCORE = {
   PROJECT_NAME: 25,
   BUDGET: 25,
@@ -16,7 +17,19 @@ const SCORE = {
   PET_FRIENDLY: 5,
   SMOKING_ALLOWED: 5,
   READY_TO_MOVE_IN: 5,
+  NEARBY_LOCATION: 20,
 };
+
+// Soft distance bonus from the lead's geocoded "ทำเลที่สนใจ" search point —
+// never disqualifies (unlike province/district), just ranks closer listings
+// higher. Full credit within easy walking distance, tapering off by ~5km.
+function nearbyLocationScore(distanceKm: number): number {
+  if (distanceKm <= 1) return SCORE.NEARBY_LOCATION;
+  if (distanceKm <= 2) return Math.round(SCORE.NEARBY_LOCATION * 0.7);
+  if (distanceKm <= 3.5) return Math.round(SCORE.NEARBY_LOCATION * 0.4);
+  if (distanceKm <= 5) return Math.round(SCORE.NEARBY_LOCATION * 0.15);
+  return 0;
+}
 
 function normalizeText(s: string) {
   return s.toLowerCase().replace(/\s+/g, "").trim();
@@ -96,7 +109,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       (lead.dealType === "RENT" && prop.listingType !== "RENT" && prop.listingType !== "RENT_AND_SALE") ||
       (lead.dealType === "SALE" && prop.listingType !== "SALE" && prop.listingType !== "RENT_AND_SALE")
     ) {
-      return { property: prop, score: -1, reasons: [] };
+      return { property: prop, score: -1, reasons: [], distanceKm: null };
     }
 
     // 1. Project name match (25pts)
@@ -115,7 +128,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       const max = lead.budgetMax ? Number(lead.budgetMax) : Infinity;
       // Disqualify if price exceeds max budget by more than 50%
       if (lead.budgetMax && price > Number(lead.budgetMax) * 1.5) {
-        return { property: prop, score: -1, reasons: [] };
+        return { property: prop, score: -1, reasons: [], distanceKm: null };
       }
       if (price >= min && price <= max) {
         score += SCORE.BUDGET;
@@ -136,7 +149,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         score += SCORE.BEDROOMS;
         reasons.push("BEDROOMS_MATCH");
       } else {
-        return { property: prop, score: -1, reasons: [] };
+        return { property: prop, score: -1, reasons: [], distanceKm: null };
       }
     }
 
@@ -152,7 +165,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
           score += SCORE.PROVINCE;
           reasons.push("PROVINCE_MATCH");
         } else {
-          return { property: prop, score: -1, reasons: [] };
+          return { property: prop, score: -1, reasons: [], distanceKm: null };
         }
       }
       // No province data on property → don't disqualify, give 0 pts
@@ -170,7 +183,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
           score += SCORE.DISTRICT;
           reasons.push("DISTRICT_MATCH");
         } else {
-          return { property: prop, score: -1, reasons: [] };
+          return { property: prop, score: -1, reasons: [], distanceKm: null };
         }
       }
       // No district data on property → don't disqualify, give 0 pts
@@ -185,7 +198,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
           score += SCORE.SIZE;
           reasons.push("SIZE_MATCH");
         } else {
-          return { property: prop, score: -1, reasons: [] };
+          return { property: prop, score: -1, reasons: [], distanceKm: null };
         }
       }
     }
@@ -196,7 +209,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         score += SCORE.PET_FRIENDLY;
         reasons.push("PET_FRIENDLY_MATCH");
       } else {
-        return { property: prop, score: -1, reasons: [] };
+        return { property: prop, score: -1, reasons: [], distanceKm: null };
       }
     }
 
@@ -206,7 +219,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         score += SCORE.SMOKING_ALLOWED;
         reasons.push("SMOKING_MATCH");
       } else {
-        return { property: prop, score: -1, reasons: [] };
+        return { property: prop, score: -1, reasons: [], distanceKm: null };
       }
     }
 
@@ -214,7 +227,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     // the property means it's already listed as available now.
     if (lead.wantReadyToMoveIn) {
       if (prop.availableDate && new Date(prop.availableDate).getTime() > Date.now()) {
-        return { property: prop, score: -1, reasons: [] };
+        return { property: prop, score: -1, reasons: [], distanceKm: null };
       }
       score += SCORE.READY_TO_MOVE_IN;
       reasons.push("READY_MATCH");
@@ -237,6 +250,24 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
+    // 11. Proximity to the lead's geocoded "ทำเลที่สนใจ" search point (up to
+    // 20pts, soft bonus only — never disqualifies, and skipped entirely when
+    // either side is missing coordinates, same convention as size/province).
+    let distanceKm: number | null = null;
+    if (lead.interestLat != null && lead.interestLng != null && prop.latitude != null && prop.longitude != null) {
+      distanceKm = haversineDistanceKm(
+        Number(lead.interestLat),
+        Number(lead.interestLng),
+        Number(prop.latitude),
+        Number(prop.longitude)
+      );
+      const nearbyScore = nearbyLocationScore(distanceKm);
+      if (nearbyScore > 0) {
+        score += nearbyScore;
+        reasons.push("NEARBY_LOCATION_MATCH");
+      }
+    }
+
     // Older listings are more likely to already be rented out, so decay
     // the score the longer a property has sat in the system unrefreshed.
     const daysPosted = Math.floor(
@@ -246,14 +277,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       daysPosted > 90 ? 0.7 : daysPosted > 30 ? 0.85 : daysPosted > 7 ? 0.95 : 1;
     score = Math.round(score * freshnessFactor);
 
-    return { property: prop, score, reasons };
+    return { property: prop, score, reasons, distanceKm };
   });
 
   const results = scored
     .filter((r) => r.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, 20)
-    .map(({ property, score, reasons }) => ({
+    .map(({ property, score, reasons, distanceKm }) => ({
       id: property.id,
       titleTh: property.titleTh,
       titleEn: property.titleEn,
@@ -284,6 +315,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         : null,
       score,
       reasons,
+      distanceKm,
     }));
 
   return NextResponse.json({ success: true, data: results, total: results.length });
