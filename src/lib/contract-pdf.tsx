@@ -129,6 +129,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   watermarkLogo: { width: 340, height: 340, objectFit: "contain", opacity: 0.11 },
+  // Bold diagonal "SAMPLE" stamp — deliberately much more visible than the
+  // faint logo watermark above, since its entire job is to not be missed.
+  sampleWatermark: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sampleWatermarkText: {
+    fontSize: 54,
+    fontWeight: "bold",
+    color: "#DC2626",
+    opacity: 0.22,
+    transform: "rotate(-30deg)",
+    textAlign: "center",
+  },
   header: { textAlign: "center", marginBottom: 14 },
   title: { fontSize: 14, fontWeight: "bold", marginBottom: 4, lineHeight: 1.5 },
   subtitle: { fontSize: 13, fontWeight: "bold", lineHeight: 1.5 },
@@ -741,6 +760,11 @@ export interface ContractPdfData {
   witness1Signature?: string | null;
   witness2Name?: string | null;
   witness2Signature?: string | null;
+
+  // When set, stamps a large diagonal text watermark over the page — used
+  // by the "preview template with sample data" feature so a draft PDF sent
+  // to a customer can never be mistaken for a real, binding contract.
+  sampleWatermarkText?: string | null;
 }
 
 const formatNum = (n: number) =>
@@ -775,6 +799,12 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
         {showBranding && data.companyLogoUrl && (
           <View style={styles.watermark} fixed>
             <Image src={data.companyLogoUrl} style={styles.watermarkLogo} />
+          </View>
+        )}
+
+        {data.sampleWatermarkText && (
+          <View style={styles.sampleWatermark} fixed>
+            <TText style={styles.sampleWatermarkText}>{data.sampleWatermarkText}</TText>
           </View>
         )}
 

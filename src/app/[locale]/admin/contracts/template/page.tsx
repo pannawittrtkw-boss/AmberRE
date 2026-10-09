@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Save, Check, Anchor } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Check, Anchor, FileText } from "lucide-react";
 import CustomClausesEditor from "../CustomClausesEditor";
 import StandardClausesEditor from "../StandardClausesEditor";
 import {
@@ -131,11 +131,20 @@ export default function ContractTemplatePage({
           <ArrowLeft className="w-4 h-4" />
           {locale === "th" ? "กลับ" : "Back"}
         </Link>
-        <h1 className="text-xl sm:text-2xl font-bold">
+        <h1 className="text-xl sm:text-2xl font-bold flex-1">
           {locale === "th"
             ? "Template สัญญา (Standard)"
             : "Contract Template (Standard)"}
         </h1>
+        <a
+          href="/api/admin/contracts/template/preview-pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-sm font-medium bg-[#C8A951] hover:bg-[#B8993F] text-white px-3.5 py-2 rounded-lg transition-colors self-start"
+        >
+          <FileText className="w-4 h-4" />
+          {locale === "th" ? "ดูตัวอย่างสัญญา (ข้อมูลจำลอง)" : "Preview Sample Contract"}
+        </a>
       </div>
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900 mb-5">
