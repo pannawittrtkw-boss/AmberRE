@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Loader2, CheckCircle } from "lucide-react";
+import { ChevronLeft, Loader2, CheckCircle, AlertTriangle, Info, X } from "lucide-react";
 
 type Form = {
   titleTh: string;
@@ -35,6 +35,60 @@ const initForm: Form = {
   ownerLineId: "", note: "",
 };
 
+type DupMatch = {
+  propertyId: number;
+  tier: "LIKELY_SAME_UNIT" | "SAME_OWNER_DIFFERENT_UNIT";
+  titleTh: string;
+  projectName: string | null;
+  building: string | null;
+  floor: number | null;
+  submittedBy: string;
+  editUrl: string | null;
+};
+
+// Non-blocking warning — never gates submission, just lets the agent
+// double-check before sending the form in. See src/lib/property-dedup.ts
+// for the matching logic behind this.
+function DupWarningBanner({ matches, onDismiss }: { matches: DupMatch[]; onDismiss: () => void }) {
+  const strongest = matches.some((m) => m.tier === "LIKELY_SAME_UNIT") ? "LIKELY_SAME_UNIT" : "SAME_OWNER_DIFFERENT_UNIT";
+  const isStrong = strongest === "LIKELY_SAME_UNIT";
+  return (
+    <div
+      className={`relative rounded-xl border p-4 text-sm ${
+        isStrong ? "bg-orange-50 border-orange-200 text-orange-900" : "bg-amber-50 border-amber-200 text-amber-900"
+      }`}
+    >
+      <button type="button" onClick={onDismiss} className="absolute top-3 right-3 opacity-60 hover:opacity-100">
+        <X className="w-4 h-4" />
+      </button>
+      <p className="font-semibold mb-1 flex items-center gap-1.5 pr-6">
+        {isStrong ? <AlertTriangle className="w-4 h-4" /> : <Info className="w-4 h-4" />}
+        {isStrong
+          ? "อาจเป็นทรัพย์ซ้ำ — พบทรัพย์ที่มีเจ้าของและโครงการ/ตึก/ชั้นตรงกันในระบบแล้ว กรุณาตรวจสอบก่อนส่ง"
+          : "เจ้าของรายนี้มีทรัพย์อื่นอยู่ในระบบแล้ว (โครงการ/ตึก/ชั้นไม่ตรงกัน) — อาจเป็นทรัพย์คนละห้อง"}
+      </p>
+      <ul className="mt-2 space-y-1 text-xs">
+        {matches.map((m) => (
+          <li key={m.propertyId} className="flex items-center gap-1.5">
+            <span className="opacity-70">
+              {[m.projectName, m.building ? `ตึก ${m.building}` : null, m.floor != null ? `ชั้น ${m.floor}` : null]
+                .filter(Boolean)
+                .join(" · ") || m.titleTh}
+              {" — โดย "}
+              {m.submittedBy}
+            </span>
+            {m.editUrl && (
+              <a href={m.editUrl} target="_blank" rel="noopener noreferrer" className="underline font-medium">
+                ดูรายการ
+              </a>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function AgentPropertyNewPage({ params }: { params: Promise<{ locale: string }> }) {
   const { data: session, status: authStatus } = useSession();
   const router = useRouter();
@@ -43,10 +97,50 @@ export default function AgentPropertyNewPage({ params }: { params: Promise<{ loc
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const [dupMatches, setDupMatches] = useState<DupMatch[]>([]);
+  const [dupDismissed, setDupDismissed] = useState(false);
+  const dupReqId = useRef(0);
 
   useEffect(() => {
     params.then(({ locale: l }) => setLocale(l));
   }, [params]);
+
+  // Live possible-duplicate check — fires as the agent fills in owner
+  // phone/LINE or project/building/floor, debounced. Never blocks
+  // submission; see DupWarningBanner above.
+  useEffect(() => {
+    const hasOwnerSignal = form.ownerPhone.replace(/\D/g, "").length >= 9 || form.ownerLineId.trim().length >= 2;
+    const hasPropertySignal = form.projectName.trim().length >= 2;
+    if (!hasOwnerSignal && !hasPropertySignal) {
+      setDupMatches([]);
+      return;
+    }
+    const myReqId = ++dupReqId.current;
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/properties/check-duplicate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ownerPhone: form.ownerPhone || null,
+            ownerLineId: form.ownerLineId || null,
+            projectName: form.projectName || null,
+            building: form.building || null,
+            floor: form.floor ? Number(form.floor) : null,
+          }),
+        });
+        const d = await res.json();
+        if (myReqId !== dupReqId.current) return; // a newer request already superseded this one
+        if (d.success) {
+          setDupMatches(d.data);
+          setDupDismissed(false);
+        }
+      } catch {
+        // Silent — this is an advisory check, not a form requirement.
+      }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [form.ownerPhone, form.ownerLineId, form.projectName, form.building, form.floor]);
 
   useEffect(() => {
     if (authStatus === "unauthenticated") router.push(`/${locale}/auth/login`);
@@ -236,6 +330,10 @@ export default function AgentPropertyNewPage({ params }: { params: Promise<{ loc
               </div>
             </div>
           </Section>
+
+          {dupMatches.length > 0 && !dupDismissed && (
+            <DupWarningBanner matches={dupMatches} onDismiss={() => setDupDismissed(true)} />
+          )}
 
           {/* Description */}
           <Section title="รายละเอียดเพิ่มเติม">

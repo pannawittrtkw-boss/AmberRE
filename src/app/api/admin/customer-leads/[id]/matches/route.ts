@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getStationThaiName, getStationEnName } from "@/lib/stations";
 import { haversineDistanceKm } from "@/lib/geo";
+import { textMatches } from "@/lib/text-match";
 
 // Scoring weights (total possible = 153)
 const SCORE = {
@@ -46,16 +47,6 @@ function parseInterestPlaces(json: string | null): InterestPlace[] {
   } catch {
     return [];
   }
-}
-
-function normalizeText(s: string) {
-  return s.toLowerCase().replace(/\s+/g, "").trim();
-}
-
-function textMatches(a: string, b: string): boolean {
-  const na = normalizeText(a);
-  const nb = normalizeText(b);
-  return na.includes(nb) || nb.includes(na);
 }
 
 // Resolve location field from property: own field → project field → address fallback

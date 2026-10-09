@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
@@ -16,6 +16,8 @@ import {
   Train,
   Sparkles,
   ExternalLink,
+  AlertTriangle,
+  Info,
 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -28,6 +30,59 @@ import {
 import { hasNoBedrooms } from "@/lib/property-constants";
 
 const DraggableMapPreview = dynamic(() => import("@/components/admin/DraggableMapPreview"), { ssr: false });
+
+type DupMatch = {
+  propertyId: number;
+  tier: "LIKELY_SAME_UNIT" | "SAME_OWNER_DIFFERENT_UNIT";
+  titleTh: string;
+  projectName: string | null;
+  building: string | null;
+  floor: number | null;
+  submittedBy: string;
+  editUrl: string | null;
+};
+
+// Non-blocking warning — never gates submission, just lets whoever's
+// adding the property double-check before sending it in. See
+// src/lib/property-dedup.ts for the matching logic behind this.
+function DupWarningBanner({ matches, onDismiss }: { matches: DupMatch[]; onDismiss: () => void }) {
+  const isStrong = matches.some((m) => m.tier === "LIKELY_SAME_UNIT");
+  return (
+    <div
+      className={`relative rounded-xl border p-4 text-sm ${
+        isStrong ? "bg-orange-50 border-orange-200 text-orange-900" : "bg-amber-50 border-amber-200 text-amber-900"
+      }`}
+    >
+      <button type="button" onClick={onDismiss} className="absolute top-3 right-3 opacity-60 hover:opacity-100">
+        <X className="w-4 h-4" />
+      </button>
+      <p className="font-semibold mb-1 flex items-center gap-1.5 pr-6">
+        {isStrong ? <AlertTriangle className="w-4 h-4" /> : <Info className="w-4 h-4" />}
+        {isStrong
+          ? "อาจเป็นทรัพย์ซ้ำ — พบทรัพย์ที่มีเจ้าของและโครงการ/ตึก/ชั้นตรงกันในระบบแล้ว กรุณาตรวจสอบก่อนส่ง"
+          : "เจ้าของรายนี้มีทรัพย์อื่นอยู่ในระบบแล้ว (โครงการ/ตึก/ชั้นไม่ตรงกัน) — อาจเป็นทรัพย์คนละห้อง"}
+      </p>
+      <ul className="mt-2 space-y-1 text-xs">
+        {matches.map((m) => (
+          <li key={m.propertyId} className="flex items-center gap-1.5">
+            <span className="opacity-70">
+              {[m.projectName, m.building ? `ตึก ${m.building}` : null, m.floor != null ? `ชั้น ${m.floor}` : null]
+                .filter(Boolean)
+                .join(" · ") || m.titleTh}
+              {" — โดย "}
+              {m.submittedBy}
+            </span>
+            {m.editUrl && (
+              <a href={m.editUrl} target="_blank" rel="noopener noreferrer" className="underline font-medium">
+                ดูรายการ
+              </a>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 const FURNITURE_ITEMS = [
   { key: "bed", labelEn: "Bed", labelTh: "เตียง" },
@@ -182,6 +237,58 @@ export default function AddPropertyPage({
     district: "",
     subdistrict: "",
   });
+
+  // Live possible-duplicate check — fires as owner phone/LINE/Facebook or
+  // project/building/floor are filled in, debounced. Never blocks
+  // submission. See src/lib/property-dedup.ts for the matching logic.
+  const [dupMatches, setDupMatches] = useState<DupMatch[]>([]);
+  const [dupDismissed, setDupDismissed] = useState(false);
+  const dupReqId = useRef(0);
+
+  useEffect(() => {
+    const hasOwnerSignal =
+      form.ownerPhone.replace(/\D/g, "").length >= 9 ||
+      form.ownerLineId.trim().length >= 2 ||
+      form.ownerFacebookUrl.trim().length >= 4;
+    const hasPropertySignal = form.projectName.trim().length >= 2 || !!selectedProjectId;
+    if (!hasOwnerSignal && !hasPropertySignal) {
+      setDupMatches([]);
+      return;
+    }
+    const myReqId = ++dupReqId.current;
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/properties/check-duplicate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ownerPhone: form.ownerPhone || null,
+            ownerLineId: form.ownerLineId || null,
+            ownerFacebookUrl: form.ownerFacebookUrl || null,
+            projectName: form.projectName || null,
+            projectId: selectedProjectId,
+            building: form.building || null,
+            floor: form.floor ? Number(form.floor) : null,
+            latitude: form.latitude ? Number(form.latitude) : null,
+            longitude: form.longitude ? Number(form.longitude) : null,
+            excludePropertyId: editId ? Number(editId) : null,
+          }),
+        });
+        const d = await res.json();
+        if (myReqId !== dupReqId.current) return; // a newer request already superseded this one
+        if (d.success) {
+          setDupMatches(d.data);
+          setDupDismissed(false);
+        }
+      } catch {
+        // Silent — this is an advisory check, not a form requirement.
+      }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [
+    form.ownerPhone, form.ownerLineId, form.ownerFacebookUrl,
+    form.projectName, form.building, form.floor, selectedProjectId, editId,
+  ]);
 
   const [selectedFurniture, setSelectedFurniture] = useState<string[]>([]);
   const [selectedAppliances, setSelectedAppliances] = useState<string[]>([]);
@@ -1629,6 +1736,10 @@ export default function AddPropertyPage({
             </div>
           </div>
         </div>
+
+        {dupMatches.length > 0 && !dupDismissed && (
+          <DupWarningBanner matches={dupMatches} onDismiss={() => setDupDismissed(true)} />
+        )}
 
         {/* Status, Category, Priority, Note */}
         <div className="bg-white rounded-xl shadow-sm border p-6">
