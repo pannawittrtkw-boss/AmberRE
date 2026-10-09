@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { findExactSourceLinkMatch } from "@/lib/property-dedup";
 
 function requireAgent(session: any) {
   const role = (session?.user as any)?.role;
@@ -50,12 +51,26 @@ export async function POST(req: NextRequest) {
       propertyType, listingType, price, salePrice,
       bedrooms, bathrooms, sizeSqm, floor, building,
       projectName, address, availableDate,
-      ownerName, ownerPhone, ownerLineId,
+      ownerName, ownerPhone, ownerLineId, sourceLink,
       note,
     } = body;
 
     if (!titleTh || !propertyType || !listingType || !price) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
+    }
+
+    // Authoritative duplicate block — an exact (normalized) sourceLink
+    // match means this listing is already in the system, regardless of
+    // its status (PENDING/VERIFIED/REVIEW/etc. all count). See
+    // src/lib/property-dedup.ts.
+    if (sourceLink) {
+      const existing = await findExactSourceLinkMatch(sourceLink);
+      if (existing) {
+        return NextResponse.json(
+          { success: false, error: "DUPLICATE_SOURCE_LINK", duplicateOf: existing },
+          { status: 409 }
+        );
+      }
     }
 
     const property = await prisma.property.create({
@@ -79,6 +94,7 @@ export async function POST(req: NextRequest) {
         ownerName: ownerName || null,
         ownerPhone: ownerPhone || null,
         ownerLineId: ownerLineId || null,
+        sourceLink: sourceLink || null,
         note: note || null,
         status: "PENDING",
         postFrom: "CO_AGENT",

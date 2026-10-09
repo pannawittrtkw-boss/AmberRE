@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { findExactSourceLinkMatch } from "@/lib/property-dedup";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -73,6 +74,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
     if (role !== "ADMIN" && existing.ownerId !== userId && existing.agentId !== userId) {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+
+    // Authoritative duplicate block — same rule as creation. Excludes
+    // this property itself, so re-saving its own unchanged link is fine.
+    if (body.sourceLink) {
+      const dup = await findExactSourceLinkMatch(body.sourceLink, existing.id);
+      if (dup) {
+        return NextResponse.json(
+          { success: false, error: "DUPLICATE_SOURCE_LINK", duplicateOf: dup },
+          { status: 409 }
+        );
+      }
     }
 
     const { amenityIds, stationIds, imageUrls, furnitureDetails, electricalAppliances, facilities, ...rawData } = body;

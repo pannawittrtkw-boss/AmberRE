@@ -24,6 +24,7 @@ type Form = {
   ownerName: string;
   ownerPhone: string;
   ownerLineId: string;
+  sourceLink: string;
   note: string;
 };
 
@@ -32,12 +33,12 @@ const initForm: Form = {
   listingType: "RENT", price: "", salePrice: "", bedrooms: "0",
   bathrooms: "0", sizeSqm: "", floor: "", building: "",
   availableDate: "", descriptionTh: "", ownerName: "", ownerPhone: "",
-  ownerLineId: "", note: "",
+  ownerLineId: "", sourceLink: "", note: "",
 };
 
 type DupMatch = {
   propertyId: number;
-  tier: "LIKELY_SAME_UNIT" | "SAME_OWNER_DIFFERENT_UNIT";
+  tier: "CONFIRMED_DUPLICATE" | "LIKELY_SAME_UNIT" | "SAME_OWNER_DIFFERENT_UNIT";
   titleTh: string;
   projectName: string | null;
   building: string | null;
@@ -46,45 +47,72 @@ type DupMatch = {
   editUrl: string | null;
 };
 
-// Non-blocking warning — never gates submission, just lets the agent
-// double-check before sending the form in. See src/lib/property-dedup.ts
-// for the matching logic behind this.
-function DupWarningBanner({ matches, onDismiss }: { matches: DupMatch[]; onDismiss: () => void }) {
-  const strongest = matches.some((m) => m.tier === "LIKELY_SAME_UNIT") ? "LIKELY_SAME_UNIT" : "SAME_OWNER_DIFFERENT_UNIT";
-  const isStrong = strongest === "LIKELY_SAME_UNIT";
+function DupMatchList({ matches }: { matches: DupMatch[] }) {
   return (
-    <div
-      className={`relative rounded-xl border p-4 text-sm ${
-        isStrong ? "bg-orange-50 border-orange-200 text-orange-900" : "bg-amber-50 border-amber-200 text-amber-900"
-      }`}
-    >
-      <button type="button" onClick={onDismiss} className="absolute top-3 right-3 opacity-60 hover:opacity-100">
-        <X className="w-4 h-4" />
-      </button>
-      <p className="font-semibold mb-1 flex items-center gap-1.5 pr-6">
-        {isStrong ? <AlertTriangle className="w-4 h-4" /> : <Info className="w-4 h-4" />}
-        {isStrong
-          ? "อาจเป็นทรัพย์ซ้ำ — พบทรัพย์ที่มีเจ้าของและโครงการ/ตึก/ชั้นตรงกันในระบบแล้ว กรุณาตรวจสอบก่อนส่ง"
-          : "เจ้าของรายนี้มีทรัพย์อื่นอยู่ในระบบแล้ว (โครงการ/ตึก/ชั้นไม่ตรงกัน) — อาจเป็นทรัพย์คนละห้อง"}
-      </p>
-      <ul className="mt-2 space-y-1 text-xs">
-        {matches.map((m) => (
-          <li key={m.propertyId} className="flex items-center gap-1.5">
-            <span className="opacity-70">
-              {[m.projectName, m.building ? `ตึก ${m.building}` : null, m.floor != null ? `ชั้น ${m.floor}` : null]
-                .filter(Boolean)
-                .join(" · ") || m.titleTh}
-              {" — โดย "}
-              {m.submittedBy}
-            </span>
-            {m.editUrl && (
-              <a href={m.editUrl} target="_blank" rel="noopener noreferrer" className="underline font-medium">
-                ดูรายการ
-              </a>
-            )}
-          </li>
-        ))}
-      </ul>
+    <ul className="mt-2 space-y-1 text-xs">
+      {matches.map((m) => (
+        <li key={m.propertyId} className="flex items-center gap-1.5">
+          <span className="opacity-70">
+            {[m.projectName, m.building ? `ตึก ${m.building}` : null, m.floor != null ? `ชั้น ${m.floor}` : null]
+              .filter(Boolean)
+              .join(" · ") || m.titleTh}
+            {" — โดย "}
+            {m.submittedBy}
+          </span>
+          {m.editUrl && (
+            <a href={m.editUrl} target="_blank" rel="noopener noreferrer" className="underline font-medium">
+              ดูรายการ
+            </a>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// CONFIRMED_DUPLICATE (exact sourceLink match) actually blocks submission
+// — this banner isn't dismissible, since dismissing it can't be allowed
+// to bypass the block (the submit button's disabled state is keyed off
+// the same matches array, not this banner's visibility). The two softer
+// tiers below it are advisory only — dismissible, never gate submission.
+// See src/lib/property-dedup.ts for the matching logic behind all three.
+function DupWarningBanner({
+  matches, dismissed, onDismiss,
+}: { matches: DupMatch[]; dismissed: boolean; onDismiss: () => void }) {
+  const confirmed = matches.filter((m) => m.tier === "CONFIRMED_DUPLICATE");
+  const likely = matches.filter((m) => m.tier === "LIKELY_SAME_UNIT");
+  const sameOwner = matches.filter((m) => m.tier === "SAME_OWNER_DIFFERENT_UNIT");
+  const advisory = [...likely, ...sameOwner];
+
+  return (
+    <div className="space-y-2">
+      {confirmed.length > 0 && (
+        <div className="rounded-xl border p-4 text-sm bg-red-50 border-red-200 text-red-900">
+          <p className="font-semibold mb-1 flex items-center gap-1.5">
+            <AlertTriangle className="w-4 h-4" />
+            ลิงก์นี้มีอยู่ในระบบแล้ว — ไม่สามารถเพิ่มซ้ำได้ กรุณาตรวจสอบลิงก์ที่มาของประกาศ
+          </p>
+          <DupMatchList matches={confirmed} />
+        </div>
+      )}
+      {advisory.length > 0 && !dismissed && (
+        <div
+          className={`relative rounded-xl border p-4 text-sm ${
+            likely.length > 0 ? "bg-orange-50 border-orange-200 text-orange-900" : "bg-amber-50 border-amber-200 text-amber-900"
+          }`}
+        >
+          <button type="button" onClick={onDismiss} className="absolute top-3 right-3 opacity-60 hover:opacity-100">
+            <X className="w-4 h-4" />
+          </button>
+          <p className="font-semibold mb-1 flex items-center gap-1.5 pr-6">
+            {likely.length > 0 ? <AlertTriangle className="w-4 h-4" /> : <Info className="w-4 h-4" />}
+            {likely.length > 0
+              ? "อาจเป็นทรัพย์ซ้ำ — พบทรัพย์ที่มีเจ้าของและโครงการ/ตึก/ชั้นตรงกันในระบบแล้ว กรุณาตรวจสอบก่อนส่ง"
+              : "เจ้าของรายนี้มีทรัพย์อื่นอยู่ในระบบแล้ว (โครงการ/ตึก/ชั้นไม่ตรงกัน) — อาจเป็นทรัพย์คนละห้อง"}
+          </p>
+          <DupMatchList matches={advisory} />
+        </div>
+      )}
     </div>
   );
 }
@@ -105,13 +133,16 @@ export default function AgentPropertyNewPage({ params }: { params: Promise<{ loc
     params.then(({ locale: l }) => setLocale(l));
   }, [params]);
 
-  // Live possible-duplicate check — fires as the agent fills in owner
-  // phone/LINE or project/building/floor, debounced. Never blocks
-  // submission; see DupWarningBanner above.
+  // Live possible-duplicate check — fires as the agent fills in the
+  // source link, owner phone/LINE, or project/building/floor, debounced.
+  // An exact source-link match (CONFIRMED_DUPLICATE) actually blocks
+  // submission — see the Submit button below; everything else is
+  // advisory only. See DupWarningBanner above.
   useEffect(() => {
+    const hasSourceSignal = form.sourceLink.trim().length >= 4;
     const hasOwnerSignal = form.ownerPhone.replace(/\D/g, "").length >= 9 || form.ownerLineId.trim().length >= 2;
     const hasPropertySignal = form.projectName.trim().length >= 2;
-    if (!hasOwnerSignal && !hasPropertySignal) {
+    if (!hasSourceSignal && !hasOwnerSignal && !hasPropertySignal) {
       setDupMatches([]);
       return;
     }
@@ -122,6 +153,7 @@ export default function AgentPropertyNewPage({ params }: { params: Promise<{ loc
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            sourceLink: form.sourceLink || null,
             ownerPhone: form.ownerPhone || null,
             ownerLineId: form.ownerLineId || null,
             projectName: form.projectName || null,
@@ -140,7 +172,7 @@ export default function AgentPropertyNewPage({ params }: { params: Promise<{ loc
       }
     }, 600);
     return () => clearTimeout(t);
-  }, [form.ownerPhone, form.ownerLineId, form.projectName, form.building, form.floor]);
+  }, [form.sourceLink, form.ownerPhone, form.ownerLineId, form.projectName, form.building, form.floor]);
 
   useEffect(() => {
     if (authStatus === "unauthenticated") router.push(`/${locale}/auth/login`);
@@ -153,8 +185,11 @@ export default function AgentPropertyNewPage({ params }: { params: Promise<{ loc
   const set = (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
 
+  const hasConfirmedDuplicate = dupMatches.some((m) => m.tier === "CONFIRMED_DUPLICATE");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (hasConfirmedDuplicate) return; // belt-and-suspenders — button is also disabled
     setError("");
     setSaving(true);
     try {
@@ -174,6 +209,8 @@ export default function AgentPropertyNewPage({ params }: { params: Promise<{ loc
       const d = await res.json();
       if (d.success) {
         setDone(true);
+      } else if (d.error === "DUPLICATE_SOURCE_LINK") {
+        setError("ลิงก์นี้มีอยู่ในระบบแล้ว — ไม่สามารถเพิ่มซ้ำได้");
       } else {
         setError(d.error || "เกิดข้อผิดพลาด");
       }
@@ -328,11 +365,15 @@ export default function AgentPropertyNewPage({ params }: { params: Promise<{ loc
                 <label className="label">Line ID เจ้าของ</label>
                 <input value={form.ownerLineId} onChange={set("ownerLineId")} className={fieldCls} />
               </div>
+              <div>
+                <label className="label">ลิงก์โพสต์ต้นทาง (ถ้ามี)</label>
+                <input value={form.sourceLink} onChange={set("sourceLink")} className={fieldCls} placeholder="https://www.facebook.com/share/..." />
+              </div>
             </div>
           </Section>
 
-          {dupMatches.length > 0 && !dupDismissed && (
-            <DupWarningBanner matches={dupMatches} onDismiss={() => setDupDismissed(true)} />
+          {dupMatches.length > 0 && (
+            <DupWarningBanner matches={dupMatches} dismissed={dupDismissed} onDismiss={() => setDupDismissed(true)} />
           )}
 
           {/* Description */}
@@ -359,7 +400,8 @@ export default function AgentPropertyNewPage({ params }: { params: Promise<{ loc
             </Link>
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || hasConfirmedDuplicate}
+              title={hasConfirmedDuplicate ? "ลิงก์นี้มีอยู่ในระบบแล้ว ไม่สามารถส่งได้" : undefined}
               className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-8 py-3 rounded-xl text-sm font-medium disabled:opacity-50"
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}

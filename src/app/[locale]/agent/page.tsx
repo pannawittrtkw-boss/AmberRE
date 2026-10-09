@@ -36,10 +36,23 @@ type Property = {
 };
 
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
-  PENDING:           { label: "รออนุมัติ",      cls: "bg-yellow-100 text-yellow-700" },
-  ADDED_PROPERTIES:  { label: "เผยแพร่แล้ว",    cls: "bg-green-100 text-green-700" },
-  REMOVED:           { label: "ถูกลบออก",        cls: "bg-gray-100 text-gray-500" },
+  PENDING:                { label: "รออนุมัติ",          cls: "bg-yellow-100 text-yellow-700" },
+  WAITING:                { label: "รอดำเนินการ",        cls: "bg-blue-100 text-blue-700" },
+  REVIEW:                 { label: "กำลังตรวจสอบ",       cls: "bg-cyan-100 text-cyan-700" },
+  VERIFIED:               { label: "ตรวจสอบแล้ว",         cls: "bg-green-100 text-green-700" },
+  VERIFIED_OVER_30_DAYS:  { label: "ตรวจสอบแล้ว (30+ วัน)", cls: "bg-orange-100 text-orange-700" },
+  ADDED_PROPERTIES:       { label: "เผยแพร่แล้ว",        cls: "bg-green-100 text-green-700" },
+  NOT_ACCEPT:             { label: "ซ้ำ/ไม่ผ่านอนุมัติ", cls: "bg-red-100 text-red-700" },
+  NOT_AVAILABLE:          { label: "ไม่พร้อมใช้งาน",      cls: "bg-gray-100 text-gray-500" },
+  REMOVED:                { label: "ถูกลบออก",            cls: "bg-gray-100 text-gray-500" },
 };
+
+// Buckets for the stat summary — maps the full status set onto the 4
+// groupings an agent actually cares about (ส่งเข้าไปทั้งหมด /
+// อนุมัติแล้ว / รอตรวจสอบ / ซ้ำหรือไม่ได้รับอนุมัติ).
+const APPROVED_STATUSES = new Set(["VERIFIED", "VERIFIED_OVER_30_DAYS", "ADDED_PROPERTIES"]);
+const PENDING_STATUSES = new Set(["PENDING", "WAITING", "REVIEW"]);
+const REJECTED_STATUSES = new Set(["NOT_ACCEPT", "NOT_AVAILABLE"]);
 
 function statusBadge(status: string | null) {
   const s = STATUS_LABEL[status || ""] || { label: status || "-", cls: "bg-gray-100 text-gray-500" };
@@ -111,6 +124,11 @@ export default function AgentPortalPage({ params }: { params: Promise<{ locale: 
   if (authStatus === "loading" || loading) {
     return <div className="flex justify-center py-32"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>;
   }
+
+  const totalSubmitted = properties.length;
+  const approvedCount = properties.filter((p) => APPROVED_STATUSES.has(p.status || "")).length;
+  const pendingCount = properties.filter((p) => PENDING_STATUSES.has(p.status || "")).length;
+  const rejectedCount = properties.filter((p) => REJECTED_STATUSES.has(p.status || "")).length;
 
   const appStatus = profile?.coAgentApplication?.status;
   const tier = (session?.user as any)?.subscriptionTier ?? "STANDARD";
@@ -234,6 +252,14 @@ export default function AgentPortalPage({ params }: { params: Promise<{ locale: 
           )}
         </div>
 
+        {/* Submission stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatTile icon={<Building2 className="w-4 h-4" />} label="เพิ่มเข้าระบบทั้งหมด" value={totalSubmitted} cls="text-stone-700" />
+          <StatTile icon={<CheckCircle className="w-4 h-4" />} label="อนุมัติแล้ว" value={approvedCount} cls="text-green-600" />
+          <StatTile icon={<Clock className="w-4 h-4" />} label="รอตรวจสอบ" value={pendingCount} cls="text-yellow-600" />
+          <StatTile icon={<XCircle className="w-4 h-4" />} label="ซ้ำ/ไม่ได้รับอนุมัติ" value={rejectedCount} cls="text-red-600" />
+        </div>
+
         {/* Properties */}
         <div className="bg-white rounded-2xl border p-6 shadow-sm">
           <div className="flex items-center justify-between mb-5">
@@ -306,6 +332,18 @@ export default function AgentPortalPage({ params }: { params: Promise<{ locale: 
         </div>
 
       </div>
+    </div>
+  );
+}
+
+function StatTile({ icon, label, value, cls }: { icon: React.ReactNode; label: string; value: number; cls: string }) {
+  return (
+    <div className="bg-white rounded-xl border p-4">
+      <div className={`flex items-center gap-1.5 text-xs text-stone-500 mb-1.5`}>
+        <span className={cls}>{icon}</span>
+        {label}
+      </div>
+      <p className={`text-2xl font-bold ${cls}`}>{value}</p>
     </div>
   );
 }

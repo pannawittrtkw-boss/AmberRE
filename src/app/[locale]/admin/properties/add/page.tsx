@@ -22,6 +22,7 @@ import {
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import StationMapSelector, { LINES } from "@/components/admin/StationMapSelector";
+import PropertyCompareModal from "@/components/admin/PropertyCompareModal";
 import ThaiAddressFields from "@/components/admin/ThaiAddressFields";
 import {
   NEARBY_CATEGORY_LABEL_TH,
@@ -33,7 +34,7 @@ const DraggableMapPreview = dynamic(() => import("@/components/admin/DraggableMa
 
 type DupMatch = {
   propertyId: number;
-  tier: "LIKELY_SAME_UNIT" | "SAME_OWNER_DIFFERENT_UNIT";
+  tier: "CONFIRMED_DUPLICATE" | "LIKELY_SAME_UNIT" | "SAME_OWNER_DIFFERENT_UNIT";
   titleTh: string;
   projectName: string | null;
   building: string | null;
@@ -42,44 +43,79 @@ type DupMatch = {
   editUrl: string | null;
 };
 
-// Non-blocking warning — never gates submission, just lets whoever's
-// adding the property double-check before sending it in. See
-// src/lib/property-dedup.ts for the matching logic behind this.
-function DupWarningBanner({ matches, onDismiss }: { matches: DupMatch[]; onDismiss: () => void }) {
-  const isStrong = matches.some((m) => m.tier === "LIKELY_SAME_UNIT");
+function DupMatchList({ matches, onCompare }: { matches: DupMatch[]; onCompare?: (propertyId: number) => void }) {
   return (
-    <div
-      className={`relative rounded-xl border p-4 text-sm ${
-        isStrong ? "bg-orange-50 border-orange-200 text-orange-900" : "bg-amber-50 border-amber-200 text-amber-900"
-      }`}
-    >
-      <button type="button" onClick={onDismiss} className="absolute top-3 right-3 opacity-60 hover:opacity-100">
-        <X className="w-4 h-4" />
-      </button>
-      <p className="font-semibold mb-1 flex items-center gap-1.5 pr-6">
-        {isStrong ? <AlertTriangle className="w-4 h-4" /> : <Info className="w-4 h-4" />}
-        {isStrong
-          ? "อาจเป็นทรัพย์ซ้ำ — พบทรัพย์ที่มีเจ้าของและโครงการ/ตึก/ชั้นตรงกันในระบบแล้ว กรุณาตรวจสอบก่อนส่ง"
-          : "เจ้าของรายนี้มีทรัพย์อื่นอยู่ในระบบแล้ว (โครงการ/ตึก/ชั้นไม่ตรงกัน) — อาจเป็นทรัพย์คนละห้อง"}
-      </p>
-      <ul className="mt-2 space-y-1 text-xs">
-        {matches.map((m) => (
-          <li key={m.propertyId} className="flex items-center gap-1.5">
-            <span className="opacity-70">
-              {[m.projectName, m.building ? `ตึก ${m.building}` : null, m.floor != null ? `ชั้น ${m.floor}` : null]
-                .filter(Boolean)
-                .join(" · ") || m.titleTh}
-              {" — โดย "}
-              {m.submittedBy}
-            </span>
-            {m.editUrl && (
-              <a href={m.editUrl} target="_blank" rel="noopener noreferrer" className="underline font-medium">
-                ดูรายการ
-              </a>
-            )}
-          </li>
-        ))}
-      </ul>
+    <ul className="mt-2 space-y-1 text-xs">
+      {matches.map((m) => (
+        <li key={m.propertyId} className="flex items-center gap-1.5">
+          <span className="opacity-70">
+            {[m.projectName, m.building ? `ตึก ${m.building}` : null, m.floor != null ? `ชั้น ${m.floor}` : null]
+              .filter(Boolean)
+              .join(" · ") || m.titleTh}
+            {" — โดย "}
+            {m.submittedBy}
+          </span>
+          {m.editUrl && (
+            <a href={m.editUrl} target="_blank" rel="noopener noreferrer" className="underline font-medium">
+              ดูรายการ
+            </a>
+          )}
+          {onCompare && m.editUrl && (
+            <button type="button" onClick={() => onCompare(m.propertyId)} className="underline font-medium text-left">
+              เปรียบเทียบ
+            </button>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// CONFIRMED_DUPLICATE (exact sourceLink match) actually blocks
+// submission — not dismissible, since dismissing can't be allowed to
+// bypass the block (the submit button's disabled state is keyed off the
+// same matches array, not this banner). The two softer tiers are
+// advisory only — dismissible, never gate submission; admins additionally
+// get a "เปรียบเทียบ" (compare) action to decide whether to mark a
+// reviewed submission as a duplicate. See src/lib/property-dedup.ts for
+// the matching logic behind all three.
+function DupWarningBanner({
+  matches, dismissed, onDismiss, onCompare,
+}: { matches: DupMatch[]; dismissed: boolean; onDismiss: () => void; onCompare?: (propertyId: number) => void }) {
+  const confirmed = matches.filter((m) => m.tier === "CONFIRMED_DUPLICATE");
+  const likely = matches.filter((m) => m.tier === "LIKELY_SAME_UNIT");
+  const sameOwner = matches.filter((m) => m.tier === "SAME_OWNER_DIFFERENT_UNIT");
+  const advisory = [...likely, ...sameOwner];
+
+  return (
+    <div className="space-y-2">
+      {confirmed.length > 0 && (
+        <div className="rounded-xl border p-4 text-sm bg-red-50 border-red-200 text-red-900">
+          <p className="font-semibold mb-1 flex items-center gap-1.5">
+            <AlertTriangle className="w-4 h-4" />
+            ลิงก์นี้มีอยู่ในระบบแล้ว — ไม่สามารถเพิ่มซ้ำได้ กรุณาตรวจสอบลิงก์ที่มาของประกาศ
+          </p>
+          <DupMatchList matches={confirmed} />
+        </div>
+      )}
+      {advisory.length > 0 && !dismissed && (
+        <div
+          className={`relative rounded-xl border p-4 text-sm ${
+            likely.length > 0 ? "bg-orange-50 border-orange-200 text-orange-900" : "bg-amber-50 border-amber-200 text-amber-900"
+          }`}
+        >
+          <button type="button" onClick={onDismiss} className="absolute top-3 right-3 opacity-60 hover:opacity-100">
+            <X className="w-4 h-4" />
+          </button>
+          <p className="font-semibold mb-1 flex items-center gap-1.5 pr-6">
+            {likely.length > 0 ? <AlertTriangle className="w-4 h-4" /> : <Info className="w-4 h-4" />}
+            {likely.length > 0
+              ? "อาจเป็นทรัพย์ซ้ำ — พบทรัพย์ที่มีเจ้าของและโครงการ/ตึก/ชั้นตรงกันในระบบแล้ว กรุณาตรวจสอบก่อนส่ง"
+              : "เจ้าของรายนี้มีทรัพย์อื่นอยู่ในระบบแล้ว (โครงการ/ตึก/ชั้นไม่ตรงกัน) — อาจเป็นทรัพย์คนละห้อง"}
+          </p>
+          <DupMatchList matches={advisory} onCompare={onCompare} />
+        </div>
+      )}
     </div>
   );
 }
@@ -243,15 +279,17 @@ export default function AddPropertyPage({
   // submission. See src/lib/property-dedup.ts for the matching logic.
   const [dupMatches, setDupMatches] = useState<DupMatch[]>([]);
   const [dupDismissed, setDupDismissed] = useState(false);
+  const [compareTargetId, setCompareTargetId] = useState<number | null>(null);
   const dupReqId = useRef(0);
 
   useEffect(() => {
+    const hasSourceSignal = form.sourceLink.trim().length >= 4;
     const hasOwnerSignal =
       form.ownerPhone.replace(/\D/g, "").length >= 9 ||
       form.ownerLineId.trim().length >= 2 ||
       form.ownerFacebookUrl.trim().length >= 4;
     const hasPropertySignal = form.projectName.trim().length >= 2 || !!selectedProjectId;
-    if (!hasOwnerSignal && !hasPropertySignal) {
+    if (!hasSourceSignal && !hasOwnerSignal && !hasPropertySignal) {
       setDupMatches([]);
       return;
     }
@@ -262,6 +300,7 @@ export default function AddPropertyPage({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            sourceLink: form.sourceLink || null,
             ownerPhone: form.ownerPhone || null,
             ownerLineId: form.ownerLineId || null,
             ownerFacebookUrl: form.ownerFacebookUrl || null,
@@ -286,7 +325,7 @@ export default function AddPropertyPage({
     }, 600);
     return () => clearTimeout(t);
   }, [
-    form.ownerPhone, form.ownerLineId, form.ownerFacebookUrl,
+    form.sourceLink, form.ownerPhone, form.ownerLineId, form.ownerFacebookUrl,
     form.projectName, form.building, form.floor, selectedProjectId, editId,
   ]);
 
@@ -639,8 +678,11 @@ export default function AddPropertyPage({
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const hasConfirmedDuplicate = dupMatches.some((m) => m.tier === "CONFIRMED_DUPLICATE");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (hasConfirmedDuplicate) return; // belt-and-suspenders — button is also disabled
 
     // A listing marked "Added Properties" is live on the public site, where
     // the location map only renders when coordinates exist (see the
@@ -772,6 +814,8 @@ export default function AddPropertyPage({
       const data = await res.json();
       if (data.success) {
         router.push(isAgentMode ? `/${locale}/agent` : `/${locale}/admin/properties`);
+      } else if (data.error === "DUPLICATE_SOURCE_LINK") {
+        alert(locale === "th" ? "ลิงก์นี้มีอยู่ในระบบแล้ว — ไม่สามารถบันทึกซ้ำได้" : "This link is already in the system — can't save a duplicate.");
       } else {
         alert(data.error || "Failed to save property");
       }
@@ -1737,8 +1781,13 @@ export default function AddPropertyPage({
           </div>
         </div>
 
-        {dupMatches.length > 0 && !dupDismissed && (
-          <DupWarningBanner matches={dupMatches} onDismiss={() => setDupDismissed(true)} />
+        {dupMatches.length > 0 && (
+          <DupWarningBanner
+            matches={dupMatches}
+            dismissed={dupDismissed}
+            onDismiss={() => setDupDismissed(true)}
+            onCompare={!isAgentMode ? (id) => setCompareTargetId(id) : undefined}
+          />
         )}
 
         {/* Status, Category, Priority, Note */}
@@ -2054,7 +2103,8 @@ export default function AddPropertyPage({
           </Link>
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || hasConfirmedDuplicate}
+            title={hasConfirmedDuplicate ? "ลิงก์นี้มีอยู่ในระบบแล้ว ไม่สามารถบันทึกได้" : undefined}
             className="px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-medium flex items-center gap-2 disabled:opacity-50"
           >
             {saving ? (
@@ -2080,6 +2130,45 @@ export default function AddPropertyPage({
           selectedStations={selectedStations}
           onChange={setSelectedStations}
           onClose={() => setShowStationModal(false)}
+        />
+      )}
+
+      {/* Admin-only duplicate-comparison modal — see DupWarningBanner above */}
+      {compareTargetId !== null && (
+        <PropertyCompareModal
+          currentData={{
+            titleTh: form.projectName || "Property",
+            projectName: form.projectName,
+            building: form.building,
+            floor: form.floor ? Number(form.floor) : null,
+            price: form.price,
+            ownerName: form.ownerName,
+            ownerPhone: form.ownerPhone,
+            ownerLineId: form.ownerLineId,
+            status: form.status,
+          }}
+          matchPropertyId={compareTargetId}
+          onClose={() => setCompareTargetId(null)}
+          onMarkDuplicate={
+            isEditMode && !isAgentMode
+              ? async (matchId) => {
+                  if (!editId) return;
+                  try {
+                    await fetch(`/api/properties/${editId}`, {
+                      method: "PUT",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        status: "NOT_ACCEPT",
+                        note: `${form.note ? form.note + " " : ""}[ทำเครื่องหมายว่าซ้ำกับทรัพย์ #${matchId}]`,
+                      }),
+                    });
+                    router.push(`/${locale}/admin/properties`);
+                  } catch {
+                    setCompareTargetId(null);
+                  }
+                }
+              : undefined
+          }
         />
       )}
     </div>

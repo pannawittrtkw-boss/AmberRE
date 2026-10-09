@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
   }
 
   const matches = await findPossibleDuplicates({
+    sourceLink: body.sourceLink ?? null,
     ownerPhone: body.ownerPhone ?? null,
     ownerLineId: body.ownerLineId ?? null,
     ownerFacebookUrl: body.ownerFacebookUrl ?? null,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { findExactSourceLinkMatch } from "@/lib/property-dedup";
 
 export async function GET(req: NextRequest) {
   try {
@@ -233,6 +234,20 @@ export async function POST(req: NextRequest) {
       invVacancyMonths, invBrokerFeeMonths,
       invLoanAmount, invLoanTermYears, invLoanInterestRate,
     } = body;
+
+    // Authoritative duplicate block — an exact (normalized) sourceLink
+    // match means this listing is already in the system, regardless of
+    // its status (PENDING/VERIFIED/REVIEW/etc. all count). See
+    // src/lib/property-dedup.ts.
+    if (sourceLink) {
+      const existing = await findExactSourceLinkMatch(sourceLink);
+      if (existing) {
+        return NextResponse.json(
+          { success: false, error: "DUPLICATE_SOURCE_LINK", duplicateOf: existing },
+          { status: 409 }
+        );
+      }
+    }
 
     const property = await prisma.property.create({
       data: {
