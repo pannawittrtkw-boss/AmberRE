@@ -33,7 +33,8 @@ import { hasNoBedrooms } from "@/lib/property-constants";
 const DraggableMapPreview = dynamic(() => import("@/components/admin/DraggableMapPreview"), { ssr: false });
 
 type DupMatch = {
-  propertyId: number;
+  source: "PROPERTY" | "SCANLINK";
+  propertyId: number | null;
   tier: "CONFIRMED_DUPLICATE" | "LIKELY_SAME_UNIT" | "SAME_OWNER_DIFFERENT_UNIT";
   titleTh: string;
   projectName: string | null;
@@ -46,22 +47,26 @@ type DupMatch = {
 function DupMatchList({ matches, onCompare }: { matches: DupMatch[]; onCompare?: (propertyId: number) => void }) {
   return (
     <ul className="mt-2 space-y-1 text-xs">
-      {matches.map((m) => (
-        <li key={m.propertyId} className="flex items-center gap-1.5">
+      {matches.map((m, i) => (
+        <li key={m.propertyId ?? `scanlink-${i}`} className="flex items-center gap-1.5">
           <span className="opacity-70">
-            {[m.projectName, m.building ? `ตึก ${m.building}` : null, m.floor != null ? `ชั้น ${m.floor}` : null]
-              .filter(Boolean)
-              .join(" · ") || m.titleTh}
-            {" — โดย "}
-            {m.submittedBy}
+            {m.source === "SCANLINK"
+              ? m.submittedBy
+              : [
+                  [m.projectName, m.building ? `ตึก ${m.building}` : null, m.floor != null ? `ชั้น ${m.floor}` : null]
+                    .filter(Boolean)
+                    .join(" · ") || m.titleTh,
+                  "— โดย",
+                  m.submittedBy,
+                ].join(" ")}
           </span>
           {m.editUrl && (
             <a href={m.editUrl} target="_blank" rel="noopener noreferrer" className="underline font-medium">
               ดูรายการ
             </a>
           )}
-          {onCompare && m.editUrl && (
-            <button type="button" onClick={() => onCompare(m.propertyId)} className="underline font-medium text-left">
+          {onCompare && m.editUrl && m.propertyId != null && (
+            <button type="button" onClick={() => onCompare(m.propertyId!)} className="underline font-medium text-left">
               เปรียบเทียบ
             </button>
           )}
@@ -816,6 +821,8 @@ export default function AddPropertyPage({
         router.push(isAgentMode ? `/${locale}/agent` : `/${locale}/admin/properties`);
       } else if (data.error === "DUPLICATE_SOURCE_LINK") {
         alert(locale === "th" ? "ลิงก์นี้มีอยู่ในระบบแล้ว — ไม่สามารถบันทึกซ้ำได้" : "This link is already in the system — can't save a duplicate.");
+      } else if (data.error === "DUPLICATE_SOURCE_LINK_SCANLINK") {
+        alert(locale === "th" ? "ลิงก์นี้เคยถูกส่งเข้า ScanLink แล้ว — ไม่สามารถบันทึกซ้ำได้" : "This link was already submitted to ScanLink — can't save a duplicate.");
       } else {
         alert(data.error || "Failed to save property");
       }

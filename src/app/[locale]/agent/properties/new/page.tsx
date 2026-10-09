@@ -37,7 +37,8 @@ const initForm: Form = {
 };
 
 type DupMatch = {
-  propertyId: number;
+  source: "PROPERTY" | "SCANLINK";
+  propertyId: number | null;
   tier: "CONFIRMED_DUPLICATE" | "LIKELY_SAME_UNIT" | "SAME_OWNER_DIFFERENT_UNIT";
   titleTh: string;
   projectName: string | null;
@@ -50,14 +51,18 @@ type DupMatch = {
 function DupMatchList({ matches }: { matches: DupMatch[] }) {
   return (
     <ul className="mt-2 space-y-1 text-xs">
-      {matches.map((m) => (
-        <li key={m.propertyId} className="flex items-center gap-1.5">
+      {matches.map((m, i) => (
+        <li key={m.propertyId ?? `scanlink-${i}`} className="flex items-center gap-1.5">
           <span className="opacity-70">
-            {[m.projectName, m.building ? `ตึก ${m.building}` : null, m.floor != null ? `ชั้น ${m.floor}` : null]
-              .filter(Boolean)
-              .join(" · ") || m.titleTh}
-            {" — โดย "}
-            {m.submittedBy}
+            {m.source === "SCANLINK"
+              ? m.submittedBy
+              : [
+                  [m.projectName, m.building ? `ตึก ${m.building}` : null, m.floor != null ? `ชั้น ${m.floor}` : null]
+                    .filter(Boolean)
+                    .join(" · ") || m.titleTh,
+                  "— โดย",
+                  m.submittedBy,
+                ].join(" ")}
           </span>
           {m.editUrl && (
             <a href={m.editUrl} target="_blank" rel="noopener noreferrer" className="underline font-medium">
@@ -211,6 +216,8 @@ export default function AgentPropertyNewPage({ params }: { params: Promise<{ loc
         setDone(true);
       } else if (d.error === "DUPLICATE_SOURCE_LINK") {
         setError("ลิงก์นี้มีอยู่ในระบบแล้ว — ไม่สามารถเพิ่มซ้ำได้");
+      } else if (d.error === "DUPLICATE_SOURCE_LINK_SCANLINK") {
+        setError("ลิงก์นี้เคยถูกส่งเข้า ScanLink แล้ว — ไม่สามารถเพิ่มซ้ำได้");
       } else {
         setError(d.error || "เกิดข้อผิดพลาด");
       }

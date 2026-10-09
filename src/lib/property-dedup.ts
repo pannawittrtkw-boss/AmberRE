@@ -69,6 +69,7 @@ export type DupTier = "CONFIRMED_DUPLICATE" | "LIKELY_SAME_UNIT" | "SAME_OWNER_D
 
 export type DupReason =
   | "SOURCE_LINK_MATCH"
+  | "SOURCE_LINK_SCANLINK_MATCH"
   | "OWNER_PHONE_MATCH"
   | "OWNER_LINE_MATCH"
   | "OWNER_FACEBOOK_MATCH"
@@ -92,7 +93,10 @@ export interface DupCandidateInput {
 }
 
 export interface DupMatch {
-  propertyId: number;
+  source: "PROPERTY" | "SCANLINK";
+  // null when source === "SCANLINK" — a link logged in the LINE-bot intake
+  // (ScanLink) history doesn't necessarily have a Property yet.
+  propertyId: number | null;
   agentId: number | null;
   titleTh: string;
   projectName: string | null;
@@ -101,6 +105,42 @@ export interface DupMatch {
   tier: DupTier;
   score: number;
   reasons: DupReason[];
+  // ScanLink-only context, shown instead of the Property fields above.
+  scanlinkStatus?: string;
+  scanlinkSentBy?: string | null;
+  scanlinkSentAt?: Date;
+}
+
+export interface ScanlinkMatch {
+  id: number;
+  status: string;
+  sentBy: string | null;
+  sentAt: Date;
+}
+
+// ScanLink is the LINE-bot lead-intake log (src/app/api/line/url-checker,
+// src/app/[locale]/admin/scanlink) — staff post candidate listing links
+// into a company LINE group, and every URL gets logged to
+// LineUrlHistory regardless of whether it's ever turned into a Property.
+// A link already present there (any status) means someone already
+// logged/claimed that lead, which counts as a duplicate just as much as
+// an exact match against an existing Property.
+export async function findScanlinkMatch(
+  sourceLink: string | null | undefined,
+  // When checking from within the ScanLink accept flow itself, exclude
+  // the very LineUrlHistory row being accepted — otherwise every accept
+  // would "match" against its own log entry.
+  excludeId?: number | null
+): Promise<ScanlinkMatch | null> {
+  const normalized = normalizeSourceLink(sourceLink);
+  if (!normalized) return null;
+
+  const rows = await prisma.lineUrlHistory.findMany({
+    where: excludeId ? { id: { not: excludeId } } : undefined,
+    select: { id: true, url: true, status: true, sentBy: true, sentAt: true },
+  });
+  const match = rows.find((r) => normalizeSourceLink(r.url) === normalized);
+  return match ? { id: match.id, status: match.status, sentBy: match.sentBy, sentAt: match.sentAt } : null;
 }
 
 const GEO_PROXIMITY_KM = 0.05; // ~50m — "same building," not "same neighborhood"
@@ -215,6 +255,7 @@ export async function findPossibleDuplicates(input: DupCandidateInput): Promise<
       (reasons.includes("GEO_PROXIMITY_MATCH") ? 10 : 0);
 
     results.push({
+      source: "PROPERTY",
       propertyId: c.id,
       agentId: c.agentId,
       titleTh: c.titleTh,
@@ -225,6 +266,30 @@ export async function findPossibleDuplicates(input: DupCandidateInput): Promise<
       score,
       reasons,
     });
+  }
+
+  // Also check the ScanLink lead-intake log — a link already logged
+  // there (independent of whether it was ever turned into a Property)
+  // is just as much a duplicate as an exact Property.sourceLink match.
+  if (sourceLink) {
+    const scanMatch = await findScanlinkMatch(input.sourceLink);
+    if (scanMatch) {
+      results.push({
+        source: "SCANLINK",
+        propertyId: null,
+        agentId: null,
+        titleTh: "",
+        projectName: null,
+        building: null,
+        floor: null,
+        tier: "CONFIRMED_DUPLICATE",
+        score: 1000,
+        reasons: ["SOURCE_LINK_SCANLINK_MATCH"],
+        scanlinkStatus: scanMatch.status,
+        scanlinkSentBy: scanMatch.sentBy,
+        scanlinkSentAt: scanMatch.sentAt,
+      });
+    }
   }
 
   const TIER_RANK: Record<DupTier, number> = {
@@ -240,16 +305,22 @@ export async function findPossibleDuplicates(input: DupCandidateInput): Promise<
   return results.slice(0, 5);
 }
 
+export type SourceLinkConflict =
+  | { source: "PROPERTY"; id: number; titleTh: string; status: string | null; agentId: number | null }
+  | { source: "SCANLINK"; id: number; status: string; sentBy: string | null; sentAt: Date };
+
 // Lightweight, authoritative check used by the create/update API routes
 // to actually enforce the block — the live findPossibleDuplicates call
 // from the form is advisory UX, this is the real gate. An exact
 // (normalized) sourceLink match is objectively the same listing, so this
 // alone is grounds to reject the request outright, regardless of status
-// (PENDING/VERIFIED/REVIEW/etc. all count).
+// (PENDING/VERIFIED/REVIEW/etc. all count, and so does a link that was
+// only ever logged in ScanLink and never turned into a Property).
 export async function findExactSourceLinkMatch(
   sourceLink: string | null | undefined,
-  excludePropertyId?: number | null
-): Promise<{ id: number; titleTh: string; status: string | null; agentId: number | null } | null> {
+  excludePropertyId?: number | null,
+  excludeScanlinkId?: number | null
+): Promise<SourceLinkConflict | null> {
   const normalized = normalizeSourceLink(sourceLink);
   if (!normalized) return null;
 
@@ -262,5 +333,14 @@ export async function findExactSourceLinkMatch(
   });
 
   const match = candidates.find((c) => normalizeSourceLink(c.sourceLink) === normalized);
-  return match ? { id: match.id, titleTh: match.titleTh, status: match.status, agentId: match.agentId } : null;
+  if (match) {
+    return { source: "PROPERTY", id: match.id, titleTh: match.titleTh, status: match.status, agentId: match.agentId };
+  }
+
+  const scanMatch = await findScanlinkMatch(sourceLink, excludeScanlinkId);
+  if (scanMatch) {
+    return { source: "SCANLINK", id: scanMatch.id, status: scanMatch.status, sentBy: scanMatch.sentBy, sentAt: scanMatch.sentAt };
+  }
+
+  return null;
 }

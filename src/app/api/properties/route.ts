@@ -243,7 +243,11 @@ export async function POST(req: NextRequest) {
       const existing = await findExactSourceLinkMatch(sourceLink);
       if (existing) {
         return NextResponse.json(
-          { success: false, error: "DUPLICATE_SOURCE_LINK", duplicateOf: existing },
+          {
+            success: false,
+            error: existing.source === "SCANLINK" ? "DUPLICATE_SOURCE_LINK_SCANLINK" : "DUPLICATE_SOURCE_LINK",
+            duplicateOf: existing,
+          },
           { status: 409 }
         );
       }

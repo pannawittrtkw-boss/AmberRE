@@ -61,6 +61,23 @@ export async function POST(req: NextRequest) {
   const agentById = new Map(agents.map((a) => [a.id, a]));
 
   const data = matches.map((m) => {
+    if (m.source === "SCANLINK") {
+      const sentDate = m.scanlinkSentAt ? new Date(m.scanlinkSentAt).toLocaleDateString("th-TH") : null;
+      return {
+        ...m,
+        submittedBy: [
+          "ส่งเข้า ScanLink",
+          m.scanlinkSentBy ? `โดย ${m.scanlinkSentBy}` : null,
+          sentDate ? `เมื่อ ${sentDate}` : null,
+        ]
+          .filter(Boolean)
+          .join(" "),
+        // The ScanLink dashboard is admin-only navigation (not in the
+        // CO_AGENT allowlist), so only link there for an admin viewer.
+        editUrl: isAdmin ? "/admin/scanlink" : null,
+      };
+    }
+
     const canSeeDetail = isAdmin || m.agentId === viewerId;
     let submittedBy: string;
     if (m.agentId == null) {

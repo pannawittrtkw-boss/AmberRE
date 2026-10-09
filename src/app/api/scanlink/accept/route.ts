@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { pushMessage, STATUS_LABEL } from "@/app/api/line/url-checker/route";
 import { getStationFullName } from "@/lib/stations";
+import { findExactSourceLinkMatch } from "@/lib/property-dedup";
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,6 +30,18 @@ export async function POST(req: NextRequest) {
 
     if (!urlRecord) {
       return NextResponse.json({ success: false, error: "Record not found" }, { status: 404 });
+    }
+
+    // Guard against accepting the same link twice (double-click, or the
+    // same post logged under a different LINE group) — excludes this
+    // very LineUrlHistory row from its own scanlink check, since it
+    // would otherwise always "match" itself.
+    const dup = await findExactSourceLinkMatch(urlRecord.url, null, urlRecord.id);
+    if (dup) {
+      return NextResponse.json(
+        { success: false, error: "DUPLICATE_SOURCE_LINK", duplicateOf: dup },
+        { status: 409 }
+      );
     }
 
     // Create property

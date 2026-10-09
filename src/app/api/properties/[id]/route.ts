@@ -82,7 +82,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       const dup = await findExactSourceLinkMatch(body.sourceLink, existing.id);
       if (dup) {
         return NextResponse.json(
-          { success: false, error: "DUPLICATE_SOURCE_LINK", duplicateOf: dup },
+          {
+            success: false,
+            error: dup.source === "SCANLINK" ? "DUPLICATE_SOURCE_LINK_SCANLINK" : "DUPLICATE_SOURCE_LINK",
+            duplicateOf: dup,
+          },
           { status: 409 }
         );
       }
