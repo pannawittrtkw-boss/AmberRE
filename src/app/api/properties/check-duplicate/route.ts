@@ -66,8 +66,7 @@ export async function POST(req: NextRequest) {
       return {
         ...m,
         submittedBy: [
-          "ส่งเข้า ScanLink",
-          m.scanlinkSentBy ? `โดย ${m.scanlinkSentBy}` : null,
+          "ลิงค์นี้ถูกเก็บข้อมูลไว้แล้วโดย Admin",
           sentDate ? `เมื่อ ${sentDate}` : null,
         ]
           .filter(Boolean)
