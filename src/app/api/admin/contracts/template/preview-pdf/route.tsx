@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { ContractPdf, ContractPdfData, PdfChecklistItem } from "@/lib/contract-pdf";
@@ -87,12 +85,14 @@ const SAMPLE_OTHER_KEYS = ["roomKey", "roomKeycard"];
 // baseline/override layers + appended clauses) so staff can send a
 // customer something that reads exactly like a real contract will, before
 // one is actually drawn up.
+// Public — no auth. This renders a sample contract with fabricated
+// lessor/lessee/property data and the site's live template text, meant to
+// be sent directly to a prospective customer to read before any real
+// contract exists, so it must be openable without an admin login. Witness
+// *signatures* are still stripped out below even though the rest of this
+// payload is public, since those are the same images used on binding
+// contracts and shouldn't be exposed to anyone with the link.
 export async function GET(_req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as { role?: string }).role !== "ADMIN") {
-    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
-  }
-
   const [appendedSetting, overridesSetting, baselineSetting, witnesses, company] = await Promise.all([
     prisma.siteSetting.findUnique({ where: { key: DEFAULT_CLAUSES_SETTING_KEY } }),
     prisma.siteSetting.findUnique({ where: { key: CLAUSE_OVERRIDES_SETTING_KEY } }),
@@ -188,6 +188,10 @@ export async function GET(_req: NextRequest) {
     jointLesseeSignature: null,
 
     ...witnesses,
+    // Strip the real witness signature images — this route is public, and
+    // those signatures are the same ones used on binding contracts.
+    witness1Signature: null,
+    witness2Signature: null,
 
     sampleWatermarkText: "ตัวอย่าง / SAMPLE",
   };
