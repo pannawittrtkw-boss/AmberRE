@@ -189,7 +189,7 @@ export async function GET(_req: NextRequest) {
 
     ...witnesses,
 
-    sampleWatermarkText: "ตัวอย่างสัญญา / SAMPLE — NOT A REAL CONTRACT",
+    sampleWatermarkText: "ตัวอย่างสัญญา / SAMPLE",
   };
 
   try {

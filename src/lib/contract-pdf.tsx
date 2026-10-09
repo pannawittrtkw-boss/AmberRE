@@ -141,12 +141,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   sampleWatermarkText: {
-    fontSize: 54,
+    fontSize: 40,
     fontWeight: "bold",
     color: "#DC2626",
-    opacity: 0.22,
+    opacity: 0.13,
     transform: "rotate(-30deg)",
     textAlign: "center",
+    width: 480,
   },
   header: { textAlign: "center", marginBottom: 14 },
   title: { fontSize: 14, fontWeight: "bold", marginBottom: 4, lineHeight: 1.5 },
@@ -804,7 +805,11 @@ export function ContractPdf({ data }: { data: ContractPdfData }) {
 
         {data.sampleWatermarkText && (
           <View style={styles.sampleWatermark} fixed>
-            <TText style={styles.sampleWatermarkText}>{data.sampleWatermarkText}</TText>
+            {/* Plain <Text>, not <TText> — thaify() splits Thai text into
+                several per-word runs, which under a rotate() transform lay
+                out as overlapping, unreadable fragments. A short fixed
+                string never needs Thai line-wrapping anyway. */}
+            <Text style={styles.sampleWatermarkText}>{data.sampleWatermarkText}</Text>
           </View>
         )}
 
