@@ -533,46 +533,52 @@ export default function PropertyListPage({
         <h1 className="text-xl sm:text-2xl font-bold">
           {isAdmin ? messages.admin.propertyManagement : (locale === "th" ? "ค้นหาทรัพย์" : "Property Search")}
         </h1>
-        {isAdmin && (
+        {(isAdmin || role === "CO_AGENT") && (
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Export Template */}
-            <a
-              href="/api/properties/export"
-              download
-              className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
-            >
-              <Download className="w-4 h-4" />
-              {locale === "th" ? "Template Excel" : "Template Excel"}
-            </a>
+            {isAdmin && (
+              <>
+                {/* Export Template */}
+                <a
+                  href="/api/properties/export"
+                  download
+                  className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                >
+                  <Download className="w-4 h-4" />
+                  {locale === "th" ? "Template Excel" : "Template Excel"}
+                </a>
 
-            {/* Import Excel */}
-            <label className={`inline-flex items-center gap-2 px-3 py-2 border border-green-500 text-green-700 rounded-lg hover:bg-green-50 transition-colors text-sm cursor-pointer ${importing ? "opacity-50 pointer-events-none" : ""}`}>
-              {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              {importing ? (locale === "th" ? "กำลังนำเข้า..." : "Importing...") : (locale === "th" ? "นำเข้า Excel" : "Import Excel")}
-              <input type="file" accept=".xlsx,.xls" onChange={handleImport} className="hidden" disabled={importing} />
-            </label>
+                {/* Import Excel */}
+                <label className={`inline-flex items-center gap-2 px-3 py-2 border border-green-500 text-green-700 rounded-lg hover:bg-green-50 transition-colors text-sm cursor-pointer ${importing ? "opacity-50 pointer-events-none" : ""}`}>
+                  {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {importing ? (locale === "th" ? "กำลังนำเข้า..." : "Importing...") : (locale === "th" ? "นำเข้า Excel" : "Import Excel")}
+                  <input type="file" accept=".xlsx,.xls" onChange={handleImport} className="hidden" disabled={importing} />
+                </label>
 
-            {/* Bulk fill province/district from BTS stations */}
-            <button
-              onClick={handleBulkLocation}
-              disabled={bulkLocating}
-              className="inline-flex items-center gap-2 px-3 py-2 border border-blue-500 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors text-sm disabled:opacity-50"
-              title={locale === "th" ? "อัปเดตจังหวัด/อำเภอจากสถานี BTS/MRT" : "Update province/district from BTS/MRT station"}
-            >
-              {bulkLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Train className="w-4 h-4" />}
-              {bulkLocating ? (locale === "th" ? "กำลังอัปเดต..." : "Updating...") : (locale === "th" ? "อัปเดตที่ตั้ง" : "Update Location")}
-            </button>
+                {/* Bulk fill province/district from BTS stations */}
+                <button
+                  onClick={handleBulkLocation}
+                  disabled={bulkLocating}
+                  className="inline-flex items-center gap-2 px-3 py-2 border border-blue-500 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors text-sm disabled:opacity-50"
+                  title={locale === "th" ? "อัปเดตจังหวัด/อำเภอจากสถานี BTS/MRT" : "Update province/district from BTS/MRT station"}
+                >
+                  {bulkLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Train className="w-4 h-4" />}
+                  {bulkLocating ? (locale === "th" ? "กำลังอัปเดต..." : "Updating...") : (locale === "th" ? "อัปเดตที่ตั้ง" : "Update Location")}
+                </button>
 
-            {/* AI enrich (Verified properties) */}
-            <Link
-              href={`/${locale}/admin/properties/ai-enrich`}
-              className="inline-flex items-center gap-2 px-3 py-2 border border-[#C8A951] text-[#C8A951] rounded-lg hover:bg-amber-50 transition-colors text-sm"
-            >
-              <Sparkles className="w-4 h-4" />
-              {locale === "th" ? "ตรวจสอบข้อมูลอัตโนมัติ" : "Auto Data Check"}
-            </Link>
+                {/* AI enrich (Verified properties) */}
+                <Link
+                  href={`/${locale}/admin/properties/ai-enrich`}
+                  className="inline-flex items-center gap-2 px-3 py-2 border border-[#C8A951] text-[#C8A951] rounded-lg hover:bg-amber-50 transition-colors text-sm"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {locale === "th" ? "ตรวจสอบข้อมูลอัตโนมัติ" : "Auto Data Check"}
+                </Link>
+              </>
+            )}
 
-            {/* Add Property */}
+            {/* Add Property — available to admins and agents alike; the
+                add page itself (isAgentMode) hides admin-only fields and
+                attributes the new row to the submitting agent. */}
             <Link
               href={`/${locale}/admin/properties/add`}
               className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-medium text-sm"

@@ -818,7 +818,7 @@ export default function AddPropertyPage({
 
       const data = await res.json();
       if (data.success) {
-        router.push(isAgentMode ? `/${locale}/agent` : `/${locale}/admin/properties`);
+        router.push(`/${locale}/admin/properties`);
       } else if (data.error === "DUPLICATE_SOURCE_LINK") {
         alert(locale === "th" ? "ลิงก์นี้มีอยู่ในระบบแล้ว — ไม่สามารถบันทึกซ้ำได้" : "This link is already in the system — can't save a duplicate.");
       } else if (data.error === "DUPLICATE_SOURCE_LINK_SCANLINK") {
@@ -876,7 +876,7 @@ export default function AddPropertyPage({
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <Link
-          href={isAgentMode ? `/${locale}/agent` : `/${locale}/admin/properties`}
+          href={`/${locale}/admin/properties`}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -2103,7 +2103,7 @@ export default function AddPropertyPage({
         {/* Submit */}
         <div className="flex justify-end gap-3 pb-8">
           <Link
-            href={isAgentMode ? `/${locale}/agent` : `/${locale}/admin/properties`}
+            href={`/${locale}/admin/properties`}
             className="px-6 py-3 border rounded-lg hover:bg-gray-50 transition-colors font-medium"
           >
             {locale === "th" ? "ยกเลิก" : "Cancel"}

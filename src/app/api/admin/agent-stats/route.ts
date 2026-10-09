@@ -4,6 +4,13 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { summarizeAgentCommissionByMonth, summarizeClosedCountByMonth, calcContractCommission } from "@/lib/commission";
 
+// Buckets the full Property.status set onto the 4 groupings an agent
+// actually cares about on their dashboard (ส่งเข้าไปทั้งหมด / อนุมัติแล้ว /
+// รอตรวจสอบ / ซ้ำหรือไม่ได้รับอนุมัติ).
+const PROPERTY_APPROVED_STATUSES = ["VERIFIED", "VERIFIED_OVER_30_DAYS", "ADDED_PROPERTIES"];
+const PROPERTY_PENDING_STATUSES = ["PENDING", "WAITING", "REVIEW"];
+const PROPERTY_REJECTED_STATUSES = ["NOT_ACCEPT", "NOT_AVAILABLE"];
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -79,6 +86,21 @@ export async function GET(req: NextRequest) {
         },
       }),
     ]);
+
+    // Property submission counts — same "own numbers only" scoping as
+    // commission below (an admin's own company-owned properties have
+    // agentId: null, so there's nothing meaningful to count for a plain
+    // admin overview).
+    let propertyStats: { total: number; approved: number; pending: number; rejected: number } | null = null;
+    if (role === "CO_AGENT" || viewingOtherAgent) {
+      const [total, approved, pending, rejected] = await Promise.all([
+        prisma.property.count({ where: { agentId: targetAgentId } }),
+        prisma.property.count({ where: { agentId: targetAgentId, status: { in: PROPERTY_APPROVED_STATUSES } } }),
+        prisma.property.count({ where: { agentId: targetAgentId, status: { in: PROPERTY_PENDING_STATUSES } } }),
+        prisma.property.count({ where: { agentId: targetAgentId, status: { in: PROPERTY_REJECTED_STATUSES } } }),
+      ]);
+      propertyStats = { total, approved, pending, rejected };
+    }
 
     // Commission tier breakdown is only meaningful for the agent viewing
     // their own numbers — an ADMIN isn't personally credited on deals, and
@@ -247,7 +269,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: { draft, active, expiringSoon, expired, recentContracts, commission, agentName },
+      data: { draft, active, expiringSoon, expired, recentContracts, commission, propertyStats, agentName },
     });
   } catch (err: any) {
     console.error("Agent stats GET error:", err);

@@ -181,7 +181,7 @@ export default function AdminLayout({
     if (status === "unauthenticated") router.push(`/${locale}/auth/login`);
     if (session && role !== "ADMIN" && role !== "CO_AGENT") router.push(`/${locale}`);
     if (session && role === "CO_AGENT" && !isCoAgentAllowed) {
-      router.push(`/${locale}/agent`);
+      router.push(`/${locale}/admin/agent-dashboard`);
     }
   }, [session, status, router, locale, role, pathname, isCoAgentAllowed]);
 
