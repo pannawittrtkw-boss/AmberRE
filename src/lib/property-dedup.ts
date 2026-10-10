@@ -50,19 +50,65 @@ export function normalizeFacebookUrl(raw: string | null | undefined): string | n
   return v || null;
 }
 
-// Same shape as normalizeFacebookUrl — sourceLink is also typically a
-// Facebook post URL, but kept as its own named function since it's a
-// conceptually different field (the post the listing came from, not the
-// owner's profile).
-export function normalizeSourceLink(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  const v = raw
-    .trim()
-    .toLowerCase()
-    .replace(/^https?:\/\//, "")
-    .replace(/^www\./, "")
-    .replace(/\/+$/, "");
-  return v || null;
+// Source-link matching needs more than a single normalized string: a
+// Facebook post commonly has several different URL shapes that all point
+// at the exact same post — a short share link (facebook.com/share/p/xxxx)
+// that resolves via redirect to a long-form permalink
+// (facebook.com/groups/<id>/permalink/<id>/...), with the long form often
+// embedding the original short link back as a share_url/u query param for
+// attribution. Two agents pasting "the same post" can easily end up with
+// two strings that share no substring at all. So instead of normalizing
+// to one canonical string, this collects every plausible identity a URL
+// could represent, and a match is any overlap between two URLs' variant
+// sets.
+function sourceLinkVariants(raw: string | null | undefined): Set<string> {
+  const variants = new Set<string>();
+  if (!raw) return variants;
+  const trimmed = raw.trim();
+  if (!trimmed) return variants;
+
+  const stripHost = (v: string) =>
+    v.toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "");
+
+  // Full form, query string and all, trailing slash stripped.
+  const full = stripHost(trimmed).replace(/\/+$/, "");
+  if (full) variants.add(full);
+
+  // Path-only form (query string and fragment stripped) — covers two
+  // links to the identical path that differ only by tracking params
+  // (mibextid, rdid, utm_*, etc.).
+  const pathOnly = stripHost(trimmed.split("#")[0].split("?")[0]).replace(/\/+$/, "");
+  if (pathOnly) variants.add(pathOnly);
+
+  // If a share_url/u query param embeds another canonical link (Facebook's
+  // "view in group" expansion does this), recurse into it too so it's
+  // matched against the original short link it was expanded from.
+  const qIndex = trimmed.indexOf("?");
+  if (qIndex !== -1) {
+    try {
+      const params = new URLSearchParams(trimmed.slice(qIndex));
+      for (const key of ["share_url", "u"]) {
+        const embedded = params.get(key);
+        if (embedded) {
+          for (const v of sourceLinkVariants(embedded)) variants.add(v);
+        }
+      }
+    } catch {
+      // Malformed query string — the other variants still apply.
+    }
+  }
+
+  return variants;
+}
+
+function sourceLinksMatch(a: string | null | undefined, b: string | null | undefined): boolean {
+  const va = sourceLinkVariants(a);
+  if (va.size === 0) return false;
+  const vb = sourceLinkVariants(b);
+  for (const v of vb) {
+    if (va.has(v)) return true;
+  }
+  return false;
 }
 
 export type DupTier = "CONFIRMED_DUPLICATE" | "LIKELY_SAME_UNIT" | "SAME_OWNER_DIFFERENT_UNIT";
@@ -132,21 +178,20 @@ export async function findScanlinkMatch(
   // would "match" against its own log entry.
   excludeId?: number | null
 ): Promise<ScanlinkMatch | null> {
-  const normalized = normalizeSourceLink(sourceLink);
-  if (!normalized) return null;
+  if (!sourceLink || !sourceLink.trim()) return null;
 
   const rows = await prisma.lineUrlHistory.findMany({
     where: excludeId ? { id: { not: excludeId } } : undefined,
     select: { id: true, url: true, status: true, sentBy: true, sentAt: true },
   });
-  const match = rows.find((r) => normalizeSourceLink(r.url) === normalized);
+  const match = rows.find((r) => sourceLinksMatch(sourceLink, r.url));
   return match ? { id: match.id, status: match.status, sentBy: match.sentBy, sentAt: match.sentAt } : null;
 }
 
 const GEO_PROXIMITY_KM = 0.05; // ~50m — "same building," not "same neighborhood"
 
 export async function findPossibleDuplicates(input: DupCandidateInput): Promise<DupMatch[]> {
-  const sourceLink = normalizeSourceLink(input.sourceLink);
+  const hasSourceLink = !!(input.sourceLink && input.sourceLink.trim());
   const phone = normalizePhone(input.ownerPhone);
   const lineId = normalizeLineId(input.ownerLineId);
   const fb = normalizeFacebookUrl(input.ownerFacebookUrl);
@@ -160,7 +205,7 @@ export async function findPossibleDuplicates(input: DupCandidateInput): Promise<
   );
 
   // Never scan the table on an empty/near-empty query.
-  if (!sourceLink && !hasOwnerSignal && !hasPropertySignal) return [];
+  if (!hasSourceLink && !hasOwnerSignal && !hasPropertySignal) return [];
 
   const candidates = await prisma.property.findMany({
     where: input.excludePropertyId ? { id: { not: input.excludePropertyId } } : undefined,
@@ -187,8 +232,7 @@ export async function findPossibleDuplicates(input: DupCandidateInput): Promise<
   for (const c of candidates) {
     const reasons: DupReason[] = [];
 
-    const cSourceLink = normalizeSourceLink(c.sourceLink);
-    const sourceLinkMatch = !!(sourceLink && cSourceLink && sourceLink === cSourceLink);
+    const sourceLinkMatch = hasSourceLink && sourceLinksMatch(input.sourceLink, c.sourceLink);
     if (sourceLinkMatch) reasons.push("SOURCE_LINK_MATCH");
 
     const cPhone = normalizePhone(c.ownerPhone);
@@ -271,7 +315,7 @@ export async function findPossibleDuplicates(input: DupCandidateInput): Promise<
   // Also check the ScanLink lead-intake log — a link already logged
   // there (independent of whether it was ever turned into a Property)
   // is just as much a duplicate as an exact Property.sourceLink match.
-  if (sourceLink) {
+  if (hasSourceLink) {
     const scanMatch = await findScanlinkMatch(input.sourceLink);
     if (scanMatch) {
       results.push({
@@ -321,8 +365,7 @@ export async function findExactSourceLinkMatch(
   excludePropertyId?: number | null,
   excludeScanlinkId?: number | null
 ): Promise<SourceLinkConflict | null> {
-  const normalized = normalizeSourceLink(sourceLink);
-  if (!normalized) return null;
+  if (!sourceLink || !sourceLink.trim()) return null;
 
   const candidates = await prisma.property.findMany({
     where: {
@@ -332,7 +375,7 @@ export async function findExactSourceLinkMatch(
     select: { id: true, titleTh: true, status: true, agentId: true, sourceLink: true },
   });
 
-  const match = candidates.find((c) => normalizeSourceLink(c.sourceLink) === normalized);
+  const match = candidates.find((c) => sourceLinksMatch(sourceLink, c.sourceLink));
   if (match) {
     return { source: "PROPERTY", id: match.id, titleTh: match.titleTh, status: match.status, agentId: match.agentId };
   }
