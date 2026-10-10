@@ -115,8 +115,8 @@ function DupWarningBanner({
           <p className="font-semibold mb-1 flex items-center gap-1.5 pr-6">
             {likely.length > 0 ? <AlertTriangle className="w-4 h-4" /> : <Info className="w-4 h-4" />}
             {likely.length > 0
-              ? "อาจเป็นทรัพย์ซ้ำ — พบทรัพย์ที่มีเจ้าของและโครงการ/ตึก/ชั้นตรงกันในระบบแล้ว กรุณาตรวจสอบก่อนส่ง"
-              : "เจ้าของรายนี้มีทรัพย์อื่นอยู่ในระบบแล้ว (โครงการ/ตึก/ชั้นไม่ตรงกัน) — อาจเป็นทรัพย์คนละห้อง"}
+              ? "อาจเป็นทรัพย์ซ้ำ — พบทรัพย์ในระบบที่เจ้าของ/โครงการ/ตึก/ชั้น หรือราคาและขนาดห้องตรงกัน กรุณาตรวจสอบก่อนส่ง"
+              : "พบทรัพย์ในระบบที่มีข้อมูลบางส่วนตรงกัน (เจ้าของ หรือ โครงการ/ราคา/ขนาดห้อง) แต่ยังไม่ยืนยันว่าเป็นห้องเดียวกัน — ลองตรวจสอบเพิ่มเติม"}
           </p>
           <DupMatchList matches={advisory} onCompare={onCompare} />
         </div>
@@ -315,6 +315,9 @@ export default function AddPropertyPage({
             floor: form.floor ? Number(form.floor) : null,
             latitude: form.latitude ? Number(form.latitude) : null,
             longitude: form.longitude ? Number(form.longitude) : null,
+            price: form.price ? Number(form.price) : null,
+            salePrice: form.salePrice ? Number(form.salePrice) : null,
+            sizeSqm: form.sizeSqm ? Number(form.sizeSqm) : null,
             excludePropertyId: editId ? Number(editId) : null,
           }),
         });
@@ -331,7 +334,8 @@ export default function AddPropertyPage({
     return () => clearTimeout(t);
   }, [
     form.sourceLink, form.ownerPhone, form.ownerLineId, form.ownerFacebookUrl,
-    form.projectName, form.building, form.floor, selectedProjectId, editId,
+    form.projectName, form.building, form.floor, form.price, form.salePrice, form.sizeSqm,
+    selectedProjectId, editId,
   ]);
 
   const [selectedFurniture, setSelectedFurniture] = useState<string[]>([]);
@@ -981,6 +985,15 @@ export default function AddPropertyPage({
             </p>
           )}
         </div>
+
+        {dupMatches.length > 0 && (
+          <DupWarningBanner
+            matches={dupMatches}
+            dismissed={dupDismissed}
+            onDismiss={() => setDupDismissed(true)}
+            onCompare={!isAgentMode ? (id) => setCompareTargetId(id) : undefined}
+          />
+        )}
 
         {/* Basic Info */}
         <div className="bg-white rounded-xl shadow-sm border p-6">
@@ -1787,15 +1800,6 @@ export default function AddPropertyPage({
             </div>
           </div>
         </div>
-
-        {dupMatches.length > 0 && (
-          <DupWarningBanner
-            matches={dupMatches}
-            dismissed={dupDismissed}
-            onDismiss={() => setDupDismissed(true)}
-            onCompare={!isAgentMode ? (id) => setCompareTargetId(id) : undefined}
-          />
-        )}
 
         {/* Status, Category, Priority, Note */}
         <div className="bg-white rounded-xl shadow-sm border p-6">

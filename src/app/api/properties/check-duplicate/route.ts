@@ -36,6 +36,9 @@ export async function POST(req: NextRequest) {
     floor: body.floor != null && body.floor !== "" ? Number(body.floor) : null,
     latitude: body.latitude != null ? Number(body.latitude) : null,
     longitude: body.longitude != null ? Number(body.longitude) : null,
+    price: body.price != null && body.price !== "" ? Number(body.price) : null,
+    salePrice: body.salePrice != null && body.salePrice !== "" ? Number(body.salePrice) : null,
+    sizeSqm: body.sizeSqm != null && body.sizeSqm !== "" ? Number(body.sizeSqm) : null,
     excludePropertyId: body.excludePropertyId ? Number(body.excludePropertyId) : null,
   });
 

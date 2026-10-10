@@ -4,25 +4,38 @@ import { textMatches } from "@/lib/text-match";
 
 // Duplicate detection for property submissions.
 //
-// Three signals, in order of certainty:
+// Four signals, in order of certainty:
 //   - "source link" (the original post URL, e.g. a Facebook post) — an
 //     exact match here means this is objectively the same listing
 //     re-entered, not a judgment call. CONFIRMED_DUPLICATE, and the
 //     create/update API routes hard-block on this (see
 //     findExactSourceLinkMatch below) — the live check here is advisory
-//     UX, not the actual enforcement.
+//     UX, not the actual enforcement. Note this can only ever catch a
+//     re-post under the *same* URL — Facebook mints a brand new
+//     /share/p/xxxx token every time "Share" is clicked, so the same
+//     post re-shared twice can produce two source links with zero
+//     overlap. That's what the next signal is for.
+//   - "listing fingerprint" (project + exact price + exact size) — the
+//     only signal that can catch a re-post under a fresh share token.
+//     Needs building or floor to also line up (when both sides have
+//     that data) to reach the strong tier — verified against production
+//     data that price+size alone is too common within one project to
+//     be reliable on its own (a standardized unit type can have several
+//     genuinely different real units at the identical price and size).
+//     Without that corroboration it still surfaces, just as the weaker
+//     "worth a look" tier.
 //   - "owner identity" (phone / LINE ID / Facebook link) — a real owner
 //     has one identity no matter who lists them. Strong but not certain.
 //   - "property identity" (project + building + floor — there's no
 //     dedicated unit-number column on Property) — supporting signal.
 //
-// Warning-only for the owner/property tiers — never blocks submission,
+// Warning-only for the non-source-link tiers — never blocks submission,
 // since CO_AGENT rows already require admin verification before going
 // live, so the admin gets a second look regardless. Owner-identity
-// matching ALONE is not enough to call it a likely duplicate (an owner
-// can legitimately have several different units), so it only ever
-// produces the weaker SAME_OWNER_DIFFERENT_UNIT tier unless property
-// identity also matches.
+// matching ALONE, or an uncorroborated fingerprint match ALONE, is not
+// enough to call it a likely duplicate, so each only ever produces the
+// weaker SAME_OWNER_DIFFERENT_UNIT tier unless property identity
+// (building+floor) also corroborates it.
 
 export function normalizePhone(raw: string | null | undefined): string | null {
   if (!raw) return null;
@@ -121,7 +134,8 @@ export type DupReason =
   | "OWNER_FACEBOOK_MATCH"
   | "PROJECT_NAME_MATCH"
   | "BUILDING_FLOOR_MATCH"
-  | "GEO_PROXIMITY_MATCH";
+  | "GEO_PROXIMITY_MATCH"
+  | "LISTING_FINGERPRINT_MATCH";
 
 export interface DupCandidateInput {
   sourceLink?: string | null;
@@ -134,6 +148,14 @@ export interface DupCandidateInput {
   floor?: number | null;
   latitude?: number | null;
   longitude?: number | null;
+  // Content fingerprint — catches a re-post under a fresh Facebook share
+  // token (a new token every time "Share" is clicked, so source-link
+  // matching alone can't see it): same project + exact price + exact size
+  // is a coincidence-resistant signal even with no owner info or usable
+  // source link at all.
+  price?: number | null;
+  salePrice?: number | null;
+  sizeSqm?: number | null;
   // When editing an existing property, exclude it from matching itself.
   excludePropertyId?: number | null;
 }
@@ -223,6 +245,9 @@ export async function findPossibleDuplicates(input: DupCandidateInput): Promise<
       floor: true,
       latitude: true,
       longitude: true,
+      price: true,
+      salePrice: true,
+      sizeSqm: true,
       project: { select: { nameTh: true, nameEn: true } },
     },
   });
@@ -244,23 +269,50 @@ export async function findPossibleDuplicates(input: DupCandidateInput): Promise<
     if (fb && cFb && fb === cFb) reasons.push("OWNER_FACEBOOK_MATCH");
     const ownerMatch = reasons.length > 0;
 
+    const cProjectName = c.projectName || c.project?.nameTh || c.project?.nameEn || "";
+    const projectIdentityMatch =
+      !!(input.projectId && c.projectId && input.projectId === c.projectId) ||
+      (!!input.projectName && !!cProjectName && textMatches(input.projectName, cProjectName));
+    const buildingMatches =
+      !!input.building &&
+      !!c.building &&
+      input.building.trim().toLowerCase() === c.building.trim().toLowerCase();
+    const floorMatches = input.floor != null && c.floor != null && input.floor === c.floor;
+
     let propertyMatch = false;
     if (input.projectId && c.projectId && input.projectId === c.projectId) {
       propertyMatch = true;
       reasons.push("PROJECT_NAME_MATCH");
-    } else {
-      const cProjectName = c.projectName || c.project?.nameTh || c.project?.nameEn || "";
-      const projectNameMatches =
-        !!input.projectName && !!cProjectName && textMatches(input.projectName, cProjectName);
-      const buildingMatches =
-        !!input.building &&
-        !!c.building &&
-        input.building.trim().toLowerCase() === c.building.trim().toLowerCase();
-      const floorMatches = input.floor != null && c.floor != null && input.floor === c.floor;
-      if (projectNameMatches && buildingMatches && floorMatches) {
-        propertyMatch = true;
-        reasons.push("PROJECT_NAME_MATCH", "BUILDING_FLOOR_MATCH");
-      }
+    } else if (projectIdentityMatch && buildingMatches && floorMatches) {
+      propertyMatch = true;
+      reasons.push("PROJECT_NAME_MATCH", "BUILDING_FLOOR_MATCH");
+    }
+
+    // Listing fingerprint — same project, exact rent/sale price, exact
+    // size. On real production data this alone is NOT a rare enough
+    // coincidence to call a likely duplicate: standardized unit types in
+    // the same project commonly share an identical market price and size
+    // across several genuinely different real units (verified against
+    // production data — one project had 7 different units, in different
+    // buildings/floors, all at the exact same price+size; only one pair
+    // of those was an actual duplicate). So a fingerprint match only
+    // reaches the strong LIKELY_SAME_UNIT tier when building or floor
+    // also corroborates it; without that corroboration it's surfaced as
+    // a weaker, worth-a-look signal instead — still useful since it's
+    // the only thing that can catch a re-post under a fresh Facebook
+    // share token (a new token every time "Share" is clicked, so
+    // source-link matching can never see it).
+    const priceMatch =
+      (input.price != null && c.price != null && Number(input.price) === Number(c.price)) ||
+      (input.salePrice != null && c.salePrice != null && Number(input.salePrice) === Number(c.salePrice));
+    const sizeMatch =
+      input.sizeSqm != null && c.sizeSqm != null && Number(input.sizeSqm) === Number(c.sizeSqm);
+    const fingerprintMatch = projectIdentityMatch && priceMatch && sizeMatch;
+    const fingerprintCorroborated = fingerprintMatch && (buildingMatches || floorMatches);
+    if (fingerprintMatch) {
+      if (!reasons.includes("PROJECT_NAME_MATCH")) reasons.push("PROJECT_NAME_MATCH");
+      reasons.push("LISTING_FINGERPRINT_MATCH");
+      if (fingerprintCorroborated && !reasons.includes("BUILDING_FLOOR_MATCH")) reasons.push("BUILDING_FLOOR_MATCH");
     }
 
     // Geo-proximity only ever adds confidence on top of an already-true
@@ -278,17 +330,17 @@ export async function findPossibleDuplicates(input: DupCandidateInput): Promise<
       if (d <= GEO_PROXIMITY_KM) reasons.push("GEO_PROXIMITY_MATCH");
     }
 
-    if (!sourceLinkMatch && !ownerMatch && !propertyMatch) continue;
-    // Property-identity match alone (without a source-link or owner-
-    // identity match) is noise — many unrelated owners list in the same
-    // building — so it never surfaces by itself.
-    if (!sourceLinkMatch && !ownerMatch) continue;
+    if (!sourceLinkMatch && !ownerMatch && !propertyMatch && !fingerprintMatch) continue;
+    // Property-identity match alone (without a source-link, owner-
+    // identity, or listing-fingerprint match) is noise — many unrelated
+    // owners list in the same building — so it never surfaces by itself.
+    if (!sourceLinkMatch && !ownerMatch && !fingerprintMatch) continue;
 
     const tier: DupTier = sourceLinkMatch
       ? "CONFIRMED_DUPLICATE"
-      : propertyMatch
+      : propertyMatch || fingerprintCorroborated
       ? "LIKELY_SAME_UNIT"
-      : "SAME_OWNER_DIFFERENT_UNIT";
+      : "SAME_OWNER_DIFFERENT_UNIT"; // also doubles as the generic "weak signal" tier — see fingerprintMatch above
     const score =
       (reasons.includes("SOURCE_LINK_MATCH") ? 1000 : 0) +
       (reasons.includes("OWNER_PHONE_MATCH") ? 40 : 0) +
@@ -296,7 +348,8 @@ export async function findPossibleDuplicates(input: DupCandidateInput): Promise<
       (reasons.includes("OWNER_FACEBOOK_MATCH") ? 30 : 0) +
       (reasons.includes("PROJECT_NAME_MATCH") ? 20 : 0) +
       (reasons.includes("BUILDING_FLOOR_MATCH") ? 20 : 0) +
-      (reasons.includes("GEO_PROXIMITY_MATCH") ? 10 : 0);
+      (reasons.includes("GEO_PROXIMITY_MATCH") ? 10 : 0) +
+      (reasons.includes("LISTING_FINGERPRINT_MATCH") ? (fingerprintCorroborated ? 50 : 15) : 0);
 
     results.push({
       source: "PROPERTY",
