@@ -134,7 +134,7 @@ export default function AgentDashboardPage() {
             <p className="text-sm text-gray-500 mt-0.5">ยินดีต้อนรับ, {agentName}</p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Link
             href={`/${locale}/admin/properties/add`}
             className="flex items-center gap-2 text-sm text-white bg-amber-600 hover:bg-amber-700 px-3 py-2 rounded-lg font-medium transition-colors"
@@ -142,6 +142,15 @@ export default function AgentDashboardPage() {
             <Plus className="w-4 h-4" />
             เพิ่มทรัพย์ใหม่
           </Link>
+          <a
+            href="/api/admin/contracts/template/preview-pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-sm font-medium bg-[#C8A951] hover:bg-[#B8993F] text-white px-3 py-2 rounded-lg transition-colors"
+          >
+            <FileText className="w-4 h-4" />
+            ดูตัวอย่างสัญญา
+          </a>
           <button
             onClick={fetchStats}
             disabled={loading}
