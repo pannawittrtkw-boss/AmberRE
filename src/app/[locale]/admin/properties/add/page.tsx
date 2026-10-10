@@ -90,7 +90,6 @@ function DupWarningBanner({
   const confirmed = matches.filter((m) => m.tier === "CONFIRMED_DUPLICATE");
   const likely = matches.filter((m) => m.tier === "LIKELY_SAME_UNIT");
   const sameOwner = matches.filter((m) => m.tier === "SAME_OWNER_DIFFERENT_UNIT");
-  const advisory = [...likely, ...sameOwner];
 
   return (
     <div className="space-y-2">
@@ -103,22 +102,33 @@ function DupWarningBanner({
           <DupMatchList matches={confirmed} />
         </div>
       )}
-      {advisory.length > 0 && !dismissed && (
-        <div
-          className={`relative rounded-xl border p-4 text-sm ${
-            likely.length > 0 ? "bg-orange-50 border-orange-200 text-orange-900" : "bg-amber-50 border-amber-200 text-amber-900"
-          }`}
-        >
+      {/* Strong and weak advisory matches render as two separate boxes —
+          never merged into one, so a single strong match can't drag
+          unrelated weak matches under the same "likely duplicate"
+          headline/color. Sharing one dismissed flag still clears both
+          together (dismissing is a single "I've seen this" action). */}
+      {likely.length > 0 && !dismissed && (
+        <div className="relative rounded-xl border p-4 text-sm bg-orange-50 border-orange-200 text-orange-900">
           <button type="button" onClick={onDismiss} className="absolute top-3 right-3 opacity-60 hover:opacity-100">
             <X className="w-4 h-4" />
           </button>
           <p className="font-semibold mb-1 flex items-center gap-1.5 pr-6">
-            {likely.length > 0 ? <AlertTriangle className="w-4 h-4" /> : <Info className="w-4 h-4" />}
-            {likely.length > 0
-              ? "อาจเป็นทรัพย์ซ้ำ — พบทรัพย์ในระบบที่เจ้าของ/โครงการ/ตึก/ชั้น หรือราคาและขนาดห้องตรงกัน กรุณาตรวจสอบก่อนส่ง"
-              : "พบทรัพย์ในระบบที่มีข้อมูลบางส่วนตรงกัน (เจ้าของ หรือ โครงการ/ราคา/ขนาดห้อง) แต่ยังไม่ยืนยันว่าเป็นห้องเดียวกัน — ลองตรวจสอบเพิ่มเติม"}
+            <AlertTriangle className="w-4 h-4" />
+            อาจเป็นทรัพย์ซ้ำ — พบทรัพย์ในระบบที่เจ้าของ/โครงการ/ตึก/ชั้น หรือราคาและขนาดห้องตรงกัน กรุณาตรวจสอบก่อนส่ง
           </p>
-          <DupMatchList matches={advisory} onCompare={onCompare} />
+          <DupMatchList matches={likely} onCompare={onCompare} />
+        </div>
+      )}
+      {sameOwner.length > 0 && !dismissed && (
+        <div className="relative rounded-xl border p-4 text-sm bg-amber-50 border-amber-200 text-amber-900">
+          <button type="button" onClick={onDismiss} className="absolute top-3 right-3 opacity-60 hover:opacity-100">
+            <X className="w-4 h-4" />
+          </button>
+          <p className="font-semibold mb-1 flex items-center gap-1.5 pr-6">
+            <Info className="w-4 h-4" />
+            พบทรัพย์ในระบบที่มีข้อมูลบางส่วนตรงกัน (เจ้าของ หรือ โครงการ/ราคา/ขนาดห้อง) แต่ยังไม่ยืนยันว่าเป็นห้องเดียวกัน — ลองตรวจสอบเพิ่มเติม
+          </p>
+          <DupMatchList matches={sameOwner} onCompare={onCompare} />
         </div>
       )}
     </div>
