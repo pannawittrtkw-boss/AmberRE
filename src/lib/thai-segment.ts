@@ -70,19 +70,19 @@ export function splitThai(text: string): string[] {
       if (seg.segment) fragments.push(seg.segment);
     }
     if (fragments.length === 0) return [text];
-    // @react-pdf/renderer can clip the first or last glyph of a Thai string
-    // — since each fragment renders as its own <Text> run, guard both ends
-    // the same way insertThaiBreaks() does.
-    const first = fragments[0];
-    if (THAI_RANGE.test(first[0])) {
-      fragments[0] = ZWSP + first;
-    }
-    const lastIdx = fragments.length - 1;
-    const last = fragments[lastIdx];
-    if (THAI_RANGE.test(last[last.length - 1])) {
-      fragments[lastIdx] = last + ZWSP;
-    }
-    return fragments;
+    // @react-pdf/renderer can clip the first or last glyph of a Thai
+    // string. Since every fragment here renders as its OWN independent
+    // <Text> run (not just the first/last fragment of the whole array),
+    // each one needs its own guard — a mid-string word like "ประจำ" is
+    // just as exposed as the edges (seen in production: its trailing ำ
+    // was silently dropped because only fragments[0]/fragments[last]
+    // used to get this guard).
+    return fragments.map((frag) => {
+      let f = frag;
+      if (THAI_RANGE.test(f[0])) f = ZWSP + f;
+      if (THAI_RANGE.test(f[f.length - 1])) f = f + ZWSP;
+      return f;
+    });
   } catch {
     return [text];
   }
